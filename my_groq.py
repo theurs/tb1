@@ -931,11 +931,19 @@ def load_users_keys():
     """
     with USER_KEYS_LOCK:
         global USER_KEYS, ALL_KEYS
-        ALL_KEYS = cfg.GROQ_API_KEY if hasattr(cfg, 'GROQ_API_KEY') and cfg.GROQ_API_KEY else []
+        ALL_KEYS = cfg.GROQ_API_KEY[:] if hasattr(cfg, 'GROQ_API_KEY') and cfg.GROQ_API_KEY else []
         for user in USER_KEYS:
             key = USER_KEYS[user]
             if key not in ALL_KEYS:
                 ALL_KEYS.append(key)
+
+
+def test_key(key: str) -> bool:
+    '''
+    Tests a given key by making a simple request to the GitHub AI API.
+    '''
+    r = ai('1+1=', key_=key.strip())
+    return bool(r)
 
 
 if __name__ == '__main__':
@@ -953,16 +961,6 @@ if __name__ == '__main__':
     #     f.write(tts('Мы к вам заехали на час, а ну скорей любите нас!'))
 
     # print(search('покажи полный текст песни братьев газьянов - малиновая лада'))
-    print(calc(""" найти сумму матриц A и B.
-Матрица A выглядит так:
-1 -2 4
-2 0 -1
-
-А матрица B вот такая:
-5 2 3
-4 6 2
-
-Надо посчитать A + B."""))
 
     # reset('test')
     # chat_cli(model = 'compound-beta')
@@ -973,5 +971,8 @@ if __name__ == '__main__':
     #     text = f.read()
 
     # print(sum_big_text(text, 'сделай подробный пересказ по тексту'))
+
+    for k in cfg.GROQ_API_KEY:
+        print(k, test_key(k))
 
     my_db.close()

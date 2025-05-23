@@ -2130,7 +2130,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 button1 = telebot.types.InlineKeyboardButton(tr('☑️Чат-кнопки', lang), callback_data='disable_chat_kbd')
             else:
                 button1 = telebot.types.InlineKeyboardButton(tr('✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
-            
+
             other_notification = my_db.get_user_property(chat_id_full, 'action_style') or ''
             if not other_notification:
                 button2 = telebot.types.InlineKeyboardButton(tr('☑️Other notification', lang), callback_data='switch_action_style')

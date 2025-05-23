@@ -221,6 +221,19 @@ def remove_old_pics(mem: List[Union['Content', 'UserContent']], turns_cutoff: in
     return mem
 
 
+def validate_mem(mem):
+    '''
+    Проверяется корректность памяти
+    У каждой записи должна быть прописана роль, если её нет то сделать дамп памяти для анализа
+    и обнулить память для надежности
+    '''
+    for entry in mem:
+        if not hasattr(entry, 'role') or entry.role not in ['user', 'model']:
+            my_log.log_gemini(f'my_gemini3:validate_mem: Invalid memory entry: {entry}\n\nFull memory dump:\n{mem}')
+            mem.clear()
+            break
+
+
 def chat(
     query: str,
     chat_id: str = '',
@@ -292,6 +305,8 @@ def chat(
         # то надо подрезать. начинаться должно с запроса юзера
         if mem and mem[0].role == 'user' and hasattr(mem[0].parts[0], 'text') and not mem[0].parts[0].text:
             mem = mem[2:]
+
+        validate_mem(mem)
 
         client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'timeout': timeout * 1000})
 

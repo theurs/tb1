@@ -20,7 +20,7 @@ import threading
 import time
 from flask import Flask, request, jsonify
 from decimal import Decimal, getcontext
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import langcodes
 import pendulum
@@ -2034,18 +2034,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button_llama4_maverick = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama4_maverick')
 
 
-            markup.row(button_gemini_lite, button_gemini_flash20)
-
-            markup.row(button_gemini_flash25, button_llama4_maverick)
-
+            markup.row(button_gemini_flash25, button_gemini_flash20)
+            markup.row(button_mistral, button_llama4_maverick)
             if hasattr(cfg, 'DDG_ENABLED') and cfg.DDG_ENABLED:
                 markup.row(button_gpt4o_mini, button_o3_mini_ddg)
-
-            markup.row(button_gpt_4o, button_gpt_41)
-
-            markup.row(button_cohere, button_mistral)
-
-            markup.row(button_deepseek_v3, button_openrouter)
+            markup.row(button_gpt_4o, button_gpt_41, button_openrouter)
+            markup.row(button_cohere, button_deepseek_v3)
 
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)

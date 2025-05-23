@@ -357,10 +357,11 @@ def chat(
 
         if resp:
             history = chat.get_history()
-            history = history[-max_chat_lines*2:]
-            my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(history))
-            if chat_id:
-                my_db.add_msg(chat_id, model)
+            if history:
+                history = history[-max_chat_lines*2:]
+                my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(history))
+                if chat_id:
+                    my_db.add_msg(chat_id, model)
 
         return resp.strip()
 
@@ -374,9 +375,10 @@ def count_chars(mem) -> int:
     '''считает количество символов в чате'''
     total = 0
     for x in mem:
-        for i in x.parts:
-            if i.text:
-                total += len(i.text)
+        if x.parts:
+            for i in x.parts:
+                if i.text:
+                    total += len(i.text)
     return total
 
 

@@ -667,7 +667,7 @@ def img2txt(text,
     """
     try:
         query = query.strip()
-
+        time_to_answer_start = time.time()
 
         # если запрос начинается на ! то надо редактировать картинку а не отвечать на вопрос
         if query.startswith('!'):
@@ -721,7 +721,6 @@ def img2txt(text,
 
 
         text = ''
-        time_to_answer_start = time.time()
 
         try:
             chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')

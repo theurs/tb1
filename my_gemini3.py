@@ -365,8 +365,7 @@ def chat(
             except Exception as error:
                 if '429 RESOURCE_EXHAUSTED' in str(error):
                     my_log.log_gemini(f'my_gemini3:chat:2: {str(error)} {key}')
-                    time.sleep(2)
-                    continue
+                    return ''
                 else:
                     raise error
             resp = response.text or ''

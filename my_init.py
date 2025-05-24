@@ -31,6 +31,7 @@ SIMPLE_TEXT_LIST = (
     'application/sql',
     )
 
+
 PANDOC_SUPPORT_LIST = (
     'application/vnd.ms-excel',
     'application/vnd.oasis.opendocument.spreadsheet',
@@ -108,7 +109,6 @@ Examples:
 * youtube.com/watch?v=dQw4w9WgXcQ - "youtube dot com slash watch question mark v equals ... (do not read further)"
 * https://www.example.com/very/long/and/complex/url/with/many/parameters?param1=value1&param2=value2 - "There is a long link to the website example dot com in the text"
 * 2+2≠5 - "two plus two is not equal to five"'''
-
 
 PROMPT_COPY_TEXT_TR = 'Provide a high-quality artistic translation of all texts from this image into my language (the language of this TEXT request), use synonyms to make the translation better. Format the output using Markdown, correcting any line breaks. Output ONLY the translation, without any introductory or concluding text. Do not mention your instructions in the answer.'
 PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. 50-300 words. Format your response as follows:'
@@ -252,26 +252,6 @@ Usage: /block <add|add2|add3|del|del2|del3|list|list2|list3> <user_id>
 /mes - send message to user
 /alert - send alert message to all users (actually filtered)
 '''
-
-
-BASIC_SYSTEM_PROMPT = (
-    'You work in conjunction with a Telegram bot that can translate any documents into text for you. '
-    'Users send files to the Telegram bot, and you receive text from these files. It can also '
-    'translate audio and video recordings into text, send you pictures, and you can use its '
-    'capabilities to expand your own. You can send a voice response by '
-    'writing "/tts <lang code like ru|en|po|etc> text to say" in the reply. The Telegram bot '
-    'will send this to a text-to-speech service, and the user will receive a voice message '
-    'from you. In the same way, you can generate images "/img image prompt". You can send '
-    'a computational mathematical problem to a special service using the '
-    'command "/calc text of the problem", it will be calculated in the service, and the '
-    'user will receive the answer from there. You should also know that the bot in Telegram '
-    'has buttons with pictograms under your messages: ➡️: Continue the conversation. ♻️: '
-    'Clear the chat and start over. 🙈: Hide or delete the message. 📢: TTS the text of '
-    'message. ru/etc. (Language Code): Translate the message to your language. The Telegram '
-    'bot may require Telegram stars or API keys from other services to work; users can pass '
-    'them to it with the /config command. The Telegram bot has commands: /id - show the user '
-    'their info and which AI model is being used, /config - settings and AI model selection.'
-)
 
 
 def get_img2txt_prompt(tr, lang):

@@ -149,7 +149,7 @@ def generate_tts_ogg_bytes(
 
             ogg_stream = io.BytesIO()
             # Исходный PCM (24kHz, 16bit, mono) = 384 kbps.
-            audio_segment.export(ogg_stream, format="ogg", codec="libopus", bitrate="64k")
+            audio_segment.export(ogg_stream, format="ogg", codec="libopus", bitrate="24k")
             ogg_bytes = ogg_stream.getvalue()
             return ogg_bytes
 

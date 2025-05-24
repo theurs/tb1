@@ -5586,7 +5586,7 @@ def downgrade_handler(message: telebot.types.Message):
         my_log.log2(f'tb:downgrade: {unknown}\n{traceback_error}')
 
 
-@bot.message_handler(commands=['gem'], func=authorized)
+@bot.message_handler(commands=['gem', 'Gem', 'GEM', 'GEN', 'Gen', 'gen'], func=authorized)
 @async_run
 def image_gemini_gen(message: telebot.types.Message):
     """Generates an image using the Gemini 2.0 Flash Experimental model.

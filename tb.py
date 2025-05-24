@@ -5324,12 +5324,16 @@ def tts(message: telebot.types.Message, caption = None):
                     text = my_gemini.rebuild_subtitles(text, lang)
                     if text:
                         text = utils.bot_markdown_to_html(text)
+                        if len(text) > 1 and len(text) < 40000:
+                            add_to_bots_mem(f'/tts {url}', text, chat_id_full)
                         bot_reply(message, text, parse_mode='HTML',
                                 reply_markup=get_keyboard('translate', message),
                                 disable_web_page_preview=True)
                 else:
                     text = my_sum.download_text([url, ], 100000, no_links = True)
                     if text:
+                        if len(text) > 1 and len(text) < 40000:
+                            add_to_bots_mem(f'/tts {url}', text, chat_id_full)
                         bot_reply(message, text, parse_mode='',
                                 reply_markup=get_keyboard('translate', message),
                                 disable_web_page_preview=True)

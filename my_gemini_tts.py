@@ -34,7 +34,7 @@ def generate_tts_ogg_bytes(
     text_to_speak: str,
     voice_name: str = "Zephyr",
     model_id: str = "gemini-2.5-flash-preview-tts",
-    lang: str = None,
+    lang: str = '',
 ) -> bytes | None:
     """
     Генерирует аудио из текста с использованием указанного голоса и модели,
@@ -148,17 +148,16 @@ def generate_tts_ogg_bytes(
             )
 
             ogg_stream = io.BytesIO()
-            # Качество OGG Vorbis: bitrate="64k" - хороший компромисс для 24kHz речи.
             # Исходный PCM (24kHz, 16bit, mono) = 384 kbps.
-            audio_segment.export(ogg_stream, format="ogg", codec="libvorbis", bitrate="64k")
+            audio_segment.export(ogg_stream, format="ogg", codec="libopus", bitrate="64k")
             ogg_bytes = ogg_stream.getvalue()
             return ogg_bytes
 
-        except CouldntDecodeError:
-            my_log.log_gemini("my_gemini_tts: Ошибка pydub: Не удалось декодировать сырые PCM данные. Проверьте параметры.")
+        except CouldntDecodeError as e:
+            my_log.log_gemini("my_gemini_tts: Ошибка pydub: Не удалось декодировать сырые PCM данные. Проверьте параметры. {e}")
             return None
-        except CouldntEncodeError:
-            my_log.log_gemini("my_gemini_tts: Ошибка pydub: Не удалось закодировать в OGG. Убедитесь, что ffmpeg/libav установлен и доступен в PATH.")
+        except CouldntEncodeError as e:
+            my_log.log_gemini("my_gemini_tts: Ошибка pydub: Не удалось закодировать в OGG. Убедитесь, что ffmpeg/libav установлен и доступен в PATH. {e}")
             return None
         except Exception as e:
             my_log.log_gemini(f"Непредвиденная ошибка при конвертации аудио с pydub: {e}")

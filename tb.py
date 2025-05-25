@@ -8367,16 +8367,10 @@ def handle_photo_and_text(message: telebot.types.Message):
             msglower = MSG.caption.lower() if MSG.caption else ''
         if msglower.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
             bot_name_was_used = True
-            # if MSG.caption:
-            #     MSG.caption = MSG.caption[len(f'{bot_name2} '):].strip()
-            # if MSG.text:
-            #     MSG.text = MSG.text[len(f'{bot_name2} '):].strip()
         if not bot_name_was_used and msglower.startswith((f'{bot_name1} ', f'{bot_name1},', f'{bot_name1}\n')):
             bot_name_was_used = True
-            # if MSG.caption:
-            #     MSG.caption = MSG.caption[len(f'{bot_name1} '):].strip()
-            # if MSG.text:
-            #     MSG.text = MSG.text[len(f'{bot_name1} '):].strip()
+        if re.match(r"^(гугл|google)[ ,.\n]+", msglower):
+            bot_name_was_used = True
         if supch == 1 or is_reply or bot_name_was_used:
             is_private = True
         if not is_private:

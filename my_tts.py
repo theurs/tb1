@@ -3,7 +3,9 @@
 import cachetools.func
 import io
 import glob
+import os
 import re
+import subprocess
 import tempfile
 import traceback
 
@@ -11,10 +13,10 @@ import edge_tts
 import gtts
 from langdetect import detect
 
-import utils
 import my_log
-import my_openai_voice
 import my_gemini_tts
+import my_openai_voice
+import utils
 
 
 VOICES = {
@@ -234,7 +236,7 @@ def get_voice(language_code: str, gender: str = 'female'):
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes:
+def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female') -> bytes | None:
     """
     Generates text-to-speech audio from the given input text using the specified voice, 
     speech rate, and gender.
@@ -246,10 +248,16 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
         gender (str, optional): The gender of the voice. Defaults to 'female'.
 
     Returns:
-        bytes: The generated audio as a bytes object.
+        bytes: The generated audio as a bytes object. Or None if an error occurs.
     """
+    lang = voice
+
+    def change_speed(data: bytes, rate: str) -> bytes:
+        '''Изменяет скорость речи'''
+        new_data = change_audio_speed_and_format(data, rate)
+        return new_data or data
+
     try:
-        lang = voice
 
         # если в начале текста есть <инструкция как надо произносить текст> то
         # вырезать ее из текста и сохранить в переменную prompt. искать в начале регэкспом
@@ -285,21 +293,21 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
                         # my_log.log2(f'my_tts:1: tts_google: {e}')
                         pass
             if result:
-                return result
+                return change_speed(result, rate)
             else:
                 gender = 'female'
         elif gender.startswith('openai_') and len(text) < 8 * 1024:
             try:
                 result = my_openai_voice.openai_get_audio_bytes(text, voice = gender[7:], prompt=instruction)
                 if result:
-                    return result
+                    return change_speed(result, rate)
             except Exception as e:
                 pass
         elif gender.startswith('gemini_') and len(text) < 8 * 1024:
             try:
                 result = my_gemini_tts.generate_tts_ogg_bytes(text, lang = lang, voice_name = gender[7:])
                 if result:
-                    return result
+                    return change_speed(result, rate)
             except Exception as e:
                 pass
 
@@ -320,7 +328,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
             filename = f.name 
 
         # Запускаем edge-tts для генерации аудио
-        communicate = edge_tts.Communicate(text, voice, rate=rate)
+        communicate = edge_tts.Communicate(text, voice)
         communicate.save_sync(filename)
 
         # Читаем аудио из временного файла 
@@ -332,15 +340,15 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
         data = data.getvalue()
 
         if data:
-            return data
+            return change_speed(data, rate)
         else:
             result = tts_google(text, lang)
             if result:
-                return result
+                return change_speed(result, rate)
     except edge_tts.exceptions.NoAudioReceived:
         result = tts_google(text, lang)
         if result:
-            return result
+            return change_speed(result, rate)
         else:
             return None
     except Exception as error:
@@ -348,7 +356,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
         my_log.log2(f'my_tts:tts:2: {error}\n\n{error_traceback}')
         result = tts_google(text, lang)
         if result:
-            return result
+            return change_speed(result, rate)
         else:
             return None
 
@@ -360,11 +368,140 @@ def detect_lang_carefully(text: str) -> str:
     return language
 
 
+def change_audio_speed_and_format(input_audio: bytes | str, speed_factor_percent_str: str) -> bytes | None:
+    """
+    Changes the speed of the input audio (from bytes or a file path) using ffmpeg
+    and encodes it to Opus format at 24 kbit/s.
+
+    Args:
+        input_audio (bytes | str): The input audio data as bytes, or a path to an audio file.
+        speed_factor_percent_str (str): The speed change as a percentage string, relative to normal speed.
+                                        Examples: "+0%", "0%" (normal speed),
+                                        "+50%" (50% faster), "-25%" (25% slower).
+                                        Allowed percentage values are between -100% and +100%.
+                                        A value of -100% results in half speed (0.5x).
+                                        A value of +100% results in double speed (2.0x).
+
+    Returns:
+        bytes | None: The processed audio as Opus bytes at 24 kbit/s, or None if an error occurs.
+    """
+
+    # Parse and validate speed_factor_percent_str
+    if not isinstance(speed_factor_percent_str, str):
+        my_log.log2(f"my_tts:change_audio_speed_and_format:invalid_sf_type: speed_factor must be a string. Got {type(speed_factor_percent_str)}")
+        return None
+
+    if not speed_factor_percent_str.endswith('%'):
+        my_log.log2(f"my_tts:change_audio_speed_and_format:invalid_sf_format: speed_factor string must end with '%'. Got '{speed_factor_percent_str}'")
+        return None
+
+    try:
+        percentage_str_val = speed_factor_percent_str.rstrip('%')
+        percentage_value = float(percentage_str_val)
+    except ValueError:
+        my_log.log2(f"my_tts:change_audio_speed_and_format:invalid_sf_value: Could not parse percentage from speed_factor '{speed_factor_percent_str}'")
+        return None
+
+    # Validate input percentage range as per user's "+-0-100%"
+    if not (-100.0 <= percentage_value <= 100.0):
+        my_log.log2(f"my_tts:change_audio_speed_and_format:sf_out_of_range: Percentage value {percentage_value}% is out of the allowed range [-100%, +100%]. Input was '{speed_factor_percent_str}'.")
+        return None
+
+    # Convert percentage to atempo multiplier
+    # Example: +50% -> 1.0 + (50/100) = 1.5
+    # Example: -20% -> 1.0 + (-20/100) = 0.8
+    # Example: -100% -> 1.0 + (-100/100) = 0.0
+    atempo_multiplier = 1.0 + (percentage_value / 100.0)
+
+    # Clamp atempo_multiplier to ffmpeg's supported range [0.5, 100.0]
+    # For input percentages [-100%, +100%], atempo_multiplier is [0.0, 2.0].
+    # So, we primarily need to ensure the lower bound of 0.5 for atempo.
+    if atempo_multiplier < 0.5:
+        atempo_multiplier = 0.5
+    # The upper bound of 100.0 for atempo is well above our calculated max of 2.0,
+    # so no explicit upper clamping is needed here if input percentage is constrained.
+    # However, for robustness, if the constraint on percentage_value was different:
+    # elif atempo_multiplier > 100.0:
+    #     atempo_multiplier = 100.0
+
+
+    audio_bytes_to_process: bytes | None = None
+
+    if isinstance(input_audio, str):
+        if os.path.exists(input_audio):
+            try:
+                with open(input_audio, "rb") as f:
+                    audio_bytes_to_process = f.read()
+            except Exception as e:
+                error_traceback = traceback.format_exc()
+                my_log.log2(f'my_tts:change_audio_speed_and_format:file_read_error: Error reading file {input_audio}: {e}\n\n{error_traceback}')
+                return None
+        else:
+            my_log.log2(f'my_tts:change_audio_speed_and_format:file_not_found: File not found: {input_audio}')
+            return None
+    elif isinstance(input_audio, bytes):
+        audio_bytes_to_process = input_audio
+    else:
+        my_log.log2(f'my_tts:change_audio_speed_and_format:invalid_input_type: Invalid input_audio type. Must be bytes or str path. Got {type(input_audio)}')
+        return None
+
+    if not audio_bytes_to_process:
+        my_log.log2(f'my_tts:change_audio_speed_and_format:no_audio_data: No audio data to process after input handling.')
+        return None
+
+
+    ffmpeg_command = [
+        'ffmpeg',
+        '-hide_banner',         # Suppress printing banner
+        '-loglevel', 'error',   # Only print errors
+        '-i', '-',              # Input from stdin
+        '-filter:a', f'atempo={atempo_multiplier}',
+        # '-ac', '1',             # Set audio channels to mono
+        '-c:a', 'libopus',      # Specify opus codec
+        '-b:a', '24k',          # Audio bitrate 24 kbit/s
+        '-f', 'opus',           # Output format opus
+        '-'                     # Output to stdout
+    ]
+
+    # my_log.log2(f"my_tts:change_audio_speed_and_format:ffmpeg_command: {' '.join(ffmpeg_command)}")
+
+    stderr_data = None
+
+    try:
+        process = subprocess.Popen(
+            ffmpeg_command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout_data, stderr_data = process.communicate(input=audio_bytes_to_process)
+        
+        if process.returncode != 0:
+            stderr_str = stderr_data.decode('utf-8', errors='ignore').strip()
+            my_log.log2(f'my_tts:change_audio_speed_and_format:ffmpeg_error: FFmpeg failed with return code {process.returncode}.\nCommand: {" ".join(ffmpeg_command)}\nStderr:\n{stderr_str if stderr_str else "No stderr output."}')
+            return None
+
+        return stdout_data
+
+    except FileNotFoundError:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f"my_tts:change_audio_speed_and_format:ffmpeg_not_found: ffmpeg not found. Please ensure ffmpeg is installed and in your system's PATH.\n\n{error_traceback}")
+        return None
+    except Exception as e:
+        error_traceback = traceback.format_exc()
+        if stderr_data:
+            stderr_str = stderr_data.decode('utf-8', errors='ignore').strip() if 'stderr_data' in locals() else "N/A"
+            my_log.log2(f"my_tts:change_audio_speed_and_format:generic_error: An unexpected error occurred during ffmpeg processing: {e}\nCommand: {' '.join(ffmpeg_command)}\nStderr:\n{stderr_str}\n\n{error_traceback}")
+        else:
+            my_log.log2(f"my_tts:change_audio_speed_and_format:generic_error: An unexpected error occurred during ffmpeg processing: {e}\nCommand: {' '.join(ffmpeg_command)}\n\n{error_traceback}")
+        return None
+
+
 if __name__ == "__main__":
     pass
 
-    with open('C:/Users/user/Downloads/1.mp3', 'wb') as f:
-        f.write(tts('привет как тебя зовут?', 'ru', '+0%', 'openai_nova'))
+    # with open('C:/Users/user/Downloads/1.mp3', 'wb') as f:
+    #     f.write(tts('привет как тебя зовут?', 'ru', '+0%', 'openai_nova'))
 
     # l = []
     # for k in VOICES:
@@ -372,3 +509,10 @@ if __name__ == "__main__":
     #         l.append(k)
     # print(l)
     # print(detect_lang_carefully('Однако здравствуйте, как ваше ничего сегодня? To continue effectively with.'))
+
+
+
+    # with open(r"C:\Users\user\Downloads\кусок радио-т подкаста несколько голосов.opus", 'wb') as f2:
+    #     data = change_audio_speed_and_format(r"C:\Users\user\Downloads\samples for ai\аудио\кусок радио-т подкаста несколько голосов.mp3", '-50%')
+    #     if data:
+    #         f2.write(data)

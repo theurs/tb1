@@ -364,7 +364,10 @@ def chat(
                 response = chat.send_message(query,)
             except Exception as error:
                 if '429 RESOURCE_EXHAUSTED' in str(error):
-                    my_log.log_gemini(f'my_gemini3:chat:2: {str(error)} {key}')
+                    my_log.log_gemini(f'my_gemini3:chat:2: {str(error)} {model} {key}')
+                    return ''
+                elif """503 UNAVAILABLE. {'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}""" in str(error):
+                    my_log.log_gemini(f'my_gemini3:chat:3: {str(error)} {model} {key}')
                     return ''
                 else:
                     raise error

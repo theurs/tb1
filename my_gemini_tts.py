@@ -6,7 +6,6 @@ import os
 
 from google import genai
 from pydub import AudioSegment
-from pydub.exceptions import CouldntEncodeError, CouldntDecodeError
 
 import my_gemini
 import my_log
@@ -30,7 +29,7 @@ POSSIBLE_MODELS_TTS = [
 ]
 
 
-def generate_tts_ogg_bytes(
+def generate_tts_wav_bytes(
     text_to_speak: str,
     voice_name: str = "Zephyr",
     model_id: str = "gemini-2.5-flash-preview-tts",
@@ -38,7 +37,7 @@ def generate_tts_ogg_bytes(
 ) -> bytes | None:
     """
     Генерирует аудио из текста с использованием указанного голоса и модели,
-    получает сырые PCM (WAV) байты от Gemini API и конвертирует их в OGG Vorbis байты.
+    получает сырые PCM (WAV) байты от Gemini API и возвращает байты.
 
     Args:
         text_to_speak: Текст для синтеза речи.
@@ -53,12 +52,14 @@ def generate_tts_ogg_bytes(
         lang: Язык текста. Не используется?
 
     Returns:
-        Байты аудио в формате OGG Vorbis или None в случае ошибки.
+        Байты аудио в формате Wav или None в случае ошибки.
     """
 
     text_to_speak = text_to_speak.strip()
     if not text_to_speak:
         return None
+
+    response = None
 
     for _ in range(3):
         key = my_gemini.get_next_key()
@@ -115,55 +116,25 @@ def generate_tts_ogg_bytes(
             return None
 
         pcm_audio_bytes = audio_part.inline_data.data
-        mime_type = audio_part.inline_data.mime_type
 
-    except (AttributeError, IndexError) as e:
+    except Exception as e:
         my_log.log_gemini(f"Ошибка при разборе ответа API: {e}")
         my_log.log_gemini(f"Полный ответ API для отладки: {response}")
         return None
 
-    # Проверка MIME-типа (API Gemini TTS должен возвращать audio/L16 PCM)
-    # и извлечение параметров для pydub
-    if 'audio/L16' in mime_type and 'codec=pcm' in mime_type and 'rate=' in mime_type:
-        try:
-            rate_str = mime_type.split('rate=')[1].split(';')[0]
-            frame_rate = int(rate_str)
-        except (IndexError, ValueError):
-            my_log.log_gemini(
-                f"Не удалось извлечь частоту дискретизации из MIME типа: {mime_type}. "
-                f"Используем значение по умолчанию 24000 Гц."
-            )
-            frame_rate = 24000
-
-        num_channels = 1  # TTS обычно моно
-        sample_width_bytes = 2  # L16 -> 16 бит = 2 байта
-
-        # Конвертация PCM в OGG с использованием pydub
-        try:
-            audio_segment = AudioSegment.from_raw(
-                io.BytesIO(pcm_audio_bytes),
-                sample_width=sample_width_bytes,
-                frame_rate=frame_rate,
-                channels=num_channels
-            )
-
-            ogg_stream = io.BytesIO()
-            # Исходный PCM (24kHz, 16bit, mono) = 384 kbps.
-            audio_segment.export(ogg_stream, format="ogg", codec="libopus", bitrate="24k")
-            ogg_bytes = ogg_stream.getvalue()
-            return ogg_bytes
-
-        except CouldntDecodeError as e:
-            my_log.log_gemini("my_gemini_tts: Ошибка pydub: Не удалось декодировать сырые PCM данные. Проверьте параметры. {e}")
-            return None
-        except CouldntEncodeError as e:
-            my_log.log_gemini("my_gemini_tts: Ошибка pydub: Не удалось закодировать в OGG. Убедитесь, что ffmpeg/libav установлен и доступен в PATH. {e}")
-            return None
-        except Exception as e:
-            my_log.log_gemini(f"Непредвиденная ошибка при конвертации аудио с pydub: {e}")
-            return None
+    if pcm_audio_bytes:
+        # save as .wave bytes using pydub mime_type='audio/L16;codec=pcm;rate=24000'
+        audio_segment = AudioSegment(
+            data=pcm_audio_bytes,
+            sample_width=2,    # Assuming 16-bit PCM
+            frame_rate=24000,  # Assuming a sample rate of 24kHz
+            channels=1         # Assuming mono audio
+        )
+        wav_io = io.BytesIO()
+        audio_segment.export(wav_io, format="wav")
+        wav_bytes = wav_io.getvalue()
+        return wav_bytes
     else:
-        my_log.log_gemini(f"my_gemini_tts: Получен неподдерживаемый MIME тип для конвертации в OGG: {mime_type}. Ожидался 'audio/L16;codec=pcm;rate=...'. Байты не будут конвертированы.")
         return None
 
 
@@ -171,21 +142,12 @@ if __name__ == "__main__":
     output_dir = r"c:\Users\user\Downloads"
 
     text_for_tts_1 = "Привет, мир! Это тестовое сообщение для синтеза речи."
-    ogg_audio_data_1 = generate_tts_ogg_bytes(
+    audio_data = generate_tts_wav_bytes(
         text_to_speak=text_for_tts_1,
         voice_name="Zephyr", # Явно указываем голос
     )
 
-    if ogg_audio_data_1:
-        output_ogg_filename_1 = os.path.join(output_dir, "gemini_tts_output_1.ogg")
-        with open(output_ogg_filename_1, "wb") as f:
-            f.write(ogg_audio_data_1)
-
-    text_for_tts_2 = """— Хочешь посидеть у меня на коленях и попросить что-нибудь на Рождество? — Нет, спасибо. Не хочу потом по венерологам бегать."""
-    # Используем значения по умолчанию для голоса и модели
-    ogg_audio_data_2 = generate_tts_ogg_bytes(text_to_speak=text_for_tts_2)
-
-    if ogg_audio_data_2:
-        output_ogg_filename_2 = os.path.join(output_dir, "gemini_tts_output_2_default_voice_model.ogg")
-        with open(output_ogg_filename_2, "wb") as f:
-            f.write(ogg_audio_data_2)
+    if audio_data:
+        output_ogg_filename = os.path.join(output_dir, "gemini_tts_output.wav")
+        with open('c:/Users/user/Downloads/1.wav', "wb") as f:
+            f.write(audio_data)

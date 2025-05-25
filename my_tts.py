@@ -305,7 +305,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
                 pass
         elif gender.startswith('gemini_') and len(text) < 8 * 1024:
             try:
-                result = my_gemini_tts.generate_tts_ogg_bytes(text, lang = lang, voice_name = gender[7:])
+                result = my_gemini_tts.generate_tts_wav_bytes(text, lang = lang, voice_name = gender[7:])
                 if result:
                     return change_speed(result, rate)
             except Exception as e:
@@ -456,7 +456,7 @@ def change_audio_speed_and_format(input_audio: bytes | str, speed_factor_percent
         '-loglevel', 'error',   # Only print errors
         '-i', '-',              # Input from stdin
         '-filter:a', f'atempo={atempo_multiplier}',
-        # '-ac', '1',             # Set audio channels to mono
+        '-ac', '2',             # Set audio channels to mono
         '-c:a', 'libopus',      # Specify opus codec
         '-b:a', '24k',          # Audio bitrate 24 kbit/s
         '-f', 'opus',           # Output format opus

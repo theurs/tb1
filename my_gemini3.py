@@ -369,6 +369,26 @@ def chat(
                 elif """503 UNAVAILABLE. {'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}""" in str(error):
                     my_log.log_gemini(f'my_gemini3:chat:3: {str(error)} {model} {key}')
                     return ''
+                elif """""" in str(error):
+                    my_log.log_gemini(f'my_gemini3:chat:4: {str(error)} {model} {key}')
+                    new_mem = []
+                    i = 0
+                    while i < len(mem):
+                        # Проверяем, нужно ли удалить текущий элемент И следующий за ним
+                        # Условие: текущий элемент пустой И следующий элемент существует
+                        is_empty_current = hasattr(mem[i], 'parts') and mem[i].parts and hasattr(mem[i].parts[0], 'text') and not mem[i].parts[0].text
+
+                        if is_empty_current and i + 1 < len(mem):
+                            # Если текущий пустой И есть следующий, пропускаем оба
+                            i += 2
+                        else:
+                            # Иначе, добавляем текущий в новый список и идем к следующему
+                            new_mem.append(mem[i])
+                            i += 1
+
+                    # my_log.log_gemini(f'my_gemini:chat2:2:3__: mem: {mem}\n\nnew_mem: {new_mem}')
+                    mem = new_mem # Переприсваиваем
+
                 else:
                     raise error
             resp = response.text or ''

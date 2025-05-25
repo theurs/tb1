@@ -244,7 +244,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     Args:
         text (str): The input text to convert to speech.
         voice (str, optional): The voice to use for the speech. Defaults to 'ru'.
-        rate (str, optional): The speech rate. Defaults to '+0%'.
+        rate (str, optional): The speech rate. Defaults to '+0%'. (+-100%)
         gender (str, optional): The gender of the voice. Defaults to 'female'.
 
     Returns:

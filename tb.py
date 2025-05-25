@@ -5339,7 +5339,7 @@ def tts(message: telebot.types.Message, caption = None):
                                 disable_web_page_preview=True)
                 return
 
-        pattern = r'/tts\s+((?P<lang>' + '|'.join(my_init.supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,2}%\s+))?\s*(?P<text>.+)'
+        pattern = r'/tts\s+((?P<lang>' + '|'.join(my_init.supported_langs_tts) + r')\s+)?\s*(?P<rate>([+-]\d{1,3}%\s+))?\s*(?P<text>.+)'
         match = re.match(pattern, message.text, re.DOTALL)
         if match:
             llang = match.group("lang") or ''

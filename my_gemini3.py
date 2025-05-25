@@ -392,7 +392,8 @@ def chat(
 
     except Exception as error:
         traceback_error = traceback.format_exc()
-        if """500 INTERNAL. {'error': {'code': 500, 'message': 'An internal error has occurred. Please retry or report in https://developers.generativeai.google/guide/troubleshooting', 'status': 'INTERNAL'}}""" in str(error):
+        if """500 INTERNAL. {'error': {'code': 500, 'message': 'An internal error has occurred. Please retry or report in https://developers.generativeai.google/guide/troubleshooting', 'status': 'INTERNAL'}}""" in str(error) \
+           or """503 UNAVAILABLE. {'error': {'code': 503, 'message': 'The service is currently unavailable.', 'status': 'UNAVAILABLE'}}""" in str(error):
             my_log.log_gemini(f'my_gemini3:chat:unknown_error:1: {error} {model}')
         else:
             my_log.log_gemini(f'my_gemini3:chat:unknown_error:2: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}')

@@ -122,6 +122,13 @@ def generate_tts_wav_bytes(
         my_log.log_gemini(f"Полный ответ API для отладки: {response}")
         return None
 
+    # Добираемся до mime_type
+    if response.candidates and response.candidates[0].content.parts and \
+       response.candidates[0].content.parts[0].inline_data:
+        actual_mime_type = response.candidates[0].content.parts[0].inline_data.mime_type
+        if actual_mime_type != "audio/L16;codec=pcm;rate=24000":
+            my_log.log_gemini(f"my_gemini_tts: Ошибка API: Ожидался mime_type 'audio/L16;codec=pcm;rate=24000', получен '{actual_mime_type}'.")
+
     if pcm_audio_bytes:
         # save as .wave bytes using pydub mime_type='audio/L16;codec=pcm;rate=24000'
         audio_segment = AudioSegment(

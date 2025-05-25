@@ -21,7 +21,7 @@ def concatenate_wav_with_pydub_from_dict(wav_bytes_dict: dict[int, bytes]) -> by
                         and values are wav byte strings.
 
     Returns:
-        The concatenated OGG data as bytes, or None if an error occurred.
+        The concatenated .wav data as bytes, or None if an error occurred.
     """
     combined = pydub.AudioSegment.empty()
     for i in sorted(wav_bytes_dict.keys()):  # Iterate through the dictionary in key order
@@ -36,11 +36,10 @@ def concatenate_wav_with_pydub_from_dict(wav_bytes_dict: dict[int, bytes]) -> by
             return None
 
     try:
-        ogg_stream = io.BytesIO()
-        combined.export(ogg_stream, format="ogg", codec="libopus")  # Explicitly specify libopus
-        return ogg_stream.getvalue()
+        stream = io.BytesIO()
+        combined.export(stream, format="wav")
+        return stream.getvalue()
     except Exception as e:
-
         return None
 
 
@@ -144,7 +143,7 @@ def openai_get_audio_bytes_(text: str, voice: str, prompt: str, chunks: dict, in
 
 
 def openai_get_audio_bytes(text: str, voice: str = "ash", prompt: str = '') -> bytes | None:
-    """Generates audio from a URL with given text and voice, and returns it as OGG bytes using pydub.
+    """Generates audio from a URL with given text and voice, and returns it as WAV bytes using pydub.
 
     Args:
         text: The text to be converted to speech.
@@ -154,7 +153,7 @@ def openai_get_audio_bytes(text: str, voice: str = "ash", prompt: str = '') -> b
                 Connoisseur, Calm, Emo Teenager, Serene, Patient Teacher or any other text.
 
     Returns:
-        The audio data as bytes in OGG format, or None if an error occurred.
+        The audio data as bytes in WAV format, or None if an error occurred.
     """
     chunks = {}
 
@@ -186,13 +185,13 @@ if __name__ == "__main__":
 Теперь не нужно. Дотянем так. Больной - и осуждать не будут. Да и не за что будет осуждать. Последние месяцы было так редко... Наверное, это тоже болезнь. А я думал: почему? Любовь, что ли, прошла? Уж слишком много лет. Надежно.
 Каждый - в одиночку."""
 
-    ogg_bytes = openai_get_audio_bytes(text=text)
+    wav_bytes = openai_get_audio_bytes(text=text)
 
-    if ogg_bytes:
-        print("Successfully retrieved OGG bytes.")
-        # You can now work with the ogg_bytes (e.g., save to a file, play, etc.)
+    if wav_bytes:
+        print("Successfully retrieved WAV bytes.")
+        # You can now work with the wav_bytes (e.g., save to a file, play, etc.)
         # Example:
-        with open(r"C:\Users\user\Downloads\output.ogg", "wb") as f:
-            f.write(ogg_bytes)
+        with open(r"C:\Users\user\Downloads\output.wav", "wb") as f:
+            f.write(wav_bytes)
     else:
-        print("Failed to retrieve OGG bytes.")
+        print("Failed to retrieve WAV bytes.")

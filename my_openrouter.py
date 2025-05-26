@@ -17,6 +17,10 @@ import my_db
 import my_log
 
 
+# модели не поддерживающие системный промпт
+SYSTEMLESS_MODELS = ('google/gemma-3n-e4b-it:free', )
+
+
 # keys {user_id(str):key(str)}
 KEYS = SqliteDict('db/open_router_keys.db', autocommit=True)
 # {user_id(str):list(model, temperature, max_tokens, maxhistlines, maxhistchars)}
@@ -125,7 +129,7 @@ def ai(prompt: str = '',
         temperature = temperature / 2
 
     # некоторые модели не поддерживают system
-    if model in ('google/gemma-3n-e4b-it:free', ):
+    if model in SYSTEMLESS_MODELS:
         system = ''
 
     mem_ = mem or []
@@ -580,6 +584,10 @@ def img2txt(
 
     if 'llama' in model_ and temperature > 0:
         temperature = temperature / 2
+
+    # некоторые модели не поддерживают system
+    if model in SYSTEMLESS_MODELS:
+        system = ''
 
     URL = my_db.get_user_property(chat_id, 'base_api_url') or BASE_URL
 

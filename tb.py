@@ -1215,7 +1215,8 @@ def log_message_add(_type: str,
         with LOG_GROUP_MESSAGES_LOCK:
             current_time = time.perf_counter_ns()
             value = (_type, _text, _chat_full_id, _chat_name, _m_ids, _message_chat_id, _message_message_id)
-            LOG_GROUP_MESSAGES[current_time] = value
+            if value not in LOG_GROUP_MESSAGES.values():
+                LOG_GROUP_MESSAGES[current_time] = value
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:log_message_add:{unexpected_error}\n\n{traceback_error}')

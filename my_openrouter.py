@@ -94,7 +94,8 @@ def ai(prompt: str = '',
        model = '',
        temperature: float = 1,
        max_tokens: int = 8000,
-       timeout: int = DEFAULT_TIMEOUT) -> str:
+       timeout: int = DEFAULT_TIMEOUT
+       ) -> str:
 
     if not prompt and not mem:
         return 0, ''
@@ -122,6 +123,10 @@ def ai(prompt: str = '',
 
     if 'llama' in model.lower() and temperature > 0:
         temperature = temperature / 2
+
+    # некоторые модели не поддерживают system
+    if model in ('google/gemma-3n-e4b-it:free', ):
+        system = ''
 
     mem_ = mem or []
     if system:

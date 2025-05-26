@@ -512,10 +512,6 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_github.update_mem(query, resp, chat_id_full)
         elif 'cohere' in chat_mode:
             my_cohere.update_mem(query, resp, chat_id_full)
-        elif 'o3_mini_ddg' in chat_mode:
-            my_ddg.update_mem(query, resp, chat_id_full)
-        elif 'gpt-4o-mini-ddg' in chat_mode:
-            my_ddg.update_mem(query, resp, chat_id_full)
         else:
             raise Exception(f'Unknown chat mode: {chat_mode}')
     except Exception as unexpected_error:
@@ -1942,18 +1938,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Gemini 2.5 Pro exp'
             button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
 
-            if chat_mode == 'gpt-4o-mini-ddg':
-                msg = '✅ GPT 4o mini'
-            else:
-                msg = 'GPT 4o mini'
-            button_gpt4o_mini = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o-mini-ddg')
-
-            if chat_mode == 'o3_mini_ddg':
-                msg = '✅ GPT o3 mini'
-            else:
-                msg = 'GPT o3 mini'
-            button_o3_mini_ddg = telebot.types.InlineKeyboardButton(msg, callback_data='select_o3_mini_ddg')
-
             if chat_mode == 'gemini-exp':
                 msg = '✅ Gemini exp'
             else:
@@ -2035,8 +2019,6 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             markup.row(button_gemini_flash25, button_gemini_flash20)
             markup.row(button_mistral, button_llama4_maverick)
-            if hasattr(cfg, 'DDG_ENABLED') and cfg.DDG_ENABLED:
-                markup.row(button_gpt4o_mini, button_o3_mini_ddg)
             markup.row(button_gpt_4o, button_gpt_41, button_openrouter)
             markup.row(button_cohere, button_deepseek_v3)
 
@@ -2465,10 +2447,6 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_v3')
         elif call.data == 'select_cohere':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'cohere')
-        elif call.data == 'select_o3_mini_ddg':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'o3_mini_ddg')
-        elif call.data == 'select_gpt-4o-mini-ddg':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o-mini-ddg')
         elif call.data == 'select_gemini_flash':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
         elif call.data == 'select_gemini25_flash':
@@ -4754,12 +4732,6 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_github.force(chat_id_full, text)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             my_cohere.force(chat_id_full, text)
-        elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            bot_reply_tr(message, 'DuckDuckGo GPT o3 mini do not support /force command')
-            return
-        elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            bot_reply_tr(message, 'DuckDuckGo GPT 4o mini do not support /force command')
-            return
         else:
             bot_reply_tr(message, 'History WAS NOT changed.')
             return
@@ -4812,10 +4784,6 @@ def undo_cmd(message: telebot.types.Message, show_message: bool = True):
             my_github.undo(chat_id_full)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             my_cohere.undo(chat_id_full)
-        elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            bot_reply_tr(message, 'DuckDuckGo GPT o3 mini do not support /undo command')
-        elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            bot_reply_tr(message, 'DuckDuckGo GPT 4o mini do not support /undo command')
         else:
             bot_reply_tr(message, 'History WAS NOT undone.')
 
@@ -4851,10 +4819,6 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
                 my_github.reset(chat_id_full)
             elif chat_mode_ == 'cohere':
                 my_cohere.reset(chat_id_full)
-            elif 'o3_mini_ddg' in chat_mode_:
-                my_ddg.reset(chat_id_full)
-            elif 'gpt-4o-mini-ddg' in chat_mode_:
-                my_ddg.reset(chat_id_full)
             else:
                 if say and message: # Отправлять сообщение только если пользователь инициировал и say=True
                     bot_reply_tr(message, 'History WAS NOT cleared.')
@@ -4957,10 +4921,6 @@ def save_history(message: telebot.types.Message):
             prompt = my_github.get_mem_as_string(chat_id_full, md = True) or ''
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
-        if 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            prompt = my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
-        if 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            prompt += my_ddg.get_mem_as_string(chat_id_full, md = True) or ''
 
         if prompt:
             m = send_document(
@@ -5038,12 +4998,6 @@ def send_debug_history(message: telebot.types.Message):
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
             prompt = 'Command A\n\n'
             prompt += my_cohere.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif 'o3_mini_ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            prompt = tr('DuckDuckGo GPT o3 mini do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
-            prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif 'gpt-4o-mini-ddg' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            prompt = tr('DuckDuckGo GPT 4o mini do not support memory manipulation, this memory is not really used, its just for debug', lang) + '\n\n'
-            prompt += my_ddg.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         else:
             my_log.log2(f'tb:mem: unknown mode {my_db.get_user_property(chat_id_full, "chat_mode")}')
             return
@@ -7105,9 +7059,6 @@ def id_cmd_handler(message: telebot.types.Message):
             'openrouter': 'openrouter.ai',
             'llama4_maverick': my_openrouter_free.DEFAULT_MODEL,
             'bothub': 'bothub.chat',
-            'o3_mini_ddg': 'GPT o3 mini',
-            'gpt35': 'GPT 3.5',
-            'gpt-4o-mini-ddg': 'GPT 4o mini',
         }
         if user_model == 'openrouter':
             if 'bothub' in (my_db.get_user_property(chat_id_full, 'base_api_url') or ''):
@@ -9805,99 +9756,6 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log2(f'tb:do_task:cohere {error3}\n{error_traceback}')
                         return
 
-
-                # если активирован режим общения с o3_mini_ddg (duckduckgo)
-                if chat_mode_ == 'o3_mini_ddg':
-                    if len(msg) > my_ddg.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для GPT o3 mini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST}')
-                        return
-
-                    with ShowAction(message, action):
-                        try:
-                            answer = my_ddg.chat(helped_query, chat_id_full, model='o3-mini').strip()
-                            if not answer:
-                                reset(message)
-                                time.sleep(2)
-                                answer = my_ddg.chat(helped_query, chat_id_full, model='o3-mini').strip()
-                                if not answer:
-                                    answer = 'GPT o3 mini ' + tr('did not answered, try to /reset and start again', lang)
-                            WHO_ANSWERED[chat_id_full] = 'o3_mini_ddg'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
-                                return
-
-                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
-
-                            my_log.log_echo(message, f'[o3_mini_ddg] {answer}')
-                            try:
-                                if command_in_answer(answer, message):
-                                    return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:o3_mini_ddg {error3}\n{error_traceback}')
-                        return
-
-
-                # если активирован режим общения с gpt-4o-mini-ddg (duckduckgo)
-                if chat_mode_ == 'gpt-4o-mini-ddg':
-                    if len(msg) > my_ddg.MAX_REQUEST_4O_MINI:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для GPT 4o mini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_ddg.MAX_REQUEST_4O_MINI}')
-                        return
-
-                    with ShowAction(message, action):
-                        try:
-                            # answer = my_ddg.chat(message.text, chat_id_full)
-                            answer = my_ddg.chat(helped_query, chat_id_full, model = 'gpt-4o-mini').strip()
-                            if not answer:
-                                reset(message)
-                                time.sleep(2)
-                                answer = my_ddg.chat(helped_query, chat_id_full, model = 'gpt-4o-mini').strip()
-                                if not answer:
-                                    answer = 'GPT 4o mini ' + tr('did not answered, try to /reset and start again', lang)
-
-                            WHO_ANSWERED[chat_id_full] = 'gpt-4o-mini-ddg'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
-                                return
-
-                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                                answer_ = utils.bot_markdown_to_html(answer)
-                                DEBUG_MD_TO_HTML[answer_] = answer
-                                answer = answer_
-
-                            my_log.log_echo(message, f'[gpt-4o-mini-ddg] {answer}')
-                            try:
-                                if command_in_answer(answer, message):
-                                    return
-                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                            except Exception as error:
-                                print(f'tb:do_task: {error}')
-                                my_log.log2(f'tb:do_task: {error}')
-                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
-                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                        except Exception as error3:
-                            error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:gpt-4o-mini-ddg {error3}\n{error_traceback}')
-                        return
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:do_task: {unknown}\n{traceback_error}')

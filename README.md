@@ -197,8 +197,7 @@ default_bot_name = 'бот'
 
 # какой бот отвечает по умолчанию
 # 'gemini', 'gemini25_flash', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15',
-# 'openrouter', 'o3_mini_ddg', 'gpt-4o-mini-ddg',
-# 'mistral', 'cohere', 'gpt-4o', 'deepseek_r1',
+# 'openrouter', 'mistral', 'cohere', 'gpt-4o', 'deepseek_r1',
 # 'deepseek_v3', 'llama4_maverick', 'gpt_41', 'gpt_41_mini'
 
 chat_mode_default = 'gemini'
@@ -361,12 +360,6 @@ OPEN_ROUTER_FREE_KEYS = [
 #    'dir c:\\'
 #]
 
-
-# DDG_ENABLED = False
-# proxy for DuckDuckGo Chat
-#DDG_PROXY = [
-#    'socks5://user:pass@host:port',
-#]
 
 
 # https://www.assemblyai.com/ speech-to-text free 100hours. slow in free account?

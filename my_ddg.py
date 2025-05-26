@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#pip install -U duckduckgo_search duckai
+#pip install duckduckgo_search==7.5.5
 
 
 import io
@@ -12,7 +12,6 @@ from PIL import Image
 
 import langcodes
 from duckduckgo_search import DDGS
-from duckai import DuckAI
 
 import cfg
 import my_db
@@ -122,9 +121,9 @@ def reset(chat_id: str):
 def chat_new_connection():
     '''Connect with proxy and return object'''
     if hasattr(cfg, 'DDG_PROXY'):
-        return DuckAI(proxy=random.choice(cfg.DDG_PROXY), timeout=30)
+        return DDGS(proxy=random.choice(cfg.DDG_PROXY), timeout=30)
     else:
-        return DuckAI(timeout=30)
+        return DDGS(timeout=30)
 
 
 def chat(query: str,
@@ -423,6 +422,6 @@ if __name__ == '__main__':
     # my_db.init(backup=False)
     pass
     q = 'hi'
-    print(chat(q, 'test', model = 'o3-mini'))
+    print(chat(q, 'test', model = 'gpt-4o-mini'))
     chat_cli()
     # my_db.close()

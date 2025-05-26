@@ -2,16 +2,13 @@
 
 
 import cachetools.func
-import json
 import natsort
 import os
 import random
 import subprocess
 import shutil
 import tempfile
-import threading
-import traceback
-from typing import List, Tuple
+from typing import List
 
 import my_log
 import utils
@@ -20,7 +17,6 @@ import cfg
 
 download_audio = utils.download_audio
 valid_youtube_url = utils.valid_youtube_url
-convert_to_mp3 = utils.convert_to_mp3
 get_title_and_poster = utils.get_title_and_poster
 LOCK_TRANSCODE = utils.LOCK_TRANSCODE
 

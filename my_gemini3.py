@@ -327,6 +327,7 @@ def chat(
         start_time = time.monotonic() # Начало отсчета времени
 
         for _ in range(3):
+            response = None
             elapsed_time = time.monotonic() - start_time
             if elapsed_time >= timeout: # Если общее время истекло
                 my_log.log_gemini(f'my_gemini3:chat:timeout_exceeded - overall timeout of {timeout}s reached.')
@@ -391,7 +392,10 @@ def chat(
 
                 else:
                     raise error
-            resp = response.text or ''
+            if response:
+                resp = response.text or ''
+            else:
+                resp = ''
             if not resp:
                 if "finish_reason=<FinishReason.STOP: 'STOP'>" in str(response): # модель ответила молчанием (по просьбе юзера)
                     resp = '...'

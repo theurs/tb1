@@ -11,7 +11,7 @@ cryptocompare
 deepgram_captions
 deepgram-sdk
 
-duckduckgo_search[lxml]
+duckduckgo_search==7.5.5
 edge_tts
 fastapi
 ftfy

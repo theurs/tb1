@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#pip install -U duckduckgo_search[lxml]
+#pip install duckduckgo_search==7.5.5
 
 
 import io
@@ -421,7 +421,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
 if __name__ == '__main__':
     # my_db.init(backup=False)
     pass
-    # q = 'hi ' * 2000
-    # print(chat(q, 'test', model = 'gpt-4o-mini'))
+    q = 'hi'
+    print(chat(q, 'test', model = 'gpt-4o-mini'))
     chat_cli()
     # my_db.close()

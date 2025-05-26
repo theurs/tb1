@@ -398,8 +398,9 @@ def chat(
                 resp = ''
             if not resp:
                 if "finish_reason=<FinishReason.STOP: 'STOP'>" in str(response): # модель ответила молчанием (по просьбе юзера)
-                    resp = '...'
-                    break
+                    # resp = '...'
+                    # break
+                    return ''
                 time.sleep(2)
             else:
                 break

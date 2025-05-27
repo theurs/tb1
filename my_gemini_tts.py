@@ -145,16 +145,63 @@ def generate_tts_wav_bytes(
         return None
 
 
+def tts_chunked_text(chunks: list[str], output_dir: str, voice_name: str = "Iapetus") -> None:
+    '''
+    Синтезирует речь для каждого чанка текста и сохраняет результаты в отдельные
+    wav-файлы в указанной папке. Пропускает генерацию, если файл уже существует
+    и имеет ненулевой размер.
+
+    Args:
+        chunks: Список текстовых чанков для синтеза.
+        output_dir: Путь к папке, куда будут сохраняться файлы (например, "c:/output/audio/").
+        voice_name: Имя голоса Gemini для синтеза. По умолчанию "Iapetus".
+    '''
+
+    for i, chunk in enumerate(chunks):
+        # Файлы будут названы 0001.wav, 0002.wav и т.д.
+        file_name = os.path.join(output_dir, f"{i+1:04d}.wav")
+
+        if os.path.exists(file_name) and os.path.getsize(file_name) > 0:
+            # my_log.log_gemini(f"Файл для чанка {i+1} уже существует и не пуст '{file_name}', пропуск генерации.")
+            continue # Пропустить текущий чанк, если файл уже есть и имеет ненулевой размер
+
+        # my_log.log_gemini(f"Обработка чанка {i+1} и сохранение в {file_name}")
+
+        wav_bytes = generate_tts_wav_bytes(text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца\n\n{chunk}', voice_name=voice_name)
+
+        if wav_bytes:
+            try:
+                with open(file_name, "wb") as f:
+                    f.write(wav_bytes)
+                # my_log.log_gemini(f"Чанк {i+1} успешно сохранен: {file_name}")
+            except IOError as e:
+                my_log.log_gemini(f"Ошибка при записи файла '{file_name}': {e}")
+        else:
+            my_log.log_gemini(f"Не удалось сгенерировать аудио для чанка {i+1}: '{chunk[:50]}...'")
+
+
 if __name__ == "__main__":
+    my_gemini.my_db.init(backup=False)
+    my_gemini.load_users_keys()
+
     output_dir = r"c:\Users\user\Downloads"
 
-    text_for_tts_1 = "Привет, мир! Это тестовое сообщение для синтеза речи."
-    audio_data = generate_tts_wav_bytes(
-        text_to_speak=text_for_tts_1,
-        voice_name="Zephyr", # Явно указываем голос
-    )
+    # text_for_tts_1 = "Привет, мир! Это тестовое сообщение для синтеза речи."
+    # audio_data = generate_tts_wav_bytes(
+    #     text_to_speak=text_for_tts_1,
+    #     voice_name="Zephyr", # Явно указываем голос
+    # )
 
-    if audio_data:
-        output_ogg_filename = os.path.join(output_dir, "gemini_tts_output.wav")
-        with open('c:/Users/user/Downloads/1.wav', "wb") as f:
-            f.write(audio_data)
+    # if audio_data:
+    #     output_ogg_filename = os.path.join(output_dir, "gemini_tts_output.wav")
+    #     with open('c:/Users/user/Downloads/1.wav', "wb") as f:
+    #         f.write(audio_data)
+
+
+    input_chunk_file = r'C:\Users\user\Downloads\samples for ai\Алиса в изумрудном городе (большая книга).txt.chunks.pkl'
+    
+    import pickle
+    with open(input_chunk_file, 'rb') as f:
+        chunks = pickle.load(f)
+
+    tts_chunked_text(chunks=chunks, output_dir=output_dir)

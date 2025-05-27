@@ -166,6 +166,15 @@ def get_images(query: str, max_results: int = 16) -> list:
     return restored_images
 
 
+def reset(*args, **kwargs):
+    """
+    Заглушка.
+    Эта функция принимает любое количество позиционных и именованных аргументов
+    и ничего не делает.
+    """
+    pass
+
+
 if __name__ == '__main__':
     pass
 

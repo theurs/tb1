@@ -493,7 +493,7 @@ def bot_markdown_to_html(text: str) -> str:
 
     # Замена ~~текст~~ на <s>текст</s>
     # text = re.sub(r"(?<!\w)~~(?!\s)([^\n*]+?)(?<!\s)~~(?!\w)", r"<s>\1</s>", text)
-    # text = re.sub(r"(?<!\w)~~(?!\s)([^\n*]+?)(?<!\s)~~(?!\w)", r"<del>\1</del>", text)
+    text = re.sub(r"(?<!\w)~~(?!\s)([^\n*]+?)(?<!\s)~~(?!\w)", r"<del>\1</del>", text)
 
     # Замена ||текст|| на <tg-spoiler>текст</tg-spoiler>
     text = re.sub(r"(?<!\w)\|\|(?!\s)([^\n*]+?)(?<!\s)\|\|(?!\w)", r"<tg-spoiler>\1</tg-spoiler>", text)

@@ -225,6 +225,7 @@ ADMIN_HELP = '''
 /style2 - change style for specific chat
 /drop_subscription - drop user subscription
 /memo_admin - manage user`s memos
+/keys - add keys for specific user
 
 Usage: /<command> <user_id>
 

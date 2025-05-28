@@ -3977,6 +3977,13 @@ def users_keys_for_gemini(message: telebot.types.Message):
 
         args = message.text.split(maxsplit=1)
         if len(args) > 1:
+            args[1] = args[1].strip()
+
+            # is admin?
+            match = re.match(r'^\d{4,15}', args[1])
+            if match:
+                found_number_str = match.group(0)
+                chat_id_full = f'[{found_number_str}] [0]'
 
             # gemini keys
             keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]

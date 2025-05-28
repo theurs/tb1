@@ -1,3 +1,5 @@
+# https://github.com/google-gemini/cookbook/blob/main/quickstarts/Get_started_TTS.ipynb
+
 import io
 import os
 import time
@@ -49,8 +51,12 @@ def generate_tts_wav_bytes(
     if not text_to_speak:
         return None
 
+    # что то он перестал нормально работать, пока что будет только мелкие озвучивать
+    if len(text_to_speak) > 2000:
+        return None
+
     # Если текст слишком длинный, разбиваем на чанки и используем параллельную обработку
-    if len(text_to_speak) > 2500: # Используем 2500, чтобы соответствовать типичному размеру чанка split_text
+    if len(text_to_speak) > 2500:
         chunks = utils.split_text(text_to_speak, 2500)
         return tts_chunked_text(chunks=chunks, voice_name=voice_name, model=model_id, lang=lang)
 
@@ -164,7 +170,8 @@ def _process_single_chunk(
     # Здесь добавляем к каждому, т.к. каждый чанк обрабатывается независимо.
     # Если инструкция должна быть только для первого, то это должна быть отдельная логика.
     # Для целей параллелизации добавляем к каждому фрагменту.
-    text_with_instruction = f'читай фрагмент книги на языке [{lang}] ровным спокойным голосом профессионального чтеца\n\n{chunk_text}'
+    # text_with_instruction = f'читай фрагмент книги на языке [{lang}] ровным спокойным голосом профессионального чтеца\n\n{chunk_text}'
+    text_with_instruction = chunk_text
 
     wav_bytes = generate_tts_wav_bytes(
         text_to_speak=text_with_instruction,

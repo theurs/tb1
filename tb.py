@@ -8729,7 +8729,6 @@ def do_task(message, custom_prompt: str = ''):
         if custom_prompt:
             message.text = custom_prompt
 
-
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'
         supch = my_db.get_user_property(chat_id_full, 'superchat') or 0

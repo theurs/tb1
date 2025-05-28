@@ -303,7 +303,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
                     return change_speed(result, rate)
             except Exception as e:
                 pass
-        elif gender.startswith('gemini_') and len(text) < 8 * 1024:
+        elif gender.startswith('gemini_') and len(text) < 30 * 1024:
             try:
                 result = my_gemini_tts.generate_tts_wav_bytes(text, lang = lang, voice_name = gender[7:])
                 if result:

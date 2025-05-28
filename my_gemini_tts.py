@@ -1,14 +1,13 @@
-# https://github.com/google-gemini/cookbook/blob/main/quickstarts/Get_started_TTS.ipynb
-
-
 import io
 import os
+import time
 
 from google import genai
 from pydub import AudioSegment
 
 import my_gemini
 import my_log
+import utils
 
 
 # --- Список известных голосов (может меняться, проверяйте документацию Gemini) ---
@@ -21,8 +20,6 @@ POSSIBLE_VOICES = [
 ]
 
 # --- Список известных моделей TTS (может меняться, проверяйте документацию Gemini) ---
-# Модели, которые могут работать с client.models.generate_content для TTS.
-# Актуальность следует проверять в документации Google GenAI.
 POSSIBLE_MODELS_TTS = [
     "gemini-2.5-flash-preview-tts",
     "gemini-2.5-pro-preview-tts"
@@ -34,46 +31,45 @@ def generate_tts_wav_bytes(
     voice_name: str = "Zephyr",
     model_id: str = "gemini-2.5-flash-preview-tts",
     lang: str = '',
+    raw: bool = False,
 ) -> bytes | None:
     """
     Генерирует аудио из текста с использованием указанного голоса и модели,
-    получает сырые PCM (WAV) байты от Gemini API и возвращает байты.
-
+    получает сырые PCM (WAV) байты от Gemini API и возвращает WAV байты или сырые байты.
+    Для длинных текстов использует tts_chunked_text для автоматического разбиения и параллелизации.
+    
     Args:
-        text_to_speak: Текст для синтеза речи.
-        voice_name: Имя предустановленного голоса Gemini.
-            По умолчанию: "Sadaltager".
-            Полный список доступных голосов см. в константе POSSIBLE_VOICES
-            или актуальной документации Gemini.
-        model_id: Идентификатор модели Gemini для TTS.
-            По умолчанию: "gemini-1.5-flash-preview-tts".
-            Список возможных моделей см. в константе POSSIBLE_MODELS_TTS
-            или актуальной документации Gemini.
-        lang: Язык текста. Не используется?
-
-    Returns:
-        Байты аудио в формате Wav или None в случае ошибки.
+        text_to_speak: Текст, который нужно преобразовать в аудио.
+        voice_name: Имя голоса, который нужно использовать (по умолчанию "Zephyr").
+        model_id: Идентификатор модели, которая будет использоваться (по умолчанию "gemini-2.5-flash-preview-tts").
+        lang: Язык текста. По умолчанию ''.
+        raw: Флаг, указывающий, нужно ли возвращать сырые байты (по умолчанию False).
     """
-
     text_to_speak = text_to_speak.strip()
     if not text_to_speak:
         return None
 
+    # Если текст слишком длинный, разбиваем на чанки и используем параллельную обработку
+    if len(text_to_speak) > 2500: # Используем 2500, чтобы соответствовать типичному размеру чанка split_text
+        chunks = utils.split_text(text_to_speak, 2500)
+        return tts_chunked_text(chunks=chunks, voice_name=voice_name, model=model_id, lang=lang)
+
     response = None
 
+    # Цикл для повторных попыток вызова API
     for _ in range(3):
         key = my_gemini.get_next_key()
         if not key:
-            my_log.log_gemini("my_gemini_tts: my_gemini_tts: API ключ Gemini не найден")
+            my_log.log_gemini("my_gemini_tts:generate_tts_wav_bytes:1: API ключ Gemini не найден")
             return None
 
         client = genai.Client(api_key=key)
 
         if voice_name not in POSSIBLE_VOICES:
-            my_log.log_gemini(f"my_gemini_tts: Предупреждение: Указанный голос '{voice_name}' отсутствует в списке известных голосов. По умолчанию используется 'Zephyr'")
+            my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:2: Предупреждение: Указанный голос '{voice_name}' отсутствует в списке известных голосов. По умолчанию используется 'Zephyr'")
             voice_name = "Zephyr"
         if model_id not in POSSIBLE_MODELS_TTS:
-            my_log.log_gemini(f"my_gemini_tts: Предупреждение: Указанная модель '{model_id}' отсутствует в списке известных моделей. По умолчанию используется 'gemini-2.5-flash-preview-tts'")
+            my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:3: Предупреждение: Указанная модель '{model_id}' отсутствует в списке известных моделей. По умолчанию используется 'gemini-2.5-flash-preview-tts'")
             model_id = "gemini-2.5-flash-preview-tts"
 
         try:
@@ -91,35 +87,38 @@ def generate_tts_wav_bytes(
                     }
                 },
             )
-            break
+            break # Успешный вызов, выходим из цикла повторных попыток
         except Exception as e:
-            my_log.log_gemini(f"my_gemini_tts: Ошибка при вызове API Gemini TTS: {e}")
-            return None
+            my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:4: Ошибка при вызове API Gemini TTS: {e}")
+            time.sleep(1) # Небольшая задержка перед следующей попыткой
+
+    if response is None: # Если все попытки не увенчались успехом
+        return None
 
     # Извлечение сырых PCM байтов и MIME-типа
     try:
         if not response.candidates:
-            my_log.log_gemini("my_gemini_tts: Ошибка API: В ответе нет кандидатов.")
+            my_log.log_gemini("my_gemini_tts:generate_tts_wav_bytes:5: Ошибка API: В ответе нет кандидатов.")
             return None
         candidate = response.candidates[0]
         if not candidate.content or not candidate.content.parts:
-            my_log.log_gemini("my_gemini_tts: Ошибка API: В кандидате ответа отсутствует 'content' или 'parts'.")
+            my_log.log_gemini("my_gemini_tts:generate_tts_wav_bytes:6: Ошибка API: В кандидате ответа отсутствует 'content' или 'parts'.")
             return None
 
         audio_part = candidate.content.parts[0]
 
         if not audio_part.inline_data:
-            my_log.log_gemini("my_gemini_tts: Ошибка API: В части ответа отсутствует 'inline_data'.")
+            my_log.log_gemini("my_gemini_tts:generate_tts_wav_bytes:7: Ошибка API: В части ответа отсутствует 'inline_data'.")
             return None
         if not hasattr(audio_part.inline_data, 'data') or not hasattr(audio_part.inline_data, 'mime_type'):
-            my_log.log_gemini("my_gemini_tts: Ошибка API: Объект 'inline_data' не содержит 'data' или 'mime_type'.")
+            my_log.log_gemini("my_gemini_tts:generate_tts_wav_bytes:8: Ошибка API: Объект 'inline_data' не содержит 'data' или 'mime_type'.")
             return None
 
         pcm_audio_bytes = audio_part.inline_data.data
 
     except Exception as e:
-        my_log.log_gemini(f"Ошибка при разборе ответа API: {e}")
-        my_log.log_gemini(f"Полный ответ API для отладки: {response}")
+        my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:9: Ошибка при разборе ответа API: {e}")
+        my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:10: Полный ответ API для отладки: {response}")
         return None
 
     # Добираемся до mime_type
@@ -127,9 +126,11 @@ def generate_tts_wav_bytes(
        response.candidates[0].content.parts[0].inline_data:
         actual_mime_type = response.candidates[0].content.parts[0].inline_data.mime_type
         if actual_mime_type != "audio/L16;codec=pcm;rate=24000":
-            my_log.log_gemini(f"my_gemini_tts: Ошибка API: Ожидался mime_type 'audio/L16;codec=pcm;rate=24000', получен '{actual_mime_type}'.")
+            my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:11: Ошибка API: Ожидался mime_type 'audio/L16;codec=pcm;rate=24000', получен '{actual_mime_type}'.")
 
     if pcm_audio_bytes:
+        if raw:
+            return pcm_audio_bytes
         # save as .wave bytes using pydub mime_type='audio/L16;codec=pcm;rate=24000'
         audio_segment = AudioSegment(
             data=pcm_audio_bytes,
@@ -145,63 +146,134 @@ def generate_tts_wav_bytes(
         return None
 
 
-def tts_chunked_text(chunks: list[str], output_dir: str, voice_name: str = "Iapetus") -> None:
+# Вспомогательная функция, которая будет выполнять синтез для одного чанка
+# Она будет декорирована для параллельного выполнения
+@utils.async_run_with_limit(max_threads=5) # Ограничиваем до 5 одновременных потоков
+def _process_single_chunk(
+    chunk_index: int,
+    chunk_text: str,
+    voice_name: str,
+    model: str,
+    lang: str,
+    results_list: list # Передаем список для записи результатов
+):
+    """
+    Обрабатывает один текстовый фрагмент, генерирует аудио и сохраняет его в общий список.
+    """
+    # Добавляем инструкцию для чтеца только к первому фрагменту (или каждому, если это необходимо по контексту)
+    # Здесь добавляем к каждому, т.к. каждый чанк обрабатывается независимо.
+    # Если инструкция должна быть только для первого, то это должна быть отдельная логика.
+    # Для целей параллелизации добавляем к каждому фрагменту.
+    text_with_instruction = f'читай фрагмент книги на языке [{lang}] ровным спокойным голосом профессионального чтеца\n\n{chunk_text}'
+
+    wav_bytes = generate_tts_wav_bytes(
+        text_to_speak=text_with_instruction,
+        voice_name=voice_name,
+        model_id=model,
+        lang=lang,
+        raw = True,
+    )
+
+    if not wav_bytes:
+        my_log.log_gemini(f"my_gemini_tts:_process_single_chunk:1: Не удалось сгенерировать аудио для фрагмента {chunk_index}, повторная попытка...")
+        time.sleep(5) # Ждем перед повторной попыткой
+        wav_bytes = generate_tts_wav_bytes(
+            text_to_speak=text_with_instruction,
+            voice_name=voice_name,
+            model_id=model,
+            lang=lang,
+            raw = True,
+        )
+        if not wav_bytes:
+            my_log.log_gemini(f"my_gemini_tts:_process_single_chunk:2: Повторная попытка для фрагмента {chunk_index} также не удалась. Фрагмент будет пропущен.")
+            # return None # Возвращаем None, если совсем не получилось.
+            # Вместо возврата, сохраняем None в списке, чтобы сохранить порядок
+            results_list[chunk_index] = None
+            return
+
+    # Сохраняем результат по его индексу в общем списке
+    results_list[chunk_index] = wav_bytes
+
+
+def tts_chunked_text(
+    chunks: list[str],
+    voice_name: str = "Iapetus",
+    lang: str = 'ru',
+    model: str = 'gemini-2.5-flash-preview-tts'
+    ) -> bytes | None:
     '''
-    Синтезирует речь для каждого чанка текста и сохраняет результаты в отдельные
-    wav-файлы в указанной папке. Пропускает генерацию, если файл уже существует
-    и имеет ненулевой размер.
+    Синтезирует речь для каждого чанка текста параллельно и склеивает в 1 большой Wav файл.
 
     Args:
         chunks: Список текстовых чанков для синтеза.
-        output_dir: Путь к папке, куда будут сохраняться файлы (например, "c:/output/audio/").
         voice_name: Имя голоса Gemini для синтеза. По умолчанию "Iapetus".
+        lang: Язык текста. По умолчанию 'ru'.
+        model: Модель TTS. По умолчанию "gemini-2.5-flash-preview-tts".
     '''
+    # Инициализируем список для хранения результатов с размером, равным количеству чанков.
+    # Это позволяет каждому потоку записывать результат по своему индексу без конфликтов.
+    results = [None] * len(chunks)
+    threads = []
 
     for i, chunk in enumerate(chunks):
-        # Файлы будут названы 0001.wav, 0002.wav и т.д.
-        file_name = os.path.join(output_dir, f"{i+1:04d}.wav")
+        # Запускаем _process_single_chunk в отдельном потоке, используя декоратор
+        # Декоратор _process_single_chunk возвращает объект потока.
+        thread = _process_single_chunk(i, chunk, voice_name, model, lang, results)
+        threads.append(thread)
 
-        if os.path.exists(file_name) and os.path.getsize(file_name) > 0:
-            # my_log.log_gemini(f"Файл для чанка {i+1} уже существует и не пуст '{file_name}', пропуск генерации.")
-            continue # Пропустить текущий чанк, если файл уже есть и имеет ненулевой размер
+    # Ожидаем завершения всех потоков
+    for thread in threads:
+        if thread: # Убеждаемся, что поток был создан (декоратор может вернуть None или другой объект)
+            thread.join()
 
-        # my_log.log_gemini(f"Обработка чанка {i+1} и сохранение в {file_name}")
+    sound_result = AudioSegment.empty()
 
-        wav_bytes = generate_tts_wav_bytes(text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца\n\n{chunk}', voice_name=voice_name)
-
+    # Собираем аудио из результатов, сохраняя порядок
+    for i, wav_bytes in enumerate(results):
         if wav_bytes:
             try:
-                with open(file_name, "wb") as f:
-                    f.write(wav_bytes)
-                # my_log.log_gemini(f"Чанк {i+1} успешно сохранен: {file_name}")
-            except IOError as e:
-                my_log.log_gemini(f"Ошибка при записи файла '{file_name}': {e}")
+                sound = AudioSegment.from_raw(
+                    io.BytesIO(wav_bytes),
+                    frame_rate=24000,
+                    channels=1,
+                    sample_width=2,
+                    format="s16le",
+                )
+                sound_result += sound
+            except Exception as e:
+                my_log.log_gemini(f"my_gemini_tts:tts_chunked_text:1: Ошибка при обработке аудиофрагмента {i}: {e}. Фрагмент будет пропущен.")
         else:
-            my_log.log_gemini(f"Не удалось сгенерировать аудио для чанка {i+1}: '{chunk[:50]}...'")
+            my_log.log_gemini(f"my_gemini_tts:tts_chunked_text:2: Фрагмент {i} не был сгенерирован или не содержит аудиоданных.")
+            # Можно добавить короткий фрагмент тишины вместо пропущенного куска
+            # sound_result += AudioSegment.silent(duration=500) # 0.5 секунды тишины
+
+    if not sound_result:
+        my_log.log_gemini("my_gemini_tts:tts_chunked_text:3: Все фрагменты были пропущены или не удалось сгенерировать аудио.")
+        return None
+
+    wav_io = io.BytesIO()
+    sound_result.export(wav_io, format="wav")
+    wav_bytes = wav_io.getvalue()
+    return wav_bytes
 
 
 if __name__ == "__main__":
+    # Инициализация для запуска примера
     my_gemini.my_db.init(backup=False)
     my_gemini.load_users_keys()
 
     output_dir = r"c:\Users\user\Downloads"
 
-    # text_for_tts_1 = "Привет, мир! Это тестовое сообщение для синтеза речи."
-    # audio_data = generate_tts_wav_bytes(
-    #     text_to_speak=text_for_tts_1,
-    #     voice_name="Zephyr", # Явно указываем голос
-    # )
+    with open(r'C:\Users\user\Downloads\samples for ai\большая книга только первая глава.txt', 'r', encoding='utf-8') as f:
+        text = f.read()
 
-    # if audio_data:
-    #     output_ogg_filename = os.path.join(output_dir, "gemini_tts_output.wav")
-    #     with open('c:/Users/user/Downloads/1.wav', "wb") as f:
-    #         f.write(audio_data)
+    # Вызываем generate_tts_wav_bytes, которая сама решит, вызывать ли tts_chunked_text
+    data = generate_tts_wav_bytes(text_to_speak=text, voice_name="Leda")
 
-
-    input_chunk_file = r'C:\Users\user\Downloads\samples for ai\Алиса в изумрудном городе (большая книга).txt.chunks.pkl'
-    
-    import pickle
-    with open(input_chunk_file, 'rb') as f:
-        chunks = pickle.load(f)
-
-    tts_chunked_text(chunks=chunks, output_dir=output_dir)
+    if data:
+        output_ogg_filename = os.path.join(output_dir, "gemini_tts_output_parallel.wav")
+        with open(output_ogg_filename, "wb") as f:
+            f.write(data)
+        print(f"Аудио сохранено в {output_ogg_filename}")
+    else:
+        print("Не удалось сгенерировать аудио.")

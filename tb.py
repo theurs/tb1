@@ -2018,14 +2018,14 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button_llama4_maverick = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama4_maverick')
 
 
-            # msg = '🙈🙉🙊'
-            # button_filler1 = telebot.types.InlineKeyboardButton(msg, callback_data='switch_do_nothing')
+            msg = '==='
+            button_filler1 = telebot.types.InlineKeyboardButton(msg, callback_data='switch_do_nothing')
 
             markup.row(button_gemini_flash25, button_gemini_flash20)
             markup.row(button_mistral, button_llama4_maverick)
             markup.row(button_gpt_4o, button_gpt_41, button_openrouter)
             markup.row(button_cohere, button_deepseek_v3)
-            # markup.row(button_filler1)
+            markup.row(button_filler1)
 
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
@@ -2111,7 +2111,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 if current_row_buttons:
                     markup.row(*current_row_buttons)
 
-            # markup.row(button_filler1)
+            markup.row(button_filler1)
 
             if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
                 button1 = telebot.types.InlineKeyboardButton(tr('☑️Чат-кнопки', lang), callback_data='disable_chat_kbd')
@@ -2136,7 +2136,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 button2 = telebot.types.InlineKeyboardButton(tr('☑️ Do not reply', lang), callback_data='send_message_chat_switch')
             markup.row(button1, button2)
 
-            # markup.row(button_filler1)
+            markup.row(button_filler1)
 
             speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
             if speech_to_text_engine == 'whisper':

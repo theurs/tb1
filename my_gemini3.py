@@ -370,7 +370,7 @@ def chat(
                 elif """503 UNAVAILABLE. {'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}""" in str(error):
                     my_log.log_gemini(f'my_gemini3:chat:3: {str(error)} {model} {key}')
                     return ''
-                elif """""" in str(error):
+                elif """400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Please ensure that function response turn comes immediately after a function call turn.'""" in str(error):
                     my_log.log_gemini(f'my_gemini3:chat:4: {str(error)} {model} {key}')
                     new_mem = []
                     i = 0

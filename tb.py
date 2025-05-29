@@ -6905,19 +6905,19 @@ def report_cmd_handler(message: telebot.types.Message):
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
         if hasattr(cfg, 'SUPPORT_GROUP'):
-            bot_reply_tr(message, f'Support telegram group {cfg.SUPPORT_GROUP}')
+            bot_reply_tr(message, f'Support telegram group {cfg.SUPPORT_GROUP}\n\nUse it to send message to admin. \n\n<code>/report Something is not working here!</code>', parse_mode='HTML')
+        try:
+            args = message.text.split(maxsplit = 1)[1].strip()
+        except IndexError:
+            args = ''
+        if args:
+            msg = f'[Report from user {message.from_user.id}] {args}'
+            my_log.log_reports(msg)
+            bot.send_message(cfg.admins[0], msg, disable_notification=True)
+            bot_reply_tr(message, 'Message sent.')
         else:
-            try:
-                args = message.text.split(maxsplit = 1)[1].strip()
-            except IndexError:
-                args = ''
-            if args:
-                msg = f'[Report from user {message.from_user.id}] {args}'
-                my_log.log_reports(msg)
-                bot.send_message(cfg.admins[0], msg, disable_notification=True)
-                bot_reply_tr(message, 'Message sent.')
-            else:
-                bot_reply_tr(message, 'Use it to send message to admin.')
+            if not hasattr(cfg, 'SUPPORT_GROUP'):
+                bot_reply_tr(message, 'Use it to send message to admin.\n\n`/report Something is not working here!`')
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:report_cmd_handler: {unknown}\n{traceback_error}')

@@ -9602,7 +9602,7 @@ def do_task(message, custom_prompt: str = ''):
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=hidden_text,
-                                model = my_nebius.DEFAULT_MODEL_FALLBACK,
+                                model = my_nebius.DEFAULT_MODEL,
                             )
                             if not answer:
                                 answer = my_nebius.chat(
@@ -9610,7 +9610,7 @@ def do_task(message, custom_prompt: str = ''):
                                     chat_id_full,
                                     temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                     system=hidden_text,
-                                    model = my_nebius.DEFAULT_MODEL,
+                                    model = my_nebius.DEFAULT_MODEL_FALLBACK,
                                     max_tokens = 4000,
                                 )
                                 WHO_ANSWERED[chat_id_full] = 'DeepSeek V3+R1'

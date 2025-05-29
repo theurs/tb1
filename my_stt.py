@@ -40,13 +40,23 @@ def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
     Returns:
         str: The path to the converted wave file.
     """
-    tmp_wav_file = utils.get_tmp_fname() + '.ogg'
-    subprocess.run(['ffmpeg', '-i', audio_file, '-map', '0:a', '-c:a','libvorbis', tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if os.path.exists(tmp_wav_file):
-        return tmp_wav_file
-    else:
-        return ''
-
+    tmp_in_file = None
+    try:
+        tmp_wav_file = utils.get_tmp_fname() + '.ogg'
+        if isinstance(audio_file, bytes):
+            tmp_in_file = utils.get_tmp_fname()
+            with open(tmp_in_file, 'wb') as f:
+                f.write(audio_file)
+        else:
+            tmp_in_file = audio_file
+        subprocess.run(['ffmpeg', '-i', tmp_in_file, '-map', '0:a', '-c:a','libvorbis', tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if os.path.exists(tmp_wav_file):
+            return tmp_wav_file
+        else:
+            return ''
+    finally:
+        if tmp_in_file:
+            os.remove(tmp_in_file)
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def stt_google(audio_file: str, language: str = 'ru') -> str:

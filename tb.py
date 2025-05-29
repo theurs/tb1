@@ -2671,71 +2671,22 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
-        audio_duration = utils.audio_duration(data)
-        price = math.ceil((25 / 3600) * audio_duration)
-        if audio_duration < 5*60:
-            price = 0
+        text = my_stt.stt(
+            input_file=data,
+            lang=lang,
+            chat_id=chat_id_full
+        )
 
-        users_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
-
-        if users_stars < price:
-            msg =  tr('Not enough stars. Use /stars command to get more.', lang) + '\n\n'
-            msg += tr('Need stars:', lang) + ' ' + str(price) + '\n'
-            msg += tr('Current stars:', lang) + ' ' + str(users_stars) + '\n'
-            msg += tr('You need more', lang) + ' ' + str(price - users_stars) + ' ' + tr('stars to use this command.', lang)
-            bot_reply(message, msg)
-            COMMAND_MODE[chat_id_full] = ''
-            return
-
-        engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
-        if engine == 'assembly.ai':
-            cap_srt, cap_vtt, text = my_stt.assemblyai_to_caps(data, lang)
-        else:
-            cap_srt, cap_vtt, text = my_deepgram.transcribe(data, lang)
-            text = my_stt.assemblyai_2(data, lang)
-
-        if cap_srt.strip() or cap_vtt.strip():
-            if not cap_srt.strip():
-                cap_srt = 'EMPTY'
-            if not cap_vtt.strip():
-                cap_vtt = 'EMPTY'
-            if not text.strip():
-                text = 'EMPTY'
+        if text:
             # send captions
             kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
             try:
-                m1 = send_document(
-                    message,
-                    message.chat.id,
-                    cap_srt.encode('utf-8', 'replace'),
-                    reply_to_message_id=message.message_id,
-                    caption = tr(f'SRT subtitles generated at @{_bot_name}', lang),
-                    reply_markup=kbd,
-                    parse_mode='HTML',
-                    disable_notification = True,
-                    visible_file_name = file_name + '.srt',
-                    message_thread_id = message.message_thread_id,
-                )
-                log_message(m1)
-                m2 = send_document(
-                    message,
-                    message.chat.id,
-                    cap_vtt.encode('utf-8', 'replace'),
-                    reply_to_message_id=message.message_id,
-                    caption = tr(f'VTT subtitles generated at @{_bot_name}', lang),
-                    reply_markup=kbd,
-                    parse_mode='HTML',
-                    disable_notification = True,
-                    visible_file_name = file_name + '.vtt',
-                    message_thread_id = message.message_thread_id,
-                )
-                log_message(m2)
                 m3 = send_document(
                     message,
                     message.chat.id,
                     text.encode('utf-8', 'replace'),
                     reply_to_message_id=message.message_id,
-                    caption = tr(f'Multi-voice transcription generated at @{_bot_name}', lang),
+                    caption = tr(f'Transcription generated at @{_bot_name}', lang),
                     reply_markup=kbd,
                     parse_mode='HTML',
                     disable_notification = True,
@@ -2744,21 +2695,13 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
                 )
                 log_message(m3)
 
-                # сохранить как файл для дальнейших вопросв по нему субтитры или srt или vtt или чистый текст
+                # сохранить как файл для дальнейших вопросов по нему субтитры или srt или vtt или чистый текст
                 saved_text = text
-                # if cap_srt != 'EMPTY':
-                #     saved_text = cap_srt
-                # elif cap_vtt != 'EMPTY':
-                #     saved_text = cap_vtt
+
                 my_db.set_user_property(chat_id_full, 'saved_file_name', f'transcribed audio file: captions_{utils.get_full_time().replace(":", "-")}.txt')
                 my_db.set_user_property(chat_id_full, 'saved_file', saved_text)
 
-                if price:
-                    my_db.set_user_property(chat_id_full, 'telegram_stars', users_stars - price)
-                    my_log.log_transcribe(f'Consumed {price} stars from user {chat_id_full} for audio file duration {audio_duration}')
-                    msg = tr('Transcription created successfully, telegram stars used:', lang) + ' ' + str(price) + ', ' + tr('use /ask command to query your text.', lang)
-                else:
-                    msg = tr('Transcription created successfully, use /ask command to query your text.', lang)
+                msg = tr('Transcription created successfully, use /ask command to query your text.', lang)
 
                 COMMAND_MODE[chat_id_full] = ''
 
@@ -2812,8 +2755,8 @@ def handle_voice(message: telebot.types.Message):
 
         with lock:
             # Скачиваем аудиофайл во временный файл
+            file_name = 'unknown'
             try:
-                file_name = 'unknown'
                 file_info = None
                 if message.voice:
                     file_info = bot.get_file(message.voice.file_id)
@@ -3549,10 +3492,7 @@ def transcribe(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = 'transcribe'
-        help = (
-            'Send an audio file or link to transcribe. You will get files with subtitles.\n\n'
-            '25 telegram stars per hour required. /stars'
-        )
+        help = 'Send an audio file or link to transcribe.'
         bot_reply_tr(message, help, reply_markup=get_keyboard('command_mode_transcribe', message))
     except Exception as unknown:
         traceback_error = traceback.format_exc()

@@ -4,6 +4,7 @@
 
 
 import cachetools.func
+import random
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 
@@ -27,6 +28,7 @@ def get_next_key() -> str:
     if not KEYS:
         if hasattr(cfg, 'TAVILY_KEYS') and len(cfg.TAVILY_KEYS) > 0:
             KEYS = cfg.TAVILY_KEYS[:]
+            random.shuffle(KEYS)
 
     if KEYS:
         return KEYS.pop(0)

@@ -191,6 +191,16 @@ def calc(expression: str) -> str:
             'random': random,
             'datetime': datetime,
             # 'my_factorial': my_factorial,
+            'abs': abs,
+            'max': max,
+            'min': min,
+            'round': round,
+            'sum': sum,
+            'pow': pow,
+            'complex': complex,
+            'divmod': divmod,
+            'float': float,
+            'int': int,
         }
         result = str(simple_eval(expression, functions=allowed_functions))
         my_log.log_gemini_skills(f'Internal calc result: {result}')
@@ -237,8 +247,9 @@ def test_calc(func: Callable = calc) -> None:
         # ("math.factorial(5)", "120"),
         # # Пример с Decimal (если ваша функция calc поддерживает его)
         # ("decimal.Decimal('1.23') + decimal.Decimal('4.56')", "5.79"),
-        ('math.factorial(10)', '3628800'),
-        ('math.factorial(1600)', ''),
+        # ('math.factorial(10)', '3628800'),
+        # ('math.factorial(1600)', ''),
+        ('round((80 / 270) * 100, 2)', '29.63'),
         #date example
         # ("datetime.datetime.now()", ""),
         # # Примеры, где мы не можем предсказать *точный* вывод, но все равно можем проверить:

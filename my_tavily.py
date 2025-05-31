@@ -4,7 +4,6 @@
 
 
 import cachetools.func
-import random
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 
@@ -18,6 +17,7 @@ import utils
 
 
 KEYS = []
+FROZEN_KEYS = []
 
 
 def get_next_key() -> str:
@@ -28,8 +28,7 @@ def get_next_key() -> str:
     if not KEYS:
         if hasattr(cfg, 'TAVILY_KEYS') and len(cfg.TAVILY_KEYS) > 0:
             KEYS = cfg.TAVILY_KEYS[:]
-            random.shuffle(KEYS)
-
+            KEYS = [x for x in KEYS if x not in FROZEN_KEYS]
     if KEYS:
         return KEYS.pop(0)
     else:
@@ -139,6 +138,7 @@ def search(
         traceback_error = traceback.format_exc()
         if """This request exceeds your plan's set usage limit. Please upgrade your plan or contact support@tavily.com""" in str(error):
             my_log.log_tavily(f'search: {error}\n{key}')
+            FROZEN_KEYS.append(key)
         else:
             my_log.log_tavily(f'search: {error}\n{traceback_error}')
         return {}

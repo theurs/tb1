@@ -633,7 +633,7 @@ Text:
                 qq = query
             r = my_cohere.sum_big_text(text[:my_cohere.MAX_SUM_REQUEST], qq, role=role)
             if r:
-                result = f'{r}\n\n--\nCommand R+ [{len(text[:my_cohere.MAX_SUM_REQUEST])}]'
+                result = f'{r}\n\n--\nCommand A [{len(text[:my_cohere.MAX_SUM_REQUEST])}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:cohere: {error}')
             my_log.log2(f'my_sum:summ_text_worker:cohere: {error}')

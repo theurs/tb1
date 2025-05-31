@@ -135,7 +135,7 @@ Search results:
     if not r:
         r = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST], system=role)
         if r:
-            r += '\n\n--\n[Command R+]'
+            r += '\n\n--\n[Command A]'
 
     if not r:
         r = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], max_tokens_ = 4000, system=role)

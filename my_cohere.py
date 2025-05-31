@@ -19,7 +19,7 @@ MAX_QUERY_LENGTH = 100000
 MAX_SUM_REQUEST = 100000
 MAX_REQUEST = 20000
 # DEFAULT_MODEL = 'command-r-plus'
-DEFAULT_MODEL = 'command-a-03-2025'
+DEFAULT_MODEL = 'command-a'
 FALLBACK_MODEL = 'command-r-plus'
 #FALLBACK_MODEL = 'command-r'
 MAX_MEM_LINES = 20
@@ -403,9 +403,10 @@ if __name__ == '__main__':
     pass
     load_users_keys()
 
-    # r = ai('привет как дела')
-    # print(r)
-    print(test_key(input('Enter key: ')))
+    r = ai('ты какая модель?')
+    print(r)
+
+    # print(test_key(input('Enter key: ')))
 
     # chat_cli()
 

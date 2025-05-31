@@ -5,6 +5,9 @@ import os
 import time
 
 from google import genai
+from google.genai.types import (
+    HttpOptions,
+)
 from pydub import AudioSegment
 
 import my_gemini
@@ -51,13 +54,13 @@ def generate_tts_wav_bytes(
     if not text_to_speak:
         return None
 
-    # что то он перестал нормально работать, пока что будет только мелкие озвучивать
-    if len(text_to_speak) > 2000:
-        return None
+    # # что то он перестал нормально работать, пока что будет только мелкие озвучивать
+    # if len(text_to_speak) > 2000:
+    #     return None
 
     # Если текст слишком длинный, разбиваем на чанки и используем параллельную обработку
-    if len(text_to_speak) > 2500:
-        chunks = utils.split_text(text_to_speak, 2500)
+    if len(text_to_speak) > 2000:
+        chunks = utils.split_text(text_to_speak, 2000)
         return tts_chunked_text(chunks=chunks, voice_name=voice_name, model=model_id, lang=lang)
 
     response = None
@@ -69,7 +72,7 @@ def generate_tts_wav_bytes(
             my_log.log_gemini("my_gemini_tts:generate_tts_wav_bytes:1: API ключ Gemini не найден")
             return None
 
-        client = genai.Client(api_key=key)
+        client = genai.Client(api_key=key, http_options=HttpOptions(timeout=120*1000))
 
         if voice_name not in POSSIBLE_VOICES:
             my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:2: Предупреждение: Указанный голос '{voice_name}' отсутствует в списке известных голосов. По умолчанию используется 'Zephyr'")
@@ -154,7 +157,7 @@ def generate_tts_wav_bytes(
 
 # Вспомогательная функция, которая будет выполнять синтез для одного чанка
 # Она будет декорирована для параллельного выполнения
-@utils.async_run_with_limit(max_threads=5) # Ограничиваем до 5 одновременных потоков
+@utils.async_run_with_limit(max_threads=1)
 def _process_single_chunk(
     chunk_index: int,
     chunk_text: str,

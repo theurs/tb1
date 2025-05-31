@@ -4253,7 +4253,7 @@ def download_ytb_audio(message: telebot.types.Message):
                                         message,
                                         message.chat.id,
                                         data,
-                                        title = f'{os.path.splitext(os.path.basename(fn))[0]}.mp3',
+                                        title = f'{os.path.splitext(os.path.basename(fn))[0]}.opus',
                                         caption = f'@{_bot_name} {caption}',
                                         thumbnail=tmb,
                                     )

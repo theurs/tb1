@@ -21,7 +21,6 @@ get_title_and_poster = utils.get_title_and_poster
 LOCK_TRANSCODE = utils.LOCK_TRANSCODE
 
 
-
 def download_ogg(url: str) -> str:
     '''Downloads audio from a youtube URL, saves it to a temporary file in OGG format, and returns the path to the OGG file.'''
     tmp_file = utils.get_tmp_fname()
@@ -98,7 +97,13 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
 
         output_prefix = os.path.join(tmp_dir, "part")
 
-        segment_time = 5000
+        # Расчет segment_time на основе max_size_mb и битрейта 24 кбит/с
+        target_bitrate_bps = 32 * 1000  # 24(up to 32) kbps в бит/с
+        max_size_bits = max_size_mb * 1024 * 1024 * 8 # max_size_mb в битах
+        calculated_segment_time_seconds = max_size_bits / target_bitrate_bps
+
+        # ffmpeg предпочитает целые числа или числа с плавающей точкой
+        segment_time = calculated_segment_time_seconds 
 
         subprocess.run([
             'ffmpeg',
@@ -109,18 +114,14 @@ def split_audio(input_file: str, max_size_mb: int) -> List[str]:
             '-segment_time',
             str(segment_time),
             '-acodec',
-            'libmp3lame',
-            '-q:a',  # Сохраняем настройку VBR качества
-            '8',
-            '-maxrate', # Устанавливаем максимальный битрейт
-            '80k',
-            '-bufsize', # Рекомендуется устанавливать bufsize, обычно в 2 раза больше maxrate
-            '168k',
+            'libopus',  # Изменено на libopus
+            '-b:a',     # Устанавливаем постоянный битрейт
+            '24k',      # 24 кбит/с
             '-reset_timestamps',
             '1',
             '-loglevel',
             'quiet',
-            f'{output_prefix}%03d.mp3'
+            f'{output_prefix}%03d.opus' # Изменено расширение файла на .opus
         ], check=True)
 
         # Get the list of files in the temporary folder
@@ -206,3 +207,5 @@ if __name__ == '__main__':
 
     # print(download_audio('https://www.youtube.com/shorts/qgI5Xhap3IY'))
     # print(valid_other_video_url('https://vkvideo.ru/video-217672812_456239407'))
+
+    print(split_audio(r'C:\Users\user\Downloads\Музыка\Music for Work — Programming, Hacking, Coding — Chillstep & Future Garage Mix [sfrF7zjOK1E].m4a', 45))

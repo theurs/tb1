@@ -54,6 +54,7 @@ def search(
 
     Возвращает ответ в виде словаря (или строку с ответом если быстрый режим)
     '''
+    key = ''
     try:
         if not user_id:
             user_id = 'noname'
@@ -136,7 +137,10 @@ def search(
         return response
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_tavily(f'search: {error}\n{traceback_error}')
+        if """This request exceeds your plan's set usage limit. Please upgrade your plan or contact support@tavily.com""" in str(error):
+            my_log.log_tavily(f'search: {error}\n{key}')
+        else:
+            my_log.log_tavily(f'search: {error}\n{traceback_error}')
         return {}
 
 

@@ -19,7 +19,7 @@ MAX_QUERY_LENGTH = 100000
 MAX_SUM_REQUEST = 100000
 MAX_REQUEST = 20000
 # DEFAULT_MODEL = 'command-r-plus'
-DEFAULT_MODEL = 'command-a'
+DEFAULT_MODEL = 'command-a-03-2025'
 FALLBACK_MODEL = 'command-r-plus'
 #FALLBACK_MODEL = 'command-r'
 MAX_MEM_LINES = 20
@@ -403,14 +403,14 @@ if __name__ == '__main__':
     pass
     load_users_keys()
 
-    r = ai('ты какая модель?')
-    print(r)
+    # r = ai('ты какая модель?')
+    # print(r)
 
     # print(test_key(input('Enter key: ')))
 
     # chat_cli()
 
-    # list_models()
+    list_models()
 
     # with open('C:/Users/user/Downloads/2.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()

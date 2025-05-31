@@ -4,11 +4,15 @@
 
 
 import cachetools.func
+import importlib
+import os
+import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 
 from tavily import TavilyClient
 from ftfy import fix_text
+from sqlitedict import SqliteDict
 
 import cfg
 import my_db
@@ -17,18 +21,37 @@ import utils
 
 
 KEYS = []
-FROZEN_KEYS = []
+# {key:timestamp}
+FROZEN_KEYS = SqliteDict('db/tavily_frozen_keys.db', autocommit=True)
+RELOAD_CFG_TIME = 0
 
 
 def get_next_key() -> str:
     '''
-    Round robin keys cfg.TAVILY_KEYS
+    Round robin keys cfg.TAVILY_KEYS, skip frozen
     '''
-    global KEYS
+    global KEYS, RELOAD_CFG_TIME
+
+    cfg_time = os.path.getmtime('cfg.py')
+    if cfg_time != RELOAD_CFG_TIME:
+        RELOAD_CFG_TIME = cfg_time
+        module = importlib.import_module('cfg')
+        importlib.reload(module)
+
     if not KEYS:
         if hasattr(cfg, 'TAVILY_KEYS') and len(cfg.TAVILY_KEYS) > 0:
             KEYS = cfg.TAVILY_KEYS[:]
-            KEYS = [x for x in KEYS if x not in FROZEN_KEYS]
+            
+            keys_to_unfreeze = []
+            for k, v in list(FROZEN_KEYS.items()): # Создаем копию для безопасной итерации
+                if time.time() > v + 60*60*24*7:
+                    keys_to_unfreeze.append(k)
+            
+            for k in keys_to_unfreeze:
+                FROZEN_KEYS.pop(k) # Удаляем элементы после итерации
+                    
+            KEYS = [x for x in KEYS if x not in FROZEN_KEYS.keys()]
+
     if KEYS:
         return KEYS.pop(0)
     else:
@@ -138,7 +161,7 @@ def search(
         traceback_error = traceback.format_exc()
         if """This request exceeds your plan's set usage limit. Please upgrade your plan or contact support@tavily.com""" in str(error):
             my_log.log_tavily(f'search: {error}\n{key}')
-            FROZEN_KEYS.append(key)
+            FROZEN_KEYS[key] = time.time()
         else:
             my_log.log_tavily(f'search: {error}\n{traceback_error}')
         return {}

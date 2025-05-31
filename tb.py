@@ -7,7 +7,6 @@ import concurrent.futures
 import io
 import importlib
 import hashlib
-import math
 import os
 import pickle
 import random
@@ -32,7 +31,6 @@ from sqlitedict import SqliteDict
 import cfg
 import md2tgmd
 import my_alert
-import my_deepgram
 import my_init
 import my_genimg
 import my_cohere

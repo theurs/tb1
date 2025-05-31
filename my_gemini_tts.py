@@ -72,7 +72,7 @@ def generate_tts_wav_bytes(
             my_log.log_gemini("my_gemini_tts:generate_tts_wav_bytes:1: API ключ Gemini не найден")
             return None
 
-        client = genai.Client(api_key=key, http_options=HttpOptions(timeout=120*1000))
+        client = genai.Client(api_key=key, http_options=HttpOptions(timeout=180*1000))
 
         if voice_name not in POSSIBLE_VOICES:
             my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:2: Предупреждение: Указанный голос '{voice_name}' отсутствует в списке известных голосов. По умолчанию используется 'Zephyr'")
@@ -98,7 +98,10 @@ def generate_tts_wav_bytes(
             )
             break # Успешный вызов, выходим из цикла повторных попыток
         except Exception as e:
-            my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:4: Ошибка при вызове API Gemini TTS: {e}")
+            if 'timeout' in str(e).lower():
+                my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:4: Timeout {e}")
+                return None
+            my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:5: Ошибка при вызове API Gemini TTS: {e}")
             time.sleep(1) # Небольшая задержка перед следующей попыткой
 
     if response is None: # Если все попытки не увенчались успехом

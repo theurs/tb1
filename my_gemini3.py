@@ -58,6 +58,7 @@ def get_config(
     temperature: float = 1,
     tools: list = None,
     THINKING_BUDGET: int = -1,
+    timeout: int = my_gemini.TIMEOUT,
     ):
     # google_search_tool = Tool(google_search=GoogleSearch())
     # toolcodeexecution = Tool(code_execution=ToolCodeExecution())
@@ -70,6 +71,7 @@ def get_config(
     # )
 
     gen_config = GenerateContentConfig(
+        http_options=HttpOptions(timeout=timeout*1000),
         temperature=temperature,
         max_output_tokens=max_output_tokens,
         system_instruction=system_instruction or None,
@@ -324,14 +326,9 @@ def chat(
         resp = ''
         key = ''
 
-        start_time = time.monotonic() # Начало отсчета времени
-
         for _ in range(3):
             response = None
-            elapsed_time = time.monotonic() - start_time
-            if elapsed_time >= timeout: # Если общее время истекло
-                my_log.log_gemini(f'my_gemini3:chat:timeout_exceeded - overall timeout of {timeout}s reached.')
-                break # Выходим из цикла
+
             try:
                 key = my_gemini.get_next_key()
                 client = genai.Client(api_key=key, http_options={'timeout': timeout * 1000})
@@ -366,6 +363,9 @@ def chat(
             except Exception as error:
                 if '429 RESOURCE_EXHAUSTED' in str(error):
                     my_log.log_gemini(f'my_gemini3:chat:2: {str(error)} {model} {key}')
+                    return ''
+                elif 'timeout' in str(error).lower():
+                    my_log.log_gemini(f'my_gemini3:chat:timeout: {str(error)} {model} {key}')
                     return ''
                 elif """503 UNAVAILABLE. {'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}""" in str(error):
                     my_log.log_gemini(f'my_gemini3:chat:3: {str(error)} {model} {key}')

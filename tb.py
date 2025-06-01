@@ -5855,7 +5855,7 @@ def send_images_to_pic_group(
 # @bot.message_handler(func=lambda message: authorized(message) and message.text.split()[0].lower() in ['/image', '/img', '/i', '/imagine', '/generate', '/gen', '/art', '/picture', '/pic'])
 
 
-@bot.message_handler(commands=['image','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)
+@bot.message_handler(commands=['image','image:','Image:','IMAGE:','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)
 @async_run
 def image_gen(message: telebot.types.Message):
     """Generates a picture from a description"""

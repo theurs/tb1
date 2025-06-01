@@ -54,6 +54,7 @@ def tts(
     ) -> str:
     '''
     Generate and send audio message from text to user.
+    Use it only if asked by user to generate audio from text.
     Args:
         text: str - text to say
         lang: str - language code
@@ -64,9 +65,12 @@ def tts(
     '''
     my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}" "{natural}" "{chat_id}"')
 
-    # chat_id может приехать в виде одного числа - надо проверять и переделывать, долавлять скобки и число
+    # chat_id может приехать в виде одного числа - надо проверять и переделывать, добавлять скобки и число
     if chat_id.isdigit():
         chat_id = f"[{chat_id}] [0]"
+    # если нет второго числа до добавить '[0]', как проверить что нету второго числа есть только одно в скобках?
+    if chat_id.count('[') == 1:
+        chat_id = f"{chat_id} [0]"
 
     if my_db.get_user_property(chat_id, 'tts_gender'):
         gender = my_db.get_user_property(chat_id, 'tts_gender')

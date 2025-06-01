@@ -331,6 +331,7 @@ def chat(
         system_ = (
             f'Current date and time: {now}\n',
             f'Use this telegram chat id for API function calls: {chat_id}',
+            'Ask again if something is unclear in the request',
             system,
         )
 

@@ -63,10 +63,17 @@ def tts(
         natural: bool - use natural voice, better quality, default is False
     Example: tts("Привет", "ru")
     '''
+    def is_integer(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+
     my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}" "{natural}" "{chat_id}"')
 
     # chat_id может приехать в виде одного числа - надо проверять и переделывать, добавлять скобки и число
-    if chat_id.isdigit():
+    if is_integer(chat_id):
         chat_id = f"[{chat_id}] [0]"
     # если нет второго числа до добавить '[0]', как проверить что нету второго числа есть только одно в скобках?
     if chat_id.count('[') == 1:

@@ -7168,6 +7168,7 @@ def reload_module(message: telebot.types.Message):
         # реинициализация модуля
         if module_name in ('my_gemini', 'my_gemini3'):
             my_gemini.load_users_keys()
+            my_skills.init()
         elif module_name == 'my_groq':
             my_groq.load_users_keys()
         elif module_name == 'my_mistral':
@@ -7180,6 +7181,8 @@ def reload_module(message: telebot.types.Message):
             my_cohere.load_users_keys()
         elif module_name == 'my_init':
             load_msgs()
+        elif module_name == 'my_skills':
+            my_skills.init()
         elif module_name == 'my_db':
             db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
             db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
@@ -9171,6 +9174,7 @@ def do_task(message, custom_prompt: str = ''):
                                         my_skills.STORAGE.pop(chat_id_full)
                                         # return
                             except Exception as error2:
+                                my_skills.STORAGE.pop(chat_id_full)
                                 my_log.log2(f'tb:do_task:send_voice {error2}')
 
                             try:

@@ -349,6 +349,7 @@ def chat(
                         my_skills.get_weather,
                         my_skills.get_currency_rates,
                         my_skills.tts,
+                        my_skills.text_to_image,
                     ]
                     chat = client.chats.create(
                         model=model,

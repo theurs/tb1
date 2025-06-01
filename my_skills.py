@@ -45,6 +45,16 @@ MAX_REQUEST = 25000
 STORAGE = SqliteDict('db/skills_storage.db', autocommit=True)
 
 
+def text_to_image(prompt: str) -> str:
+    '''
+    Generate and send image message from text to user.
+    Use it only if asked by user to generate image from text.
+    Args:
+        prompt: str - text to generate image from
+    '''
+    return "The function itself does not return an image. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /img command, followed by a space, and then the prompt provided. This specific message format will be automatically recognized by an external system as a request to generate and send an image to the user."
+
+
 def tts(
     text: str,
     lang: str = 'ru',

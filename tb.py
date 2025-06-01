@@ -53,6 +53,7 @@ import my_psd
 import my_openrouter
 import my_openrouter_free
 import my_pandoc
+import my_skills
 import my_stat
 import my_stt
 import my_sum
@@ -6901,6 +6902,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             if my_doc_translate.TRANSLATE_CACHE:
                 my_doc_translate.TRANSLATE_CACHE.remove_by_owner(chat_id_full)
 
+            my_skills.STORAGE.pop(chat_id_full, None)
 
             # Delete User Properties
             my_db.delete_user_property(chat_id_full, 'role')
@@ -9150,6 +9152,27 @@ def do_task(message, custom_prompt: str = ''):
                                 my_log.log_echo(message, f'[{gmodel} + mistral] {answer}')
                             else:
                                 my_log.log_echo(message, f'[{gmodel}] {answer}')
+ 
+                            try:
+                                # проверяем нет ли в ответе звукового сообщения
+                                data = my_skills.STORAGE.get(chat_id_full, None)
+                                if data:
+                                    audio_data = data[0]
+                                    if audio_data:
+                                        m = send_voice(
+                                            message=message,
+                                            chat_id=message.chat.id,
+                                            voice=audio_data,
+                                            reply_to_message_id = message.message_id,
+                                            reply_markup=get_keyboard('hide', message),
+                                            # caption=caption
+                                        )
+                                        log_message(m)
+                                        my_skills.STORAGE.pop(chat_id_full)
+                                        # return
+                            except Exception as error2:
+                                my_log.log2(f'tb:do_task:send_voice {error2}')
+
                             try:
                                 if command_in_answer(answer, message):
                                     return
@@ -9912,6 +9935,7 @@ def main():
         my_cohere.load_users_keys()
         my_github.load_users_keys()
         my_nebius.load_users_keys()
+        my_skills.init()
 
         one_time_shot()
 

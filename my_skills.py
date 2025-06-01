@@ -3,9 +3,9 @@
 
 
 import cachetools.func
-import math
 import datetime
 import decimal
+import math
 import mpmath
 import numbers
 import numpy
@@ -15,6 +15,7 @@ import pytz
 import random
 import requests
 import subprocess
+import time
 import traceback
 
 from simpleeval import simple_eval
@@ -25,6 +26,7 @@ from typing import Callable, Tuple, List, Union
 #from random import betavariate, choice, choices, expovariate, gammavariate, gauss, getrandbits, getstate, lognormvariate, normalvariate, paretovariate, randbytes, randint, randrange, sample, seed, setstate, shuffle, triangular, uniform, vonmisesvariate, weibullvariate
 
 from geopy.geocoders import Nominatim
+from sqlitedict import SqliteDict
 
 import cfg
 import my_db
@@ -32,11 +34,75 @@ import my_google
 import my_gemini_google
 import my_log
 import my_groq
+import my_tts
 import my_sum
 import utils
 
 
 MAX_REQUEST = 25000
+
+
+STORAGE = SqliteDict('db/skills_storage.db', autocommit=True)
+
+
+def tts(
+    text: str,
+    lang: str = 'ru',
+    chat_id: str = "",
+    rate: str = '+0%',
+    natural: bool = False,
+    ) -> str:
+    '''
+    Generate and send audio message from text to user.
+    Args:
+        text: str - text to say
+        lang: str - language code
+        chat_id: str - telegram user chat id (Usually looks like 2 numbers in brackets '[9834xxxx] [24xx]')
+        rate: str - speed rate, +-100%, default is '+0%'
+        natural: bool - use natural voice, better quality, default is False
+    Example: tts("Привет", "ru")
+    '''
+    my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}" "{natural}" "{chat_id}"')
+
+    # chat_id может приехать в виде одного числа - надо проверять и переделывать, долавлять скобки и число
+    if chat_id.isdigit():
+        chat_id = f"[{chat_id}] [0]"
+
+    if my_db.get_user_property(chat_id, 'tts_gender'):
+        gender = my_db.get_user_property(chat_id, 'tts_gender')
+    else:
+        gender = 'female'
+
+    if natural:
+        if gender == 'female':
+            gender = 'gemini_Leda'
+        elif gender == 'male':
+            gender = 'gemini_Puck'
+
+    data = my_tts.tts(
+        text=text,
+        voice=lang,
+        rate='+0%',
+        gender=gender
+    )
+
+    if data and chat_id:
+        STORAGE[chat_id] = (data, time.time())
+        my_log.log_gemini_skills(f'TTS OK. Send to user: {chat_id}')
+        return 'Backend report: Text was generated and sent to user.'
+    else:
+        my_log.log_gemini_skills(f'TTS ERROR. Send to user: {chat_id}')
+        return 'Some error occurred.'
+
+
+def init():
+    """
+    Iterate over STORAGE dict and remove expired entries
+    """
+    now = time.time()
+    for key, value in list(STORAGE.items()):
+        if now - value[1] > 600:  # 10 minutes
+            del STORAGE[key]
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
@@ -405,6 +471,7 @@ ls -l
 
 if __name__ == '__main__':
     pass
+    init()
     my_db.init(backup=False)
     my_groq.load_users_keys()
     # moscow_time = get_time_in_timezone("Europe/Moscow")

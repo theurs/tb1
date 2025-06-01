@@ -53,7 +53,7 @@ SAFETY_SETTINGS = [
 
 
 def get_config(
-    system_instruction: str = "",
+    system_instruction: str | List[str],
     max_output_tokens: int = 8000,
     temperature: float = 1,
     tools: list = None,
@@ -326,6 +326,14 @@ def chat(
         resp = ''
         key = ''
 
+        # current date time string
+        now = utils.get_full_time()
+        system_ = (
+            f'Current date and time: {now}\n',
+            f'Use this telegram chat id for API function calls: {chat_id}',
+            system,
+        )
+
         for _ in range(3):
             response = None
 
@@ -340,11 +348,12 @@ def chat(
                         my_skills.get_time_in_timezone,
                         my_skills.get_weather,
                         my_skills.get_currency_rates,
+                        my_skills.tts,
                     ]
                     chat = client.chats.create(
                         model=model,
                         config=get_config(
-                            system_instruction=system,
+                            system_instruction=system_,
                             tools=SKILLS,
                             THINKING_BUDGET=THINKING_BUDGET,
                         ),
@@ -354,7 +363,7 @@ def chat(
                     chat = client.chats.create(
                         model=model,
                         config=get_config(
-                            system_instruction=system,
+                            system_instruction=system_,
                             THINKING_BUDGET=THINKING_BUDGET,
                         ),
                         history=mem,

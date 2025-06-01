@@ -208,4 +208,6 @@ if __name__ == '__main__':
     # print(download_audio('https://www.youtube.com/shorts/qgI5Xhap3IY'))
     # print(valid_other_video_url('https://vkvideo.ru/video-217672812_456239407'))
 
-    print(split_audio(r'C:\Users\user\Downloads\Музыка\Music for Work — Programming, Hacking, Coding — Chillstep & Future Garage Mix [sfrF7zjOK1E].m4a', 45))
+    # print(split_audio(r'C:\Users\user\Downloads\Музыка\Music for Work — Programming, Hacking, Coding — Chillstep & Future Garage Mix [sfrF7zjOK1E].m4a', 45))
+
+    print(download_yandex_disk_audio('https://disk.yandex.ru/d/M72KCnoXfI7E-Q'))

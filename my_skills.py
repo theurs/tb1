@@ -56,7 +56,7 @@ def tts(
     Generate and send audio message from text to user.
     Use it only if asked by user to generate audio from text.
     Args:
-        text: str - text to say
+        text: str - text to say (up to 8000 symbols)
         lang: str - language code
         chat_id: str - telegram user chat id (Usually looks like 2 numbers in brackets '[9834xxxx] [24xx]')
         rate: str - speed rate, +-100%, default is '+0%'

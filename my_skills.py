@@ -52,6 +52,7 @@ def text_to_image(prompt: str) -> str:
     Args:
         prompt: str - text to generate image from
     '''
+    my_log.log_gemini_skills(f'/img "{prompt}"')
     return "The function itself does not return an image. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /img command, followed by a space, and then the prompt provided. This specific message format will be automatically recognized by an external system as a request to generate and send an image to the user."
 
 

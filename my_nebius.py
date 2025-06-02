@@ -521,7 +521,7 @@ def txt2img(
     Generate image from text
 
     Args:
-        prompt (str): The text prompt to generate an image from.
+        prompt (str): The text prompt to generate an image from. Up to 2000 symbols.
         model (str, optional): The model to use for generating the image. Defaults to "black-forest-labs/flux-dev"
                                also available black-forest-labs/flux-schnell, stability-ai/sdxl
         width (int, optional): The width of the generated image. Defaults to 1024.
@@ -536,6 +536,7 @@ def txt2img(
         bytes: The generated image data in bytes format.
     '''
     try:
+        prompt = prompt.strip()[:1999]
         if not model:
             model = "black-forest-labs/flux-dev"
 

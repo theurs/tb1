@@ -113,14 +113,14 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
             done_flag = False
 
             try:
-                if not text:
+                # if auto: short - whisper, long - gemini
+                if speech_to_text_engine == 'auto':
+                    if dur < 120:
+                        speech_to_text_engine = 'whisper'
+                    else:
+                        speech_to_text_engine = 'gemini'
 
-                    # if auto: short - whisper, long - gemini
-                    if speech_to_text_engine == 'auto':
-                        if dur < 120:
-                            speech_to_text_engine = 'whisper'
-                        else:
-                            speech_to_text_engine = 'gemini'
+                if not text:
 
                     # try first shot from config
                     if speech_to_text_engine == 'whisper':

@@ -30,7 +30,6 @@ from typing import Any, Union, List, Tuple
 import json_repair
 import markdownify
 import PIL
-import telebot
 from bs4 import BeautifulSoup
 
 from pylatexenc.latex2text import LatexNodes2Text

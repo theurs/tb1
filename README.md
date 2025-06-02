@@ -233,8 +233,8 @@ DEFAULT_LANGUAGE = 'ru'
 # languages for init command ['en', 'ru', ..]
 # INIT_LANGS = ['ru', 'en']
 
-# default text to speech engine 'whisper' 'gemini', 'google', 'assembly.ai', 'deepgram_nova3'
-# DEFAULT_STT_ENGINE = 'whisper'
+# default text to speech engine 'auto' 'whisper' 'gemini', 'google', 'assembly.ai', 'deepgram_nova3'
+# DEFAULT_STT_ENGINE = 'auto'
 
 # список админов, кому можно использовать команды /restart и вкл-выкл автоответы в чатах
 admins = [xxx,]

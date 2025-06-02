@@ -27,7 +27,7 @@ import utils
 LOCKS = {}
 
 
-DEFAULT_STT_ENGINE = cfg.DEFAULT_STT_ENGINE if hasattr(cfg, 'DEFAULT_STT_ENGINE') else 'whisper' # 'gemini', 'google', 'assembly.ai'
+DEFAULT_STT_ENGINE = cfg.DEFAULT_STT_ENGINE if hasattr(cfg, 'DEFAULT_STT_ENGINE') else 'auto' # 'whisper', 'gemini', 'google', 'assembly.ai'
 
 
 def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
@@ -113,19 +113,15 @@ def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '')
             done_flag = False
 
             try:
-                # first try google if short
-                # if dur < 30:
-                #     # быстро и хорошо распознает но до 1 минуты всего
-                #     # и часто глотает последнее слово
-                #     try:
-                #         text = stt_google(input_file2, lang)
-                #         if text and not done_flag:
-                #             done_flag = True
-                #             my_db.add_msg(chat_id, 'STT google-free')
-                #     except Exception as unknown_error:
-                #         my_log.log2(str(unknown_error))
-                
                 if not text:
+
+                    # if auto: short - whisper, long - gemini
+                    if speech_to_text_engine == 'auto':
+                        if dur < 120:
+                            speech_to_text_engine = 'whisper'
+                        else:
+                            speech_to_text_engine = 'gemini'
+
                     # try first shot from config
                     if speech_to_text_engine == 'whisper':
                         text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3')

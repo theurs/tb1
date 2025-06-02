@@ -2140,6 +2140,10 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 markup.row(button_filler1)
 
             speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
+            if speech_to_text_engine == 'auto':
+                button0 = telebot.types.InlineKeyboardButton('🎤Auto', callback_data='switch_do_nothing')
+            else:
+                button0 = telebot.types.InlineKeyboardButton('Auto', callback_data='switch_speech_to_text_auto')
             if speech_to_text_engine == 'whisper':
                 button1 = telebot.types.InlineKeyboardButton('🎤Whisper', callback_data='switch_do_nothing')
             else:
@@ -2160,8 +2164,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 button5 = telebot.types.InlineKeyboardButton('🎤Deepgram', callback_data='switch_do_nothing')
             else:
                 button5 = telebot.types.InlineKeyboardButton('Deepgram', callback_data='switch_speech_to_text_deepgram_nova3')
-            markup.row(button1, button2, button3)
-            markup.row(button4, button5)
+            markup.row(button0, button1, button2)
+            markup.row(button3, button4, button5)
 
 
             is_private = message.chat.type == 'private'
@@ -4529,6 +4533,7 @@ def set_stt_mode(message: telebot.types.Message):
     /set_stt_mode <user_id as int> [new_mode]
 
     Available STT Engines:
+    - auto
     - whisper
     - gemini
     - google
@@ -4549,7 +4554,7 @@ def set_stt_mode(message: telebot.types.Message):
             # Show user's current STT engine and available options
             current_stt_engine = my_db.get_user_property(f'[{user_id}] [0]', 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
             msg = f"🎤 {tr('Current STT engine for user', lang)} {user_id}: **{current_stt_engine}**\n\n"
-            msg += f"🗣️ {tr('Available STT engines:', lang)} whisper, gemini, google, assembly.ai, deepgram_nova3\n\n"
+            msg += f"🗣 {tr('Available STT engines:', lang)} auto, whisper, gemini, google, assembly.ai, deepgram_nova3\n\n"
             msg += f"ℹ️ {tr('Usage:', lang)} /set_stt_mode <{tr('user_id', lang)} (int)> [<{tr('new_mode', lang)}>]\n"
             msg += f"Example:\n/set_stt_mode {user_id} whisper"
             msg = utils.bot_markdown_to_html(msg)
@@ -4572,8 +4577,8 @@ def set_stt_mode(message: telebot.types.Message):
 
         new_mode = parts[2].lower()
 
-        if new_mode not in ('whisper', 'gemini', 'google', 'assembly.ai', 'deepgram_nova3'):
-            bot_reply(message, f"Invalid STT engine: {new_mode}. Available engines are whisper, gemini, google, assembly.ai, deepgram_nova3")
+        if new_mode not in ('auto', 'whisper', 'gemini', 'google', 'assembly.ai', 'deepgram_nova3'):
+            bot_reply(message, f"Invalid STT engine: {new_mode}. Available engines are auto, whisper, gemini, google, assembly.ai, deepgram_nova3")
             return
 
         my_db.set_user_property(user_chat_id_full, 'speech_to_text_engine', new_mode)

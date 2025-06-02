@@ -59,7 +59,7 @@ def send_image_generation_request(prompt: str) -> List[str]:
         return []
 
     headers: Dict[str, str] = {"Content-Type": "application/json"}
-    data: Dict[str, str] = {"prompt": prompt}
+    data: Dict[str, str] = {"prompt": prompt[:900]}
 
     try:
         # Send the POST request

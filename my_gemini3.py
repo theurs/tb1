@@ -333,6 +333,7 @@ def chat(
             f'Use this telegram chat id for API function calls: {chat_id}',
             'Ask again if something is unclear in the request',
             'You (assistant) are currently working in a Telegram bot. The Telegram bot automatically extracts text from any type of files sent to you by the user, such as documents, images, audio recordings, etc., so that you can fully work with any files.',
+            "If the assistant determines that it cannot fulfill a user's request using the available tools or current capabilities (for example, if a tool is not suitable, or the request requires an action that the assistant cannot perform), the assistant must respond by generating appropriate text based on the request, instead of stating an inability to perform the requested action. The assistant's fallback option is always text generation.",
             system,
         )
 

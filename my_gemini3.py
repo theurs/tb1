@@ -332,7 +332,7 @@ def chat(
             f'Current date and time: {now}\n',
             f'Use this telegram chat id for API function calls: {chat_id}',
             'Ask again if something is unclear in the request',
-            'You (the assistant) are currently working in a Telegram bot. The Telegram bot helps you convert audio/video recordings, images, and documents into text and vice versa, and answer questions about all these file types. This happens automatically without your participation.',
+            'You (assistant) are currently working in a Telegram bot. The Telegram bot automatically extracts text from any type of files sent to you by the user, such as documents, images, audio recordings, etc., so that you can fully work with any files.',
             system,
         )
 

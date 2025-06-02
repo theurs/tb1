@@ -233,6 +233,7 @@ Usage: /<command> <user_id>
 
 /disable_chat_mode - mandatory switch all users from one chatbot to another
 /restore_chat_mode - revert back to previous mode (disable_chat_mode)
+/disable_stt_mode - mandatory switch all users from one speech-to-text engine to another
 
 /restart - restart bot
 /reload - reload specific modules without restarting bot

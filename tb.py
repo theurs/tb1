@@ -4638,6 +4638,65 @@ def disable_chat_mode(message: telebot.types.Message):
         bot_reply(message, msg, parse_mode='HTML')
 
 
+@bot.message_handler(commands=['disable_stt_mode'], func=authorized_admin)
+@async_run
+def disable_stt_mode(message: telebot.types.Message):
+    """
+    Принудительно переключает движок Speech-to-Text (STT) для всех пользователей
+    с одного движка на другой.
+
+    Использование:
+    /disable_stt_mode <FROM_STT_ENGINE> <TO_STT_ENGINE>
+
+    Пример:
+    /disable_stt_mode whisper auto  # Переключает всех пользователей с 'whisper' на 'auto'
+    """
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        parts = message.text.split(maxsplit=2) # Изменено maxsplit на 2 для двух аргументов
+        AVAILABLE_STT_ENGINES = ['auto', 'whisper', 'gemini', 'google', 'assembly.ai', 'deepgram_nova3']
+        if len(parts) != 3: # Проверяем, что есть ровно 3 части: команда, FROM, TO
+            n = '\n\n'
+            available_engines_str = ", ".join(AVAILABLE_STT_ENGINES)
+            msg = f"{tr('Example usage: /disable_stt_mode FROM_STT_ENGINE TO_STT_ENGINE{n}Available:', lang)} {available_engines_str}"
+            bot_reply(message, msg, parse_mode='HTML')
+            return
+
+        _from_stt = parts[1].strip().lower() # Движок, с которого переключаем
+        _to_stt = parts[2].strip().lower()   # Движок, на который переключаем
+
+        # Проверяем валидность указанных движков
+        if _from_stt not in AVAILABLE_STT_ENGINES or _to_stt not in AVAILABLE_STT_ENGINES:
+            available_engines_str = ", ".join(AVAILABLE_STT_ENGINES)
+            msg = f"{tr('Invalid STT engine specified. Available:', lang)} {available_engines_str}"
+            bot_reply(message, msg, parse_mode='HTML')
+            return
+
+        n_changed = 0 # Количество измененных пользователей
+        all_users_ids = my_db.get_all_users_ids() # Получаем все ID пользователей
+
+        for user_chat_id in all_users_ids:
+            # Проверяем текущий STT движок пользователя
+            current_stt_engine = my_db.get_user_property(user_chat_id, 'speech_to_text_engine')
+            
+            if current_stt_engine == _from_stt:
+                my_db.set_user_property(user_chat_id, 'speech_to_text_engine', _to_stt)
+                n_changed += 1
+
+        msg = f'{tr("Changed STT engine for", lang)} {n_changed} {tr("users.", lang)} {tr("From", lang)} <b>{_from_stt}</b> {tr("to", lang)} <b>{_to_stt}</b>.'
+        bot_reply(message, msg, parse_mode='HTML')
+
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:disable_stt_mode: {e}\n{traceback_error}')
+        n = '\n\n'
+        available_engines_str = ", ".join(AVAILABLE_STT_ENGINES)
+        msg = f"{tr('An error occurred:', lang)} {str(e)}\n\n{tr('Example usage: /disable_stt_mode FROM_STT_ENGINE TO_STT_ENGINE{n}Available:', lang)} {available_engines_str}"
+        bot_reply(message, msg, parse_mode='HTML')
+
+
 @bot.message_handler(commands=['restore_chat_mode'], func=authorized_admin)
 @async_run
 def restore_chat_mode(message: telebot.types.Message):

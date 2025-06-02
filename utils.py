@@ -1279,6 +1279,40 @@ def download_yandex_disk_audio(url: str) -> str:
         return ""
 
 
+def postprocess_ytb_podcast(input_file: str) -> str | None:
+    '''
+    Ускоряет аудиофайл в 1.5 раза, увеличивает громкость в 2 раза с помощью ffmpeg.
+    Перекодирует в Opus (.opus) с битрейтом 24 кбит/с.
+    Возвращает путь к переделанному файлу.
+    '''
+    # Для выходного файла используем .opus
+    output_file = f"{get_tmp_fname()}.opus"
+
+    # Формируем команду ffmpeg
+    # -c:a libopus - используем кодек Opus
+    # -b:a 128k   - устанавливаем целевой битрейт 24 кбит/с
+    # -af 'atempo=1.5,volume=2.0' - применяем аудиофильтры
+    ffmpeg_command = [
+        'ffmpeg',
+        '-i', input_file,
+        '-c:a', 'libopus',
+        '-b:a', '24k', # Целевой битрейт 24 кбит/с
+        '-af', 'atempo=1.5,volume=2.0',
+        output_file
+    ]
+
+    try:
+        subprocess.run(ffmpeg_command, check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        my_log.log2(f'tb:postprocess_ytb_podcast: Ошибка при обработке файла с FFmpeg: {e.stderr.decode("utf-8", errors="ignore")}')
+        return None
+    except Exception as e:
+        my_log.log2(f'tb:postprocess_ytb_podcast: Непредвиденная ошибка при обработке файла: {e}')
+        return None
+
+    return output_file
+
+
 def download_audio(url: str, limit_duration: int = 4 * 60 * 60) -> str | None:
     """
     Downloads audio file using yt-dlp to a temporary folder
@@ -1305,7 +1339,7 @@ def download_audio(url: str, limit_duration: int = 4 * 60 * 60) -> str | None:
         if duration < 10*60:
             quality = 'bestaudio'
         else:
-            quality = 'bestaudio[abr<=128]/bestaudio'
+            quality = 'bestaudio[abr<=256]/bestaudio'
         if hasattr(cfg, 'YTB_PROXY2') and cfg.YTB_PROXY2:
             proxy = random.choice(cfg.YTB_PROXY2)
             subprocess.run([
@@ -1333,6 +1367,11 @@ def download_audio(url: str, limit_duration: int = 4 * 60 * 60) -> str | None:
             return r2
         else:
             return None
+    elif duration > 10*60:
+        r2 = postprocess_ytb_podcast(r)
+        if r2:
+            remove_file(r)
+            return r2
     return r
 
 

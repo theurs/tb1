@@ -5396,7 +5396,7 @@ def google(message: telebot.types.Message):
             with ShowAction(message, 'typing'):
                 COMMAND_MODE[chat_id_full] = ''
                 r, text = my_google.search_v3(
-                    q,
+                    q.lower(),
                     lang,
                     chat_id=chat_id_full,
                     role=role

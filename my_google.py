@@ -18,7 +18,7 @@ import my_tavily
 import utils
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+@cachetools.func.ttl_cache(maxsize=10, ttl=120 * 60)
 def search_v3(query: str,
               lang: str = 'ru',
               max_search: int = 10,

@@ -1837,6 +1837,54 @@ def string_to_dict(input_string: str):
     return None
 
 
+def extract_first_frame_bytes_no_temp(input_bytes: bytes) -> bytes | None:
+    """
+    Извлекает первый кадр из видео или GIF-файла, представленного в байтах,
+    передавая их FFmpeg через stdin, и возвращает байты кадра в формате JPEG.
+    Не использует временные файлы.
+
+    Требует установленного FFmpeg в системе и доступного в PATH.
+
+    Args:
+        input_bytes: Байты входного файла (видео или GIF).
+
+    Returns:
+        Байты изображения (JPEG) первого кадра, если извлечение прошло успешно,
+        иначе None (если это не видео/гиф или произошла ошибка).
+    """
+    
+    command = [
+        'ffmpeg',
+        '-i', 'pipe:0',          # Читать вход из stdin
+        '-vframes', '1',
+        '-f', 'image2pipe',      # Выводим в pipe как изображение
+        '-vcodec', 'mjpeg',      # Кодируем в JPEG
+        '-q:v', '2',             # Качество JPEG (2 - хорошее качество, 1 - лучшее)
+        '-loglevel', 'error',    # Подавляем лишние сообщения, выводим только ошибки
+        'pipe:1'                 # Выводим на stdout
+    ]
+
+    try:
+        process = subprocess.run(
+            command,
+            input=input_bytes,
+            capture_output=True,
+            check=False
+        )
+
+        if process.returncode == 0:
+            return process.stdout
+        else:
+            stderr_output = process.stderr.decode('utf-8', errors='ignore')
+            my_log.log2(f'utils:extract_first_frame_bytes_no_temp: {stderr_output}')
+            return None
+
+    except FileNotFoundError:
+        return None
+    except Exception:
+        return None
+
+
 def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 2000, jpg_quality: int = 60) -> bytes:
     """
     Resizes an image to a maximum size in either dimension,
@@ -1894,6 +1942,12 @@ def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 200
 
         return jpg_data
 
+    except PIL.UnidentifiedImageError as e:
+        jpg_data = extract_first_frame_bytes_no_temp(image_data)
+        if jpg_data:
+            return jpg_data
+        my_log.log2(f'utils:resize_and_convert_to_jpg: {e}')
+        return b''  # Возвращаем пустые байты в случае ошибки
     except Exception as e:
         my_log.log2(f'utils:resize_and_convert_to_jpg: {e}')
         return b''  # Возвращаем пустые байты в случае ошибки

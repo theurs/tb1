@@ -59,6 +59,7 @@ def get_config(
     tools: list = None,
     THINKING_BUDGET: int = -1,
     timeout: int = my_gemini.TIMEOUT,
+    json_output: bool = False,
     ):
     # google_search_tool = Tool(google_search=GoogleSearch())
     # toolcodeexecution = Tool(code_execution=ToolCodeExecution())
@@ -69,7 +70,7 @@ def get_config(
     #     thinking_budget=THINKING_BUDGET,
     #     include_thoughts=True,
     # )
-
+    json = "application/json" if json_output else None
     gen_config = GenerateContentConfig(
         http_options=HttpOptions(timeout=timeout*1000),
         temperature=temperature,
@@ -80,6 +81,7 @@ def get_config(
         # tools = [my_skills.calc, my_skills.search_google]
         tools = tools,
         # thinking_config=thinking_config,
+        response_mime_type=json,
     )
 
     return gen_config
@@ -259,6 +261,8 @@ def chat(
     timeout: int = my_gemini.TIMEOUT,
     use_skills: bool = False,
     THINKING_BUDGET: int = -1,
+    json_output: bool = False,
+    do_not_update_history: bool = False
     ) -> str:
     """Interacts with a generative AI model (presumably Gemini) to process a user query.
 
@@ -278,6 +282,8 @@ def chat(
         max_chat_mem_chars: The maximum number of characters to store in the conversation history.
         timeout: The request timeout in seconds.
         THINKING_BUDGET: The maximum number of tokens to spend on thinking. -1 = AUTO
+        json_output: A boolean flag indicating whether to return the response as a JSON object.
+        do_not_update_history: A boolean flag indicating whether to update the conversation history.
 
     Returns:
         A string containing the model's response, or an empty string if an error occurs or the response is empty.
@@ -311,6 +317,8 @@ def chat(
         if chat_id:
             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
         else:
+            mem = []
+        if do_not_update_history:
             mem = []
 
         # Удаляем старые картинки, остается только последняя если она не была дольше чем 5 запросов назад
@@ -360,6 +368,7 @@ def chat(
                             system_instruction=system_,
                             tools=SKILLS,
                             THINKING_BUDGET=THINKING_BUDGET,
+                            json_output=json_output,
                         ),
                         history=mem,
                     )
@@ -369,6 +378,7 @@ def chat(
                         config=get_config(
                             system_instruction=system_,
                             THINKING_BUDGET=THINKING_BUDGET,
+                            json_output=json_output,
                         ),
                         history=mem,
                     )
@@ -424,7 +434,8 @@ def chat(
                 history = history[-max_chat_lines*2:]
                 my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(history))
                 if chat_id:
-                    my_db.add_msg(chat_id, model)
+                    if not do_not_update_history:
+                        my_db.add_msg(chat_id, model)
 
         return resp.strip()
 
@@ -766,6 +777,87 @@ def convert_mem(chat_id: str):
         my_log.log_gemini(f'my_gemini3:convert_mem:Failed to convert mem: {error}\n\n{error_traceback}')
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl = 10 * 60)
+def translate(
+    text: str,
+    from_lang: str = '',
+    to_lang: str = '',
+    help: str = '',
+    censored: bool = False,
+    model: str = ''
+    ) -> str:
+    """
+    Translates the given text from one language to another.
+    
+    Args:
+        text (str): The text to be translated.
+        from_lang (str, optional): The language of the input text. If not specified, the language will be automatically detected.
+        to_lang (str, optional): The language to translate the text into. If not specified, the text will be translated into Russian.
+        help (str, optional): Help text for tranlator.
+        censored (bool, optional): If True, the text will be censored. Not implemented.
+        model (str, optional): The model to use for translation.
+    Returns:
+        str: The translated text.
+    """
+    if from_lang == '':
+        from_lang = 'autodetect'
+    if to_lang == '':
+        to_lang = 'ru'
+
+    if help:
+        query = f'''
+Translate TEXT from language [{from_lang}] to language [{to_lang}],
+this can help you to translate better: [{help}]
+
+Using this JSON schema:
+  translation = {{"lang_from": str, "lang_to": str, "translation": str}}
+Return a `translation`
+
+TEXT:
+
+{text}
+'''
+    else:
+        query = f'''
+Translate TEXT from language [{from_lang}] to language [{to_lang}].
+
+Using this JSON schema:
+  translation = {{"lang_from": str, "lang_to": str, "translation": str}}
+Return a `translation`
+
+TEXT:
+
+{text}
+'''
+
+    translated = chat(query, temperature=0.1, model=model, json_output = True)
+
+    translated_dict = utils.string_to_dict(translated)
+    if translated_dict:
+        if isinstance(translated_dict, dict):
+            l1 = translated_dict['translation']
+        elif isinstance(translated_dict, str):
+            return translated_dict
+        elif isinstance(translated_dict, list):
+            l1 = translated_dict[0]['translation']
+        else:
+            my_log.log_gemini(f'translate1: unknown type {type(translated_dict)}\n\n{str(translated_dict)}')
+            return text
+        # иногда возвращает словарь в словаре вложенный
+        if isinstance(l1, dict):
+            l2 = l1['translation']
+            return l2
+        elif isinstance(l1, str):
+            return l1
+        elif isinstance(translated_dict, list):
+            text = translated_dict[0]['translation']
+        else:
+            my_log.log_gemini(f'translate2: unknown type {type(l1)}\n\n{str(l1)}')
+            return text
+    return text
+
+
+# одноразовая функция, удалить?
 def converts_all_mems():
     '''
     Конвертирует все записи из старой таблицы dialog_gemini в новую dialog_gemini3

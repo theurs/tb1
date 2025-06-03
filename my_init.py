@@ -6,7 +6,7 @@ import time
 from typing import List, Callable
 
 import cfg
-import my_gemini
+import my_gemini3
 import my_groq
 import my_db
 import my_ddg
@@ -320,7 +320,7 @@ def generate_start_msg():
             continue
 
         msg = ''
-        msg = my_gemini.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
+        msg = my_gemini3.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
 
         if msg == start_msg:
             msg = my_groq.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
@@ -340,9 +340,9 @@ def generate_start_msg():
 
 
 def translate_help_msg(msg_source: str, source: str, target: str) -> str:
-    msg = my_gemini.translate(msg_source, from_lang=source, to_lang=target, help='It is a /help message for telegram chat bot. Keep the formatting.')
+    msg = my_gemini3.translate(msg_source, from_lang=source, to_lang=target, help='It is a /help message for telegram chat bot. Keep the formatting.')
     if not msg or msg.strip() == msg_source.strip():
-        msg = my_gemini.translate(msg_source, from_lang=source, to_lang=target, help='It is a /help message for telegram chat bot. Keep the formatting.', model=cfg.gemini_flash_light_model)
+        msg = my_gemini3.translate(msg_source, from_lang=source, to_lang=target, help='It is a /help message for telegram chat bot. Keep the formatting.', model=cfg.gemini_flash_light_model)
     if not msg or msg.strip() == msg_source.strip():
         msg = my_groq.translate(msg_source, from_lang=source, to_lang=target, help='It is a /help message for telegram chat bot. Keep the formatting.')
     if msg.strip() and msg.strip() != msg_source.strip():
@@ -382,7 +382,7 @@ def regenerate_help_msg(langs):
     print(missing)
 
     for x in langs:
-        msg = my_gemini.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot. Keep the formatting.')
+        msg = my_gemini3.translate(help_msg, from_lang='en', to_lang=x, help='It is a /help message for telegram chat bot. Keep the formatting.')
         if not msg:
             msg = my_groq.translate(
                 help_msg,
@@ -416,7 +416,7 @@ def regenerate_start_msg(langs):
         msg = my_ddg.translate(start_msg, from_lang='en', to_lang=x, help='It is a /start message for telegram chat bot. Keep the formatting.')
         if not msg:
             msg_ = start_msg
-            msg = my_gemini.translate(
+            msg = my_gemini3.translate(
                 start_msg,
                 from_lang='en',
                 to_lang=x,
@@ -478,7 +478,7 @@ def fix_translations(fname: str = start_msg_file, original: str = start_msg, lan
         db = pickle.load(f)
     for lang in langs:
         print(lang)
-        translated = my_gemini.translate(original, to_lang=lang, model = cfg.gemini_pro_model)
+        translated = my_gemini3.translate(original, to_lang=lang, model = cfg.gemini_pro_model)
         if translated:
             if 'no translation needed' in translated.lower():
                 translated = original
@@ -492,7 +492,7 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     my_groq.load_users_keys()
-    my_gemini.load_users_keys()
+    my_gemini3.my_gemini.load_users_keys()
 
     # with open(help_msg_file, 'rb') as f:
     #     d = pickle.load(f)

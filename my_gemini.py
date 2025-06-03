@@ -39,7 +39,6 @@ import utils_llm
 import my_skills
 import my_sum
 import utils
-# import my_skills import get_weather, get_currency_rates, search_google, download_text_from_url, calc, run_script, get_time_in_timezone
 
 
 # каждый юзер дает свои ключи и они используются совместно со всеми

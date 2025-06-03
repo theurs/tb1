@@ -443,7 +443,7 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
 
         translated = ''
 
-        translated = my_gemini.translate(text, to_lang=lang, help=help, censored=True)
+        translated = my_gemini3.translate(text, to_lang=lang, help=help, censored=True)
         if not translated:
             # time.sleep(1)
             # try again and another ai engine
@@ -458,7 +458,7 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
             translated = my_groq.translate(text, to_lang=lang, help=help)
 
         if not translated and not help:
-            translated = my_gemini.translate(text, to_lang=lang, help=help)
+            translated = my_gemini3.translate(text, to_lang=lang, help=help)
 
         if not translated:
             translated = text
@@ -2502,16 +2502,16 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
         elif call.data == 'tts_google_female' and is_admin_member(call):
+            my_db.set_user_property(chat_id_full, 'tts_gender', 'gemini_Achernar')
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+
+        elif call.data.startswith('tts_gemini') and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_alloy')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
         elif call.data.startswith('tts_openai') and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'gemini_Puck')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        elif call.data.startswith('tts_gemini') and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
@@ -3850,7 +3850,7 @@ def translation_gui(message: telebot.types.Message):
                     # translated = key[3]
 
                     if not new_translation:
-                        new_translation = my_gemini.translate(original, to_lang = lang, help = help, censored=True)
+                        new_translation = my_gemini3.translate(original, to_lang = lang, help = help, censored=True)
                     if not new_translation:
                         new_translation = my_groq.translate(original, to_lang = lang, help = help)
                         my_db.add_msg(chat_id_full, my_groq.DEFAULT_MODEL)

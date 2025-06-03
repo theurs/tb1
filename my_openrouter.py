@@ -132,9 +132,11 @@ def ai(prompt: str = '',
     if model in SYSTEMLESS_MODELS:
         system = ''
 
-    mem_ = mem or []
+    mem_ = mem[:] if mem else []
+
+    # некоторые модели не поддерживают system так что оставляем всё на откуп юзеру
     if system:
-        mem_ = [{'role': 'system', 'content': system}] + mem_
+        mem_.insert(0, {"role": "system", "content": system})
     if prompt:
         mem_ = mem_ + [{'role': 'user', 'content': prompt}]
 
@@ -290,12 +292,13 @@ def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = ''
 
 
 def chat_cli(model: str = ''):
+    reset('test')
     while 1:
         q = input('>')
         if q == 'mem':
             print(get_mem_as_string('test'))
             continue
-        s, r = chat(f'(отвечай всегда на языке [ru]) ' + q, 'test', model = model)
+        s, r = chat(q, 'test', model = model, system='отвечай всегда на языке')
         print(r)
 
 
@@ -728,8 +731,9 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
 
-    print(img2txt(r'C:\Users\user\Downloads\samples for ai\большая фотография.jpg', 'извлеки весь текст с картинки, сохрани форматирование', model = 'qwen/qwen2.5-vl-32b-instruct:free'))
+    # print(img2txt(r'C:\Users\user\Downloads\samples for ai\большая фотография.jpg', 'извлеки весь текст с картинки, сохрани форматирование', model = 'qwen/qwen2.5-vl-32b-instruct:free'))
 
+    chat_cli(model='')
 
     # txt2img(
     #     'Girl, portrait, European appearance, long black messy straight hair, dark red sunglasses with a faint red glow coming out from behind it, thin lips, cheekbones, frowning, cyberpunk style, realistic style, dark style, cyberpunk, wearing a red satin waistcoat vest and a necktie over a white satin shirt',

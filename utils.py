@@ -287,6 +287,8 @@ def bot_markdown_to_html(text: str) -> str:
     # при этом не затрагивается то что внутри тегов код, там только экранирование
     # латекс код в тегах $ и $$ меняется на юникод текст
 
+    # меняем латекс выражения
+    text = replace_latex(text)
 
     # Словарь подстрочных символов
     subscript_map = {
@@ -399,8 +401,8 @@ def bot_markdown_to_html(text: str) -> str:
         list_of_code_blocks2.append([match, random_string])
         text = text.replace(f'`{match}`', random_string)
 
-    # меняем латекс выражения
-    text = replace_latex(text)
+    # # меняем латекс выражения
+    # text = replace_latex(text)
 
     # сохраняем 3 звезды что бы их не испортил конвертер списков
     def replace_3_stars(match):
@@ -560,6 +562,9 @@ def bot_markdown_to_html(text: str) -> str:
 
     text = replace_asterisk_with_digits(text)
 
+    # испорченные символы > <
+    text = text.replace('&amp;gt;', '&gt;')
+    text = text.replace('&amp;lt;', '&lt;')
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
@@ -2307,5 +2312,19 @@ if __name__ == '__main__':
     #     html = bot_markdown_to_html(text)
     #     print(html)
 
-    with open(r'c:\Users\user\Downloads\большая фотография (пережато).jpg', 'wb') as f:
-        f.write(resize_and_convert_to_jpg(r'c:\Users\user\Downloads\samples for ai\большая фотография.jpg'))
+
+
+    t = '''
+Конечно, вот как это будет выглядеть на латехе:
+
+\[
+y(x) = 
+\begin{cases}
+10x, & \text{если } x \leq 4 \\
+x - 2, & \text{если } x > 4
+\end{cases}
+\]
+
+Если тебе нужно вставить это в документ или презентацию — просто скопируй этот фрагмент, он корректно отобразится в любом редакторе, поддерживающем LaTeX.
+    '''
+    print(bot_markdown_to_html(t))

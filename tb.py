@@ -99,6 +99,7 @@ else:
 
 _bot_name = bot.get_me().username
 BOT_ID = bot.get_me().id
+cfg._BOT_NAME = _bot_name
 
 
 # телеграм группа для отправки сгенерированных картинок
@@ -2029,9 +2030,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                button2 = telebot.types.InlineKeyboardButton(tr('✅Только голос', lang), callback_data='voice_only_mode_disable')
+                button2 = telebot.types.InlineKeyboardButton(tr('✅ 🗣️ Только голос', lang), callback_data='voice_only_mode_disable')
             else:
-                button2 = telebot.types.InlineKeyboardButton(tr('☑️Только голос', lang), callback_data='voice_only_mode_enable')
+                button2 = telebot.types.InlineKeyboardButton(tr('☑️ 🗣️ Только голос', lang), callback_data='voice_only_mode_enable')
             markup.row(button1, button2)
             if voice_title == 'OpenAI':
                 if 'alloy' in voice:
@@ -2120,20 +2121,20 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             other_notification = my_db.get_user_property(chat_id_full, 'action_style') or ''
             if not other_notification:
-                button2 = telebot.types.InlineKeyboardButton(tr('☑️Other notification', lang), callback_data='switch_action_style')
+                button2 = telebot.types.InlineKeyboardButton(tr('☑️ 🔔 Other notification', lang), callback_data='switch_action_style')
             else:
-                button2 = telebot.types.InlineKeyboardButton(tr('✅Other notification', lang), callback_data='switch_action_style')
+                button2 = telebot.types.InlineKeyboardButton(tr('✅ 🔔 Other notification', lang), callback_data='switch_action_style')
             markup.row(button1, button2)
 
 
             if my_db.get_user_property(chat_id_full, 'transcribe_only'):
-                button1 = telebot.types.InlineKeyboardButton(tr('✅ Voice to text mode', lang), callback_data='transcribe_only_chat_disable')
+                button1 = telebot.types.InlineKeyboardButton(tr('✅ 📝 Voice to text mode', lang), callback_data='transcribe_only_chat_disable')
             else:
-                button1 = telebot.types.InlineKeyboardButton(tr('☑️ Voice to text mode', lang), callback_data='transcribe_only_chat_enable')
+                button1 = telebot.types.InlineKeyboardButton(tr('☑️ 📝 Voice to text mode', lang), callback_data='transcribe_only_chat_enable')
             if my_db.get_user_property(chat_id_full, 'send_message'):
-                button2 = telebot.types.InlineKeyboardButton(tr('✅ Do not reply', lang), callback_data='send_message_chat_switch')
+                button2 = telebot.types.InlineKeyboardButton(tr('✅ ↩️ Do not reply', lang), callback_data='send_message_chat_switch')
             else:
-                button2 = telebot.types.InlineKeyboardButton(tr('☑️ Do not reply', lang), callback_data='send_message_chat_switch')
+                button2 = telebot.types.InlineKeyboardButton(tr('☑️ ↩️ Do not reply', lang), callback_data='send_message_chat_switch')
             markup.row(button1, button2)
 
             if voice_title in ('OpenAI', 'Gemini'):
@@ -2180,9 +2181,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             if flag == 'admin' or is_admin_of_group or from_user in cfg.admins:
                 supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
                 if supch == 1:
-                    button = telebot.types.InlineKeyboardButton(tr('✅Автоответы в чате', lang), callback_data='admin_chat')
+                    button = telebot.types.InlineKeyboardButton(tr('✅ 🤖 Автоответы в чате', lang), callback_data='admin_chat')
                 else:
-                    button = telebot.types.InlineKeyboardButton(tr('☑️Автоответы в чате', lang), callback_data='admin_chat')
+                    button = telebot.types.InlineKeyboardButton(tr('☑️ 🤖 Автоответы в чате', lang), callback_data='admin_chat')
                 if not is_private:
                     markup.add(button)
 

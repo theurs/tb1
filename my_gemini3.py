@@ -14,13 +14,9 @@ from google import genai
 from google.genai.types import (
     Content,
     GenerateContentConfig,
-    GoogleSearch,
     HttpOptions,
     ModelContent,
     SafetySetting,
-    ThinkingConfig,
-    Tool,
-    ToolCodeExecution,
     UserContent
 )
 
@@ -362,6 +358,7 @@ def chat(
                         my_skills.get_currency_rates,
                         my_skills.tts,
                         my_skills.text_to_image,
+                        my_skills.help,
                     ]
                     chat = client.chats.create(
                         model=model,

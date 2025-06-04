@@ -889,36 +889,6 @@ TEXT:
     return text
 
 
-def check_phone_number(number: str) -> str:
-    """проверяет чей номер, откуда звонили"""
-    # remove all symbols except numbers
-    number = re.sub(r'\D', '', number)
-    if len(number) == 11:
-        number = number[1:]
-    urls = [
-        f'https://zvonili.com/phone/{number}',
-        # этот сайт похоже тупо врёт обо всех номерах f'https://abonentik.ru/7{number}',
-        f'https://www.list-org.com/search?type=phone&val=%2B7{number}',
-        f'https://codificator.ru/code/mobile/{number[:3]}',
-    ]
-    text = my_sum.download_text(urls, no_links=True)
-    query = f'''
-Определи по предоставленному тексту какой регион, какой оператор,
-связан ли номер с мошенничеством,
-если связан то напиши почему ты так думаешь,
-ответь на русском языке.
-
-
-Номер +7{number}
-
-Текст:
-
-{text}
-'''
-    response = ai(query[:MAX_SUM_REQUEST])
-    return response, text
-
-
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def sum_big_text(text:str, query: str, temperature: float = 1, role: str = '') -> str:
     """
@@ -941,80 +911,12 @@ def sum_big_text(text:str, query: str, temperature: float = 1, role: str = '') -
     return r.strip()
 
 
-def detect_lang(text: str) -> str:
-    q = f'''Detect language of the text, anwser supershort in 1 word iso_code_639_1 like
-text = The quick brown fox jumps over the lazy dog.
-answer = (en)
-text = "Я люблю программировать"
-answer = (ru)
-
-Text to be detected: {text[:100]}
-'''
-    result = ai(q, temperature=0, model=cfg.gemini25_flash_model, tokens_limit=10)
-    result = result.replace('"', '').replace(' ', '').replace("'", '').replace('(', '').replace(')', '').strip()
-    return result
-
-
 def retranscribe(text: str, prompt: str = '') -> str:
     '''исправить текст после транскрипции выполненной гуглом'''
     if prompt:
         query = f'{prompt}:\n\n{text}'
     else:
         query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
-    result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
-    return result
-
-
-def split_text(text: str, chunk_size: int) -> list:
-    '''Разбивает текст на чанки.
-
-    Делит текст по строкам. Если строка больше chunk_size, 
-    то делит ее на части по последнему пробелу перед превышением chunk_size.
-    '''
-    chunks = []
-    current_chunk = ""
-    for line in text.splitlines():
-        if len(current_chunk) + len(line) + 1 <= chunk_size:
-            current_chunk += line + "\n"
-        else:
-            chunks.append(current_chunk.strip())
-            current_chunk = line + "\n"
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-
-    result = []
-    for chunk in chunks:
-        if len(chunk) <= chunk_size:
-            result.append(chunk)
-        else:
-            words = chunk.split()
-            current_chunk = ""
-            for word in words:
-                if len(current_chunk) + len(word) + 1 <= chunk_size:
-                    current_chunk += word + " "
-                else:
-                    result.append(current_chunk.strip())
-                    current_chunk = word + " "
-            if current_chunk:
-                result.append(current_chunk.strip())
-    return result
-
-
-def rebuild_subtitles(text: str, lang: str) -> str:
-    '''Переписывает субтитры с помощью ИИ, делает легкочитаемым красивым текстом.
-    Args:
-        text (str): текст субтитров
-        lang (str): язык субтитров (2 буквы)
-    '''
-    if len(text) > 25000:
-        chunks = split_text(text, 24000)
-        result = ''
-        for chunk in chunks:
-            r = rebuild_subtitles(chunk, lang)
-            result += r
-        return result
-
-    query = f'Fix errors, make an easy to read text out of the subtitles, make a fine paragraphs and sentences, output language = [{lang}]:\n\n{text}'
     result = ai(query, temperature=0.1, model=cfg.gemini25_flash_model, mem=MEM_UNCENSORED, tokens_limit=8000)
     return result
 
@@ -1065,30 +967,6 @@ def remove_key(key: str):
         my_log.log_gemini(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
 
 
-def test_new_key(key: str) -> bool:
-    """
-    Test if a new key is valid.
-
-    Args:
-        key (str): The key to be tested.
-
-    Returns:
-        bool: True if the key is valid, False otherwise.
-    """
-    try:
-        if key in REMOVED_KEYS:
-            return False
-
-        result = chat('1+1= answer very short', key__=key)
-        if result.strip():
-            return True
-    except Exception as error:
-        error_traceback = traceback.format_exc()
-        my_log.log2(f'my_gemini:test_new_key: {error}\n\n{error_traceback}')
-
-    return False
-
-
 def test_all_keys():
     '''
     Tests all keys in the ALL_KEYS list.
@@ -1112,26 +990,6 @@ def test_all_keys():
         if not r:
             print(key)
             time.sleep(random.randint(2, 5))
-
-
-def list_models(include_context: bool = False):
-    '''
-    Lists all available models.
-    '''
-    genai.configure(api_key = get_next_key())
-    result = []
-    for model in genai.list_models():
-        # pprint.pprint(model)
-        # result += f'{model.name}: {model.display_name} | in {model.input_token_limit} out {model.output_token_limit}\n{model.description}\n\n'
-        if not model.name.startswith(('models/chat', 'models/text', 'models/embedding', 'models/aqa')):
-            if include_context:
-                result += [f'{model.name} {int(model.input_token_limit/1024)}k/{int(model.output_token_limit/1024)}k',]
-            else:
-                result += [f'{model.name}',]
-    # sort results
-    result = sorted(result)
-        
-    return '\n'.join(result)
 
 
 def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bool, bool] | None:
@@ -1180,69 +1038,6 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
     return None
 
 
-def get_reprompt_for_edit_image(prompt: str, images: list, chat_id: str = '') -> tuple[str, bool, bool] | None:
-    """
-    Generates a detailed prompt for image editing based on user query and image.
-
-    Args:
-        prompt: User's query for image generation.
-        images: List of image bytes.
-    Returns:
-        A tuple of 3 elements: (reprompt, moderation_sexual, moderation_hate)
-        or None if an error occurred.
-    """
-
-    # магия плохо работает по-этому отключено пока
-    return (prompt, False, False)
-
-    prompt_ = f'''
-User want to edit image.
-Repromt user's PROMPT.
-Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
-Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
-
-</USER PROMPT>{prompt}</USER PROMPT>.
-
-Using this JSON schema:
-  reprompt = {{"reprompt": str, "moderation_sexual": bool, "moderation_hate": bool}}
-Return a `reprompt`
-'''
-
-    query = [prompt_,]
-
-    for image in images:
-        data = io.BytesIO(image)
-        img = PIL.Image.open(data)
-        query.append(img)
-
-    result = chat(query,
-                  temperature=1.5,
-                  json_output=True,
-                  model=cfg.gemini25_flash_model,
-                  chat_id=chat_id,
-                  do_not_update_history=True
-                  )
-    result_dict = utils.string_to_dict(result)
-    if result_dict:
-        reprompt = ''
-        moderation_sexual = False
-        moderation_hate = False
-        if 'reprompt' in result_dict:
-            reprompt = result_dict['reprompt']
-        if 'moderation_sexual' in result_dict:
-            moderation_sexual = result_dict['moderation_sexual']
-            if moderation_sexual:
-                my_log.log_reprompt_moderation(f'MODERATION image reprompt failed: {prompt}')
-        if 'moderation_hate' in result_dict:
-            moderation_hate = result_dict['moderation_hate']
-            if moderation_hate:
-                my_log.log_reprompt_moderation(f'MODERATION image reprompt failed: {prompt}')
-
-        if reprompt:
-            return reprompt, moderation_sexual, moderation_hate
-    return None
-
-
 def ocr_page(data: bytes, prompt: str = None) -> str:
     '''
     OCRs the image and returns the text in markdown.
@@ -1263,43 +1058,6 @@ def ocr_page(data: bytes, prompt: str = None) -> str:
         text = img2txt(data, prompt, temp=0.1, model=cfg.gemini25_flash_model_fallback)
 
     return text
-
-
-def rewrite_for_tts(text: str, chat_id_full: str, lang: str) -> str:
-    '''
-    Rewrite the text for TTS.
-    Тут у нас 2 противоположные инструкции, с одной стороны надо сказать что бы не переводил ничего на другой язык
-    а с другой надо транслитерировать иностранные слова. Из за этого плохо работает (не работает).
-    '''
-    
-    PROMPT_REWRITE_TEXT_FOR_TTS = '''Rewrite text. Preserve the original formatting, including line breaks. Never translate the text, keep original languages in text! Rewrite the text for TTS reading:
-
-1. Numbers: Write all numbers in words. For decimal fractions, use the separator for the integer and fractional parts accepted in the original language and pronounce it with the corresponding word. For example: 0.25 - "zero point twenty-five" (for a point), 3.14 - "three comma fourteen" (for a comma).
-2. Abbreviations: Expand all abbreviations into full words corresponding to the original language. For example: "kg" - "kilogram" (for the English language).
-3. Dates: Write dates in words, preserving the order of day, month, and year accepted in the original language. For example, for the English language (US): January 1st, 2024.
-4. Symbols: Replace all & symbols with the word corresponding to the conjunction "and" in the original language.
-5. Symbol №: Replace with the word 'number'.
-6. Mathematical expressions: Rewrite in words: √ - square root of, ∑ - sum, ∫ - integral, ≠ - not equal to, ∞ - infinity, π - pi, α - alpha, β - beta, γ - gamma.
-7. Punctuation: After periods, make a longer pause, after commas - a shorter one.
-8. URLs:
-* If the URL is short, simple, and understandable (for example, google.com, youtube.com/watch, vk.com/id12345), pronounce it completely, following the reading rules for known and unknown domains, as well as subdomains. For known domains (.ru, .com, .org, .net, .рф), pronounce them as abbreviations. For example, ".ru" - "dot ru", ".com" - "dot com", ".рф" - "dot er ef". For unknown domains, pronounce them character by character. Subdomains, if possible, read in words.
-    * If the URL is long, complex, or contains many special characters, do not pronounce it completely. Instead, mention that there is a link in the text, and, if possible, indicate the domain or briefly describe what it leads to. For example: "There is a link to the website example dot com in the text" or "Further in the text there is a link to a page with detailed information".
-    * When reading a domain, do not pronounce "www".
-    * If the URL is not important for understanding the text, you can ignore it.
-    Use your knowledge of the structure of URLs to determine if it is simple and understandable.
-
-Examples:
-
-* https://google.com - "google dot com"
-* youtube.com/watch?v=dQw4w9WgXcQ - "youtube dot com slash watch question mark v equals ... (do not read further)"
-* https://www.example.com/very/long/and/complex/url/with/many/parameters?param1=value1&param2=value2 - "There is a long link to the website example dot com in the text"
-* 2+2≠5 - "two plus two is not equal to five"'''
-
-    result = chat(text, system=PROMPT_REWRITE_TEXT_FOR_TTS, model = cfg.gemini25_flash_model, chat_id=chat_id_full, do_not_update_history=True)
-    if not result:
-        result = chat(text, system=PROMPT_REWRITE_TEXT_FOR_TTS, model = cfg.gemini25_flash_model_fallback, chat_id=chat_id_full, do_not_update_history=True)
-    
-    return result or text
 
 
 if __name__ == '__main__':

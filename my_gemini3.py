@@ -258,7 +258,8 @@ def chat(
     use_skills: bool = False,
     THINKING_BUDGET: int = -1,
     json_output: bool = False,
-    do_not_update_history: bool = False
+    do_not_update_history: bool = False,
+    key__: str = '',
     ) -> str:
     """Interacts with a generative AI model (presumably Gemini) to process a user query.
 
@@ -346,7 +347,10 @@ def chat(
             response = None
 
             try:
-                key = my_gemini.get_next_key()
+                if key__:
+                    key = key__
+                else:
+                    key = my_gemini.get_next_key()
                 client = genai.Client(api_key=key, http_options={'timeout': timeout * 1000})
                 if use_skills:
                     SKILLS = [
@@ -855,6 +859,140 @@ TEXT:
     return text
 
 
+def detect_lang(text: str, chat_id_full: str) -> str:
+    q = f'''Detect language of the text, anwser supershort in 1 word iso_code_639_1 like
+text = The quick brown fox jumps over the lazy dog.
+answer = (en)
+text = "Я люблю программировать"
+answer = (ru)
+
+Text to be detected: {text[:100]}
+'''
+    result = chat(
+        q,
+        chat_id=chat_id_full,
+        temperature=0,
+        model=cfg.gemini25_flash_model,
+        max_tokens=10,
+        do_not_update_history=True,
+        timeout=30,
+    )
+    result = result.replace('"', '').replace(' ', '').replace("'", '').replace('(', '').replace(')', '').strip().lower()
+    return result
+
+
+def rebuild_subtitles(text: str, lang: str, chat_id_full: str) -> str:
+    '''Переписывает субтитры с помощью ИИ, делает легкочитаемым красивым текстом.
+    Args:
+        text (str): текст субтитров
+        lang (str): язык субтитров (2 буквы)
+        chat_id_full (str): id чата
+    '''
+    def split_text(text: str, chunk_size: int) -> list:
+        '''Разбивает текст на чанки.
+
+        Делит текст по строкам. Если строка больше chunk_size, 
+        то делит ее на части по последнему пробелу перед превышением chunk_size.
+        '''
+        chunks = []
+        current_chunk = ""
+        for line in text.splitlines():
+            if len(current_chunk) + len(line) + 1 <= chunk_size:
+                current_chunk += line + "\n"
+            else:
+                chunks.append(current_chunk.strip())
+                current_chunk = line + "\n"
+        if current_chunk:
+            chunks.append(current_chunk.strip())
+
+        result = []
+        for chunk in chunks:
+            if len(chunk) <= chunk_size:
+                result.append(chunk)
+            else:
+                words = chunk.split()
+                current_chunk = ""
+                for word in words:
+                    if len(current_chunk) + len(word) + 1 <= chunk_size:
+                        current_chunk += word + " "
+                    else:
+                        result.append(current_chunk.strip())
+                        current_chunk = word + " "
+                if current_chunk:
+                    result.append(current_chunk.strip())
+        return result
+
+
+    if len(text) > 25000:
+        chunks = split_text(text, 24000)
+        result = ''
+        for chunk in chunks:
+            r = rebuild_subtitles(chunk, lang, chat_id_full)
+            result += r
+        return result
+
+    query = f'Fix errors, make an easy to read text out of the subtitles, make a fine paragraphs and sentences, output language = [{lang}]:\n\n{text}'
+    result = chat(
+        query,
+        chat_id=chat_id_full,
+        temperature=0.1,
+        model=cfg.gemini25_flash_model,
+        do_not_update_history=True,
+    )
+    return result
+
+
+def list_models(include_context: bool = False):
+    '''
+    Lists all available models.
+    '''
+    client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'timeout': 20 * 1000})
+
+    result = []
+    for model in client._models.list():
+        # pprint.pprint(model)
+        # result += f'{model.name}: {model.display_name} | in {model.input_token_limit} out {model.output_token_limit}\n{model.description}\n\n'
+        if not model.name.startswith(('models/chat', 'models/text', 'models/embedding', 'models/aqa')):
+            if include_context:
+                result += [f'{model.name} {int(model.input_token_limit/1024)}k/{int(model.output_token_limit/1024)}k',]
+            else:
+                result += [f'{model.name}',]
+    # sort results
+    result = sorted(result)
+        
+    return '\n'.join(result)
+
+
+def test_new_key(key: str, chat_id_full: str) -> bool:
+    """
+    Test if a new key is valid.
+
+    Args:
+        key (str): The key to be tested.
+
+    Returns:
+        bool: True if the key is valid, False otherwise.
+    """
+    try:
+        if key in my_gemini.REMOVED_KEYS:
+            return False
+
+        result = chat(
+            '1+1= answer very short',
+            chat_id=chat_id_full,
+            key__=key,
+            timeout=30,
+            do_not_update_history=True,
+        )
+        if result.strip():
+            return True
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'my_gemini3:test_new_key: {error}\n\n{error_traceback}')
+
+    return False
+
+
 # одноразовая функция, удалить?
 def converts_all_mems():
     '''
@@ -877,6 +1015,7 @@ if __name__ == "__main__":
 
     # один раз запустить надо
     # converts_all_mems()
+    # print(list_models(include_context=False))
 
     chat_cli(model = cfg.gemini_flash_light_model)
 

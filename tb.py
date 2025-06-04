@@ -563,7 +563,7 @@ def get_intention(query, chat_id_full) -> str:
 {query}
 '''
 
-    r = my_gemini.chat(
+    r = my_gemini3.chat(
         q,
         chat_id = chat_id_full,
         temperature=0.1,
@@ -623,17 +623,7 @@ def img2img(text,
     """
     images = [text,]
 
-    reprompt, m_sex, m_hate = my_gemini.get_reprompt_for_edit_image(
-        query,
-        images,
-        chat_id=chat_id_full
-        )
-    if not reprompt:
-        reprompt = query
-    else:
-        if m_sex or m_hate:
-            pass
-    return my_gemini_genimg.regenerate_image(reprompt, sources_images=images, user_id=chat_id_full)
+    return my_gemini_genimg.regenerate_image(query, sources_images=images, user_id=chat_id_full)
 
 
 def img2txt(text,
@@ -2333,7 +2323,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 detected_lang = my_tts.detect_lang_carefully(text)
                 if not detected_lang:
                     detected_lang = lang or "de"
-                # rewrited_text = my_gemini.rewrite_for_tts(text, chat_id_full, lang)
+
                 rewrited_text = text
                 message.text = f'/tts {detected_lang} {rewrited_text}'
                 tts(message)
@@ -2991,7 +2981,7 @@ def process_image_stage_2(
                             reply_markup=get_keyboard('chat', message),
                         )
                         if image_prompt == tr(my_init.PROMPT_COPY_TEXT_TTS, lang):
-                            message.text = f'/tts {my_gemini.detect_lang(text)} {text}'
+                            message.text = f'/tts {my_gemini3.detect_lang(text, chat_id_full=chat_id_full)} {text}'
                             tts(message)
                     elif isinstance(text, bytes):
                         m = send_photo(
@@ -3454,7 +3444,7 @@ def gmodel(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
-        current_list = my_gemini.list_models()  # текущий список моделей (строка с переносами)
+        current_list = my_gemini3.list_models()  # текущий список моделей (строка с переносами)
         prev_list = KV_STORAGE.get('gemini_models', '')
         KV_STORAGE['gemini_models'] = current_list
 
@@ -4020,7 +4010,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
                     new_keys = []
                     for key in keys:
                         if key not in my_gemini.ALL_KEYS and key not in cfg.gemini_keys:
-                            if my_gemini.test_new_key(key):
+                            if my_gemini3.test_new_key(key, chat_id_full):
                                 my_gemini.ALL_KEYS.append(key)
                                 new_keys.append(key)
                                 added_flag = True
@@ -5308,7 +5298,7 @@ def tts(message: telebot.types.Message, caption = None):
                     ('vk.com' in url and '/video-' in url) or \
                     ('//my.mail.ru/v/' in url and '/video/' in url):
                     text = my_sum.get_text_from_youtube(url, lang)
-                    text = my_gemini.rebuild_subtitles(text, lang)
+                    text = my_gemini3.rebuild_subtitles(text, lang, chat_id_full)
                     if text:
                         text = utils.bot_markdown_to_html(text)
                         if len(text) > 1 and len(text) < 40000:
@@ -8495,19 +8485,9 @@ def handle_photo(message: telebot.types.Message):
                         # Если прислали группу картинок и запрос начинается на ! то перенаправляем запрос в редактирование картинок
                         if caption.startswith('!'):
                             caption = caption[1:]
-                            reprompt, m_sex, m_hate = my_gemini.get_reprompt_for_edit_image(
-                                caption,
-                                images,
-                                chat_id=chat_id_full
-                                )
-                            if not reprompt:
-                                reprompt = caption
-                            else:
-                                if m_sex or m_hate:
-                                    pass
 
                             image = my_gemini_genimg.regenerate_image(
-                                prompt = reprompt,
+                                prompt = caption,
                                 sources_images=images,
                                 user_id=chat_id_full)
                             if image:
@@ -8922,7 +8902,6 @@ def do_task(message, custom_prompt: str = ''):
                             my_db.set_user_property(chat_id_full, 'saved_file', text__)
                         else:
                             with ShowAction(message, 'typing'):
-                                # response, text__ = my_gemini.check_phone_number(number)
                                 response, text__ = my_groq.check_phone_number(number)
                                 my_db.add_msg(chat_id_full, my_groq.DEFAULT_MODEL)
                         if response:

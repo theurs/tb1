@@ -493,7 +493,7 @@ ls -l
 def help(user_id: str) -> str:
     '''
     Return help info about assistants skills and abilities.
-    Use it if user asks about your abilities.
+    Use it if user asks about your and telegram bot abilities.
     '''
     my_log.log_gemini_skills(f'help {user_id}')
 

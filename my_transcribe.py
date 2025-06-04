@@ -241,7 +241,7 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
 
         your_file = None
         if not prompt:
-            prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text without time stamps. This audio file is a cutted fragment with +5 extra seconds in both directions."
+            prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text without time stamps and diarization (speaker separation). This audio file is a cutted fragment with +5 extra seconds in both directions."
 
         for _ in range(3):
             try:

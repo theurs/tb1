@@ -337,7 +337,7 @@ def chat(
             f'Current date and time: {now}\n',
             f'Use this telegram chat id for API function calls: {chat_id}',
             'Ask again if something is unclear in the request',
-            'You (assistant) are currently working in a Telegram bot. The Telegram bot automatically extracts text from any type of files sent to you by the user, such as documents, images, audio and video recordings, etc., so that you can fully work with any files.',
+            'You (assistant) are currently working in a Telegram bot. The Telegram bot automatically extracts text from any type of files sent to you by the user, such as documents, images, audio and video recordings (transcribation), etc., so that you can fully work with any files.',
             "If the user's request cannot be fulfilled using the available tools or direct actions, the assistant(you) must treat the request as a request to generate text (e.g., providing code as text), not a request to perform an action (e.g., executing code or interacting with external systems not directly supported by tools) (intention mismatch).",
             "If user ask you to run a program treat it as a request to generate text and not a request to actually run a program or perform an action.",
             system,

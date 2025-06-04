@@ -66,6 +66,7 @@ def tts(
     '''
     Generate and send audio message from text to user.
     Use it only if asked by user to generate audio from text.
+    You can use it only once per message, never split it into multiple messages.
     Args:
         text: str - text to say (up to 8000 symbols)
         lang: str - language code

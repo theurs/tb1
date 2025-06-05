@@ -206,13 +206,13 @@ def search_google_fast(query: str, lang: str = 'ru') -> str:
         In case of an error, returns a string 'ERROR' with the error description.
     """
     query = decode_string(query)
-    my_log.log_gemini_skills(f'Google: {query}')
+    my_log.log_gemini_skills(f'Fast Google search: {query}')
     try:
         r = my_google.search_v3(query.lower(), lang = lang, download_only=True, fast_search=True)
-        my_log.log_gemini_skills(f'Google: {r[:2000]}')
+        my_log.log_gemini_skills(f'Fast Google search: {r[:2000]}')
         return r
     except Exception as error:
-        my_log.log_gemini_skills(f'search_google:Error: {error}')
+        my_log.log_gemini_skills(f'search_google_fast:Error: {error}')
         return f'ERROR {error}'
 
 
@@ -231,10 +231,10 @@ def search_google_deep(query: str, lang: str = 'ru') -> str:
         In case of an error, returns a string 'ERROR' with the error description.
     """
     query = decode_string(query)
-    my_log.log_gemini_skills(f'Google: {query}')
+    my_log.log_gemini_skills(f'Deep Google search: {query}')
     try:
         r = my_google.search_v3(query.lower(), lang = lang, download_only=True)
-        my_log.log_gemini_skills(f'Google: {r[:2000]}')
+        my_log.log_gemini_skills(f'Deep Google search: {r[:2000]}')
         return r
     except Exception as error:
         my_log.log_gemini_skills(f'search_google_deep:Error: {error}')

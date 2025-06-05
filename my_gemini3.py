@@ -4,6 +4,7 @@
 import cachetools.func
 import io
 import PIL
+import re
 import time
 import threading
 import traceback
@@ -437,6 +438,19 @@ def chat(
                 break
 
         if resp:
+
+            # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
+            # куча пробелов, и возможно другие тоже. укорачиваем
+            result_ = re.sub(r" {1000,}", " " * 10, resp) # очень много пробелов в ответе
+            result_ = utils.shorten_all_repeats(result_)
+            if len(result_)+100 < len(resp): # удалось сильно уменьшить
+                resp = result_
+                try:
+                    chat._curated_history[-1].parts[-1].text = resp
+                except Exception as error4:
+                    my_log.log_gemini(f'my_gemini3:chat4: {error4}\nresult: {result}\nchat history: {str(chat_.history)}')
+
+
             history = chat.get_history()
             if history:
                 history = history[-max_chat_lines*2:]

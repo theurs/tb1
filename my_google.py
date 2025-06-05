@@ -39,6 +39,14 @@ def search_v3(query: str,
                 return response
             else:
                 return response, response
+        else:
+            # пробуем спросить в гугле, он быстрый
+            google_response = my_gemini_google.google_search(query, chat_id, role=role, lang=lang)
+            if google_response:
+                if download_only:
+                    return google_response
+                else:
+                    return google_response, google_response
 
     if not query.startswith('!'):
         # пробуем спросить в tavily

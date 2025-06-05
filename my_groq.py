@@ -453,7 +453,14 @@ def chat(query: str, chat_id: str,
         return r
 
 
-def search(query: str, language: str = 'ru', system: str = '', user_id: str = '', model: str = 'compound-beta-mini', timeout = 20) -> str:
+def search(
+    query: str,
+    language: str = 'ru',
+    system: str = '',
+    user_id: str = '',
+    model: str = 'compound-beta-mini',
+    timeout = 20
+    ) -> str:
     '''
     Использует модель compound-beta для поиска в интернете
     '''

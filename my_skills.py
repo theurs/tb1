@@ -73,10 +73,13 @@ def restore_id(chat_id: str) -> str:
         except ValueError:
             return False
 
+    pattern = r'^\[-?\d+\] \[\d+\]$'
+    if re.fullmatch(pattern, chat_id):
+        return chat_id
+
     # remove all symbols except numbers, minus and brackets
     chat_id = re.sub(r'[^0-9\-]', ' ', chat_id)
     chat_id = re.sub(r'\s+', ' ', chat_id).strip()
-    
 
     # chat_id может приехать в виде одного числа - надо проверять и переделывать, добавлять скобки и число
     if is_integer(chat_id):
@@ -107,6 +110,8 @@ def tts(
         natural: bool - use natural voice, better quality, default is False
     Example: tts("Привет", "ru")
     '''
+
+    chat_id = restore_id(chat_id)
 
     my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}" "{natural}" "{chat_id}"')
 
@@ -212,7 +217,7 @@ def get_currency_rates(date: str = '') -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def search_google_fast(query: str, lang: str = 'ru') -> str:
+def search_google_fast(query: str, lang: str = 'ru', chat_id: str = '') -> str:
     """
     Fast searches Google for the given query and returns the search results.
     You are able to mix this functions with other functions and your own ability to get best results for your needs.
@@ -220,15 +225,24 @@ def search_google_fast(query: str, lang: str = 'ru') -> str:
     Args:
         query: The search query string.
         lang: The language to use for the search.
+        chat_id: The chat ID to send the search results to.
 
     Returns:
         A string containing the search results.
         In case of an error, returns a string 'ERROR' with the error description.
     """
-    query = decode_string(query)
-    my_log.log_gemini_skills(f'Fast Google search: [{lang}] {query}')
     try:
-        r = my_google.search_v3(query.lower(), lang = lang, download_only=True, fast_search=True)
+        chat_id = restore_id(chat_id)
+        query = decode_string(query)
+        my_log.log_gemini_skills(f'Fast Google search: [{lang}] {query}')
+
+        r = my_google.search_v3(
+            query.lower(),
+            lang = lang,
+            download_only=True,
+            chat_id=chat_id,
+            fast_search=True
+        )
         my_log.log_gemini_skills(f'Fast Google search: {r[:2000]}')
         return r
     except Exception as error:
@@ -237,7 +251,7 @@ def search_google_fast(query: str, lang: str = 'ru') -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def search_google_deep(query: str, lang: str = 'ru') -> str:
+def search_google_deep(query: str, lang: str = 'ru', chat_id: str = '') -> str:
     """
     Deep searches Google for the given query and returns the search results.
     You are able to mix this functions with other functions and your own ability to get best results for your needs.
@@ -245,15 +259,23 @@ def search_google_deep(query: str, lang: str = 'ru') -> str:
     Args:
         query: The search query string.
         lang: The language to use for the search.
+        chat_id: The chat ID to send the search results to.
 
     Returns:
         A string containing the search results.
         In case of an error, returns a string 'ERROR' with the error description.
     """
-    query = decode_string(query)
-    my_log.log_gemini_skills(f'Deep Google search: [{lang}] {query}')
     try:
-        r = my_google.search_v3(query.lower(), lang = lang, download_only=True)
+        chat_id = restore_id(chat_id)
+        query = decode_string(query)
+        my_log.log_gemini_skills(f'Deep Google search: [{lang}] {query}')
+
+        r = my_google.search_v3(
+            query.lower(),
+            lang = lang,
+            chat_id=chat_id,
+            download_only=True
+        )
         my_log.log_gemini_skills(f'Deep Google search: {r[:2000]}')
         return r
     except Exception as error:
@@ -293,8 +315,15 @@ def decode_string(s: str) -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
-def calc(expression: str) -> str:
+def calc(expression: str, chat_id: str = '') -> str:
     '''Calculate expression with pythons eval(). Use it for all calculations.
+    Args:
+        expression: The expression to calculate.
+        chat_id: The chat ID to send the search results to.
+
+    Returns:
+        A string containing the result of the calculation.
+
     Available modules: decimal, math, mpmath, numbers, numpy, random, datetime.
     Do not import them, they are already imported.
     Use only one letter variables.
@@ -311,8 +340,10 @@ def calc(expression: str) -> str:
               etc
     '''
     try:
+        chat_id = restore_id(chat_id)
+
         my_log.log_gemini_skills(f'New calc: {expression}')
-        # expression = expression.replace('math.factorial', 'my_factorial')
+
         # decimal, math, mpmath, numbers, numpy, random, datetime
         allowed_functions = {
             'math': math,
@@ -335,16 +366,18 @@ def calc(expression: str) -> str:
             'float': float,
             'int': int,
         }
+
         result = str(simple_eval(expression, functions=allowed_functions))
+
         my_log.log_gemini_skills(f'Internal calc result: {result}')
+
         return result
     except Exception as error:
         #first try groq
-        r = my_groq.calc(expression)
+        r = my_groq.calc(expression, user_id=chat_id)
         if r:
-            my_db.add_msg('groq-calc', 'compound-beta')
             return r
-        r1, r0 = my_gemini_google.calc(expression)
+        r1, r0 = my_gemini_google.calc(expression, chat_id)
         result = f'{r0}\n\n{r1}'.strip()
         if result:
             my_log.log_gemini_skills(f'Google calc result: {result}')

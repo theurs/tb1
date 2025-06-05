@@ -268,7 +268,7 @@ def search_google_deep(query: str, lang: str = 'ru', chat_id: str = '') -> str:
     try:
         chat_id = restore_id(chat_id)
         query = decode_string(query)
-        my_log.log_gemini_skills(f'Deep Google search: [{lang}]  {chat_id} {query}')
+        my_log.log_gemini_skills(f'Deep Google search: [{lang}] {chat_id} {query}')
 
         r = my_google.search_v3(
             query.lower(),

@@ -234,7 +234,7 @@ def search_google_fast(query: str, lang: str = 'ru', chat_id: str = '') -> str:
     try:
         chat_id = restore_id(chat_id)
         query = decode_string(query)
-        my_log.log_gemini_skills(f'Fast Google search: [{lang}] [{chat_id}] {query}')
+        my_log.log_gemini_skills(f'Fast Google search: [{lang}] {chat_id} {query}')
 
         r = my_google.search_v3(
             query.lower(),
@@ -268,7 +268,7 @@ def search_google_deep(query: str, lang: str = 'ru', chat_id: str = '') -> str:
     try:
         chat_id = restore_id(chat_id)
         query = decode_string(query)
-        my_log.log_gemini_skills(f'Deep Google search: [{lang}]  [{chat_id}] {query}')
+        my_log.log_gemini_skills(f'Deep Google search: [{lang}]  {chat_id} {query}')
 
         r = my_google.search_v3(
             query.lower(),
@@ -342,7 +342,7 @@ def calc(expression: str, chat_id: str = '') -> str:
     try:
         chat_id = restore_id(chat_id)
 
-        my_log.log_gemini_skills(f'New calc: [{chat_id}] {expression}')
+        my_log.log_gemini_skills(f'New calc: {chat_id} {expression}')
 
         # decimal, math, mpmath, numbers, numpy, random, datetime
         allowed_functions = {

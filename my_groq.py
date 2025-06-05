@@ -962,8 +962,8 @@ if __name__ == '__main__':
 
     # print(search('покажи полный текст песни братьев газьянов - малиновая лада'))
 
-    # reset('test')
-    # chat_cli(model = 'compound-beta')
+    reset('test')
+    chat_cli() #(model = 'compound-beta')
 
     # print(stt('d:\\downloads\\1.ogg', 'en'))
 
@@ -972,7 +972,7 @@ if __name__ == '__main__':
 
     # print(sum_big_text(text, 'сделай подробный пересказ по тексту'))
 
-    for k in cfg.GROQ_API_KEY:
-        print(k, test_key(k))
+    # for k in cfg.GROQ_API_KEY:
+    #     print(k, test_key(k))
 
     my_db.close()

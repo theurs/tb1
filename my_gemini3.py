@@ -117,6 +117,11 @@ def img2txt(
                 timeout=timeout
             )
 
+            # хз почему он так отвечает иногда, это должно быть как то связано с функцией tb:get_intention
+            # но как не понятно
+            if res == 'ask_image':
+                return ''
+
             return res
         except Exception as error:
             if 'cannot identify image file' in str(error):
@@ -355,7 +360,8 @@ def chat(
                 if use_skills:
                     SKILLS = [
                         my_skills.calc,
-                        my_skills.search_google,
+                        my_skills.search_google_fast,
+                        my_skills.search_google_deep,
                         my_skills.download_text_from_url,
                         my_skills.get_time_in_timezone,
                         my_skills.get_weather,

@@ -192,9 +192,34 @@ def get_currency_rates(date: str = '') -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def search_google(query: str, lang: str = 'ru') -> str:
+def search_google_fast(query: str, lang: str = 'ru') -> str:
     """
-    Searches Google for the given query and returns the search results.
+    Fast searches Google for the given query and returns the search results.
+    You are able to mix this functions with other functions and your own ability to get best results for your needs.
+
+    Args:
+        query: The search query string.
+        lang: The language to use for the search.
+
+    Returns:
+        A string containing the search results.
+        In case of an error, returns a string 'ERROR' with the error description.
+    """
+    query = decode_string(query)
+    my_log.log_gemini_skills(f'Google: {query}')
+    try:
+        r = my_google.search_v3(query.lower(), lang = lang, download_only=True, fast_search=True)
+        my_log.log_gemini_skills(f'Google: {r[:2000]}')
+        return r
+    except Exception as error:
+        my_log.log_gemini_skills(f'search_google:Error: {error}')
+        return f'ERROR {error}'
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
+def search_google_deep(query: str, lang: str = 'ru') -> str:
+    """
+    Deep searches Google for the given query and returns the search results.
     You are able to mix this functions with other functions and your own ability to get best results for your needs.
 
     Args:
@@ -212,7 +237,7 @@ def search_google(query: str, lang: str = 'ru') -> str:
         my_log.log_gemini_skills(f'Google: {r[:2000]}')
         return r
     except Exception as error:
-        my_log.log_gemini_skills(f'search_google:Error: {error}')
+        my_log.log_gemini_skills(f'search_google_deep:Error: {error}')
         return f'ERROR {error}'
 
 

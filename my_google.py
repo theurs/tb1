@@ -24,10 +24,21 @@ def search_v3(query: str,
               max_search: int = 10,
               download_only = False,
               chat_id: str = '',
-              role: str = ''):
+              role: str = '',
+              fast_search: bool = False,
+    ):
 
     query = query.strip()
     text = ''
+
+    if fast_search:
+        # пробуем спросить в гроке, он быстрый
+        response = my_groq.search(query, lang, system = role, user_id = chat_id)
+        if response:
+            if download_only:
+                return response
+            else:
+                return response, response
 
     if not query.startswith('!'):
         # пробуем спросить в tavily
@@ -42,7 +53,6 @@ def search_v3(query: str,
             else:
                 # return response['answer'], str(response)
                 text = str(response)
-
 
     if not text:
         if not query.startswith('!'):

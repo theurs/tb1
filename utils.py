@@ -287,9 +287,6 @@ def bot_markdown_to_html(text: str) -> str:
     # при этом не затрагивается то что внутри тегов код, там только экранирование
     # латекс код в тегах $ и $$ меняется на юникод текст
 
-    # меняем латекс выражения
-    text = replace_latex(text)
-
     # Словарь подстрочных символов
     subscript_map = {
         '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅',
@@ -359,9 +356,6 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем трехбайтовые утф8 символы для математики которые бот иногда вставляет вместо самих символов
     text = replace_math_byte_sequences(text)
 
-    # экранируем весь текст для html, потом надо будет вернуть теги <u>
-    text = html.escape(text)
-
     # надо заранее найти в таблицах блоки кода (однострочного `кода`) и заменить ` на пробелы
     text = clear_tables(text)
 
@@ -401,8 +395,12 @@ def bot_markdown_to_html(text: str) -> str:
         list_of_code_blocks2.append([match, random_string])
         text = text.replace(f'`{match}`', random_string)
 
-    # # меняем латекс выражения
-    # text = replace_latex(text)
+    # меняем латекс выражения
+    text = replace_latex(text)
+
+    # экранируем весь текст для html, потом надо будет вернуть теги <u>
+    text = html.escape(text)
+
 
     # сохраняем 3 звезды что бы их не испортил конвертер списков
     def replace_3_stars(match):

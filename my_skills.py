@@ -13,6 +13,7 @@ import numpy as np
 import os
 import pytz
 import random
+import re
 import requests
 import subprocess
 import time
@@ -56,6 +57,37 @@ def text_to_image(prompt: str) -> str:
     return "The function itself does not return an image. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /img command, followed by a space, and then the prompt provided, up to 100 words. This specific message format will be automatically recognized by an external system as a request to generate and send an image to the user."
 
 
+def restore_id(chat_id: str) -> str:
+    '''
+    Restore user id from string (they often miss brackets and add some crap)
+
+    Args:
+        chat_id: str
+    Returns:
+        chat_id in format '[number1] [number2]'
+    '''
+    def is_integer(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+
+    # remove all symbols except numbers, minus and brackets
+    chat_id = re.sub(r'[^0-9\-]', ' ', chat_id)
+    chat_id = re.sub(r'\s+', ' ', chat_id).strip()
+    
+
+    # chat_id может приехать в виде одного числа - надо проверять и переделывать, добавлять скобки и число
+    if is_integer(chat_id):
+        chat_id = f"[{chat_id}] [0]"
+    # если нет второго числа до добавить '[0]'
+    if chat_id.count('[') == 1:
+        chat_id = f"{chat_id} [0]"
+
+    return chat_id
+
+
 def tts(
     text: str,
     lang: str = 'ru',
@@ -75,21 +107,9 @@ def tts(
         natural: bool - use natural voice, better quality, default is False
     Example: tts("Привет", "ru")
     '''
-    def is_integer(s):
-        try:
-            int(s)
-            return True
-        except ValueError:
-            return False
 
     my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}" "{natural}" "{chat_id}"')
 
-    # chat_id может приехать в виде одного числа - надо проверять и переделывать, добавлять скобки и число
-    if is_integer(chat_id):
-        chat_id = f"[{chat_id}] [0]"
-    # если нет второго числа до добавить '[0]', как проверить что нету второго числа есть только одно в скобках?
-    if chat_id.count('[') == 1:
-        chat_id = f"{chat_id} [0]"
 
     if my_db.get_user_property(chat_id, 'tts_gender'):
         gender = my_db.get_user_property(chat_id, 'tts_gender')
@@ -652,7 +672,9 @@ if __name__ == '__main__':
     # moscow_time = get_time_in_timezone("Europe/Moscow")
     # print(f"Time in Moscow: {moscow_time}")
 
-    test_calc()
+    # test_calc()
+
+    print(restore_id('-1234567890'))
 
     # print(sys.get_int_max_str_digits())
     # print(sys.set_int_max_str_digits())

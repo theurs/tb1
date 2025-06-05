@@ -5358,6 +5358,8 @@ def tts(message: telebot.types.Message, caption = None):
 
 {tr('Для OpenAI голосов можно передать инструкцию как говорить, для этого в начале текста укажите инструкцию между знаками <>\n/tts <говори капризным голосом как у маленького ребенка> привет как дела', lang)}
 
+{tr('Для Gemini голосов инструкция передается в свободной форме. Переключание между голосами /config', lang)}
+
 {tr('Write what to say to get a voice message.', lang)}
 """
 
@@ -9213,26 +9215,47 @@ def do_task(message, custom_prompt: str = ''):
                             else:
                                 my_log.log_echo(message, f'[{gmodel}] {answer}')
  
-                            try:
-                                # проверяем нет ли в ответе звукового сообщения
-                                data = my_skills.STORAGE.get(chat_id_full, None)
-                                if data:
-                                    audio_data = data[0]
-                                    if audio_data:
-                                        m = send_voice(
-                                            message=message,
-                                            chat_id=message.chat.id,
-                                            voice=audio_data,
-                                            reply_to_message_id = message.message_id,
-                                            reply_markup=get_keyboard('hide', message),
-                                            # caption=caption
-                                        )
-                                        log_message(m)
-                                        my_skills.STORAGE.pop(chat_id_full)
-                                        # return
-                            except Exception as error2:
-                                my_skills.STORAGE.pop(chat_id_full)
-                                my_log.log2(f'tb:do_task:send_voice {error2}')
+
+                            try: # если в ответе есть audio, то отправляем его
+                                # Получаем данные из STORAGE.
+                                # Предполагается, что хранимый элемент - это плоский список
+                                # [audio_data_1, audio_data_2, ..., audio_data_N, timestamp],
+                                # где timestamp - последний элемент, а остальные могут быть аудио.
+                                data_list_and_timestamp = my_skills.STORAGE.get(chat_id_full, None)
+
+                                if data_list_and_timestamp and isinstance(data_list_and_timestamp, list):
+                                    # Итерируемся по всем элементам, кроме последнего (который является timestamp)
+                                    # Используем срез [:-1], чтобы исключить последний элемент
+                                    for i, item_data in enumerate(data_list_and_timestamp[:-1]):
+                                        # Добавляем try-except для отправки каждого отдельного элемента
+                                        try:
+                                            # Проверяем, что элемент не пустой (т.е. потенциально содержит аудио)
+                                            if item_data and isinstance(item_data, bytes):
+                                                m = send_voice(
+                                                    message=message,
+                                                    chat_id=message.chat.id,
+                                                    voice=item_data, # Отправляем текущий элемент как голосовое сообщение
+                                                    reply_to_message_id = message.message_id,
+                                                    reply_markup=get_keyboard('hide', message),
+                                                    # caption=caption
+                                                )
+                                                log_message(m)
+                                        except Exception as individual_error:
+                                            # Логируем ошибку для этого конкретного элемента, но продолжаем цикл
+                                            my_log.log2(f'tb:do_task:send_voice_item_error for chat {chat_id_full}, item {i}: {individual_error}')
+                                            # Опционально: можно здесь сделать что-то еще, например, пропустить этот элемент
+                                            continue # Продолжаем к следующему элементу в списке
+                                    
+                                    # После попытки отправки всех потенциальных аудиосообщений, удаляем запись из STORAGE
+                                    # Удаляем только после того, как прошли по всему списку, независимо от ошибок отдельных отправок
+                                    my_skills.STORAGE.pop(chat_id_full)
+                                    # return
+
+                            except Exception as general_error:
+                                # Этот блок ловит ошибки, не связанные с отправкой конкретного элемента (например, проблемы с получением данных из STORAGE или неверный формат)
+                                my_skills.STORAGE.pop(chat_id_full) # Удаляем запись в случае общей ошибки
+                                my_log.log2(f'tb:do_task:send_voice_general_error for chat {chat_id_full}: {general_error}')
+
 
                             try:
                                 if command_in_answer(answer, message):

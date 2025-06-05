@@ -17,6 +17,7 @@ import re
 import requests
 import subprocess
 import time
+import threading
 import traceback
 
 from simpleeval import simple_eval
@@ -44,6 +45,7 @@ MAX_REQUEST = 25000
 
 
 STORAGE = SqliteDict('db/skills_storage.db', autocommit=True)
+STORAGE_LOCK = threading.Lock()
 
 
 def text_to_image(prompt: str) -> str:
@@ -101,10 +103,10 @@ def tts(
     '''
     Generate and send audio message from text to user.
     Use it only if asked by user to generate audio from text.
-    You can use it only once per message, never split it into multiple messages.
+
     Args:
         text: str - text to say (up to 8000 symbols)
-        lang: str - language code
+        lang: str - language code, default is 'ru'
         chat_id: str - telegram user chat id (Usually looks like 2 numbers in brackets '[9834xxxx] [24xx]')
         rate: str - speed rate, +-100%, default is '+0%'
         natural: bool - use natural voice, better quality, default is False
@@ -135,9 +137,17 @@ def tts(
     )
 
     if data and chat_id:
-        STORAGE[chat_id] = (data, time.time())
-        my_log.log_gemini_skills(f'TTS OK. Send to user: {chat_id}')
-        return 'Backend report: Text was generated and sent to user.'
+        with STORAGE_LOCK:
+            value = STORAGE.get(chat_id, None)
+            if value:
+                value_ = value[:-1]
+                if data not in value_:
+                    value = [*value_, data, time.time()]
+                    STORAGE[chat_id] = value
+            else:
+                STORAGE[chat_id] = [data, time.time()]
+            my_log.log_gemini_skills(f'TTS OK. Send to user: {chat_id}')
+            return 'Backend report: Text was generated and sent to user.'
     else:
         my_log.log_gemini_skills(f'TTS ERROR. Send to user: {chat_id}')
         return 'Some error occurred.'
@@ -146,11 +156,15 @@ def tts(
 def init():
     """
     Iterate over STORAGE dict and remove expired entries
+    Assuming value is a tuple (data1, data2, ..., timestamp)
+    where timestamp is the last element.
     """
     now = time.time()
-    for key, value in list(STORAGE.items()):
-        if now - value[1] > 600:  # 10 minutes
-            del STORAGE[key]
+    with STORAGE_LOCK:
+        for key, value in list(STORAGE.items()):
+            # Теперь timestamp - это последний элемент кортежа, доступ к нему через value[-1]
+            if now - value[-1] > 600:  # 10 minutes
+                del STORAGE[key]
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)

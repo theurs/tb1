@@ -25,7 +25,8 @@ SYSTEMLESS_MODELS = ('google/gemma-3n-e4b-it:free', )
 KEYS = SqliteDict('db/open_router_keys.db', autocommit=True)
 # {user_id(str):list(model, temperature, max_tokens, maxhistlines, maxhistchars)}
 PARAMS = SqliteDict('db/open_router_params.db', autocommit=True)
-PARAMS_DEFAULT = ['qwen/qwen3-8b:free', 1, 4000, 20, 12000]
+DEFAULT_FREE_MODEL = 'qwen/qwen3-8b:free'
+PARAMS_DEFAULT = [DEFAULT_FREE_MODEL, 1, 4000, 20, 12000]
 
 # сколько запросов хранить
 MAX_MEM_LINES = 10
@@ -107,7 +108,7 @@ def ai(prompt: str = '',
     if hasattr(cfg, 'OPEN_ROUTER_KEY') and cfg.OPEN_ROUTER_KEY and user_id == 'test':
         key = cfg.OPEN_ROUTER_KEY
     elif user_id not in KEYS or not KEYS[user_id]:
-        if model == 'qwen/qwen3-8b:free':
+        if model == DEFAULT_FREE_MODEL:
             key = cfg.OPEN_ROUTER_KEY
         else:
             return 0, ''
@@ -122,7 +123,7 @@ def ai(prompt: str = '',
             model = model_
     else:
         if not model:
-            model = 'qwen/qwen3-8b:free'
+            model = DEFAULT_FREE_MODEL
 
     if 'llama' in model.lower() and temperature > 0:
         temperature = temperature / 2

@@ -356,6 +356,9 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем трехбайтовые утф8 символы для математики которые бот иногда вставляет вместо самих символов
     text = replace_math_byte_sequences(text)
 
+    # экранируем весь текст для html, потом надо будет вернуть теги <u>
+    text = html.escape(text)
+
     # надо заранее найти в таблицах блоки кода (однострочного `кода`) и заменить ` на пробелы
     text = clear_tables(text)
 
@@ -365,19 +368,18 @@ def bot_markdown_to_html(text: str) -> str:
     replacement = lambda match: f"```{match.group(1)}\n{re.sub(r'^ {1,6}', '', match.group(2), flags=re.MULTILINE)}\n```"
     text = re.sub(pattern, replacement, text, flags=re.MULTILINE | re.DOTALL)
 
+
     # найти все куски кода между ``` и заменить на хеши
     # спрятать код на время преобразований
     matches = re.findall('```(.*?)```\n', text, flags=re.DOTALL)
     list_of_code_blocks = []
     for match in matches:
-        match = html.escape(match)
         random_string = str(hash(match))
         list_of_code_blocks.append([match, random_string])
         text = text.replace(f'```{match}```', random_string)
 
     matches = re.findall('```(.*?)```', text, flags=re.DOTALL)
     for match in matches:
-        match = html.escape(match)
         random_string = str(hash(match))
         list_of_code_blocks.append([match, random_string])
         text = text.replace(f'```{match}```', random_string)
@@ -392,13 +394,9 @@ def bot_markdown_to_html(text: str) -> str:
     matches = re.findall('`(.*?)`', text)
     list_of_code_blocks2 = []
     for match in matches:
-        match = html.escape(match)
         random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
         list_of_code_blocks2.append([match, random_string])
         text = text.replace(f'`{match}`', random_string)
-
-    # экранируем весь текст для html, потом надо будет вернуть теги <u>
-    text = html.escape(text)
 
     # меняем латекс выражения
     text = replace_latex(text)

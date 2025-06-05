@@ -356,6 +356,53 @@ def bot_markdown_to_html(text: str) -> str:
     # меняем трехбайтовые утф8 символы для математики которые бот иногда вставляет вместо самих символов
     text = replace_math_byte_sequences(text)
 
+
+
+
+    ########################################################################
+    # до экранирования надо заменить весь латех на юникод
+    # но при этом надо сначала спрятать код что бы его не затронуло а потом вернуть и продолжить как было
+
+    # найти все куски кода между ``` и заменить на хеши
+    # спрятать код на время преобразований
+    matches = re.findall('```(.*?)```\n', text, flags=re.DOTALL)
+    list_of_code_blocks = []
+    for match in matches:
+        random_string = str(hash(match))
+        list_of_code_blocks.append([match, random_string])
+        text = text.replace(f'```{match}```', random_string)
+
+    matches = re.findall('```(.*?)```', text, flags=re.DOTALL)
+    for match in matches:
+        random_string = str(hash(match))
+        list_of_code_blocks.append([match, random_string])
+        text = text.replace(f'```{match}```', random_string)
+
+    matches = re.findall('`(.*?)`', text)
+    list_of_code_blocks2 = []
+    for match in matches:
+        random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
+        list_of_code_blocks2.append([match, random_string])
+        text = text.replace(f'`{match}`', random_string)
+
+    # меняем латекс выражения
+    text = replace_latex(text)
+
+    # меняем обратно хеши на блоки кода
+    for match, random_string in list_of_code_blocks2:
+        # new_match = html.escape(match)
+        new_match = match
+        text = text.replace(random_string, f'`{new_match}`')
+
+    # меняем обратно хеши на блоки кода
+    for match, random_string in list_of_code_blocks:
+        new_match = match
+        text = text.replace(random_string, f'```{new_match}```')
+    ########################################################################
+
+
+
+
     # экранируем весь текст для html, потом надо будет вернуть теги <u>
     text = html.escape(text)
 
@@ -398,8 +445,8 @@ def bot_markdown_to_html(text: str) -> str:
         list_of_code_blocks2.append([match, random_string])
         text = text.replace(f'`{match}`', random_string)
 
-    # меняем латекс выражения
-    text = replace_latex(text)
+    # # меняем латекс выражения
+    # text = replace_latex(text)
 
     # сохраняем 3 звезды что бы их не испортил конвертер списков
     def replace_3_stars(match):

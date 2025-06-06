@@ -440,6 +440,10 @@ def chat(
 
         if resp:
 
+            if resp.strip().startswith("""```python\nprint(default_api."""):
+                my_log.log_gemini(f'chat:bad resp: {resp}')
+                return ''
+
             # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
             # куча пробелов, и возможно другие тоже. укорачиваем
             result_ = re.sub(r" {1000,}", " " * 10, resp) # очень много пробелов в ответе

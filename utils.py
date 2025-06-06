@@ -1886,50 +1886,107 @@ def string_to_dict(input_string: str):
     return None
 
 
-def extract_first_frame_bytes_no_temp(input_bytes: bytes) -> bytes | None:
+def extract_first_frame_bytes(input_bytes: bytes) -> bytes | None:
     """
-    Извлекает первый кадр из видео, представленного в байтах, используя
-    временные файлы, управляемые пользовательскими функциями.
+    Создает коллаж 3x3 из 9 равномерно распределенных кадров видео,
+    представленного в байтах. Использует временные файлы для обработки.
+    Если в видео меньше 9 кадров, последние кадры дублируются.
 
     Args:
-        input_bytes: Байты входного файла (видео или GIF).
+        input_bytes: Байты входного видеофайла.
 
     Returns:
-        Байты изображения (JPEG) первого кадра или None в случае ошибки.
+        Байты изображения коллажа (JPEG) или None в случае ошибки.
     """
     temp_input_path = None
+    temp_frames_dir = None
 
     try:
-        # 1. Создаем временный файл для исходных байтов с помощью вашей функции.
+        # 1. Сохраняем входные байты во временный файл
         temp_input_path = get_tmp_fname()
-        with open(temp_input_path, 'wb') as temp_file:
-            temp_file.write(input_bytes)
+        with open(temp_input_path, 'wb') as f:
+            f.write(input_bytes)
 
-        # 2. Попытка №1: Извлечь кадр напрямую из созданного файла.
+        # 2. Получаем длительность видео с помощью ffprobe
+        ffprobe_command = [
+            'ffprobe',
+            '-v', 'quiet',
+            '-print_format', 'json',
+            '-show_format',
+            '-i', temp_input_path
+        ]
+
+        duration = None
+        try:
+            process = subprocess.run(ffprobe_command, capture_output=True, check=True, text=True)
+            data = json.loads(process.stdout)
+            duration = float(data['format']['duration'])
+        except (FileNotFoundError, subprocess.CalledProcessError, KeyError, ValueError) as e:
+            my_log.log2(f"utils:extract_first_frame_bytes: Не удалось получить длительность видео: {e}")
+            return None
+
+        if not duration or duration <= 0:
+            my_log.log2("utils:extract_first_frame_bytes: Невозможно создать коллаж: длительность видео 0 или не определена.")
+            return None
+
+        # 3. Извлекаем кадры во временную директорию
+        temp_frames_dir = tempfile.mkdtemp()
+        output_pattern = os.path.join(temp_frames_dir, 'frame-%02d.jpg')
+
         command_extract = [
             'ffmpeg',
             '-i', temp_input_path,
+            '-vf', f'fps=9/{duration}',
+            '-q:v', '2',
+            output_pattern
+        ]
+        subprocess.run(command_extract, capture_output=True, check=False)
+
+        # 4. Обрабатываем нехватку кадров
+        extracted_frames = sorted([f for f in os.listdir(temp_frames_dir) if f.endswith('.jpg')])
+        num_extracted = len(extracted_frames)
+
+        if num_extracted == 0:
+            my_log.log2("utils:extract_first_frame_bytes: Не удалось извлечь ни одного кадра.")
+            return None
+
+        if num_extracted < 9:
+            my_log.log2(f"utils:extract_first_frame_bytes: Извлечено только {num_extracted} кадров. Дублирую последний кадр.")
+            last_frame_path = os.path.join(temp_frames_dir, extracted_frames[-1])
+            for i in range(num_extracted + 1, 10):
+                new_frame_name = f'frame-{i:02d}.jpg'
+                new_frame_path = os.path.join(temp_frames_dir, new_frame_name)
+                shutil.copy(last_frame_path, new_frame_path)
+
+        # 5. Создаем коллаж из 9 кадров
+        input_pattern = os.path.join(temp_frames_dir, 'frame-%02d.jpg')
+        command_collage = [
+            'ffmpeg',
+            '-i', input_pattern,
+            '-filter_complex', "tile=3x3, drawtext=fontfile=fonts/NotoSans-Bold.ttf:text='Collage made of 9 frames of video file':fontsize=32:fontcolor=white:x=(w-text_w)/2:y=20:box=1:boxcolor=black@0.5:boxborderw=10",
             '-vframes', '1',
             '-f', 'image2pipe',
             '-vcodec', 'mjpeg',
             '-q:v', '2',
-            '-loglevel', 'error',
             'pipe:1'
         ]
 
-        process = subprocess.run(command_extract, capture_output=True, check=False)
+        process = subprocess.run(command_collage, capture_output=True, check=False)
 
         if process.returncode == 0 and process.stdout:
+            my_log.log2("utils:extract_first_frame_bytes: Коллаж успешно создан.")
             return process.stdout
-
-        stderr_output = process.stderr.decode('utf-8')
-        my_log.log2(f"utils:extract_first_frame_bytes_no_temp: Не удалось извлечь кадр даже после оптимизации: {stderr_output}")
-        return None
+        else:
+            stderr = process.stderr.decode('utf-8', errors='ignore')
+            my_log.log2(f"utils:extract_first_frame_bytes: Ошибка при создании коллажа: {stderr}")
+            return None
 
     finally:
-        # 5. Гарантированно удаляем все временные файлы с помощью вашей функции.
+        # 6. Очистка
         if temp_input_path:
             remove_file(temp_input_path)
+        if temp_frames_dir and os.path.exists(temp_frames_dir):
+            remove_dir(temp_frames_dir)
 
 
 def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 2000, jpg_quality: int = 60) -> bytes:
@@ -1990,7 +2047,7 @@ def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 200
         return jpg_data
 
     except PIL.UnidentifiedImageError as e:
-        jpg_data = extract_first_frame_bytes_no_temp(image_data)
+        jpg_data = extract_first_frame_bytes(image_data)
         if jpg_data:
             return jpg_data
         my_log.log2(f'utils:resize_and_convert_to_jpg: {e}')
@@ -2374,4 +2431,8 @@ if __name__ == '__main__':
 
     with open('C:/Users/user/Downloads/video_2024-05-16_11-59-06.mp4', 'rb') as f:
         data = f.read()
-        r = extract_first_frame_bytes_no_temp(data)
+        with open('C:/Users/user/Downloads/test.jpg', 'wb') as f:
+            r = extract_first_frame_bytes(data)
+            if r:
+                f.write(r)
+        

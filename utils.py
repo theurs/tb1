@@ -1974,7 +1974,6 @@ def extract_frames_as_bytes(input_bytes: bytes) -> bytes | None:
         process = subprocess.run(command_collage, capture_output=True, check=False)
 
         if process.returncode == 0 and process.stdout:
-            my_log.log2("utils:extract_frames_as_bytes: Коллаж успешно создан.")
             return process.stdout
         else:
             stderr = process.stderr.decode('utf-8', errors='ignore')

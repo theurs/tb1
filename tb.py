@@ -1419,6 +1419,16 @@ def authorized(message: telebot.types.Message) -> bool:
             # my_log.log_auth(f'tb:authorized:1: User {chat_id_full} is blocked totally. Text: {text} Caption: {caption}')
             return False
 
+
+        # ignore not allowed groups
+        if hasattr(cfg, 'ALLOWED_GROUPS'):
+            chat_id = message.chat.id
+            if chat_id < 0:
+                if chat_id not in cfg.ALLOWED_GROUPS:
+                    # my_log.log_auth(f'tb:authorized:2: User {chat_id_full} is not in allowed groups. Text: {text} Caption: {caption}')
+                    return False
+
+
         if not my_db.get_user_property(chat_id_full, 'chat_mode'):
             my_db.set_user_property(chat_id_full, 'chat_mode', cfg.chat_mode_default)
 

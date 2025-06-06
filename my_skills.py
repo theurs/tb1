@@ -234,7 +234,7 @@ def get_currency_rates(date: str = '') -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def search_google_fast(query: str, lang: str = 'ru', chat_id: str = '') -> str:
+def search_google_fast(query: str, lang: str = 'ru', user_id: str = '') -> str:
     """
     Fast searches Google for the given query and returns the search results.
     You are able to mix this functions with other functions and your own ability to get best results for your needs.
@@ -242,22 +242,22 @@ def search_google_fast(query: str, lang: str = 'ru', chat_id: str = '') -> str:
     Args:
         query: The search query string.
         lang: The language to use for the search.
-        chat_id: The chat ID to send the search results to.
+        user_id: The user ID to send the search results to.
 
     Returns:
         A string containing the search results.
         In case of an error, returns a string 'ERROR' with the error description.
     """
     try:
-        chat_id = restore_id(chat_id)
+        user_id = restore_id(user_id)
         query = decode_string(query)
-        my_log.log_gemini_skills(f'Fast Google search: [{lang}] {chat_id} {query}')
+        my_log.log_gemini_skills(f'Fast Google search: [{lang}] {user_id} {query}')
 
         r = my_google.search_v3(
             query.lower(),
             lang = lang,
             download_only=True,
-            chat_id=chat_id,
+            chat_id=user_id,
             fast_search=True
         )
         my_log.log_gemini_skills(f'Fast Google search: {r[:2000]}')
@@ -268,7 +268,7 @@ def search_google_fast(query: str, lang: str = 'ru', chat_id: str = '') -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def search_google_deep(query: str, lang: str = 'ru', chat_id: str = '') -> str:
+def search_google_deep(query: str, lang: str = 'ru', user_id: str = '') -> str:
     """
     Deep searches Google for the given query and returns the search results.
     You are able to mix this functions with other functions and your own ability to get best results for your needs.
@@ -276,21 +276,21 @@ def search_google_deep(query: str, lang: str = 'ru', chat_id: str = '') -> str:
     Args:
         query: The search query string.
         lang: The language to use for the search.
-        chat_id: The chat ID to send the search results to.
+        user_id: The chat ID to send the search results to.
 
     Returns:
         A string containing the search results.
         In case of an error, returns a string 'ERROR' with the error description.
     """
     try:
-        chat_id = restore_id(chat_id)
+        user_id = restore_id(user_id)
         query = decode_string(query)
-        my_log.log_gemini_skills(f'Deep Google search: [{lang}] {chat_id} {query}')
+        my_log.log_gemini_skills(f'Deep Google search: [{lang}] {user_id} {query}')
 
         r = my_google.search_v3(
             query.lower(),
             lang = lang,
-            chat_id=chat_id,
+            chat_id=user_id,
             download_only=True
         )
         my_log.log_gemini_skills(f'Deep Google search: {r[:2000]}')

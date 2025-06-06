@@ -1888,50 +1888,48 @@ def string_to_dict(input_string: str):
 
 def extract_first_frame_bytes_no_temp(input_bytes: bytes) -> bytes | None:
     """
-    Извлекает первый кадр из видео или GIF-файла, представленного в байтах,
-    передавая их FFmpeg через stdin, и возвращает байты кадра в формате JPEG.
-    Не использует временные файлы.
-
-    Требует установленного FFmpeg в системе и доступного в PATH.
+    Извлекает первый кадр из видео, представленного в байтах, используя
+    временные файлы, управляемые пользовательскими функциями.
 
     Args:
         input_bytes: Байты входного файла (видео или GIF).
 
     Returns:
-        Байты изображения (JPEG) первого кадра, если извлечение прошло успешно,
-        иначе None (если это не видео/гиф или произошла ошибка).
+        Байты изображения (JPEG) первого кадра или None в случае ошибки.
     """
-    
-    command = [
-        'ffmpeg',
-        '-i', 'pipe:0',          # Читать вход из stdin
-        '-vframes', '1',
-        '-f', 'image2pipe',      # Выводим в pipe как изображение
-        '-vcodec', 'mjpeg',      # Кодируем в JPEG
-        '-q:v', '2',             # Качество JPEG (2 - хорошее качество, 1 - лучшее)
-        '-loglevel', 'error',    # Подавляем лишние сообщения, выводим только ошибки
-        'pipe:1'                 # Выводим на stdout
-    ]
+    temp_input_path = None
 
     try:
-        process = subprocess.run(
-            command,
-            input=input_bytes,
-            capture_output=True,
-            check=False
-        )
+        # 1. Создаем временный файл для исходных байтов с помощью вашей функции.
+        temp_input_path = get_tmp_fname()
+        with open(temp_input_path, 'wb') as temp_file:
+            temp_file.write(input_bytes)
 
-        if process.returncode == 0:
+        # 2. Попытка №1: Извлечь кадр напрямую из созданного файла.
+        command_extract = [
+            'ffmpeg',
+            '-i', temp_input_path,
+            '-vframes', '1',
+            '-f', 'image2pipe',
+            '-vcodec', 'mjpeg',
+            '-q:v', '2',
+            '-loglevel', 'error',
+            'pipe:1'
+        ]
+
+        process = subprocess.run(command_extract, capture_output=True, check=False)
+
+        if process.returncode == 0 and process.stdout:
             return process.stdout
-        else:
-            stderr_output = process.stderr.decode('utf-8', errors='ignore')
-            my_log.log2(f'utils:extract_first_frame_bytes_no_temp: {stderr_output}')
-            return None
 
-    except FileNotFoundError:
+        stderr_output = process.stderr.decode('utf-8')
+        my_log.log2(f"utils:extract_first_frame_bytes_no_temp: Не удалось извлечь кадр даже после оптимизации: {stderr_output}")
         return None
-    except Exception:
-        return None
+
+    finally:
+        # 5. Гарантированно удаляем все временные файлы с помощью вашей функции.
+        if temp_input_path:
+            remove_file(temp_input_path)
 
 
 def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 2000, jpg_quality: int = 60) -> bytes:
@@ -2358,17 +2356,22 @@ if __name__ == '__main__':
 
 
 
-    t = '''
-Конечно, вот как это будет выглядеть на латехе:
+#     t = '''
+# Конечно, вот как это будет выглядеть на латехе:
 
-\[
-y(x) = 
-\begin{cases}
-10x, & \text{если } x \leq 4 \\
-x - 2, & \text{если } x > 4
-\end{cases}
-\]
+# \[
+# y(x) = 
+# \begin{cases}
+# 10x, & \text{если } x \leq 4 \\
+# x - 2, & \text{если } x > 4
+# \end{cases}
+# \]
 
-Если тебе нужно вставить это в документ или презентацию — просто скопируй этот фрагмент, он корректно отобразится в любом редакторе, поддерживающем LaTeX.
-    '''
-    print(bot_markdown_to_html(t))
+# Если тебе нужно вставить это в документ или презентацию — просто скопируй этот фрагмент, он корректно отобразится в любом редакторе, поддерживающем LaTeX.
+#     '''
+#     print(bot_markdown_to_html(t))
+
+
+    with open('C:/Users/user/Downloads/video_2024-05-16_11-59-06.mp4', 'rb') as f:
+        data = f.read()
+        r = extract_first_frame_bytes_no_temp(data)

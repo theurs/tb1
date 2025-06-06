@@ -115,7 +115,8 @@ def img2txt(
                 temperature=temp,
                 model = model,
                 system=system,
-                timeout=timeout
+                timeout=timeout,
+                use_skills=use_skills,
             )
 
             # хз почему он так отвечает иногда, это должно быть как то связано с функцией tb:get_intention

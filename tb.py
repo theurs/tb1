@@ -761,31 +761,31 @@ def img2txt(text,
                             WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
                 elif chat_mode == 'gemini15':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model
                 elif chat_mode == 'gemini25_flash':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini25_flash_model
                 elif chat_mode == 'gemini-exp':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
                 elif chat_mode == 'gemini-learn':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
                 elif chat_mode == 'gemma3_27b':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemma3_27b_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemma3_27b_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemma3_27b_model
                 elif chat_mode == 'gemini-lite':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
                 elif chat_mode == 'gemini':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
 
@@ -800,9 +800,9 @@ def img2txt(text,
                 if 'gpt' in model:
                     text = my_github.img2txt(data, query, chat_id=chat_id_full, model=model, temperature=temperature, system=system_message, timeout=timeout)
                     if not text:
-                        text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                        text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                 else:
-                    text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + model
 
@@ -814,26 +814,26 @@ def img2txt(text,
 
             # если это была джемини про то пробуем ее фолбек
             if not text and model == cfg.gemini_pro_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model_fallback
 
             # если это была не джемини лайт то пробуем ее
             if not text and model != cfg.gemini_flash_light_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
 
 
             # флеш25 фолбек
             if not text and model == cfg.gemini25_flash_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini25_flash_model_fallback
 
             # флеш фолбек
             if not text and model == cfg.gemini_flash_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full, use_skills=True, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model_fallback
 

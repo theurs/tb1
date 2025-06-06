@@ -90,6 +90,9 @@ def restore_id(chat_id: str) -> str:
     if chat_id.count('[') == 1:
         chat_id = f"{chat_id} [0]"
 
+    chat_id = chat_id.strip()
+    if not chat_id:
+        chat_id = '[unknown]'
     return chat_id
 
 

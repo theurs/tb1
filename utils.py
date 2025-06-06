@@ -1886,7 +1886,7 @@ def string_to_dict(input_string: str):
     return None
 
 
-def extract_first_frame_bytes(input_bytes: bytes) -> bytes | None:
+def extract_frames_as_bytes(input_bytes: bytes) -> bytes | None:
     """
     Создает коллаж 3x3 из 9 равномерно распределенных кадров видео,
     представленного в байтах. Использует временные файлы для обработки.
@@ -1922,11 +1922,11 @@ def extract_first_frame_bytes(input_bytes: bytes) -> bytes | None:
             data = json.loads(process.stdout)
             duration = float(data['format']['duration'])
         except (FileNotFoundError, subprocess.CalledProcessError, KeyError, ValueError) as e:
-            my_log.log2(f"utils:extract_first_frame_bytes: Не удалось получить длительность видео: {e}")
+            my_log.log2(f"utils:extract_frames_as_bytes: Не удалось получить длительность видео: {e}")
             return None
 
         if not duration or duration <= 0:
-            my_log.log2("utils:extract_first_frame_bytes: Невозможно создать коллаж: длительность видео 0 или не определена.")
+            my_log.log2("utils:extract_frames_as_bytes: Невозможно создать коллаж: длительность видео 0 или не определена.")
             return None
 
         # 3. Извлекаем кадры во временную директорию
@@ -1947,11 +1947,11 @@ def extract_first_frame_bytes(input_bytes: bytes) -> bytes | None:
         num_extracted = len(extracted_frames)
 
         if num_extracted == 0:
-            my_log.log2("utils:extract_first_frame_bytes: Не удалось извлечь ни одного кадра.")
+            my_log.log2("utils:extract_frames_as_bytes: Не удалось извлечь ни одного кадра.")
             return None
 
         if num_extracted < 9:
-            my_log.log2(f"utils:extract_first_frame_bytes: Извлечено только {num_extracted} кадров. Дублирую последний кадр.")
+            my_log.log2(f"utils:extract_frames_as_bytes: Извлечено только {num_extracted} кадров. Дублирую последний кадр.")
             last_frame_path = os.path.join(temp_frames_dir, extracted_frames[-1])
             for i in range(num_extracted + 1, 10):
                 new_frame_name = f'frame-{i:02d}.jpg'
@@ -1974,11 +1974,11 @@ def extract_first_frame_bytes(input_bytes: bytes) -> bytes | None:
         process = subprocess.run(command_collage, capture_output=True, check=False)
 
         if process.returncode == 0 and process.stdout:
-            my_log.log2("utils:extract_first_frame_bytes: Коллаж успешно создан.")
+            my_log.log2("utils:extract_frames_as_bytes: Коллаж успешно создан.")
             return process.stdout
         else:
             stderr = process.stderr.decode('utf-8', errors='ignore')
-            my_log.log2(f"utils:extract_first_frame_bytes: Ошибка при создании коллажа: {stderr}")
+            my_log.log2(f"utils:extract_frames_as_bytes: Ошибка при создании коллажа: {stderr}")
             return None
 
     finally:
@@ -2047,7 +2047,7 @@ def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 200
         return jpg_data
 
     except PIL.UnidentifiedImageError as e:
-        jpg_data = extract_first_frame_bytes(image_data)
+        jpg_data = extract_frames_as_bytes(image_data)
         if jpg_data:
             return jpg_data
         my_log.log2(f'utils:resize_and_convert_to_jpg: {e}')
@@ -2432,7 +2432,7 @@ if __name__ == '__main__':
     with open('C:/Users/user/Downloads/video_2024-05-16_11-59-06.mp4', 'rb') as f:
         data = f.read()
         with open('C:/Users/user/Downloads/test.jpg', 'wb') as f:
-            r = extract_first_frame_bytes(data)
+            r = extract_frames_as_bytes(data)
             if r:
                 f.write(r)
         

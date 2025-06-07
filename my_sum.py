@@ -5,6 +5,7 @@
 import cachetools.func
 import concurrent.futures
 import io
+import importlib
 import glob
 import os
 import random
@@ -31,6 +32,21 @@ import my_playwright
 import my_stt
 import my_transcribe
 import utils
+
+
+CFG_TIMESTAMP = os.path.getmtime('cfg.py')
+
+
+def reloadcfg():
+    '''
+    Auto reload cfg if it has changed
+    '''
+    global CFG_TIMESTAMP
+    timestamp = os.path.getmtime('cfg.py')
+    if timestamp != CFG_TIMESTAMP:
+        CFG_TIMESTAMP = timestamp
+        module = importlib.import_module('cfg')
+        importlib.reload(module)
 
 
 def extract_vk_video_id(url: str) -> str:
@@ -473,6 +489,8 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
             video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
         except:
             return ''
+
+        reloadcfg()
 
         for _ in range(4):
             try:

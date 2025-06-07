@@ -9,7 +9,6 @@ from google.genai.types import (
     Content,
     Part
 )
-import numpy as np
 from pydub import AudioSegment
 
 import my_gemini
@@ -46,6 +45,8 @@ async def generate_audio_bytes(
         bytes: A bytes object containing the raw audio data received from the API.
                Returns empty bytes if no audio data is received or an error occurs.
     """
+    text = text.replace("--", "—").replace('-', '—')
+
     if voice not in ALL_VOICES:
         my_log.log_gemini(text=f"generate_audio_bytes: voice {voice} not in {ALL_VOICES}, reset ro default {DEFAULT_VOICE}")
         voice = DEFAULT_VOICE
@@ -121,122 +122,176 @@ async def generate_audio_bytes(
     return bytes(audio_data)
 
 
-def generate_audio_bytes_chunked(
+async def generate_audio_bytes_chunked(
     text: str,
     chunk_limit: int = 2000,
     lang: str = "ru",
     voice: str = "Zephyr",
-    model: str = DEFAULT_MODEL,
+    model: str = "gemini-2.0-flash-live-001",
     sample_rate: int = 24000,
     sample_width: int = 2,
-    channels: int = 1
+    channels: int = 1,
+    max_concurrent_tasks: int = 3
 ) -> bytes | None:
     """
-    Synchronously generates audio for potentially long text by chunking,
-    concatenates the raw audio, return WAV file bytes.
-
-    Handles text longer than chunk_limit by splitting it and processing chunks sequentially.
-    Runs the asynchronous generate_audio_bytes for each chunk using asyncio.run().
-    Concatenates raw PCM audio bytes from chunks and save as WAV file as bytes.
+    Asynchronously generates audio for potentially long text by chunking,
+    concatenates the raw audio, and returns WAV file bytes.
+    Handles text longer than chunk_limit by splitting it and processing chunks concurrently
+    while limiting the number of parallel tasks using asyncio.Semaphore.
+    Runs the asynchronous generate_audio_bytes for each chunk with retry logic.
+    Concatenates raw PCM audio bytes from chunks and saves as WAV file as bytes.
 
     Args:
         text (str): The text to synthesize. Can be very long.
         chunk_limit (int, optional): Maximum character length per chunk for the API.
-                                     Defaults to 8000.
+                                     Defaults to 2000.
         lang (str, optional): Language for pronunciation guidance. Defaults to "ru".
         voice (str, optional): The voice to use for synthesis. Defaults to "Zephyr".
-        model (str, optional): The generative model to use. Defaults to DEFAULT_MODEL.
+        model (str, optional): The generative model to use. Defaults to "gemini-2.0-flash-live-001".
         sample_rate (int, optional): The sample rate expected for the raw audio
                                      before conversion. Defaults to 24000.
         sample_width (int, optional): The sample width (bytes) expected for the raw
                                       audio. Defaults to 2 (for 16-bit).
         channels (int, optional): The number of channels expected for the raw audio.
                                   Defaults to 1 (mono).
+        max_concurrent_tasks (int, optional): The maximum number of concurrent
+                                              generate_audio_bytes calls. Defaults to 3.
 
     Returns:
         bytes | None: A bytes object containing the WAV file audio for the
                       entire text if successful, or None if any step fails.
     """
+
     if not text:
-        my_log.log_gemini("my_gemini_voice:generate_audio_bytes_chunked: Input text is empty, returning None.")
+        print("Input text is empty, returning None.")
         return None
 
-    # Use bytearray for efficient accumulation of raw bytes from chunks
+    # Использование семафора для ограничения количества одновременно выполняемых асинхронных операций
+    semaphore = asyncio.Semaphore(max_concurrent_tasks)
     all_raw_audio_bytes = bytearray()
 
-    def get_raw_audio_bytes_for_chunk(chunk, chunk_num):
-        # --- Generate raw audio for the current chunk ---
-        # Run the async function generate_audio_bytes synchronously for this chunk
-        raw_chunk_bytes: bytes | None = None
-        try:
-            # asyncio.run creates a new event loop for each call here
-            raw_chunk_bytes = asyncio.run(generate_audio_bytes(
-                text=chunk,
+    chunks = utils.split_text(text, chunk_limit=chunk_limit)
+
+    async def generate_chunk_audio(chunk: str, chunk_num: int) -> bytes:
+        """
+        Вспомогательная корутина для генерации аудио для одного чанка с использованием семафора
+        и логики повторных попыток.
+        """
+        async with semaphore: # Захватываем семафор, чтобы ограничить параллелизм
+            raw_chunk_bytes = b''
+            # Логика повторных попыток: 1 изначальная + 2 повтора = 3 попытки всего
+            for attempt in range(3):
+                try:
+                    # `generate_audio_bytes` - это асинхронная функция, которая должна быть доступна
+                    raw_chunk_bytes = await generate_audio_bytes(
+                        text=chunk,
+                        lang=lang,
+                        voice=voice,
+                        model=model
+                    )
+                    if raw_chunk_bytes:
+                        return raw_chunk_bytes # Успешно получено аудио, возвращаем его
+                    
+                    # Если raw_chunk_bytes пуст, это означает, что генерация не удалась или ничего не вернула
+                    print(f"Chunk {chunk_num}, attempt {attempt+1}: No audio data received. Retrying in 5 seconds...")
+                except Exception as e:
+                    # Перехватываем любые исключения во время вызова API
+                    print(f"Chunk {chunk_num}, attempt {attempt+1}: Error during generation: {e}. Retrying in 5 seconds...")
+                
+                if attempt < 2: # Задержка только если это не последняя попытка
+                    await asyncio.sleep(5)
+            
+            # Если мы дошли до сюда, все попытки для этого чанка провалились
+            print(f"Chunk {chunk_num} failed to generate raw audio after all attempts.")
+            return b''
+
+    # Создаем список задач (корутин) для каждого чанка
+    tasks = [generate_chunk_audio(chunk, i + 1) for i, chunk in enumerate(chunks)]
+
+    # Запускаем все задачи конкурентно, соблюдая ограничение семафора
+    # `return_exceptions=True` позволяет всем задачам завершиться, даже если некоторые из них выдают исключения,
+    # и исключения возвращаются как объекты в списке результатов.
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Обрабатываем результаты и конкатенируем аудио
+    for i, res in enumerate(results):
+        if isinstance(res, Exception):
+            # Это может произойти, если generate_chunk_audio не обработает внутреннее исключение
+            print(f"Critical error processing chunk {i+1}: {res}")
+        elif res: # Если res является байтами (и не пустыми байтами от неудачных попыток)
+            all_raw_audio_bytes.extend(res)
+
+    if not all_raw_audio_bytes:
+        print("No raw audio data was collected after processing all chunks.")
+        return None
+
+    # Постобработка: сохранение чанков в WAV-файл в памяти как байты с использованием pydub
+    try:
+        stream = io.BytesIO()
+        # Убедитесь, что AudioSegment правильно импортирован/доступен (например, `from pydub import AudioSegment`)
+        AudioSegment(all_raw_audio_bytes, frame_rate=sample_rate, sample_width=sample_width, channels=channels).export(stream, format="wav")
+        return stream.getvalue()
+    except Exception as e:
+        print(f"Error during final conversion to WAV: {e}")
+        return None
+
+
+def generate_audio_bytes_chunked_sync(
+    text: str,
+    chunk_limit: int = 2000,
+    lang: str = "ru",
+    voice: str = "Zephyr",
+    model: str = "gemini-2.0-flash-live-001",
+    sample_rate: int = 24000,
+    sample_width: int = 2,
+    channels: int = 1,
+    max_concurrent_tasks: int = 3
+) -> bytes | None:
+    """
+    Синхронная обертка для асинхронной функции generate_audio_bytes_chunked.
+    Позволяет вызывать асинхронную функцию из синхронного контекста.
+
+    Args:
+        text (str): Текст для синтеза.
+        chunk_limit (int, optional): Максимальная длина чанка. По умолчанию 2000.
+        lang (str, optional): Язык для произношения. По умолчанию "ru".
+        voice (str, optional): Голос для синтеза. По умолчанию "Zephyr".
+        model (str, optional): Генеративная модель. По умолчанию "gemini-2.0-flash-live-001".
+        sample_rate (int, optional): Частота дискретизации аудио. По умолчанию 24000.
+        sample_width (int, optional): Ширина сэмпла (байты). По умолчанию 2.
+        channels (int, optional): Количество каналов. По умолчанию 1.
+        max_concurrent_tasks (int, optional): Максимальное количество параллельных задач. По умолчанию 3.
+
+    Returns:
+        bytes | None: Байтовый объект, содержащий WAV-файл аудио, или None в случае ошибки.
+    """
+    try:
+        # Используем asyncio.run() для выполнения асинхронной функции
+        # в новом цикле событий. Это блокирует текущий поток до завершения
+        # асинхронной операции.
+        return asyncio.run(
+            generate_audio_bytes_chunked(
+                text=text,
+                chunk_limit=chunk_limit,
                 lang=lang,
                 voice=voice,
-                model=model
-            ))
-            return raw_chunk_bytes
-        except RuntimeError as e:
-            # This happens if asyncio.run is called from an already running event loop
-            my_log.log_gemini(f"my_gemini_voice:generate_audio_bytes_chunked: RuntimeError calling asyncio.run for chunk {chunk_num}: {e}. Cannot run from existing loop.")
-            # return None # Critical failure, cannot proceed
-        except Exception as e:
-            # Catch other potential errors during the async call execution
-            my_log.log_gemini(f"my_gemini_voice:generate_audio_bytes_chunked: Unexpected error during generate_audio_bytes for chunk {chunk_num}: {e}\n{traceback.format_exc()}")
-            # return None # Critical failure
-        return b''
-
-
-    try:
-        # Iterate through the text in chunks
-        chunks = utils.split_text(text, chunk_limit=chunk_limit)
-        chunk_num = 0
-        for chunk in chunks:
-            chunk_num += 1
-
-            raw_chunk_bytes = get_raw_audio_bytes_for_chunk(chunk, chunk_num)
-
-            # --- Check chunk generation result ---
-            if not raw_chunk_bytes:
-                time.sleep(5)
-                #try one more
-                raw_chunk_bytes = get_raw_audio_bytes_for_chunk(chunk, chunk_num)
-
-            # --- Check chunk generation result ---
-            if not raw_chunk_bytes:
-                time.sleep(5)
-                #try one more
-                raw_chunk_bytes = get_raw_audio_bytes_for_chunk(chunk, chunk_num)
-
-            # --- Check chunk generation result ---
-            if not raw_chunk_bytes:
-                my_log.log_gemini(f"my_gemini_voice:generate_audio_bytes_chunked: Chunk {chunk_num} failed to generate raw audio.")
-                # return None
-
-            # --- Append successful raw bytes ---
-            all_raw_audio_bytes.extend(raw_chunk_bytes or b'')
-
-        # --- Post-chunk processing ---
-        # Check if any data was collected at all
-        if not all_raw_audio_bytes:
-             my_log.log_gemini("my_gemini_voice:generate_audio_bytes_chunked: No raw audio data was collected after processing all chunks.")
-             return None
-
-
-        # Save chunks to wav file in memory as bytes using pydub
-        try:
-            stream = io.BytesIO()
-            AudioSegment(all_raw_audio_bytes, frame_rate=sample_rate, sample_width=sample_width, channels=channels).export(stream, format="wav")
-            return stream.getvalue()
-        except Exception as e:
-            my_log.log_gemini(f"my_gemini_voice:generate_audio_bytes_chunked: Error during final conversion to WAV: {e}\n{traceback.format_exc()}")
-            return None
-
-
+                model=model,
+                sample_rate=sample_rate,
+                sample_width=sample_width,
+                channels=channels,
+                max_concurrent_tasks=max_concurrent_tasks
+            )
+        )
+    except RuntimeError as e:
+        # Это исключение может возникнуть, если asyncio.run() вызывается из уже
+        # запущенного цикла событий (например, если обертка вызывается внутри другой
+        # асинхронной функции без proper `await`).
+        print(f"RuntimeError in generate_audio_bytes_chunked_sync: {e}")
+        print("This might happen if called from an already running asyncio event loop.")
+        return None
     except Exception as e:
-        # Catch any unexpected errors in the chunking loop logic or final steps
-        my_log.log_gemini(f"my_gemini_voice:generate_audio_bytes_chunked: Unexpected error during overall chunk processing or final conversion: {e}\n{traceback.format_exc()}")
+        print(f"An unexpected error occurred in generate_audio_bytes_chunked_sync: {e}")
+        # print(traceback.format_exc()) # Для отладки
         return None
 
 
@@ -259,7 +314,7 @@ def test1():
 """
 
     # final_wav_data = generate_audio_bytes_chunked(long_text, lang = 'en')
-    final_wav_data = generate_audio_bytes_chunked(long_text, lang = 'ru')
+    final_wav_data = generate_audio_bytes_chunked_sync(long_text, lang = 'ru')
 
     if final_wav_data:
         print(f"Successfully generated WAV data, size: {len(final_wav_data)} bytes.")
@@ -278,7 +333,7 @@ def test2_read_a_book():
     input_text = r"C:\Users\user\Downloads\samples for ai\большая книга только первая глава.txt"
     long_text = open(input_text, 'r', encoding='utf-8').read()
     print("Starting synchronous chunked generation...")
-    final_wav_data = generate_audio_bytes_chunked(long_text, lang = 'ru')
+    final_wav_data = generate_audio_bytes_chunked_sync(long_text, lang = 'ru')
 
     if final_wav_data:
         print(f"Successfully generated WAV data, size: {len(final_wav_data)} bytes.")
@@ -296,5 +351,5 @@ def test2_read_a_book():
 if __name__ == "__main__":
     my_gemini.load_users_keys()
 
-    test1()
-    # test2_read_a_book()
+    # test1()
+    test2_read_a_book()

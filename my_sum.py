@@ -545,7 +545,7 @@ def check_ytb_subs_exists(url: str) -> bool:
                 ('//my.mail.ru/v/' in url and '/video/' in url):
         return len(get_text_from_youtube(url, transcribe=False)) > 0
     return False
-    
+
 
 def summ_text_worker(text: str, subj: str = 'text', lang: str = 'ru', query: str = '', role: str = '') -> str:
     """параллельный воркер для summ_text
@@ -855,15 +855,129 @@ def is_valid_url(url: str) -> bool:
         return False
 
 
+
+
+
+def download_ytb_subs_with_yt_dlp(url: str, lang: str) -> str:
+    '''
+    Скачивает русские автосгенерированные субтитры в формате vtt,
+    переделывает в txt и возвращает их.
+    Args:
+        url (str): Ссылка на видео
+        lang (str): Код языка
+    Returns:
+        Субтиры без отметок времени в простом текстовом формате
+    '''
+    subtitles_text = ""
+    # Имя временного файла, которое мы передадим yt-dlp.
+    # yt-dlp может добавить к нему суффиксы (.ru.vtt, .en.vtt и т.д.).
+    # Нам нужно будет найти фактическое имя файла в выводе yt-dlp.
+    base_temp_file_path = None
+    actual_downloaded_file_path = None # Переменная для хранения фактического пути к скачанным субтитрам
+
+    try:
+        # Подготавливаем список прокси для попыток. Сначала всегда пробуем без прокси.
+        proxies_to_try = [None] 
+
+        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+            # Убедимся, что cfg.YTB_PROXY является итерируемым и не пустым списком
+            if isinstance(cfg.YTB_PROXY, list) and cfg.YTB_PROXY:
+                additional_proxies = list(cfg.YTB_PROXY) # Создаем копию списка
+                random.shuffle(additional_proxies) # Перемешиваем для случайного порядка
+                proxies_to_try = additional_proxies[:]
+            else:
+                pass
+                # my_log.log2("my_sum:download_ytb_subs_with_yt_dlp: Предупреждение: cfg.YTB_PROXY не является списком или пуст, будет попытка только без прокси.")
+
+        base_temp_file_path = utils.get_tmp_fname()
+
+        download_successful = False
+        for proxy_attempt in proxies_to_try:
+            command = [
+                'yt-dlp',
+                '--skip-download',                  # Не скачивать видео
+                '--write-auto-sub',                 # Скачивать автоматически сгенерированные субтитры
+                '--sub-lang', lang,                 # Указать русский язык
+                '--sub-format', 'vtt',              # Указать формат VTT
+                '--output', base_temp_file_path,    # Выводить в временный файл
+                url
+            ]
+
+            if proxy_attempt:
+                command.insert(1, '--proxy') # Вставляем аргумент --proxy
+                command.insert(2, proxy_attempt) # Вставляем значение прокси
+
+            # Перед каждой попыткой, если файл с прошлым фактическим именем существует, удаляем его
+            if actual_downloaded_file_path and os.path.exists(actual_downloaded_file_path):
+                utils.remove_file(actual_downloaded_file_path)
+                actual_downloaded_file_path = None # Сбрасываем для новой попытки
+
+            try:
+                # Добавляем таймаут для предотвращения зависания
+                result = subprocess.run(command, capture_output=True, text=True, check=False, timeout=30) 
+
+                # Ищем фактический путь к скачанным субтитрам в stdout
+                match = re.search(r'\[info\] Writing video subtitles to: (.+)', result.stdout)
+                if match:
+                    actual_downloaded_file_path = match.group(1).strip()
+
+                # Проверяем успешность выполнения команды и наличие данных в файле
+                # Важно: теперь проверяем actual_downloaded_file_path
+                if result.returncode == 0 and actual_downloaded_file_path and \
+                   os.path.exists(actual_downloaded_file_path) and os.path.getsize(actual_downloaded_file_path) > 0:
+                    download_successful = True
+                    break # Успех, выходим из цикла перебора прокси
+                else:
+                    # Логируем ошибку для текущей попытки с прокси
+                    error_message = result.stderr.strip() if result.stderr else "Неизвестная ошибка yt-dlp."
+                    my_log.log2(f"my_sum:download_ytb_subs_with_yt_dlp: Не удалось скачать субтитры через прокси {'(None)' if proxy_attempt is None else proxy_attempt} для {url}. Ошибка: {error_message} (Return Code: {result.returncode})")
+
+            except subprocess.TimeoutExpired:
+                my_log.log2(f"my_sum:download_ytb_subs_with_yt_dlp: Превышено время ожидания (120с) для yt-dlp через прокси {'(None)' if proxy_attempt is None else proxy_attempt} для {url}. Команда: {' '.join(command)}")
+            except Exception as e:
+                # Ловим общие исключения во время выполнения subprocess
+                my_log.log2(f"my_sum:download_ytb_subs_with_yt_dlp: Непредвиденная ошибка при запуске yt-dlp через прокси {'(None)' if proxy_attempt is None else proxy_attempt} для {url}: {e}")
+
+        # Если после всех попыток субтитры не были успешно скачаны
+        if not download_successful:
+            my_log.log2(f"my_sum:download_ytb_subs_with_yt_dlp: Все попытки скачать субтитры для {url} провалились после перебора всех прокси.")
+            return ""
+
+        # Если скачивание было успешным, читаем и обрабатываем VTT файл
+        # Используем actual_downloaded_file_path
+        with open(actual_downloaded_file_path, 'r', encoding='utf-8') as f:
+            vtt_content = f.read()
+
+        subtitles_text = clear_text_subs_from_dzen_video(vtt_content)
+
+    except FileNotFoundError:
+        my_log.log2("Ошибка: команда yt-dlp не найдена. Убедитесь, что yt-dlp установлен и находится в вашем PATH.")
+    except Exception as e:
+        # Логируем непредвиденные ошибки с трассировкой стека
+        traceback_error = traceback.format_exc()
+        my_log.log2(f"Произошла непредвиденная ошибка в download_ytb_subs_with_yt_dlp для URL {url}: {e}\n{traceback_error}")
+    finally:
+        # Гарантируем удаление фактического скачанного временного файла, если он был создан
+        if actual_downloaded_file_path and os.path.exists(actual_downloaded_file_path):
+            utils.remove_file(actual_downloaded_file_path)
+        # Также удаляем базовый временный файл, если он вдруг остался и не был использован yt-dlp
+        elif base_temp_file_path and os.path.exists(base_temp_file_path):
+            utils.remove_file(base_temp_file_path)
+
+    return subtitles_text.strip()
+
+
 if __name__ == "__main__":
     pass
     # my_groq.load_users_keys()
     # r = get_subs_from_dzen_video('https://www.youtube.com/watch?v=lyGvQn_clQM')
     # r = get_text_from_youtube('https://www.youtube.com/watch?v=qnvNkXs7NpY', transcribe=False)
     # r = get_subs_from_rutube('https://vimeo.com/216790976')
-    r = get_subs_from_dzen_video('https://vimeo.com/33830000')
+    # r = get_subs_from_dzen_video('https://vimeo.com/33830000')
 
     # r = get_subs_from_vk('https://vkvideo.ru/video-9695053_456241024')
     # r = get_subs_from_vk('https://vkvideo.ru/playlist/-220754053_3/video-220754053_456243093?isLinkedPlaylist=1')
+
+    r = download_ytb_subs_with_yt_dlp('https://www.youtube.com/watch?v=lyGvQn_clQM', 'ru')
 
     print(r)

@@ -6638,7 +6638,7 @@ def summ_text(message: telebot.types.Message):
                             try:
                                 has_subs = my_sum.check_ytb_subs_exists(url)
                                 if not has_subs and ('/youtu.be/' in url or 'youtube.com/' in url):
-                                    bot_reply_tr(message, 'Видео с ютуба не содержит субтитров.')
+                                    bot_reply_tr(message, 'Видео с ютуба не содержит субтитров или не получилось их скачать.')
                                     return
                                 if url.lower().startswith('http') and url.lower().endswith(('.mp3', '.ogg', '.aac', '.m4a', '.flac', '.mp4')):
                                     bot_reply_tr(message, 'Audiofile download and transcription started, please wait for a while.')

@@ -825,6 +825,12 @@ def summ_url(
                     my_log.log_playwright(f'trying download text with playwright (2) {url}\n\n{text}')
                     text = my_playwright.gettext(url, 30) or text
 
+    if not text:
+        if download_only:
+            return ''
+        else:
+            return '', ''
+
     if download_only:
         if youtube:
             r = f'URL: {url}\nСубтитры из видео на ютубе (полное содержание, отметки времени были удалены):\n\n{text}'

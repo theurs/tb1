@@ -137,7 +137,7 @@ def tts(
     data = my_tts.tts(
         text=text,
         voice=lang,
-        rate='+0%',
+        rate=rate,
         gender=gender
     )
 

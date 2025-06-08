@@ -376,7 +376,7 @@ def chat(
                         my_skills.get_time_in_timezone,
                         my_skills.get_weather,
                         my_skills.get_currency_rates,
-                        # my_skills.tts,
+                        my_skills.tts,
                         my_skills.text_to_image,
                         my_skills.help,
                     ]

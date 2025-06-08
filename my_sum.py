@@ -739,7 +739,7 @@ def get_urls_from_text(text):
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def summ_url(
-    url:str,
+    url: str,
     download_only: bool = False,
     lang: str = 'ru',
     deep: bool = False,

@@ -447,8 +447,8 @@ def chat(
                 break
 
         if resp:
-
-            if resp.strip().startswith("""```python\nprint(default_api."""):
+            resp = resp.strip()
+            if resp.startswith("""```python\nprint(default_api.""") or resp.startswith('```json\n{\n  "tool_code":'):
                 my_log.log_gemini(f'chat:bad resp: {resp}')
                 return ''
 

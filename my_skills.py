@@ -101,6 +101,7 @@ def tts(
     lang: str = 'ru',
     chat_id: str = "",
     rate: str = '+0%',
+    gender: str = 'auto',
     natural: bool = False,
     ) -> str:
     '''
@@ -112,19 +113,21 @@ def tts(
         lang: str - language code, default is 'ru'
         chat_id: str - telegram user chat id (Usually looks like 2 numbers in brackets '[9834xxxx] [24xx]')
         rate: str - speed rate, +-100%, default is '+0%'
+        gender: str - voice gender, default is 'auto' (auto, male or female)
         natural: bool - use natural voice, better quality, default is False
     Example: tts("Привет", "ru")
     '''
 
     chat_id = restore_id(chat_id)
 
-    my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}" "{natural}" "{chat_id}"')
+    my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}" "{gender}" "{natural}" "{chat_id}"')
 
 
-    if my_db.get_user_property(chat_id, 'tts_gender'):
-        gender = my_db.get_user_property(chat_id, 'tts_gender')
-    else:
-        gender = 'female'
+    if gender not in ('male', 'female'):
+        if my_db.get_user_property(chat_id, 'tts_gender'):
+            gender = my_db.get_user_property(chat_id, 'tts_gender')
+        else:
+            gender = 'female'
 
     if natural:
         if gender == 'female':

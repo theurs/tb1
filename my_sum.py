@@ -855,9 +855,7 @@ def is_valid_url(url: str) -> bool:
         return False
 
 
-
-
-
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def download_ytb_subs_with_yt_dlp(url: str, lang: str) -> str:
     '''
     Скачивает русские автосгенерированные субтитры в формате vtt,
@@ -868,6 +866,7 @@ def download_ytb_subs_with_yt_dlp(url: str, lang: str) -> str:
     Returns:
         Субтиры без отметок времени в простом текстовом формате
     '''
+    reloadcfg()
     subtitles_text = ""
     # Имя временного файла, которое мы передадим yt-dlp.
     # yt-dlp может добавить к нему суффиксы (.ru.vtt, .en.vtt и т.д.).

@@ -40,6 +40,10 @@ DEFAULT_MODEL = 'gpt-4o-mini'
 BIG_GPT_41_MODEL = 'gpt-4.1'
 DEFAULT_41_MINI_MODEL = 'gpt-4.1-mini'
 
+# у грока лимит всего 4к токенов
+GROK_MODEL = 'grok-3'
+GROK_MODEL_FALLBACK = 'grok-3-mini'
+
 DEEPSEEK_R1_MODEL = 'DeepSeek-R1'
 DEEPSEEK_R1_MODEL_FALLBACK = 'gpt-4o-mini'
 
@@ -138,15 +142,17 @@ def count_tokens(mem: list) -> int:
     return sum([len(m['content']) for m in mem])
 
 
-def ai(prompt: str = '',
-       mem = None,
-       user_id: str = '',
-       system: str = '',
-       model = DEFAULT_MODEL, # gpt-4o-mini, gpt-4o, DeepSeek-R1,...
-       temperature: float = 1,
-       max_tokens: int = 4000,
-       timeout: int = 120,
-       key_: str = None) -> str:
+def ai(
+    prompt: str = '',
+    mem = None,
+    user_id: str = '',
+    system: str = '',
+    model = DEFAULT_MODEL, # gpt-4o-mini, gpt-4o, DeepSeek-R1,...
+    temperature: float = 1,
+    max_tokens: int = 4000,
+    timeout: int = 120,
+    key_: str = None
+    ) -> str:
 
     temperature = temperature/2
 
@@ -566,12 +572,15 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     load_users_keys()
 
+    t = 'сколько тут звездочек?? ' + ('*'*40000)
+    print(ai(t, model=GROK_MODEL_FALLBACK))
+
     # test_key('')
 
     # reset('test')
-    chat_cli()
+    chat_cli(model = GROK_MODEL)
 
-    # print(img2txt('C:/Users/user/Downloads/samples for ai/мат задачи.jpg', 'реши задачи, в ответе используй юникод символы для математики вместо latex выражений', model = 'gpt-4o', temperature=0))
+    # print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи.jpg', 'реши задачи, в ответе используй юникод символы для математики вместо latex выражений', model = GROK_MODEL, temperature=0))
     # print(voice2txt('C:/Users/user/Downloads/1.ogg'))
 
     my_db.close()

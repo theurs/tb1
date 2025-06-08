@@ -8954,17 +8954,17 @@ def do_task(message, custom_prompt: str = ''):
             return
 
 
-        # проверяем просят ли нарисовать что-нибудь
-        translated_draw = tr('нарисуй', lang)
-        pattern = r"^(" + translated_draw + r"|нарисуй|нарисуйте|draw)[ ,.\n]+"
-        if re.match(pattern, message.text, re.IGNORECASE):
-            prompt = re.sub(pattern, "", message.text, flags=re.IGNORECASE).strip()
-            if prompt:
-                message.text = f"/image {prompt}"
-                image_gen(message)
-                return
-            else:
-                pass # считать что не сработало
+        # # проверяем просят ли нарисовать что-нибудь
+        # translated_draw = tr('нарисуй', lang)
+        # pattern = r"^(" + translated_draw + r"|нарисуй|нарисуйте|draw)[ ,.\n]+"
+        # if re.match(pattern, message.text, re.IGNORECASE):
+        #     prompt = re.sub(pattern, "", message.text, flags=re.IGNORECASE).strip()
+        #     if prompt:
+        #         message.text = f"/image {prompt}"
+        #         image_gen(message)
+        #         return
+        #     else:
+        #         pass # считать что не сработало
 
 
         # можно перенаправить запрос к гуглу, но он долго отвечает

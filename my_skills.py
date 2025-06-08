@@ -115,7 +115,6 @@ def tts(
         rate: str - speed rate, +-100%, default is '+0%'
         gender: str - voice gender, default is 'auto' (auto, male or female)
         natural: bool - use natural voice, better quality, default is False
-    Example: tts("Привет", "ru")
     '''
 
     chat_id = restore_id(chat_id)

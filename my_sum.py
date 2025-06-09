@@ -651,7 +651,7 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
 
         if text: # Если субтитры успешно получены
             my_log.log2(f'Successfully retrieved transcript for URL: {url} using proxy: {last_proxy_tried if last_proxy_tried != "N/A" else "None"}.')
-        else: # Если t все еще пуст после всех попыток
+        else:
             full_log_output = [f'All {num_attempts} attempts failed for URL: {url}. Details of attempts:']
             full_log_output.extend(failed_attempts_logs)
             full_log_output.append(f'Transcript retrieval ultimately failed after {num_attempts} attempts for URL: {url}. Last proxy tried: {last_proxy_tried if last_proxy_tried else "None"}.')

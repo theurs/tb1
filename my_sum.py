@@ -442,6 +442,97 @@ def clear_text_subs_from_dzen_video(text: str) -> str:
     # return '\n'.join(result).strip()
 
 
+# @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+# def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '') -> str:
+#     """Вытаскивает текст из субтитров на ютубе
+
+#     Args:
+#         url (str): ссылка на ютуб видео
+#         transcribe (bool, optional): если True то создаем субтитры с помощью джемини если их нет.
+
+#     Returns:
+#         str: первые субтитры из списка какие есть в видео
+#     """
+#     try:
+#         top_langs = (
+#             'ru', 'en', 'uk', 'es', 'pt', 'fr', 'ar', 'id', 'it', 'de', 'ja', 'ko', 'pl', 'th', 'tr', 'nl', 'hi', 'vi', 'sv', 'ro',
+#             'aa', 'ab', 'af', 'ak', 'am', 'an', 'as', 'av', 'ae', 'ay', 'az', 'ba', 'bm', 'be', 'bn', 'bi', 'bo', 'bs', 'br', 'bg',
+#             'ca', 'cs', 'ch', 'ce', 'cu', 'cv', 'kw', 'co', 'cr', 'cy', 'da', 'dv', 'dz', 'el', 'eo', 'et', 'eu', 'ee', 'fo', 'fa',
+#             'fj', 'fi', 'fy', 'ff', 'gd', 'ga', 'gl', 'gv', 'gn', 'gu', 'ht', 'ha', 'he', 'hz', 'ho', 'hr', 'hu', 'hy', 'ig', 'io',
+#             'ii', 'iu', 'ie', 'ia', 'ik', 'is', 'jv', 'kl', 'kn', 'ks', 'ka', 'kr', 'kk', 'km', 'ki', 'rw', 'ky', 'kv', 'kg', 'kj',
+#             'ku', 'lo', 'la', 'lv', 'li', 'ln', 'lt', 'lb', 'lu', 'lg', 'mh', 'ml', 'mr', 'mk', 'mg', 'mt', 'mn', 'mi', 'ms', 'my',
+#             'na', 'nv', 'nr', 'nd', 'ng', 'ne', 'nn', 'nb', 'no', 'ny', 'oc', 'oj', 'or', 'om', 'os', 'pa', 'pi', 'ps', 'qu', 'rm',
+#             'rn', 'sg', 'sa', 'si', 'sk', 'sl', 'se', 'sm', 'sn', 'sd', 'so', 'st', 'sq', 'sc', 'sr', 'ss', 'su', 'sw', 'ty', 'ta',
+#             'tt', 'te', 'tg', 'tl', 'ti', 'to', 'tn', 'ts', 'tk', 'tw', 'ug', 'ur', 'uz', 've', 'vo', 'wa', 'wo', 'xh', 'yi', 'yo',
+#             'za', 'zh', 'zu', 'bh'
+#         )
+#         if language:
+#             top_langs = [x for x in top_langs if x != language]
+#             top_langs.insert(0, language)
+
+#         if '//dzen.ru/video/watch/' in url or ('vk.com' in url and '/video-' in url):
+#             return get_subs_from_dzen_video(url)
+#         if '//rutube.ru/video/' in url:
+#             return get_subs_from_rutube(url)
+#         if 'pornhub.com/view_video.php?viewkey=' in url:
+#             return get_subs_from_rutube(url)
+#         if 'tiktok.com' in url and 'video' in url:
+#             return get_subs_from_rutube(url)
+#         if 'vk.com' in url and '/video-' in url or 'vkvideo.ru' in url:
+#             return get_subs_from_vk(url)
+#         if '//my.mail.ru/v/' in url and '/video/' in url:
+#             return get_subs_from_rutube(url)
+#         if 'https://vimeo.com/' in url:
+#             return get_subs_from_dzen_video(url)
+
+#         try:
+#             video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
+#         except:
+#             return ''
+
+#         reloadcfg()
+
+#         for _ in range(4):
+#             try:
+#                 t = ''
+#                 try:
+#                     proxy = ''
+#                     if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+#                         proxy = random.choice(cfg.YTB_PROXY)
+#                         proxies = {
+#                             'http': proxy,
+#                             'https': proxy
+#                         }
+#                         t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = proxies)
+#                     else:
+#                         t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
+#                 except Exception as download_error:
+#                     my_log.log2(f'get_text_from_youtube:1: {download_error}\n\nProxy: {proxy}\nURL: {url}')
+#                 if t:
+#                     break
+#             except Exception as error:
+#                 if 'If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at' not in str(error):
+#                     my_log.log2(f'get_text_from_youtube:2: {error}')
+#                 # my_log.log2(f'get_text_from_youtube:3: {error}')
+#                 # print(error)
+#                 t = ''
+
+#         text = '\n'.join([x['text'] for x in t])
+
+#         text = text.strip()
+
+#         if not text and transcribe: # нет субтитров?
+#             # youtube всё равно не транскрибировать
+#             if not 'youtube' in url and not 'youtu.be' in url:
+#                 text, info = my_transcribe.download_youtube_clip_v2(url, language=language)
+
+#         return text
+#     except Exception as error:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'get_text_from_youtube::4: {url} {transcribe} {language}\n\n{error}\n\n{traceback_error}')
+#         return ''
+
+
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '') -> str:
     """Вытаскивает текст из субтитров на ютубе
@@ -492,30 +583,49 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
 
         reloadcfg()
 
-        for _ in range(4):
+        t = [] # Initialize t as an empty list
+        failed_attempts_logs = [] # To store logs for each failed attempt
+        last_proxy_tried = "N/A" # To track the last proxy used, for final summary
+
+        # Prepare the list of proxies for attempts
+        proxy_list_for_attempts = []
+        if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
+            # Create a shuffled copy of the proxies
+            proxy_list_for_attempts = list(cfg.YTB_PROXY)
+            random.shuffle(proxy_list_for_attempts)
+
+        # Determine the number of attempts (up to 4, or the number of proxies)
+        num_attempts = min(4, len(proxy_list_for_attempts) if proxy_list_for_attempts else 1) # At least 1 attempt if no proxies
+
+        for i in range(num_attempts): # Loop for determined number of attempts
+            current_proxy = '' # Proxy for the current attempt
             try:
-                t = ''
-                try:
-                    proxy = ''
-                    if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
-                        proxy = random.choice(cfg.YTB_PROXY)
-                        proxies = {
-                            'http': proxy,
-                            'https': proxy
-                        }
-                        t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = proxies)
-                    else:
-                        t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
-                except Exception as download_error:
-                    my_log.log2(f'get_text_from_youtube:1: {download_error}\n\nProxy: {proxy}\nURL: {url}')
-                if t:
+                temp_t = [] # Temporary variable for transcript of current attempt
+                if proxy_list_for_attempts:
+                    current_proxy = proxy_list_for_attempts[i] # Get proxy from the shuffled list
+                    last_proxy_tried = current_proxy # Update last tried proxy
+                    proxies = {
+                        'http': current_proxy,
+                        'https': current_proxy
+                    }
+                    temp_t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies=proxies)
+                else: # No proxies available or configured
+                     temp_t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
+
+                if temp_t: # If transcript is successfully obtained, assign to t and break
+                    t = temp_t
                     break
-            except Exception as error:
-                if 'If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at' not in str(error):
-                    my_log.log2(f'get_text_from_youtube:2: {error}')
-                # my_log.log2(f'get_text_from_youtube:3: {error}')
-                # print(error)
-                t = ''
+
+            except Exception as download_error:
+                # Log specific error for this attempt, collect it
+                log_message = f'Attempt {i+1}/{num_attempts} for URL: {url} with proxy: {current_proxy if current_proxy else "None"}. Error: {download_error}'
+                failed_attempts_logs.append(log_message)
+        # After the loop, if t is still empty, it means no transcripts were obtained successfully
+        if not t: # If t is still an empty list after all attempts
+            my_log.log2(f'All {num_attempts} attempts failed for URL: {url}. Details of attempts:')
+            for log_entry in failed_attempts_logs:
+                my_log.log2(log_entry)
+            my_log.log2(f'Transcript retrieval ultimately failed after {num_attempts} attempts for URL: {url}. Last proxy tried: {last_proxy_tried if last_proxy_tried else "None"}.')
 
         text = '\n'.join([x['text'] for x in t])
 
@@ -983,6 +1093,7 @@ if __name__ == "__main__":
     # r = get_subs_from_vk('https://vkvideo.ru/video-9695053_456241024')
     # r = get_subs_from_vk('https://vkvideo.ru/playlist/-220754053_3/video-220754053_456243093?isLinkedPlaylist=1')
 
-    r = download_ytb_subs_with_yt_dlp('https://www.youtube.com/watch?v=lyGvQn_clQM', 'ru')
+    # r = download_ytb_subs_with_yt_dlp('https://youtu.be/ujNamZw_nl0', 'ru')
+    r = get_text_from_youtube('https://youtu.be/ujNamZw_nl0', 'ru')
 
     print(r)

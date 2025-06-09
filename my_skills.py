@@ -56,14 +56,7 @@ def text_to_image(prompt: str) -> str:
         prompt: str - text to generate image from
     '''
     my_log.log_gemini_skills(f'/img "{prompt}"')
-    return (
-        "The function itself does not return an image. "
-        "It returns a string containing instructions for the assistant. "
-        "The assistant must send a new message, starting with the /img command, "
-        "followed by a space, and then the prompt provided, up to 100 words. "
-        "This specific message format will be automatically recognized by an "
-        "external system as a request to generate and send an image to the user."
-    )
+    return "The function itself does not return an image. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /img command, followed by a space, and then the prompt provided, up to 100 words. This specific message format will be automatically recognized by an external system as a request to generate and send an image to the user."
 
 
 def tts(text: str, lang: str, rate: str):
@@ -76,15 +69,7 @@ def tts(text: str, lang: str, rate: str):
         rate: str - speed rate, +-100%, default is '+0%'
     '''
     my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}"')
-    return (
-        "The function itself does not return an audio message. It returns a string "
-        "containing instructions for the assistant. The assistant must send a new "
-        "message, starting with the /tts command, followed by a space, and then the "
-        "lang provided 'en' 'ru' 'auto', followed by a space, and then the speed "
-        "provided, followed by a space, and then the prompt provided. This specific "
-        "message format will be automatically recognized by an external system as a "
-        "request to generate and send an audio message to the user."
-    )
+    return "The function itself does not return an audio message. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /tts command, followed by a space, and then the lang provided 'en' ru' 'auto', followed by a space, and then the speed provided, followed by a space, and then the prompt provided. This specific message format will be automatically recognized by an external system as a request to generate and send an audio message to the user."
 
 
 def restore_id(chat_id: str) -> str:

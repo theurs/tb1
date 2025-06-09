@@ -304,7 +304,7 @@ def get_mem_as_string(chat_id: str, md: bool = False) -> str:
 def img2txt(
     image_data: bytes,
     prompt: str = 'Describe picture',
-    model = 'mistralai/pixtral-12b:free',
+    model = DEFAULT_MODEL,
     temperature: float = 1,
     max_tokens: int = 2000,
     timeout: int = 120,
@@ -509,7 +509,7 @@ if __name__ == '__main__':
     my_db.init(backup=False)
 
     # reset('test')
-    chat_cli('qwen/qwen3-14b:free')
+    # chat_cli('qwen/qwen3-14b:free')
 
 
     # with open(r'C:\Users\user\Downloads\samples for ai\большая книга.txt', 'r', encoding='utf-8') as f:
@@ -520,6 +520,7 @@ if __name__ == '__main__':
 
 
     # print(img2txt('C:/Users/user/Downloads/1.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-3.2-11b-vision-instruct:free'))
+    print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-4-maverick:free'))
     # print(voice2txt('C:/Users/user/Downloads/1.ogg'))
 
     my_db.close()

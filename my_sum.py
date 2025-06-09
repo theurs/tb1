@@ -559,7 +559,7 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
                 text, info = my_transcribe.download_youtube_clip_v2(url, language=language)
 
         if text: # Если субтитры успешно получены
-            my_log.log2(f'my_sum:get_text_from_youtube: (transcribe: {transcribe} lang: {lang}) Successfully retrieved transcript for URL: {url} using proxy: {last_proxy_tried if last_proxy_tried != "N/A" else "None"}.')
+            my_log.log2(f'my_sum:get_text_from_youtube: (transcribe: {transcribe} lang: {language}) Successfully retrieved transcript for URL: {url} using proxy: {last_proxy_tried if last_proxy_tried != "N/A" else "None"}.')
         else:
             full_log_output = [f'All {num_attempts} attempts failed for URL: {url}. Details of attempts:']
             full_log_output.extend(failed_attempts_logs)

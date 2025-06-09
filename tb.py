@@ -8521,6 +8521,11 @@ def handle_photo(message: telebot.types.Message):
 
                         if len(images) > 4:
                             big_text = ''
+                            # соединить группы картинок по 4
+                            images_ = utils.create_image_collages(images)
+                            if images_:
+                                images = images_
+                            
                             for image in images:
                                 if image:
                                     try:

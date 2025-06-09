@@ -9,6 +9,7 @@ import io
 import json
 import html
 import os
+import math
 import pathlib
 import pickle
 import pysrt
@@ -1818,6 +1819,40 @@ def make_collage(images: list, quality: int = 60) -> bytes:
     collage.save(result_image_as_bytes, format='JPEG', quality=quality, optimize=True, subsampling=0)
     result_image_as_bytes.seek(0)
     return result_image_as_bytes.read()
+
+
+def create_image_collages(images: list, batch_size: int = 4) -> list:
+    """
+    Создает список коллажей, объединяя исходные изображения в группы.
+
+    Args:
+        images (list): Список исходных изображений (байтов).
+        batch_size (int): Количество изображений для объединения в один коллаж.
+                          По умолчанию 4.
+
+    Returns:
+        list: Список объединенных коллажей (байтов).
+    """
+    collages = []
+    
+    # Если исходный список пуст, возвращаем пустой список коллажей
+    if not images:
+        return collages
+
+    # Вычисляем количество пачек
+    num_batches = math.ceil(len(images) / batch_size)
+
+    for i in range(num_batches):
+        start_index = i * batch_size
+        end_index = min((i + 1) * batch_size, len(images))
+        
+        current_batch = images[start_index:end_index]
+        
+        # utils.make_collage должен принимать список байтов и возвращать байты
+        collage_bytes = make_collage(current_batch)
+        collages.append(collage_bytes)
+        
+    return collages
 
 
 def get_image_size(data: bytes) -> tuple[int, int]:

@@ -56,7 +56,35 @@ def text_to_image(prompt: str) -> str:
         prompt: str - text to generate image from
     '''
     my_log.log_gemini_skills(f'/img "{prompt}"')
-    return "The function itself does not return an image. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /img command, followed by a space, and then the prompt provided, up to 100 words. This specific message format will be automatically recognized by an external system as a request to generate and send an image to the user."
+    return (
+        "The function itself does not return an image. "
+        "It returns a string containing instructions for the assistant. "
+        "The assistant must send a new message, starting with the /img command, "
+        "followed by a space, and then the prompt provided, up to 100 words. "
+        "This specific message format will be automatically recognized by an "
+        "external system as a request to generate and send an image to the user."
+    )
+
+
+def tts(text: str, lang: str, rate: str):
+    '''
+    Generate and send audio message from text to user.
+    Use it only if asked by user to generate audio from text.
+    Args:
+        text: str - text to say (up to 8000 symbols)
+        lang: str - language code, default is 'ru'
+        rate: str - speed rate, +-100%, default is '+0%'
+    '''
+    my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}"')
+    return (
+        "The function itself does not return an audio message. It returns a string "
+        "containing instructions for the assistant. The assistant must send a new "
+        "message, starting with the /tts command, followed by a space, and then the "
+        "lang provided 'en' 'ru' 'auto', followed by a space, and then the speed "
+        "provided, followed by a space, and then the prompt provided. This specific "
+        "message format will be automatically recognized by an external system as a "
+        "request to generate and send an audio message to the user."
+    )
 
 
 def restore_id(chat_id: str) -> str:
@@ -96,7 +124,8 @@ def restore_id(chat_id: str) -> str:
     return chat_id
 
 
-def tts(
+@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
+def tts_(
     text: str,
     lang: str = 'ru',
     chat_id: str = "",
@@ -107,7 +136,7 @@ def tts(
     '''
     Generate and send audio message from text to user.
     Use it only if asked by user to generate audio from text.
-
+    If you answer text starting with /tts you will get audio too (doubletap, dont do it).
     Args:
         text: str - text to say (up to 8000 symbols)
         lang: str - language code, default is 'ru'
@@ -115,6 +144,8 @@ def tts(
         rate: str - speed rate, +-100%, default is '+0%'
         gender: str - voice gender, default is 'auto' (auto, male or female)
         natural: bool - use natural voice, better quality, default is False
+    Returns:
+        str: "OK" or "FAIL"
     '''
 
     chat_id = restore_id(chat_id)
@@ -152,10 +183,10 @@ def tts(
             else:
                 STORAGE[chat_id] = [data, time.time()]
             my_log.log_gemini_skills(f'TTS OK. Send to user: {chat_id}')
-            return 'Backend report: Text was generated and sent to user.'
+            return 'OK. DO NOT REPEAT!'
     else:
         my_log.log_gemini_skills(f'TTS ERROR. Send to user: {chat_id}')
-        return 'Some error occurred.'
+        return 'FAIL'
 
 
 def init():

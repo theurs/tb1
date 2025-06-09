@@ -640,14 +640,6 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
             if i < num_attempts - 1: # Добавляем паузу только если это не последняя попытка
                 time.sleep(random.randint(2, 5))
 
-        if t: # Если субтитры успешно получены
-            my_log.log2(f'Successfully retrieved transcript for URL: {url} using proxy: {last_proxy_tried if last_proxy_tried != "N/A" else "None"}.')
-        else: # Если t все еще пуст после всех попыток
-            full_log_output = [f'All {num_attempts} attempts failed for URL: {url}. Details of attempts:']
-            full_log_output.extend(failed_attempts_logs)
-            full_log_output.append(f'Transcript retrieval ultimately failed after {num_attempts} attempts for URL: {url}. Last proxy tried: {last_proxy_tried if last_proxy_tried else "None"}.')
-            my_log.log2('\n'.join(full_log_output))
-
         text = '\n'.join([x.text for x in t])
 
         text = text.strip()
@@ -656,6 +648,14 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
             # youtube всё равно не транскрибировать
             if not 'youtube' in url and not 'youtu.be' in url:
                 text, info = my_transcribe.download_youtube_clip_v2(url, language=language)
+
+        if text: # Если субтитры успешно получены
+            my_log.log2(f'Successfully retrieved transcript for URL: {url} using proxy: {last_proxy_tried if last_proxy_tried != "N/A" else "None"}.')
+        else: # Если t все еще пуст после всех попыток
+            full_log_output = [f'All {num_attempts} attempts failed for URL: {url}. Details of attempts:']
+            full_log_output.extend(failed_attempts_logs)
+            full_log_output.append(f'Transcript retrieval ultimately failed after {num_attempts} attempts for URL: {url}. Last proxy tried: {last_proxy_tried if last_proxy_tried else "None"}.')
+            my_log.log2('\n'.join(full_log_output))
 
         return text
 
@@ -1116,6 +1116,6 @@ if __name__ == "__main__":
     # r = get_subs_from_vk('https://vkvideo.ru/playlist/-220754053_3/video-220754053_456243093?isLinkedPlaylist=1')
 
     # r = download_ytb_subs_with_yt_dlp('https://youtu.be/ujNamZw_nl0', 'ru')
-    r = get_text_from_youtube('https://youtu.be/ujNamZw_nl0', 'ru')
+    r = get_text_from_youtube('https://www.youtube.com/watch?v=0H8uh0sowT8', 'ru')
 
     print(r)

@@ -38,6 +38,19 @@ import utils
 
 CFG_TIMESTAMP = os.path.getmtime('cfg.py')
 
+TOP_LANGS = (
+    'ru', 'en', 'uk', 'es', 'pt', 'fr', 'ar', 'id', 'it', 'de', 'ja', 'ko', 'pl', 'th', 'tr', 'nl', 'hi', 'vi', 'sv', 'ro',
+    'aa', 'ab', 'af', 'ak', 'am', 'an', 'as', 'av', 'ae', 'ay', 'az', 'ba', 'bm', 'be', 'bn', 'bi', 'bo', 'bs', 'br', 'bg',
+    'ca', 'cs', 'ch', 'ce', 'cu', 'cv', 'kw', 'co', 'cr', 'cy', 'da', 'dv', 'dz', 'el', 'eo', 'et', 'eu', 'ee', 'fo', 'fa',
+    'fj', 'fi', 'fy', 'ff', 'gd', 'ga', 'gl', 'gv', 'gn', 'gu', 'ht', 'ha', 'he', 'hz', 'ho', 'hr', 'hu', 'hy', 'ig', 'io',
+    'ii', 'iu', 'ie', 'ia', 'ik', 'is', 'jv', 'kl', 'kn', 'ks', 'ka', 'kr', 'kk', 'km', 'ki', 'rw', 'ky', 'kv', 'kg', 'kj',
+    'ku', 'lo', 'la', 'lv', 'li', 'ln', 'lt', 'lb', 'lu', 'lg', 'mh', 'ml', 'mr', 'mk', 'mg', 'mt', 'mn', 'mi', 'ms', 'my',
+    'na', 'nv', 'nr', 'nd', 'ng', 'ne', 'nn', 'nb', 'no', 'ny', 'oc', 'oj', 'or', 'om', 'os', 'pa', 'pi', 'ps', 'qu', 'rm',
+    'rn', 'sg', 'sa', 'si', 'sk', 'sl', 'se', 'sm', 'sn', 'sd', 'so', 'st', 'sq', 'sc', 'sr', 'ss', 'su', 'sw', 'ty', 'ta',
+    'tt', 'te', 'tg', 'tl', 'ti', 'to', 'tn', 'ts', 'tk', 'tw', 'ug', 'ur', 'uz', 've', 'vo', 'wa', 'wo', 'xh', 'yi', 'yo',
+    'za', 'zh', 'zu', 'bh'
+)
+
 
 def reloadcfg():
     '''
@@ -547,18 +560,7 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
         str: первые субтитры из списка какие есть в видео
     """
     try:
-        top_langs = (
-            'ru', 'en', 'uk', 'es', 'pt', 'fr', 'ar', 'id', 'it', 'de', 'ja', 'ko', 'pl', 'th', 'tr', 'nl', 'hi', 'vi', 'sv', 'ro',
-            'aa', 'ab', 'af', 'ak', 'am', 'an', 'as', 'av', 'ae', 'ay', 'az', 'ba', 'bm', 'be', 'bn', 'bi', 'bo', 'bs', 'br', 'bg',
-            'ca', 'cs', 'ch', 'ce', 'cu', 'cv', 'kw', 'co', 'cr', 'cy', 'da', 'dv', 'dz', 'el', 'eo', 'et', 'eu', 'ee', 'fo', 'fa',
-            'fj', 'fi', 'fy', 'ff', 'gd', 'ga', 'gl', 'gv', 'gn', 'gu', 'ht', 'ha', 'he', 'hz', 'ho', 'hr', 'hu', 'hy', 'ig', 'io',
-            'ii', 'iu', 'ie', 'ia', 'ik', 'is', 'jv', 'kl', 'kn', 'ks', 'ka', 'kr', 'kk', 'km', 'ki', 'rw', 'ky', 'kv', 'kg', 'kj',
-            'ku', 'lo', 'la', 'lv', 'li', 'ln', 'lt', 'lb', 'lu', 'lg', 'mh', 'ml', 'mr', 'mk', 'mg', 'mt', 'mn', 'mi', 'ms', 'my',
-            'na', 'nv', 'nr', 'nd', 'ng', 'ne', 'nn', 'nb', 'no', 'ny', 'oc', 'oj', 'or', 'om', 'os', 'pa', 'pi', 'ps', 'qu', 'rm',
-            'rn', 'sg', 'sa', 'si', 'sk', 'sl', 'se', 'sm', 'sn', 'sd', 'so', 'st', 'sq', 'sc', 'sr', 'ss', 'su', 'sw', 'ty', 'ta',
-            'tt', 'te', 'tg', 'tl', 'ti', 'to', 'tn', 'ts', 'tk', 'tw', 'ug', 'ur', 'uz', 've', 'vo', 'wa', 'wo', 'xh', 'yi', 'yo',
-            'za', 'zh', 'zu', 'bh'
-        )
+        top_langs = list(TOP_LANGS)
         if language:
             top_langs = [x for x in top_langs if x != language]
             top_langs.insert(0, language)
@@ -634,9 +636,13 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
                 # Log specific error for this attempt, collect it
                 log_message = f'Attempt {i+1}/{num_attempts} for URL: {url} with proxy: {current_proxy if current_proxy else "None"}. Error: {download_error}'
                 failed_attempts_logs.append(log_message)
-            time.sleep(random.randint(2, 5))
-        # After the loop, if t is still empty, it means no transcripts were obtained successfully
-        if not t: # If t is still an empty list after all attempts
+
+            if i < num_attempts - 1: # Добавляем паузу только если это не последняя попытка
+                time.sleep(random.randint(2, 5))
+
+        if t: # Если субтитры успешно получены
+            my_log.log2(f'Successfully retrieved transcript for URL: {url} using proxy: {last_proxy_tried if last_proxy_tried != "N/A" else "None"}.')
+        else: # Если t все еще пуст после всех попыток
             full_log_output = [f'All {num_attempts} attempts failed for URL: {url}. Details of attempts:']
             full_log_output.extend(failed_attempts_logs)
             full_log_output.append(f'Transcript retrieval ultimately failed after {num_attempts} attempts for URL: {url}. Last proxy tried: {last_proxy_tried if last_proxy_tried else "None"}.')
@@ -652,6 +658,7 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
                 text, info = my_transcribe.download_youtube_clip_v2(url, language=language)
 
         return text
+
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'get_text_from_youtube::4: {url} {transcribe} {language}\n\n{error}\n\n{traceback_error}')

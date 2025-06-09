@@ -6636,7 +6636,7 @@ def summ_text(message: telebot.types.Message):
                         with ShowAction(message, 'typing'):
                             res = ''
                             try:
-                                has_subs = my_sum.check_ytb_subs_exists(url)
+                                has_subs = my_sum.check_ytb_subs_exists(url, lang = lang)
                                 if not has_subs and ('/youtu.be/' in url or 'youtube.com/' in url):
                                     bot_reply_tr(message, 'Видео с ютуба не содержит субтитров или не получилось их скачать.')
                                     return
@@ -8525,7 +8525,7 @@ def handle_photo(message: telebot.types.Message):
                             images_ = utils.create_image_collages(images)
                             if images_:
                                 images = images_
-                            
+
                             for image in images:
                                 if image:
                                     try:

@@ -457,97 +457,6 @@ def clear_text_subs_from_dzen_video(text: str) -> str:
     # return '\n'.join(result).strip()
 
 
-# @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-# def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '') -> str:
-#     """Вытаскивает текст из субтитров на ютубе
-
-#     Args:
-#         url (str): ссылка на ютуб видео
-#         transcribe (bool, optional): если True то создаем субтитры с помощью джемини если их нет.
-
-#     Returns:
-#         str: первые субтитры из списка какие есть в видео
-#     """
-#     try:
-#         top_langs = (
-#             'ru', 'en', 'uk', 'es', 'pt', 'fr', 'ar', 'id', 'it', 'de', 'ja', 'ko', 'pl', 'th', 'tr', 'nl', 'hi', 'vi', 'sv', 'ro',
-#             'aa', 'ab', 'af', 'ak', 'am', 'an', 'as', 'av', 'ae', 'ay', 'az', 'ba', 'bm', 'be', 'bn', 'bi', 'bo', 'bs', 'br', 'bg',
-#             'ca', 'cs', 'ch', 'ce', 'cu', 'cv', 'kw', 'co', 'cr', 'cy', 'da', 'dv', 'dz', 'el', 'eo', 'et', 'eu', 'ee', 'fo', 'fa',
-#             'fj', 'fi', 'fy', 'ff', 'gd', 'ga', 'gl', 'gv', 'gn', 'gu', 'ht', 'ha', 'he', 'hz', 'ho', 'hr', 'hu', 'hy', 'ig', 'io',
-#             'ii', 'iu', 'ie', 'ia', 'ik', 'is', 'jv', 'kl', 'kn', 'ks', 'ka', 'kr', 'kk', 'km', 'ki', 'rw', 'ky', 'kv', 'kg', 'kj',
-#             'ku', 'lo', 'la', 'lv', 'li', 'ln', 'lt', 'lb', 'lu', 'lg', 'mh', 'ml', 'mr', 'mk', 'mg', 'mt', 'mn', 'mi', 'ms', 'my',
-#             'na', 'nv', 'nr', 'nd', 'ng', 'ne', 'nn', 'nb', 'no', 'ny', 'oc', 'oj', 'or', 'om', 'os', 'pa', 'pi', 'ps', 'qu', 'rm',
-#             'rn', 'sg', 'sa', 'si', 'sk', 'sl', 'se', 'sm', 'sn', 'sd', 'so', 'st', 'sq', 'sc', 'sr', 'ss', 'su', 'sw', 'ty', 'ta',
-#             'tt', 'te', 'tg', 'tl', 'ti', 'to', 'tn', 'ts', 'tk', 'tw', 'ug', 'ur', 'uz', 've', 'vo', 'wa', 'wo', 'xh', 'yi', 'yo',
-#             'za', 'zh', 'zu', 'bh'
-#         )
-#         if language:
-#             top_langs = [x for x in top_langs if x != language]
-#             top_langs.insert(0, language)
-
-#         if '//dzen.ru/video/watch/' in url or ('vk.com' in url and '/video-' in url):
-#             return get_subs_from_dzen_video(url)
-#         if '//rutube.ru/video/' in url:
-#             return get_subs_from_rutube(url)
-#         if 'pornhub.com/view_video.php?viewkey=' in url:
-#             return get_subs_from_rutube(url)
-#         if 'tiktok.com' in url and 'video' in url:
-#             return get_subs_from_rutube(url)
-#         if 'vk.com' in url and '/video-' in url or 'vkvideo.ru' in url:
-#             return get_subs_from_vk(url)
-#         if '//my.mail.ru/v/' in url and '/video/' in url:
-#             return get_subs_from_rutube(url)
-#         if 'https://vimeo.com/' in url:
-#             return get_subs_from_dzen_video(url)
-
-#         try:
-#             video_id = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})(?:\?|&|\/|$)", url).group(1)
-#         except:
-#             return ''
-
-#         reloadcfg()
-
-#         for _ in range(4):
-#             try:
-#                 t = ''
-#                 try:
-#                     proxy = ''
-#                     if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
-#                         proxy = random.choice(cfg.YTB_PROXY)
-#                         proxies = {
-#                             'http': proxy,
-#                             'https': proxy
-#                         }
-#                         t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies = proxies)
-#                     else:
-#                         t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
-#                 except Exception as download_error:
-#                     my_log.log2(f'get_text_from_youtube:1: {download_error}\n\nProxy: {proxy}\nURL: {url}')
-#                 if t:
-#                     break
-#             except Exception as error:
-#                 if 'If you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at' not in str(error):
-#                     my_log.log2(f'get_text_from_youtube:2: {error}')
-#                 # my_log.log2(f'get_text_from_youtube:3: {error}')
-#                 # print(error)
-#                 t = ''
-
-#         text = '\n'.join([x['text'] for x in t])
-
-#         text = text.strip()
-
-#         if not text and transcribe: # нет субтитров?
-#             # youtube всё равно не транскрибировать
-#             if not 'youtube' in url and not 'youtu.be' in url:
-#                 text, info = my_transcribe.download_youtube_clip_v2(url, language=language)
-
-#         return text
-#     except Exception as error:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'get_text_from_youtube::4: {url} {transcribe} {language}\n\n{error}\n\n{traceback_error}')
-#         return ''
-
-
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '') -> str:
     """Вытаскивает текст из субтитров на ютубе
@@ -650,7 +559,7 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
                 text, info = my_transcribe.download_youtube_clip_v2(url, language=language)
 
         if text: # Если субтитры успешно получены
-            my_log.log2(f'Successfully retrieved transcript for URL: {url} using proxy: {last_proxy_tried if last_proxy_tried != "N/A" else "None"}.')
+            my_log.log2(f'my_sum:get_text_from_youtube: (transcribe: {transcribe} lang: {lang}) Successfully retrieved transcript for URL: {url} using proxy: {last_proxy_tried if last_proxy_tried != "N/A" else "None"}.')
         else:
             full_log_output = [f'All {num_attempts} attempts failed for URL: {url}. Details of attempts:']
             full_log_output.extend(failed_attempts_logs)
@@ -665,7 +574,7 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
         return ''
 
 
-def check_ytb_subs_exists(url: str) -> bool:
+def check_ytb_subs_exists(url: str, lang: str) -> bool:
     '''проверяет наличие субтитров на ютубе, если это не ютуб или есть субтитры
     то возвращает True, иначе False
     '''
@@ -675,7 +584,7 @@ def check_ytb_subs_exists(url: str) -> bool:
                 ('https://vimeo.com/' in url) or \
                 ('vk.com' in url and '/video-' in url) or \
                 ('//my.mail.ru/v/' in url and '/video/' in url):
-        return len(get_text_from_youtube(url, transcribe=False)) > 0
+        return len(get_text_from_youtube(url, language = lang)) > 0
     return False
 
 

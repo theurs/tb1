@@ -11,6 +11,7 @@ import os
 import random
 import re
 import subprocess
+import time
 import traceback
 from urllib.parse import urlparse
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -633,6 +634,7 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
                 # Log specific error for this attempt, collect it
                 log_message = f'Attempt {i+1}/{num_attempts} for URL: {url} with proxy: {current_proxy if current_proxy else "None"}. Error: {download_error}'
                 failed_attempts_logs.append(log_message)
+            time.sleep(random.randint(2, 5))
         # After the loop, if t is still empty, it means no transcripts were obtained successfully
         if not t: # If t is still an empty list after all attempts
             full_log_output = [f'All {num_attempts} attempts failed for URL: {url}. Details of attempts:']

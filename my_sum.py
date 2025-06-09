@@ -14,6 +14,7 @@ import subprocess
 import traceback
 from urllib.parse import urlparse
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.proxies import GenericProxyConfig
 
 import chardet
 # import magic
@@ -601,16 +602,28 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
             current_proxy = '' # Proxy for the current attempt
             try:
                 temp_t = [] # Temporary variable for transcript of current attempt
+
+                # Create a new session for each attempt to ensure fresh connection and timeout
+                session = requests.Session()
+                session.timeout = 30 # Set a timeout (e.g., 30 seconds) for the request
+
+                proxy_config = None
                 if proxy_list_for_attempts:
                     current_proxy = proxy_list_for_attempts[i] # Get proxy from the shuffled list
                     last_proxy_tried = current_proxy # Update last tried proxy
-                    proxies = {
-                        'http': current_proxy,
-                        'https': current_proxy
-                    }
-                    temp_t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs, proxies=proxies)
-                else: # No proxies available or configured
-                     temp_t = YouTubeTranscriptApi.get_transcript(video_id, languages=top_langs)
+                    proxy_config = GenericProxyConfig(
+                        http_url=current_proxy,
+                        https_url=current_proxy # Assuming http and https use the same proxy
+                    )
+
+                # Initialize YouTubeTranscriptApi with the custom session and proxy config
+                yt_api_instance = YouTubeTranscriptApi(
+                    http_client=session,
+                    proxy_config=proxy_config
+                )
+
+                # Call the recommended fetch method
+                temp_t = yt_api_instance.list(video_id).find_transcript(top_langs).fetch()
 
                 if temp_t: # If transcript is successfully obtained, assign to t and break
                     t = temp_t
@@ -622,12 +635,12 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
                 failed_attempts_logs.append(log_message)
         # After the loop, if t is still empty, it means no transcripts were obtained successfully
         if not t: # If t is still an empty list after all attempts
-            my_log.log2(f'All {num_attempts} attempts failed for URL: {url}. Details of attempts:')
-            for log_entry in failed_attempts_logs:
-                my_log.log2(log_entry)
-            my_log.log2(f'Transcript retrieval ultimately failed after {num_attempts} attempts for URL: {url}. Last proxy tried: {last_proxy_tried if last_proxy_tried else "None"}.')
+            full_log_output = [f'All {num_attempts} attempts failed for URL: {url}. Details of attempts:']
+            full_log_output.extend(failed_attempts_logs)
+            full_log_output.append(f'Transcript retrieval ultimately failed after {num_attempts} attempts for URL: {url}. Last proxy tried: {last_proxy_tried if last_proxy_tried else "None"}.')
+            my_log.log2('\n'.join(full_log_output))
 
-        text = '\n'.join([x['text'] for x in t])
+        text = '\n'.join([x.text for x in t])
 
         text = text.strip()
 

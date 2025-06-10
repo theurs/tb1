@@ -448,7 +448,12 @@ def chat(
 
         if resp:
             resp = resp.strip()
-            if resp.startswith("""```python\nprint(default_api.""") or resp.startswith('```json\n{\n  "tool_code":'):
+            ppp = [
+                '```python\nprint(default_api.',
+                '```json\n{\n  "tool_code":',
+                '```python\nprint(telegram_bot_api.',
+            ]
+            if any(resp.startswith(p) for p in ppp) and len(resp) < 400:
                 my_log.log_gemini(f'chat:bad resp: {resp}')
                 return ''
 

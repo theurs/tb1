@@ -562,18 +562,19 @@ def get_intention(query, chat_id_full) -> str:
 
 {query}
 '''
+    r = ''
 
-    r = my_gemini3.chat(
-        q,
-        chat_id = chat_id_full,
-        temperature=0.1,
-        # model=cfg.gemini_flash_light_model,
-        model = cfg.gemini25_flash_model,
-        # max_tokens=10,
-        use_skills=False,
-        do_not_update_history=True,
-        timeout=20
-    )
+    # r = my_gemini3.chat(
+    #     q,
+    #     chat_id = chat_id_full,
+    #     temperature=0.1,
+    #     # model=cfg.gemini_flash_light_model,
+    #     model = cfg.gemini25_flash_model,
+    #     # max_tokens=10,
+    #     use_skills=False,
+    #     do_not_update_history=True,
+    #     timeout=20
+    # )
 
     if not r:
         r = my_groq.chat(
@@ -582,7 +583,7 @@ def get_intention(query, chat_id_full) -> str:
             temperature=0.1,
             model=my_groq.DEFAULT_MODEL,
             # max_tokens=10,
-            update_memory=True,
+            update_memory=False,
             timeout=20
         )
 

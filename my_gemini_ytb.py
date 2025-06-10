@@ -16,6 +16,26 @@ MODEL = "gemini-2.5-flash-preview-05-20"
 MODEL_FALLBACK = "gemini-2.5-flash-preview-04-17-thinking"
 TIMEOUT = 180
 
+SAFETY_SETTINGS = [
+    types.SafetySetting(
+        category="HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold="BLOCK_NONE",
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_HARASSMENT",
+        threshold="BLOCK_NONE",
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_HATE_SPEECH",
+        threshold="BLOCK_NONE",
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold="BLOCK_NONE",
+    ),
+]
+
+
 
 def get_text(url: str, lang: str, user_id: str) -> str:
     '''
@@ -58,17 +78,16 @@ def get_text(url: str, lang: str, user_id: str) -> str:
                 thinking_config = types.ThinkingConfig(
                     thinking_budget=0,
                 ),
+                safety_settings=SAFETY_SETTINGS,
                 tools=tools,
                 response_mime_type="text/plain",
             )
 
-            resp = client.models.generate_content(
-                model=model,
-                contents=contents,
-                config=generate_content_config,
-            )
-            if resp and resp.text:
-                result = resp.text
+            for chunk in client.models.generate_content_stream(model=model, contents=contents, config=generate_content_config):
+                if chunk.text:
+                    result += chunk.text
+
+            if result:
                 break
 
             if model == MODEL:
@@ -78,6 +97,7 @@ def get_text(url: str, lang: str, user_id: str) -> str:
 
         except Exception as e:
             my_log.log_gemini(f'my_gemini_ytb:get_text: {e}')
+            result = ''
             if model == MODEL:
                 model = MODEL_FALLBACK
             else:

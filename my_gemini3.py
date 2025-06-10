@@ -453,6 +453,7 @@ def chat(
             # плохие ответы
             ppp = [
                 '```python\nprint(default_api.',
+                '```tool_code\nprint(default_api.',
                 '```json\n{\n  "tool_code":',
                 '```python\nprint(telegram_bot_api.',
                 # 'edit_image',

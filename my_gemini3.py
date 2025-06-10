@@ -455,13 +455,13 @@ def chat(
                 '```python\nprint(default_api.',
                 '```json\n{\n  "tool_code":',
                 '```python\nprint(telegram_bot_api.',
-                'edit_image',
-                'ask_image'
+                # 'edit_image',
+                # 'ask_image'
             ]
             if any(resp.startswith(p) for p in ppp) and len(resp) < 300:
                 my_log.log_gemini(f'chat:bad resp: {resp}')
-                if 'ask_image' in resp or 'edit_image' in resp:
-                    my_log.log_gemini(f'{query}\n\n{str(mem)}')
+                # if 'ask_image' in resp or 'edit_image' in resp:
+                #     my_log.log_gemini(f'{query}\n\n{str(mem)}')
                 return ''
 
 

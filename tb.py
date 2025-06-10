@@ -677,15 +677,15 @@ def img2txt(text,
                 'правильный ответ',
             )
 
-            if not any([q in query for q in default_prompts]) and not query.lower().startswith('реши '):
-                intention = get_intention(query, chat_id_full)
-                if intention == 'edit_image':
-                    r = img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
-                    if r:
-                        add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-                    else:
-                        add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-                    return r
+            # if not any([q in query for q in default_prompts]) and not query.lower().startswith('реши '):
+            #     intention = get_intention(query, chat_id_full)
+            #     if intention == 'edit_image':
+            #         r = img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
+            #         if r:
+            #             add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+            #         else:
+            #             add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+            #         return r
 
 
         if temperature is None:

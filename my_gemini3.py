@@ -448,14 +448,20 @@ def chat(
 
         if resp:
             resp = resp.strip()
+
+
+            # плохие ответы
             ppp = [
                 '```python\nprint(default_api.',
                 '```json\n{\n  "tool_code":',
                 '```python\nprint(telegram_bot_api.',
+                'edit_image',
+                'ask_image'
             ]
-            if any(resp.startswith(p) for p in ppp) and len(resp) < 400:
+            if any(resp.startswith(p) for p in ppp) and len(resp) < 300:
                 my_log.log_gemini(f'chat:bad resp: {resp}')
                 return ''
+
 
             # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
             # куча пробелов, и возможно другие тоже. укорачиваем

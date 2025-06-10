@@ -27,6 +27,7 @@ import webvtt
 import cfg
 import my_cohere
 import my_gemini
+import my_gemini_ytb
 import my_db
 import my_log
 import my_groq
@@ -565,6 +566,9 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
             full_log_output.extend(failed_attempts_logs)
             full_log_output.append(f'Transcript retrieval ultimately failed after {num_attempts} attempts for URL: {url}. Last proxy tried: {last_proxy_tried if last_proxy_tried else "None"}.')
             my_log.log2('\n'.join(full_log_output))
+
+        if not text:
+            text = my_gemini_ytb.get_text(url, language, '')
 
         return text
 

@@ -460,6 +460,8 @@ def chat(
             ]
             if any(resp.startswith(p) for p in ppp) and len(resp) < 300:
                 my_log.log_gemini(f'chat:bad resp: {resp}')
+                if 'ask_image' in resp or 'edit_image' in resp:
+                    my_log.log_gemini(f'{query}\n\n{str(mem)}')
                 return ''
 
 

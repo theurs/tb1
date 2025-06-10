@@ -421,7 +421,15 @@ def update_mem(query: str, resp: str, chat_id: str):
     my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem__))
 
 
-def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = '', model: str = '', do_not_update_history: bool = False) -> str:
+def chat(
+    query: str,
+    chat_id: str = '',
+    temperature: float = 1,
+    system: str = '',
+    model: str = '',
+    do_not_update_history: bool = False,
+    timeout: int = 120
+    ) -> str:
     global LOCKS
     if chat_id in LOCKS:
         lock = LOCKS[chat_id]
@@ -432,7 +440,7 @@ def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = ''
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
 
         mem_ = mem[:]
-        text = ai(query, mem_, user_id=chat_id, temperature = temperature, system=system, model=model)
+        text = ai(query, mem_, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
 
         if text and not do_not_update_history:
             mem += [{'role': 'user', 'content': query}]

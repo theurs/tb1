@@ -587,6 +587,17 @@ def get_intention(query, chat_id_full) -> str:
             timeout=20
         )
 
+    if not r:
+        r = my_mistral.chat(
+            q,
+            chat_id = chat_id_full,
+            temperature=0.1,
+            model=my_mistral.SMALL_MODEL,
+            # max_tokens=10,
+            do_not_update_history=True,
+            timeout=20
+        )
+
     if r and len(r) > 20:
         r = r[:20]
 
@@ -678,15 +689,15 @@ def img2txt(text,
                 'правильный ответ',
             )
 
-            # if not any([q in query for q in default_prompts]) and not query.lower().startswith('реши '):
-            #     intention = get_intention(query, chat_id_full)
-            #     if intention == 'edit_image':
-            #         r = img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
-            #         if r:
-            #             add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-            #         else:
-            #             add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-            #         return r
+            if not any([q in query for q in default_prompts]) and not query.lower().startswith('реши '):
+                intention = get_intention(query, chat_id_full)
+                if intention == 'edit_image':
+                    r = img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
+                    if r:
+                        add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+                    else:
+                        add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+                    return r
 
 
         if temperature is None:

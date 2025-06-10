@@ -12,7 +12,8 @@ import my_log
 
 
 PROMPT = """Перепиши текстом всё содержание видео целиком стараясь ничего не упустить, уложись до 1500 слов. Ответ напиши на языке """
-MODEL = "gemini-2.0-flash"
+MODEL = "gemini-2.5-flash-preview-05-20"
+MODEL_FALLBACK = "gemini-2.5-flash-preview-04-17-thinking"
 TIMEOUT = 180
 
 
@@ -27,6 +28,7 @@ def get_text(url: str, lang: str, user_id: str) -> str:
         str: video as text
     '''
     result = ''
+    model = MODEL
     start_time = time.time()
     for _ in range(3):
         if time.time() - start_time > TIMEOUT:
@@ -35,7 +37,6 @@ def get_text(url: str, lang: str, user_id: str) -> str:
             key = my_gemini.get_next_key()
             client = genai.Client(api_key=key, http_options=types.HttpOptions(timeout=TIMEOUT*1000))
 
-            model = MODEL
             contents = [
                 types.Content(
                     role="user",
@@ -54,6 +55,9 @@ def get_text(url: str, lang: str, user_id: str) -> str:
                 types.Tool(url_context=types.UrlContext()),
             ]
             generate_content_config = types.GenerateContentConfig(
+                thinking_config = types.ThinkingConfig(
+                    thinking_budget=0,
+                ),
                 tools=tools,
                 response_mime_type="text/plain",
             )
@@ -67,11 +71,22 @@ def get_text(url: str, lang: str, user_id: str) -> str:
                 result = resp.text
                 break
 
+            if model == MODEL:
+                model = MODEL_FALLBACK
+            else:
+                model = MODEL
+
         except Exception as e:
             my_log.log_gemini(f'my_gemini_ytb:get_text: {e}')
+            if model == MODEL:
+                model = MODEL_FALLBACK
+            else:
+                model = MODEL
 
     if result and user_id:
         my_db.add_msg(user_id, MODEL)
+    if result:
+        my_log.log_gemini(f'my_gemini_ytb:get_text: transcribed with {model} in {time.time() - start_time:.2f} seconds {url} {lang} {user_id}')
 
     return result
 
@@ -80,4 +95,4 @@ if __name__ == "__main__":
     my_db.init(backup=False)
     my_gemini.load_users_keys()
 
-    get_text('https://www.youtube.com/shorts/CqnJNdrz5DY', 'ru', '')
+    print(get_text('https://www.youtube.com/shorts/CqnJNdrz5DY', 'ru', ''))

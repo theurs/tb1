@@ -2040,7 +2040,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button_filler1 = telebot.types.InlineKeyboardButton(msg, callback_data='switch_do_nothing')
 
             markup.row(button_gemini_flash25, button_gemini_flash20)
-            markup.row(button_mistral, button_magistral, button_llama4_maverick)
+            markup.row(button_mistral, button_llama4_maverick)
             markup.row(button_gpt_4o, button_gpt_41, button_openrouter)
             markup.row(button_cohere, button_deepseek_v3)
             if voice_title in ('OpenAI', 'Gemini'):

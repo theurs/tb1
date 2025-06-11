@@ -3167,10 +3167,12 @@ def handle_document(message: telebot.types.Message):
                                                 message.document.mime_type.startswith('video/') or \
                                                 message.document.mime_type.startswith('image/') or \
                                                 message.document.file_name.lower().endswith('.psd') or \
+                                                message.document.file_name.lower().endswith('.aac') or \
                                                 message.document.mime_type.startswith('audio/')):
 
                 if message.document and message.document.mime_type.startswith('audio/') or \
-                    message.document and message.document.mime_type.startswith('video/'):
+                    message.document and message.document.mime_type.startswith('video/') or \
+                    message.document.file_name.lower().endswith('.aac'):
                     handle_voice(message)
                     return
 

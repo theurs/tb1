@@ -500,7 +500,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
         # Updates the memory of the selected bot based on the chat mode.
-        if mode in ('gemini', 'gemma'):
+        if any(mode.startswith(m) for m in ('gemini', 'gemma')):
             my_gemini3.update_mem(query, resp, chat_id_full, model=mode)
         elif 'openrouter' in mode:
             my_openrouter.update_mem(query, resp, chat_id_full)
@@ -4774,7 +4774,7 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
     '''изменяет последний ответ от бота на text'''
     try:
         mode = my_db.get_user_property(chat_id_full, 'chat_mode')
-        if mode in ('gemini', 'gemma'):
+        if any(mode.startswith(m) for m in ('gemini', 'gemma')):
             my_gemini3.force(chat_id_full, text, model = mode)
         elif mode == 'openrouter':
             my_openrouter.force(chat_id_full, text)
@@ -4827,7 +4827,7 @@ def undo_cmd(message: telebot.types.Message, show_message: bool = True):
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
         mode = my_db.get_user_property(chat_id_full, 'chat_mode')
-        if mode in ('gemini', 'gemma'):
+        if any(mode.startswith(m) for m in ('gemini', 'gemma')):
             my_gemini3.undo(chat_id_full, model = mode)
         elif mode == 'openrouter':
             my_openrouter.undo(chat_id_full)
@@ -4965,7 +4965,7 @@ def save_history(message: telebot.types.Message):
         mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
         prompt = ''
-        if mode in ('gemini', 'gemma'):
+        if any(mode.startswith(m) for m in ('gemini', 'gemma')):
             prompt = my_gemini3.get_mem_as_string(chat_id_full, md = True, model = mode) or ''
         if mode == 'openrouter':
             prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''

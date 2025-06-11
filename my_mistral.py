@@ -57,6 +57,8 @@ FALLBACK_MODEL = 'pixtral-large-latest'
 VISION_MODEL = 'pixtral-large-latest'
 SMALL_MODEL = 'mistral-small-latest'
 OCR_MODEL = 'mistral-ocr-latest'
+MAGISTRAL_MODEL = 'magistral-medium-latest'
+MAGISTRAL_MODEL_SMALL = 'magistral-small-latest'
 
 
 CURRENT_KEYS_SET = []
@@ -697,7 +699,7 @@ if __name__ == '__main__':
 
     # print(sum_big_text(text, 'сделай подробный пересказ по тексту'))
 
-    chat_cli(model = '')
+    chat_cli(model = MAGISTRAL_MODEL_SMALL)
     # print(get_reprompt_for_image(''))
 
     my_db.close()

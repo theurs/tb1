@@ -497,23 +497,23 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         if not query or not resp:
             return
 
-        chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode') or ''
+        mode = my_db.get_user_property(chat_id_full, 'mode') or ''
 
         # Updates the memory of the selected bot based on the chat mode.
-        if 'gemini' in chat_mode or 'gemma' in chat_mode:
-            my_gemini3.update_mem(query, resp, chat_id_full, model=chat_mode)
-        elif 'openrouter' in chat_mode:
+        if mode in ('gemini', 'gemma'):
+            my_gemini3.update_mem(query, resp, chat_id_full, model=mode)
+        elif 'openrouter' in mode:
             my_openrouter.update_mem(query, resp, chat_id_full)
-        elif 'llama4_maverick' in chat_mode:
+        elif 'llama4_maverick' in mode:
             my_openrouter_free.update_mem(query, resp, chat_id_full)
-        elif 'mistral' in chat_mode:
+        elif mode in ('mistral', 'magistral'):
             my_mistral.update_mem(query, resp, chat_id_full)
-        elif chat_mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
+        elif mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             my_github.update_mem(query, resp, chat_id_full)
-        elif 'cohere' in chat_mode:
+        elif 'cohere' in mode:
             my_cohere.update_mem(query, resp, chat_id_full)
         else:
-            raise Exception(f'Unknown chat mode: {chat_mode}')
+            raise Exception(f'Unknown chat mode: {mode}')
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:add_to_bots_mem:{unexpected_error}\n\n{traceback_error}')
@@ -1981,6 +1981,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Mistral'
             button_mistral = telebot.types.InlineKeyboardButton(msg, callback_data='select_mistral')
 
+            if chat_mode == 'magistral':
+                msg = '✅ Magistral'
+            else:
+                msg = 'Magistral'
+            button_magistral = telebot.types.InlineKeyboardButton(msg, callback_data='select_magistral')
+
             if chat_mode == 'gpt-4o':
                 msg = '✅ GPT-4o'
             else:
@@ -2024,9 +2030,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button_openrouter = telebot.types.InlineKeyboardButton(msg, callback_data='select_openrouter')
 
             if chat_mode == 'llama4_maverick':
-                msg = '✅ Llama 4 Maverick'
+                msg = '✅ Llama 4'
             else:
-                msg = 'Llama 4 Maverick'
+                msg = 'Llama 4'
             button_llama4_maverick = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama4_maverick')
 
 
@@ -2034,7 +2040,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button_filler1 = telebot.types.InlineKeyboardButton(msg, callback_data='switch_do_nothing')
 
             markup.row(button_gemini_flash25, button_gemini_flash20)
-            markup.row(button_mistral, button_llama4_maverick)
+            markup.row(button_mistral, button_magistral, button_llama4_maverick)
             markup.row(button_gpt_4o, button_gpt_41, button_openrouter)
             markup.row(button_cohere, button_deepseek_v3)
             if voice_title in ('OpenAI', 'Gemini'):
@@ -2451,6 +2457,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         elif call.data == 'select_mistral':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'mistral')
+        elif call.data == 'select_magistral':
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'magistral')
         elif call.data == 'select_gpt-4o':
             if chat_id_full in my_github.USER_KEYS:
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o')
@@ -4765,17 +4773,18 @@ def restore_chat_mode(message: telebot.types.Message):
 def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.Message):
     '''изменяет последний ответ от бота на text'''
     try:
-        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_gemini3.force(chat_id_full, text, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
+        mode = my_db.get_user_property(chat_id_full, 'chat_mode')
+        if mode in ('gemini', 'gemma'):
+            my_gemini3.force(chat_id_full, text, model = mode)
+        elif mode == 'openrouter':
             my_openrouter.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4_maverick':
+        elif mode == 'llama4_maverick':
             my_openrouter_free.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
+        elif mode in ('mistral', 'magistral'):
             my_mistral.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
+        elif mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             my_github.force(chat_id_full, text)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
+        elif mode == 'cohere':
             my_cohere.force(chat_id_full, text)
         else:
             bot_reply_tr(message, 'History WAS NOT changed.')
@@ -4817,17 +4826,18 @@ def undo_cmd(message: telebot.types.Message, show_message: bool = True):
     try:
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
-        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            my_gemini3.undo(chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
+        mode = my_db.get_user_property(chat_id_full, 'chat_mode')
+        if mode in ('gemini', 'gemma'):
+            my_gemini3.undo(chat_id_full, model = mode)
+        elif mode == 'openrouter':
             my_openrouter.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4_maverick':
+        elif mode == 'llama4_maverick':
             my_openrouter_free.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
+        elif mode in ('mistral', 'magistral'):
             my_mistral.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
+        elif mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             my_github.undo(chat_id_full)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
+        elif mode == 'cohere':
             my_cohere.undo(chat_id_full)
         else:
             bot_reply_tr(message, 'History WAS NOT undone.')
@@ -4849,20 +4859,20 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
         if chat_id_full is None: # Определяем chat_id_full, если он не передан явно
             chat_id_full = get_topic_id(message)
 
-        chat_mode_ = my_db.get_user_property(chat_id_full, 'chat_mode')
+        mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
-        if chat_mode_:
-            if 'gemini' in chat_mode_ or 'gemma' in chat_mode_ or 'gemma' in chat_mode_ or 'gemma' in chat_mode_:
-                my_gemini3.reset(chat_id_full, chat_mode_)
-            elif chat_mode_ == 'openrouter':
+        if mode:
+            if 'gemini' in mode or 'gemma' in mode or 'gemma' in mode or 'gemma' in mode:
+                my_gemini3.reset(chat_id_full, mode)
+            elif mode == 'openrouter':
                 my_openrouter.reset(chat_id_full)
-            elif chat_mode_ == 'llama4_maverick':
+            elif mode == 'llama4_maverick':
                 my_openrouter_free.reset(chat_id_full)
-            elif chat_mode_ == 'mistral':
+            elif mode in ('mistral', 'magistral'):
                 my_mistral.reset(chat_id_full)
-            elif chat_mode_ in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
+            elif mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
                 my_github.reset(chat_id_full)
-            elif chat_mode_ == 'cohere':
+            elif mode == 'cohere':
                 my_cohere.reset(chat_id_full)
             else:
                 if say and message: # Отправлять сообщение только если пользователь инициировал и say=True
@@ -4952,19 +4962,20 @@ def save_history(message: telebot.types.Message):
         COMMAND_MODE[chat_id_full] = ''
 
         chat_id_full = get_id_parameters_for_function(message, chat_id_full)
+        mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
         prompt = ''
-        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            prompt = my_gemini3.get_mem_as_string(chat_id_full, md = True, model = my_db.get_user_property(chat_id_full, 'chat_mode')) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
+        if mode in ('gemini', 'gemma'):
+            prompt = my_gemini3.get_mem_as_string(chat_id_full, md = True, model = mode) or ''
+        if mode == 'openrouter':
             prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4_maverick':
+        if mode == 'llama4_maverick':
             prompt = my_openrouter_free.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
+        if mode in ('mistral', 'magistral'):
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
+        if mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
             prompt = my_github.get_mem_as_string(chat_id_full, md = True) or ''
-        if my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
+        if mode == 'cohere':
             prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
 
         if prompt:
@@ -5024,6 +5035,9 @@ def send_debug_history(message: telebot.types.Message):
             prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
             prompt = 'Mistral Large\n\n'
+            prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'magistral':
+            prompt = 'Magistral Medium\n\n'
             prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
             prompt = 'GPT-4o\n\n'
@@ -7098,6 +7112,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'gemini-learn': cfg.gemini_learn_model,
             'gemma3_27b': cfg.gemma3_27b_model,
             'mistral': my_mistral.DEFAULT_MODEL,
+            'magistral': my_mistral.MAGISTRAL_MODEL,
             'gpt-4o': my_github.BIG_GPT_MODEL,
             'gpt_41': my_github.BIG_GPT_41_MODEL,
             'gpt_41_mini': my_github.DEFAULT_41_MINI_MODEL,
@@ -9219,6 +9234,16 @@ def do_task(message, custom_prompt: str = ''):
                                     system=hidden_text,
                                     temperature=temp)
 
+                                cohere_used = False
+                                if not answer:
+                                    answer = my_cohere.ai(
+                                        message.text,
+                                        mem_ = mem__,
+                                        user_id=chat_id_full,
+                                        system=hidden_text,
+                                        temperature=temp)
+                                    cohere_used = True
+
                                 flag_gpt_help = True
                                 if not answer:
                                     answer = 'Gemini ' + tr('did not answered, try to /reset and start again', lang)
@@ -9237,8 +9262,9 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = answer_
 
                             if flag_gpt_help:
-                                WHO_ANSWERED[chat_id_full] = f'👇{gmodel} + mistral {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-                                my_log.log_echo(message, f'[{gmodel} + mistral] {answer}')
+                                help_model = 'cohere' if cohere_used else 'mistral'
+                                WHO_ANSWERED[chat_id_full] = f'👇{gmodel} + {help_model} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                my_log.log_echo(message, f'[{gmodel} + {help_model}] {answer}')
                             else:
                                 my_log.log_echo(message, f'[{gmodel}] {answer}')
  
@@ -9415,6 +9441,69 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log2(f'tb:do_task:mistral {error3}\n{error_traceback}')
                         return
 
+
+                # если активирован режим общения с Magistral Medium
+                if chat_mode_ == 'magistral':
+                    if len(msg) > my_mistral.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Magistral Medium, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_mistral.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            answer = my_mistral.chat(
+                                message.text,
+                                chat_id_full,
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                system=hidden_text,
+                                model = my_mistral.MAGISTRAL_MODEL,
+                            )
+
+                            if not answer:
+                                answer = my_mistral.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_mistral.MAGISTRAL_MODEL_SMALL,
+                                )
+
+                            WHO_ANSWERED[chat_id_full] = 'Magistral Medium'
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
+                            thoughts, answer = utils_llm.split_thoughts(answer)
+                            thoughts = utils.bot_markdown_to_html(thoughts)
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            answer = answer.strip()
+                            if not answer:
+                                answer = 'Magistral Medium ' + tr('did not answered, try to /reset and start again.', lang)
+
+                            my_log.log_echo(message, f'[Magistral Medium] {answer}')
+
+                            try:
+                                if command_in_answer(answer, message):
+                                    return
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:magistral {error3}\n{error_traceback}')
+                        return
 
 
                 # если активирован режим общения с Llama4 Maverick

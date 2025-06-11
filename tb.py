@@ -497,7 +497,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         if not query or not resp:
             return
 
-        mode = my_db.chat_modechat_mode') or ''
+        mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
         # Updates the memory of the selected bot based on the chat mode.
         if mode in ('gemini', 'gemma'):

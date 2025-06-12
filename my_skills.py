@@ -316,63 +316,6 @@ def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> 
         return f"FAIL: An unexpected error occurred: {error}"
 
 
-# def save_plantuml_to_png(filename: str, text: str, chat_id: str) -> str:
-#     '''
-#     Send PlantUML diagram as a PNG image file to user.
-#     Args:
-#         filename: str - The desired file name for the PNG file (e.g., 'diagram').
-#         text: str - The PlantUML formatted text to convert to PNG.
-#                      **Important considerations for 'text' parameter:**
-#                      - The input must strictly adhere to standard PlantUML syntax for the desired diagram type (e.g., `class` for class diagrams, `activity` for activity diagrams, etc.). Non-standard syntax or unrecognized keywords may lead to errors or unexpected rendering.
-#                      - Be aware that `skinparam` options within the PlantUML text directly control the visual style and rendering of the diagram (e.g., line straightness, colors, fonts, shadows). Adjust these parameters according to your desired visual output.
-#         chat_id: str - The Telegram user chat ID where the file should be sent.
-#     Returns:
-#         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
-#     '''
-
-#     try:
-#         my_log.log_gemini_skills(f'save_plantuml_to_png {chat_id}\n\n{filename}\n{text}')
-
-#         chat_id = restore_id(chat_id)
-#         if chat_id == '[unknown]':
-#             return "FAIL, unknown chat id"
-
-#         # Ensure filename has .png extension and is safe
-#         if not filename.lower().endswith('.png'):
-#             filename += '.png'
-#         filename = utils.safe_fname(filename)
-
-#         # Convert the PlantUML text to PNG bytes using the provided function
-#         try:
-#             png_bytes = my_plantuml.plantuml_to_png(text)
-#         except Exception as conversion_error:
-#             my_log.log_gemini_skills(f'save_plantuml_to_png: Error converting PlantUML to PNG: {conversion_error}\n\n{traceback.format_exc()}')
-#             return f"FAIL: Error converting PlantUML to PNG: {conversion_error}"
-
-#         # If bytes were successfully generated, prepare the item for storage
-#         if png_bytes and isinstance(png_bytes, bytes):
-#             item = {
-#                 'type': 'image/png file',
-#                 'filename': filename,
-#                 'data': png_bytes,
-#             }
-#             with STORAGE_LOCK:
-#                 if chat_id in STORAGE:
-#                     STORAGE[chat_id].append(item)
-#                 else:
-#                     STORAGE[chat_id] = [item,]
-#             return "OK"
-#         else:
-#             # This case indicates that no PNG data was generated.
-#             my_log.log_gemini_skills(f'save_plantuml_to_png: No PNG data could be generated for chat {chat_id}\n\nText length: {len(text)}')
-#             return "FAIL: No PNG data could be generated. " + str(png_bytes)
-
-#     except Exception as error:
-#         traceback_error = traceback.format_exc()
-#         my_log.log_gemini_skills(f'save_plantuml_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
-#         return f"FAIL: An unexpected error occurred: {error}"
-
-
 def save_to_docx(filename: str, text: str, chat_id: str) -> str:
     '''
     Send DOCX file to user, converted from markdown text.
@@ -411,7 +354,8 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
             }
             with STORAGE_LOCK:
                 if chat_id in STORAGE:
-                    STORAGE[chat_id].append(item)
+                    if item not in STORAGE[chat_id]:
+                        STORAGE[chat_id].append(item)
                 else:
                     STORAGE[chat_id] = [item,]
             return "OK"
@@ -494,7 +438,8 @@ def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
             }
             with STORAGE_LOCK:
                 if chat_id in STORAGE:
-                    STORAGE[chat_id].append(item)
+                    if item not in STORAGE[chat_id]:
+                        STORAGE[chat_id].append(item)
                 else:
                     STORAGE[chat_id] = [item,]
             return "OK"

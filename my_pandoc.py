@@ -7,6 +7,7 @@ import subprocess
 import traceback
 
 import chardet
+import markdown
 import PyPDF2
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -116,8 +117,7 @@ def convert_djvu2pdf(input_file: str) -> str:
 def convert_text_to_docx(text: str) -> bytes:
     '''convert md text to docx file'''
     output_file = utils.get_tmp_fname() + '.docx'
-    html = utils.bot_markdown_to_html(text)
-    html = html.replace('\n', '<br>')
+    html = markdown.markdown(text, extensions=['tables', 'fenced_code'])
     subprocess.run(['pandoc', '+RTS', '-M256M', '-RTS', '-f', 'html', '-t', 'docx', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
     with open(output_file, 'rb') as f:
         data = f.read()

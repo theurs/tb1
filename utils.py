@@ -1104,6 +1104,7 @@ def html_to_markdown(html: str) -> str:
         my_log.log2(f'utils:html_to_markdown {error}\n\n{traceback_error}\n\n{html}')
         return html
 
+
 #######################################################################################
 
 

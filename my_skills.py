@@ -600,7 +600,7 @@ def search_google_fast(query: str, lang: str, user_id: str) -> str:
     try:
         user_id = restore_id(user_id)
         query = decode_string(query)
-        my_log.log_gemini_skills(f'Fast Google search: [{lang}] {user_id} {query}')
+        my_log.log_gemini_skills_search(f'Fast Google search: [{lang}] {user_id} {query}')
 
         r = my_google.search_v3(
             query.lower(),
@@ -609,10 +609,10 @@ def search_google_fast(query: str, lang: str, user_id: str) -> str:
             chat_id=user_id,
             fast_search=True
         )
-        my_log.log_gemini_skills(f'Fast Google search: {r[:2000]}')
+        my_log.log_gemini_skills_search(f'Fast Google search: {r[:2000]}')
         return r
     except Exception as error:
-        my_log.log_gemini_skills(f'search_google_fast:Error: {error}')
+        my_log.log_gemini_skills_search(f'search_google_fast:Error: {error}')
         return f'ERROR {error}'
 
 
@@ -634,7 +634,7 @@ def search_google_deep(query: str, lang: str, user_id: str) -> str:
     try:
         user_id = restore_id(user_id)
         query = decode_string(query)
-        my_log.log_gemini_skills(f'Deep Google search: [{lang}] {user_id} {query}')
+        my_log.log_gemini_skills_search(f'Deep Google search: [{lang}] {user_id} {query}')
 
         r = my_google.search_v3(
             query.lower(),
@@ -642,10 +642,10 @@ def search_google_deep(query: str, lang: str, user_id: str) -> str:
             chat_id=user_id,
             download_only=True
         )
-        my_log.log_gemini_skills(f'Deep Google search: {r[:2000]}')
+        my_log.log_gemini_skills_search(f'Deep Google search: {r[:2000]}')
         return r
     except Exception as error:
-        my_log.log_gemini_skills(f'search_google_deep:Error: {error}')
+        my_log.log_gemini_skills_search(f'search_google_deep:Error: {error}')
         return f'ERROR {error}'
 
 

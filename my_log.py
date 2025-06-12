@@ -238,8 +238,12 @@ def log_entropy_detector(text: str) -> None:
     log2(text, 'entropy_detector')
 
 def log_gemini_skills(text: str) -> None:
-    """для логов вызовов функций в джемини"""
+    """для логов вызовов скилов в джемини"""
     log2(text, 'gemini_skills')
+
+def log_gemini_skills_search(text: str) -> None:
+    """для логов вызовов скилов поиска в джемини"""
+    log2(text, 'gemini_skills_search')
 
 def log_bing_success(text: str) -> None:
     """для логов удачных комбинаций бинга, когда ему удалось нарисовать что-нибудь"""

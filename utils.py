@@ -616,6 +616,7 @@ def clear_tables(text: str) -> str:
     '''надо найти в маркдаун таблицах блоки кода (однострочного `кода`) и заменить ` на пробелы
     признаки таблицы - 2 и более идущих подряд строки которые начинаются и заканчиваются на | и количество | в них совпадает
     '''
+    return text # отключаем пока
     lines = text.splitlines()
     in_table = False
     table_lines = []
@@ -778,6 +779,7 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
     :param max_cell_width: Максимальная ширина ячейки в символах
     :return: Текст с замененными таблицами
     """
+    return text # отключаем пока, таблицы будем переделывать в картинки
     original_text = text
     try:
         text += '\n'

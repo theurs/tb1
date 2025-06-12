@@ -21,9 +21,10 @@ import time
 import threading
 import traceback
 
-from simpleeval import simple_eval
-from typing import Callable, Tuple, List, Union
+import matplotlib.pyplot as plt
 import pandas as pd
+from simpleeval import simple_eval
+from typing import Callable, List, Optional, Tuple, Union
 
 # it will import word random and broke code
 # from random import *
@@ -39,7 +40,7 @@ import my_gemini_google
 import my_groq
 import my_log
 import my_pandoc
-import my_plantuml
+import my_plantweb
 # import my_tts
 import my_sum
 import utils
@@ -115,18 +116,23 @@ def restore_id(chat_id: str) -> str:
     return chat_id
 
 
-def save_plantuml_to_png(filename: str, text: str, chat_id: str) -> str:
+def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:
     '''
-    Send PlantUML diagram as a PNG image file to user.
+    Send a chart generated from Pandas data as a PNG image file to the user.
     Args:
-        filename: str - The desired file name for the PNG file (e.g., 'diagram').
-        text: str - The PlantUML formatted text to convert to PNG.
+        filename: str - The desired file name for the PNG file (e.g., 'sales_chart').
+        data: dict - A dictionary where keys are column names and values are lists of data.
+                     Example: {'Date': ['2023-01-01', '2023-01-02'], 'Sales': [100, 150]}
+        chart_type: str - The type of chart to generate (e.g., 'line', 'bar', 'pie', 'scatter').
         chat_id: str - The Telegram user chat ID where the file should be sent.
+        plot_params: Optional[dict] - Optional dictionary of additional plotting parameters for Matplotlib/Pandas.
+                                      Example: {'x': 'Date', 'y': 'Sales', 'title': 'Daily Sales', 'xlabel': 'Date', 'ylabel': 'Amount'}.
+                                      For 'pie' charts, you can also specify 'labels_column' to use a column's values as slice labels (e.g., {'y': 'Share (%)', 'labels_column': 'Category', 'title': 'Monthly Expenses'}).
     Returns:
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
     '''
     try:
-        my_log.log_gemini_skills(f'save_plantuml_to_png {chat_id}\n\n{filename}\n{text}')
+        my_log.log_gemini_skills(f'save_pandas_chart_to_png {chat_id}\n\n{filename}\n{chart_type}\n{data}')
 
         chat_id = restore_id(chat_id)
         if chat_id == '[unknown]':
@@ -137,12 +143,80 @@ def save_plantuml_to_png(filename: str, text: str, chat_id: str) -> str:
             filename += '.png'
         filename = utils.safe_fname(filename)
 
-        # Convert the PlantUML text to PNG bytes using the provided function
+        png_bytes = None
         try:
-            png_bytes = my_plantuml.plantuml_to_png(text)
-        except Exception as conversion_error:
-            my_log.log_gemini_skills(f'save_plantuml_to_png: Error converting PlantUML to PNG: {conversion_error}\n\n{traceback.format_exc()}')
-            return f"FAIL: Error converting PlantUML to PNG: {conversion_error}"
+            # 1. Convert data to Pandas DataFrame
+            df = pd.DataFrame(data)
+
+            # 2. Create the plot using Pandas .plot() method (which uses Matplotlib)
+            # This part needs careful handling based on chart_type and plot_params
+            fig, ax = plt.subplots() # Create a new figure and a set of subplots
+
+            # Apply default plot_params if not provided
+            if plot_params is None:
+                plot_params = {}
+
+            # Basic mapping from chart_type to Pandas plot method
+            if chart_type == 'line':
+                df.plot(kind='line', ax=ax, **plot_params)
+            elif chart_type == 'bar':
+                df.plot(kind='bar', ax=ax, **plot_params)
+            elif chart_type == 'pie':
+                # Pie charts typically need a single column for values and optionally 'y' for labels
+                # Example: plot_params={'y': 'ColumnName', 'labels_column': 'CategoryColumnName'}
+                if 'y' in plot_params and plot_params['y'] in df.columns:
+                    # Exclude 'autopct' and 'labels_column' from plot_params, as they are handled explicitly
+                    pie_plot_params_for_kwargs = {k:v for k,v in plot_params.items() if k not in ['y', 'autopct', 'labels_column']}
+
+                    labels_for_pie = None
+                    if 'labels_column' in plot_params and plot_params['labels_column'] in df.columns:
+                        labels_for_pie = df[plot_params['labels_column']]
+
+                    df.plot(
+                        kind='pie',
+                        y=plot_params['y'],
+                        ax=ax,
+                        autopct=plot_params.get('autopct', '%1.1f%%'),
+                        startangle=90,
+                        labels=labels_for_pie, # <--- ЭТА СТРОКА ДОБАВЛЕНА/ИЗМЕНЕНА
+                        **pie_plot_params_for_kwargs
+                    )
+                else:
+                    my_log.log_gemini_skills(f'save_pandas_chart_to_png: Pie chart requires "y" in plot_params and existing column.')
+                    return "FAIL: Pie chart requires a 'y' parameter in plot_params pointing to a valid column."
+            elif chart_type == 'scatter':
+                # Scatter plots require 'x' and 'y' in plot_params
+                if 'x' in plot_params and 'y' in plot_params and plot_params['x'] in df.columns and plot_params['y'] in df.columns:
+                    df.plot(kind='scatter', x=plot_params['x'], y=plot_params['y'], ax=ax, **{k:v for k,v in plot_params.items() if k not in ['x', 'y']})
+                else:
+                    my_log.log_gemini_skills(f'save_pandas_chart_to_png: Scatter plot requires "x" and "y" in plot_params.')
+                    return "FAIL: Scatter plot requires 'x' and 'y' parameters in plot_params."
+            else:
+                my_log.log_gemini_skills(f'save_pandas_chart_to_png: Unsupported chart type: {chart_type}')
+                return f"FAIL: Unsupported chart type: {chart_type}. Supported types: line, bar, pie, scatter."
+
+            # Add title and labels if present in plot_params
+            if 'title' in plot_params:
+                ax.set_title(plot_params['title'])
+            if 'xlabel' in plot_params:
+                ax.set_xlabel(plot_params['xlabel'])
+            if 'ylabel' in plot_params:
+                ax.set_ylabel(plot_params['ylabel'])
+
+            # Adjust layout to prevent labels/titles from overlapping
+            plt.tight_layout()
+
+            # Save the plot to a BytesIO object in PNG format
+            buffer = io.BytesIO()
+            plt.savefig(buffer, format='png', bbox_inches='tight') # bbox_inches='tight' crops whitespace
+            buffer.seek(0) # Rewind the buffer to the beginning
+            png_bytes = buffer.getvalue()
+
+            plt.close(fig) # Close the figure to free up memory
+
+        except Exception as chart_error:
+            my_log.log_gemini_skills(f'save_pandas_chart_to_png: Error generating chart: {chart_error}\n\n{traceback.format_exc()}')
+            return f"FAIL: Error generating chart: {chart_error}"
 
         # If bytes were successfully generated, prepare the item for storage
         if png_bytes and isinstance(png_bytes, bytes):
@@ -153,19 +227,150 @@ def save_plantuml_to_png(filename: str, text: str, chat_id: str) -> str:
             }
             with STORAGE_LOCK:
                 if chat_id in STORAGE:
-                    STORAGE[chat_id].append(item)
+                    if item not in STORAGE[chat_id]:
+                        STORAGE[chat_id].append(item)
                 else:
                     STORAGE[chat_id] = [item,]
             return "OK"
         else:
             # This case indicates that no PNG data was generated.
-            my_log.log_gemini_skills(f'save_plantuml_to_png: No PNG data could be generated for chat {chat_id}\n\nText length: {len(text)}')
+            my_log.log_gemini_skills(f'save_pandas_chart_to_png: No PNG data could be generated for chat {chat_id}\n\nData: {data}\nChart Type: {chart_type}')
             return "FAIL: No PNG data could be generated."
 
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills(f'save_plantuml_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        my_log.log_gemini_skills(f'save_pandas_chart_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nData: {data}\nChart Type: {chart_type}\nChat ID: {chat_id}')
         return f"FAIL: An unexpected error occurred: {error}"
+
+
+def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> str:
+    '''
+    Send a diagram as a PNG image file to the user, rendered from various text formats.
+    Args:
+        filename: str - The desired file name for the PNG file (e.g., 'diagram').
+        text: str - The diagram definition text in PlantUML, Graphviz (DOT), or Ditaa format.
+                     **Important considerations for 'text' parameter:**
+                     - The input must strictly adhere to the syntax of the specified 'engine'.
+                     - For PlantUML, syntax like `class` or `activity` is expected.
+                     - For Graphviz, DOT language syntax is required.
+                     - For Ditaa, ASCII art syntax with specific tags is used.
+                     - `skinparam` or similar engine-specific options within the text
+                       directly control the visual style and rendering of the diagram.
+        engine: str - The diagram rendering engine to use: 'plantuml', 'graphviz', or 'ditaa'.
+        chat_id: str - The Telegram user chat ID where the file should be sent.
+    Returns:
+        str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+    '''
+
+    try:
+        my_log.log_gemini_skills(f'save_diagram_to_png {chat_id}\n\n{filename}\n{text}\nEngine: {engine}')
+
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        # Ensure filename has .png extension and is safe
+        if not filename.lower().endswith('.png'):
+            filename += '.png'
+        filename = utils.safe_fname(filename)
+
+        # Validate the 'engine' parameter to prevent unsupported values from reaching text_to_png
+        supported_engines = {'plantuml', 'graphviz', 'ditaa'}
+        if engine not in supported_engines:
+            return f"FAIL: Unsupported diagram engine '{engine}'. Supported engines are: {', '.join(supported_engines)}."
+
+        # Convert the diagram text to PNG bytes using the text_to_png function
+        try:
+            png_output = my_plantweb.text_to_png(text, engine=engine, format='png')
+        except Exception as rendering_error:
+            my_log.log_gemini_skills(f'save_diagram_to_png: Error rendering diagram: {rendering_error}\n\n{traceback.format_exc()}')
+            return f"FAIL: Error during diagram rendering: {rendering_error}"
+
+        # Check the type of png_output to determine success or failure
+        if isinstance(png_output, bytes):
+            # If bytes were successfully generated, prepare the item for storage
+            item = {
+                'type': 'image/png file',
+                'filename': filename,
+                'data': png_output,
+            }
+            with STORAGE_LOCK:
+                if chat_id in STORAGE:
+                    if item not in STORAGE[chat_id]:
+                        STORAGE[chat_id].append(item)
+                else:
+                    STORAGE[chat_id] = [item,]
+            return "OK"
+        elif isinstance(png_output, str):
+            # If a string is returned, it indicates an error message from text_to_png
+            my_log.log_gemini_skills(f'save_diagram_to_png: No PNG data could be generated for chat {chat_id} - {png_output}\n\nText length: {len(text)}')
+            return f"FAIL: No PNG data could be generated: {png_output}"
+        else:
+            # Unexpected return type
+            my_log.log_gemini_skills(f'save_diagram_to_png: Unexpected return type from text_to_png for chat {chat_id}\n\nText length: {len(text)}')
+            return "FAIL: An unexpected error occurred during PNG generation."
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills(f'save_diagram_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {error}"
+
+
+# def save_plantuml_to_png(filename: str, text: str, chat_id: str) -> str:
+#     '''
+#     Send PlantUML diagram as a PNG image file to user.
+#     Args:
+#         filename: str - The desired file name for the PNG file (e.g., 'diagram').
+#         text: str - The PlantUML formatted text to convert to PNG.
+#                      **Important considerations for 'text' parameter:**
+#                      - The input must strictly adhere to standard PlantUML syntax for the desired diagram type (e.g., `class` for class diagrams, `activity` for activity diagrams, etc.). Non-standard syntax or unrecognized keywords may lead to errors or unexpected rendering.
+#                      - Be aware that `skinparam` options within the PlantUML text directly control the visual style and rendering of the diagram (e.g., line straightness, colors, fonts, shadows). Adjust these parameters according to your desired visual output.
+#         chat_id: str - The Telegram user chat ID where the file should be sent.
+#     Returns:
+#         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+#     '''
+
+#     try:
+#         my_log.log_gemini_skills(f'save_plantuml_to_png {chat_id}\n\n{filename}\n{text}')
+
+#         chat_id = restore_id(chat_id)
+#         if chat_id == '[unknown]':
+#             return "FAIL, unknown chat id"
+
+#         # Ensure filename has .png extension and is safe
+#         if not filename.lower().endswith('.png'):
+#             filename += '.png'
+#         filename = utils.safe_fname(filename)
+
+#         # Convert the PlantUML text to PNG bytes using the provided function
+#         try:
+#             png_bytes = my_plantuml.plantuml_to_png(text)
+#         except Exception as conversion_error:
+#             my_log.log_gemini_skills(f'save_plantuml_to_png: Error converting PlantUML to PNG: {conversion_error}\n\n{traceback.format_exc()}')
+#             return f"FAIL: Error converting PlantUML to PNG: {conversion_error}"
+
+#         # If bytes were successfully generated, prepare the item for storage
+#         if png_bytes and isinstance(png_bytes, bytes):
+#             item = {
+#                 'type': 'image/png file',
+#                 'filename': filename,
+#                 'data': png_bytes,
+#             }
+#             with STORAGE_LOCK:
+#                 if chat_id in STORAGE:
+#                     STORAGE[chat_id].append(item)
+#                 else:
+#                     STORAGE[chat_id] = [item,]
+#             return "OK"
+#         else:
+#             # This case indicates that no PNG data was generated.
+#             my_log.log_gemini_skills(f'save_plantuml_to_png: No PNG data could be generated for chat {chat_id}\n\nText length: {len(text)}')
+#             return "FAIL: No PNG data could be generated. " + str(png_bytes)
+
+#     except Exception as error:
+#         traceback_error = traceback.format_exc()
+#         my_log.log_gemini_skills(f'save_plantuml_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+#         return f"FAIL: An unexpected error occurred: {error}"
 
 
 def save_to_docx(filename: str, text: str, chat_id: str) -> str:

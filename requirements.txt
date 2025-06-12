@@ -57,6 +57,7 @@ pendulum
 
 Pillow
 pillow-heif
+plantweb
 playwright
 prettytable
 psd-tools

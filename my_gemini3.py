@@ -380,7 +380,8 @@ def chat(
                         my_skills.text_to_image,
                         my_skills.save_to_excel,
                         my_skills.save_to_docx,
-                        my_skills.save_plantuml_to_png,
+                        my_skills.save_diagram_to_png,
+                        my_skills.save_pandas_chart_to_png,
                         my_skills.help,
                     ]
                     chat = client.chats.create(

@@ -5,6 +5,7 @@
 import cachetools.func
 import datetime
 import decimal
+import io
 import math
 import mpmath
 import numbers
@@ -22,6 +23,7 @@ import traceback
 
 from simpleeval import simple_eval
 from typing import Callable, Tuple, List, Union
+import pandas as pd
 
 # it will import word random and broke code
 # from random import *
@@ -34,9 +36,10 @@ import cfg
 import my_db
 import my_google
 import my_gemini_google
-import my_log
 import my_groq
-import my_tts
+import my_log
+import my_pandoc
+# import my_tts
 import my_sum
 import utils
 
@@ -44,7 +47,9 @@ import utils
 MAX_REQUEST = 25000
 
 
-STORAGE = SqliteDict('db/skills_storage.db', autocommit=True)
+# {id:[{type,filename,data},{}],}
+# STORAGE = SqliteDict('db/skills_storage.db', autocommit=True)
+STORAGE = {}
 STORAGE_LOCK = threading.Lock()
 
 
@@ -109,69 +114,251 @@ def restore_id(chat_id: str) -> str:
     return chat_id
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
-def tts_(
-    text: str,
-    lang: str = 'ru',
-    chat_id: str = "",
-    rate: str = '+0%',
-    gender: str = 'auto',
-    natural: bool = False,
-    ) -> str:
+def save_to_docx(filename: str, text: str, chat_id: str) -> str:
     '''
-    Generate and send audio message from text to user.
-    Use it only if asked by user to generate audio from text.
-    If you answer text starting with /tts you will get audio too (doubletap, dont do it).
+    Send DOCX file to user, converted from markdown text.
     Args:
-        text: str - text to say (up to 8000 symbols)
-        lang: str - language code, default is 'ru'
-        chat_id: str - telegram user chat id (Usually looks like 2 numbers in brackets '[9834xxxx] [24xx]')
-        rate: str - speed rate, +-100%, default is '+0%'
-        gender: str - voice gender, default is 'auto' (auto, male or female)
-        natural: bool - use natural voice, better quality, default is False
+        filename: str - The desired file name for the DOCX file (e.g., 'document').
+        text: str - The markdown formatted text to convert to DOCX.
+        chat_id: str - The Telegram user chat ID where the file should be sent.
     Returns:
-        str: "OK" or "FAIL"
+        str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
     '''
+    try:
+        my_log.log_gemini_skills(f'save_to_docx {chat_id}\n\n{filename}\n{text}')
 
-    chat_id = restore_id(chat_id)
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
 
-    my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}" "{gender}" "{natural}" "{chat_id}"')
+        # Ensure filename has .docx extension and is safe
+        if not filename.lower().endswith('.docx'):
+            filename += '.docx'
+        filename = utils.safe_fname(filename)
 
+        # Convert the markdown text to DOCX bytes using the provided function
+        try:
+            docx_bytes = my_pandoc.convert_text_to_docx(text)
+        except Exception as conversion_error:
+            my_log.log_gemini_skills(f'save_to_docx: Error converting text to DOCX: {conversion_error}\n\n{traceback.format_exc()}')
+            return f"FAIL: Error converting text to DOCX: {conversion_error}"
 
-    if gender not in ('male', 'female'):
-        if my_db.get_user_property(chat_id, 'tts_gender'):
-            gender = my_db.get_user_property(chat_id, 'tts_gender')
+        # If bytes were successfully generated, prepare the item for storage
+        if docx_bytes:
+            item = {
+                'type': 'docx file',
+                'filename': filename,
+                'data': docx_bytes,
+            }
+            with STORAGE_LOCK:
+                if chat_id in STORAGE:
+                    STORAGE[chat_id].append(item)
+                else:
+                    STORAGE[chat_id] = [item,]
+            return "OK"
         else:
-            gender = 'female'
+            # This case indicates that no DOCX data was generated.
+            my_log.log_gemini_skills(f'save_to_docx: No DOCX data could be generated for chat {chat_id}\n\nText length: {len(text)}')
+            return "FAIL: No DOCX data could be generated."
 
-    if natural:
-        if gender == 'female':
-            gender = 'gemini_Leda'
-        elif gender == 'male':
-            gender = 'gemini_Puck'
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills(f'save_to_docx: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {error}"
 
-    data = my_tts.tts(
-        text=text,
-        voice=lang,
-        rate=rate,
-        gender=gender
-    )
 
-    if data and chat_id:
-        with STORAGE_LOCK:
-            value = STORAGE.get(chat_id, None)
-            if value:
-                value_ = value[:-1]
-                if data not in value_:
-                    value = [*value_, data, time.time()]
-                    STORAGE[chat_id] = value
+def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
+    '''
+    Send excel file to user. This updated function supports multiple sheets within a single Excel file.
+    Args:
+        filename: str - The desired file name for the Excel file (e.g., 'report').
+        data: dict - A dictionary where keys are sheet names (str) and values are dictionaries
+                     that can be converted to pandas DataFrames. Each inner dictionary represents
+                     the data for a single sheet.
+                     Example:
+                     {
+                         'Sheet1': {'Name':['John', 'Anna'], 'Age':[28,24]},
+                         'Sheet2': {'Product':['Laptop', 'Mouse'], 'Price':[1200, 25]}
+                     }
+                     If 'data' is an empty dictionary, a single empty sheet named "Sheet1" will be created.
+        chat_id: str - The Telegram user chat ID where the file should be sent.
+    Returns:
+        str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+    '''
+    try:
+        my_log.log_gemini_skills(f'save_to_excel {chat_id}\n\n {data}')
+
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        # Ensure filename has .xlsx extension and is safe
+        if not filename.lower().endswith('.xlsx'):
+            filename += '.xlsx'
+        filename = utils.safe_fname(filename)
+
+        excel_buffer = io.BytesIO()
+
+        # Use pandas.ExcelWriter to write multiple sheets to the same Excel file
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+            # If the provided data dictionary is empty, create a single empty sheet
+            if not data:
+                pd.DataFrame({}).to_excel(writer, sheet_name="Sheet1", index=False)
             else:
-                STORAGE[chat_id] = [data, time.time()]
-            my_log.log_gemini_skills(f'TTS OK. Send to user: {chat_id}')
-            return 'OK. DO NOT REPEAT!'
-    else:
-        my_log.log_gemini_skills(f'TTS ERROR. Send to user: {chat_id}')
-        return 'FAIL'
+                # Iterate through each sheet's data provided in the 'data' dictionary
+                for sheet_name, sheet_data in data.items():
+                    # Validate that sheet_data is a dictionary, as expected for DataFrame creation
+                    if not isinstance(sheet_data, dict):
+                        # Log error for invalid data structure (assuming my_log exists)
+                        my_log.log_gemini_skills(f'save_to_excel: Invalid sheet data type for sheet "{sheet_name}". Expected dict, got {type(sheet_data)}')
+                        return f"FAIL: Invalid data for sheet '{sheet_name}'. Expected a dictionary for sheet content."
+
+                    try:
+                        # Convert the sheet's data dictionary into a pandas DataFrame
+                        df = pd.DataFrame(sheet_data)
+                        # Write the DataFrame to the Excel writer as a new sheet
+                        df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    except Exception as sheet_write_error:
+                        # Log error for specific sheet write failure (assuming my_log and traceback exist)
+                        my_log.log_gemini_skills(f'save_to_excel: Error writing sheet "{sheet_name}": {sheet_write_error}\n\n{traceback.format_exc()}')
+                        return f"FAIL: Error writing data to sheet '{sheet_name}': {sheet_write_error}"
+
+        # After all sheets are written, get the bytes from the buffer
+        excel_bytes = excel_buffer.getvalue()
+
+        # If bytes were successfully generated, prepare the item for storage
+        if excel_bytes:
+            item = {
+                'type': 'excel file',
+                'filename': filename,
+                'data': excel_bytes,
+            }
+            with STORAGE_LOCK:
+                if chat_id in STORAGE:
+                    STORAGE[chat_id].append(item)
+                else:
+                    STORAGE[chat_id] = [item,]
+            return "OK"
+        else:
+            # This case indicates that no Excel data was generated, even after attempting to write.
+            my_log.log_gemini_skills(f'save_to_excel: No Excel data could be generated for chat {chat_id}\n\n{data}')
+            return "FAIL: No Excel data could be generated."
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills(f'save_to_excel: Unexpected error: {error}\n\n{traceback_error}\n\n{data}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {error}"
+
+
+# def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
+#     '''
+#     Send excel file to user.
+#     Args:
+#         filename: str - file name
+#         data: dict - panda dataframe example: {'Name':['John', 'Anna', 'Peter', 'Linda'], 'Age':[28,24,35,32], 'Country':['USA','UK','Australia','Germany']}
+#         chat_id: str - telegram user chat id
+#     Returns:
+#         str: 'OK' or 'FAIL'
+#     '''
+#     try:
+#         my_log.log_gemini_skills(f'save_to_excel {chat_id}\n\n {data}')
+
+#         chat_id = restore_id(chat_id)
+#         if chat_id == '[unknown]':
+#             return "FAIL, unknown chat id"
+
+#         if not filename.lower().endswith('.xlsx'):
+#             filename += '.xlsx'
+#             filename = utils.safe_fname(filename)
+
+#         df = pd.DataFrame(data)
+#         excel_buffer = io.BytesIO()
+#         df.to_excel(excel_buffer, index=False)
+#         excel_bytes = excel_buffer.getvalue()
+#         if excel_bytes:
+#             item = {
+#                 'type': 'excel file',
+#                 'filename': filename,
+#                 'data': excel_bytes,
+#             }
+#             with STORAGE_LOCK:
+#                 if chat_id in STORAGE:
+#                     STORAGE[chat_id].append(item)
+#                 else:
+#                     STORAGE[chat_id] = [item,]
+
+#             return "OK"
+#     except Exception as error:
+#         traceback_error = traceback.format_exc()
+#         my_log.log_gemini_skills(f'save_to_excel: {error}\n\n{traceback_error}\n\n{data}\n\n{chat_id}')
+#         return "FAIL"
+
+#     return "FAIL"
+
+
+# @cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
+# def tts_(
+#     text: str,
+#     lang: str = 'ru',
+#     chat_id: str = "",
+#     rate: str = '+0%',
+#     gender: str = 'auto',
+#     natural: bool = False,
+#     ) -> str:
+#     '''
+#     Generate and send audio message from text to user.
+#     Use it only if asked by user to generate audio from text.
+#     If you answer text starting with /tts you will get audio too (doubletap, dont do it).
+#     Args:
+#         text: str - text to say (up to 8000 symbols)
+#         lang: str - language code, default is 'ru'
+#         chat_id: str - telegram user chat id (Usually looks like 2 numbers in brackets '[9834xxxx] [24xx]')
+#         rate: str - speed rate, +-100%, default is '+0%'
+#         gender: str - voice gender, default is 'auto' (auto, male or female)
+#         natural: bool - use natural voice, better quality, default is False
+#     Returns:
+#         str: "OK" or "FAIL"
+#     '''
+
+#     chat_id = restore_id(chat_id)
+
+#     my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}" "{gender}" "{natural}" "{chat_id}"')
+
+
+#     if gender not in ('male', 'female'):
+#         if my_db.get_user_property(chat_id, 'tts_gender'):
+#             gender = my_db.get_user_property(chat_id, 'tts_gender')
+#         else:
+#             gender = 'female'
+
+#     if natural:
+#         if gender == 'female':
+#             gender = 'gemini_Leda'
+#         elif gender == 'male':
+#             gender = 'gemini_Puck'
+
+#     data = my_tts.tts(
+#         text=text,
+#         voice=lang,
+#         rate=rate,
+#         gender=gender
+#     )
+
+#     if data and chat_id:
+#         with STORAGE_LOCK:
+#             value = STORAGE.get(chat_id, None)
+#             if value:
+#                 value_ = value[:-1]
+#                 if data not in value_:
+#                     value = [*value_, data, time.time()]
+#                     STORAGE[chat_id] = value
+#             else:
+#                 STORAGE[chat_id] = [data, time.time()]
+#             my_log.log_gemini_skills(f'TTS OK. Send to user: {chat_id}')
+#             return 'OK. DO NOT REPEAT!'
+#     else:
+#         my_log.log_gemini_skills(f'TTS ERROR. Send to user: {chat_id}')
+#         return 'FAIL'
 
 
 def init():
@@ -180,12 +367,8 @@ def init():
     Assuming value is a tuple (data1, data2, ..., timestamp)
     where timestamp is the last element.
     """
-    now = time.time()
     with STORAGE_LOCK:
-        for key, value in list(STORAGE.items()):
-            # Теперь timestamp - это последний элемент кортежа, доступ к нему через value[-1]
-            if now - value[-1] > 600:  # 10 minutes
-                del STORAGE[key]
+        STORAGE.clear()
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)

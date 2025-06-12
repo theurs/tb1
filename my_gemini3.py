@@ -378,6 +378,8 @@ def chat(
                         my_skills.get_currency_rates,
                         my_skills.tts,
                         my_skills.text_to_image,
+                        my_skills.save_to_excel,
+                        my_skills.save_to_docx,
                         my_skills.help,
                     ]
                     chat = client.chats.create(

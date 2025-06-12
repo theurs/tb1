@@ -9271,33 +9271,32 @@ def do_task(message, custom_prompt: str = ''):
                                 my_log.log_echo(message, f'[{gmodel}] {answer}')
  
 
-                            try: # если в ответе есть audio, то отправляем его
+                            try: # если в ответе есть файлы, то отправляем его
                                 # Получаем данные из STORAGE.
                                 # Предполагается, что хранимый элемент - это плоский список
-                                # [audio_data_1, audio_data_2, ..., audio_data_N, timestamp],
-                                # где timestamp - последний элемент, а остальные могут быть аудио.
-                                data_list_and_timestamp = my_skills.STORAGE.get(chat_id_full, None)
+                                #  [{type,filename,data},{}]
+                                items = my_skills.STORAGE.get(chat_id_full)
+                                if items:
+                                    for item in items:
+                                        _type, filename, data = item['type'], item['filename'], item['data']
 
-                                if data_list_and_timestamp and isinstance(data_list_and_timestamp, list):
-                                    # Итерируемся по всем элементам, кроме последнего (который является timestamp)
-                                    # Используем срез [:-1], чтобы исключить последний элемент
-                                    for i, item_data in enumerate(data_list_and_timestamp[:-1]):
-                                        # Добавляем try-except для отправки каждого отдельного элемента
                                         try:
-                                            # Проверяем, что элемент не пустой (т.е. потенциально содержит аудио)
-                                            if item_data and isinstance(item_data, bytes):
-                                                m = send_voice(
+                                            if _type in ('excel file', 'docx file'):
+                                                m = send_document(
                                                     message=message,
                                                     chat_id=message.chat.id,
-                                                    voice=item_data, # Отправляем текущий элемент как голосовое сообщение
+                                                    document=data, # Отправляем текущий элемент как голосовое сообщение
                                                     reply_to_message_id = message.message_id,
                                                     reply_markup=get_keyboard('hide', message),
-                                                    # caption=caption
+                                                    caption=filename,
+                                                    visible_file_name=filename,
                                                 )
                                                 log_message(m)
+                                                continue
+
                                         except Exception as individual_error:
                                             # Логируем ошибку для этого конкретного элемента, но продолжаем цикл
-                                            my_log.log2(f'tb:do_task:send_voice_item_error for chat {chat_id_full}, item {i}: {individual_error}')
+                                            my_log.log2(f'tb:do_task:send_file_item_error for chat {chat_id_full}, item {i}: {individual_error}')
                                             # Опционально: можно здесь сделать что-то еще, например, пропустить этот элемент
                                             continue # Продолжаем к следующему элементу в списке
                                     

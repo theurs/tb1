@@ -46,6 +46,7 @@ import my_gemini_genimg
 import my_gemini_google
 import my_groq
 import my_log
+import my_md_tables_to_png
 import my_mistral
 import my_nebius
 import my_pdf
@@ -9113,6 +9114,8 @@ def do_task(message, custom_prompt: str = ''):
                 if not my_db.get_user_property(chat_id_full, 'temperature'):
                     my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
 
+                answer = ''
+
                 # если активирован режим общения с Gemini
                 if chat_mode_.startswith(('gemini', 'gemma')):
                     if len(msg) > my_gemini.MAX_REQUEST:
@@ -9333,11 +9336,10 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:{gmodel} {error3}\n{error_traceback}')
-                        return
 
 
                 # если активирован режим общения с openrouter
-                if chat_mode_ == 'openrouter':
+                elif chat_mode_ == 'openrouter':
                     with ShowAction(message, action):
                         try:
                             timeout_ = my_db.get_user_property(chat_id_full, 'openrouter_timeout') or my_openrouter.DEFAULT_TIMEOUT
@@ -9397,11 +9399,10 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:openrouter {error3}\n{error_traceback}')
-                        return
 
 
                 # если активирован режим общения с Mistral Large
-                if chat_mode_ == 'mistral':
+                elif chat_mode_ == 'mistral':
                     if len(msg) > my_mistral.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для Mistral Large, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_mistral.MAX_REQUEST}')
                         return
@@ -9449,11 +9450,10 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:mistral {error3}\n{error_traceback}')
-                        return
 
 
                 # если активирован режим общения с Magistral Medium
-                if chat_mode_ == 'magistral':
+                elif chat_mode_ == 'magistral':
                     if len(msg) > my_mistral.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для Magistral Medium, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_mistral.MAX_REQUEST}')
                         return
@@ -9513,11 +9513,10 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:magistral {error3}\n{error_traceback}')
-                        return
 
 
                 # если активирован режим общения с Llama4 Maverick
-                if chat_mode_ == 'llama4_maverick':
+                elif chat_mode_ == 'llama4_maverick':
                     if len(msg) > my_openrouter_free.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для Llama4 Maverick, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter_free.MAX_REQUEST}')
                         return
@@ -9565,11 +9564,10 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:llama4_maverick {error3}\n{error_traceback}')
-                        return
 
 
                 # если активирован режим общения с gpt-4o
-                if chat_mode_ == 'gpt-4o':
+                elif chat_mode_ == 'gpt-4o':
                     if len(msg) > my_github.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для GPT-4o, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_github.MAX_REQUEST}')
                         return
@@ -9627,11 +9625,10 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gpt-4o {error3}\n{error_traceback}')
-                        return
 
 
                 # если активирован режим общения с gpt_41
-                if chat_mode_ == 'gpt_41':
+                elif chat_mode_ == 'gpt_41':
                     if len(msg) > my_github.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для GPT 4.1, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_github.MAX_REQUEST}')
                         return
@@ -9689,11 +9686,10 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gpt_41 {error3}\n{error_traceback}')
-                        return
 
 
                 # если активирован режим общения с gpt_41_mini
-                if chat_mode_ == 'gpt_41_mini':
+                elif chat_mode_ == 'gpt_41_mini':
                     if len(msg) > my_github.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для GPT 4.1 mini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_github.MAX_REQUEST}')
                         return
@@ -9751,11 +9747,10 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gpt_41_mini {error3}\n{error_traceback}')
-                        return
 
 
                 # если активирован режим общения с DeepSeek R1
-                if chat_mode_ == 'deepseek_r1':
+                elif chat_mode_ == 'deepseek_r1':
                     if len(msg) > my_nebius.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для DeepSeek R1, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_nebius.MAX_REQUEST}')
                         return
@@ -9819,11 +9814,10 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:deepseek_r1 {error3}\n{error_traceback}')
-                        return
 
 
                 # если активирован режим общения с DeepSeek V3
-                if chat_mode_ == 'deepseek_v3':
+                elif chat_mode_ == 'deepseek_v3':
                     if len(msg) > my_nebius.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для DeepSeek V3, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_nebius.MAX_REQUEST}')
                         return
@@ -9887,11 +9881,10 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:deepseek_v3 {error3}\n{error_traceback}')
-                        return
 
 
                 # если активирован режим общения с Command A
-                if chat_mode_ == 'cohere':
+                elif chat_mode_ == 'cohere':
                     if len(msg) > my_cohere.MAX_REQUEST:
                         bot_reply(message, f'{tr("Слишком длинное сообщение для Command A, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_cohere.MAX_REQUEST}')
                         return
@@ -9940,7 +9933,24 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:cohere {error3}\n{error_traceback}')
-                        return
+
+
+                # если есть таблицы в ответе то отправить их картинками в догонку
+                if answer.strip():
+                    tables = my_md_tables_to_png.find_markdown_tables(answer)
+                    if tables:
+                        for table in tables:
+                            image = my_md_tables_to_png.markdown_table_to_image_bytes(table)
+                            if image:
+                                m = send_photo(
+                                    message,
+                                    chat_id=message.chat.id,
+                                    photo=image,
+                                    reply_to_message_id = message.message_id,
+                                    reply_markup=get_keyboard('hide', message),
+                                )
+                                log_message(m)
+
 
     except Exception as unknown:
         traceback_error = traceback.format_exc()

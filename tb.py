@@ -9278,9 +9278,8 @@ def do_task(message, custom_prompt: str = ''):
                                 items = my_skills.STORAGE.get(chat_id_full)
                                 if items:
                                     for item in items:
-                                        _type, filename, data = item['type'], item['filename'], item['data']
-
                                         try:
+                                            _type, filename, data = item['type'], item['filename'], item['data']
                                             if _type in ('excel file', 'docx file'):
                                                 m = send_document(
                                                     message=message,

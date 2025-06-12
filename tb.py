@@ -7942,6 +7942,34 @@ def send_photo(
         n -= 1
 
         try:
+            x, y = utils.get_image_size(photo)
+            if max(x, y) > 2000 or min(x, y) > 2000:
+                # send as document too
+                send_document(
+                    message,
+                    chat_id=chat_id,
+                    document=photo,
+                    caption=caption,
+                    parse_mode=parse_mode,
+                    caption_entities=caption_entities,
+                    disable_notification=disable_notification,
+                    protect_content=protect_content,
+                    reply_to_message_id=reply_to_message_id,
+                    allow_sending_without_reply=allow_sending_without_reply,
+                    reply_markup=reply_markup,
+                    timeout=timeout,
+                    message_thread_id=message_thread_id,
+                    reply_parameters=reply_parameters,
+                    business_connection_id=business_connection_id,
+                    message_effect_id=message_effect_id,
+                    allow_paid_broadcast=allow_paid_broadcast,
+
+                    # Параметры, специфичные для send_document, которые полезны при отправке изображения:
+                    visible_file_name="image.png",
+                    # thumb=thumbnail_data_or_file_id,
+                )
+                photo = utils.resize_image_to_dimensions(photo, 2000, 2000)
+                
             if not reply:
                 r = bot.send_photo(
                     chat_id=chat_id,
@@ -9284,7 +9312,7 @@ def do_task(message, custom_prompt: str = ''):
                                                 m = send_document(
                                                     message=message,
                                                     chat_id=message.chat.id,
-                                                    document=data, # Отправляем текущий элемент как голосовое сообщение
+                                                    document=data,
                                                     reply_to_message_id = message.message_id,
                                                     reply_markup=get_keyboard('hide', message),
                                                     caption=filename,
@@ -9292,7 +9320,17 @@ def do_task(message, custom_prompt: str = ''):
                                                 )
                                                 log_message(m)
                                                 continue
-
+                                            elif _type in ('image/png file',):
+                                                m = send_photo(
+                                                    message=message,
+                                                    chat_id=message.chat.id,
+                                                    photo=data,
+                                                    reply_to_message_id = message.message_id,
+                                                    reply_markup=get_keyboard('hide', message),
+                                                    caption=filename,
+                                                )
+                                                log_message(m)
+                                                continue
                                         except Exception as individual_error:
                                             # Логируем ошибку для этого конкретного элемента, но продолжаем цикл
                                             my_log.log2(f'tb:do_task:send_file_item_error for chat {chat_id_full}, item {i}: {individual_error}')

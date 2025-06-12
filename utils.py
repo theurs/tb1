@@ -2216,6 +2216,85 @@ def resize_image_dimention(image_bytes: bytes) -> bytes:
         return image_bytes
 
 
+def resize_image_to_dimensions(data: bytes, dim1: int, dim2: int) -> bytes:
+    """
+    Resizes an image (only reduces) to fit within specified maximum dimensions (dim1, dim2),
+    regardless of image orientation, while preserving aspect ratio, format, and quality.
+
+    Args:
+        data: The image data as bytes.
+        dim1: One of the maximum allowed dimensions in pixels.
+        dim2: The other maximum allowed dimension in pixels.
+
+    Returns:
+        The resized image data as bytes, or the original image data if no reduction was needed
+        or if an error occurred.
+    """
+    try:
+        # Open the image from bytes
+        img = PIL.Image.open(io.BytesIO(data))
+        original_format = img.format # Store original format to preserve it
+        current_width, current_height = img.size
+
+        # Determine the effective target maximum and minimum dimensions
+        # This handles the "orientation unknown" requirement for dim1 and dim2
+        target_max_dim = max(dim1, dim2)
+        target_min_dim = min(dim1, dim2)
+
+        # Determine the current image's maximum and minimum dimensions
+        image_max_dim = max(current_width, current_height)
+        image_min_dim = min(current_width, current_height)
+
+        # 1. Check if the image already fits within the target dimensions
+        # If both the maximum and minimum dimensions of the image are already
+        # within their respective target limits, no resizing is needed.
+        if image_max_dim <= target_max_dim and image_min_dim <= target_min_dim:
+            return data  # Image already fits, return original bytes
+
+        # 2. Calculate the scaling factor for reduction
+        # The scaling factor is determined by the dimension that is proportionally
+        # most over its limit, to ensure both fit while preserving aspect ratio.
+        # We need to ensure that the largest side of the image fits into target_max_dim
+        # and the smallest side fits into target_min_dim.
+        
+        # Calculate scale factor needed for the maximum dimension
+        scale_factor_by_max_dim = target_max_dim / image_max_dim if image_max_dim > 0 else float('inf')
+        
+        # Calculate scale factor needed for the minimum dimension
+        scale_factor_by_min_dim = target_min_dim / image_min_dim if image_min_dim > 0 else float('inf')
+
+        # The actual scaling factor must be the minimum of these two to ensure both conditions are met.
+        scale_factor = min(scale_factor_by_max_dim, scale_factor_by_min_dim)
+
+        # If the scale_factor is >= 1.0, it means the image is already within the desired dimensions
+        # or would need to be enlarged, but we only perform reduction.
+        if scale_factor >= 1.0:
+            return data
+
+        new_width = int(current_width * scale_factor)
+        new_height = int(current_height * scale_factor)
+
+        # Ensure new dimensions are at least 1 pixel to avoid errors with PIL
+        new_width = max(1, new_width)
+        new_height = max(1, new_height)
+
+        # Resize the image using the calculated dimensions and a high-quality resampling filter (LANCZOS)
+        img = img.resize((new_width, new_height), PIL.Image.Resampling.LANCZOS)
+
+        # Save the image to a BytesIO object, preserving the original format and optimizing
+        output_bytes = io.BytesIO()
+        img.save(output_bytes, format=original_format, optimize=True)
+        return output_bytes.getvalue()
+
+    except Exception as e:
+        # Log the error using the existing logging mechanism if available, or print
+        # Assuming my_log is defined and accessible in the module scope
+        # If my_log.log2 is not available, you might use a standard print for debugging:
+        # print(f"Error in resize_image_to_dimensions: {e}")
+        my_log.log2(f"utils:resize_image_to_dimensions: {e}")
+        return data # Return original data on error as per requirement
+
+
 def truncate_text(text: str, max_lines: int = 10, max_chars: int = 300) -> str:
     try:
         text = html.escape(text)

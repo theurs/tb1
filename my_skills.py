@@ -39,6 +39,7 @@ import my_gemini_google
 import my_groq
 import my_log
 import my_pandoc
+import my_plantuml
 # import my_tts
 import my_sum
 import utils
@@ -112,6 +113,59 @@ def restore_id(chat_id: str) -> str:
     if not chat_id:
         chat_id = '[unknown]'
     return chat_id
+
+
+def save_plantuml_to_png(filename: str, text: str, chat_id: str) -> str:
+    '''
+    Send PlantUML diagram as a PNG image file to user.
+    Args:
+        filename: str - The desired file name for the PNG file (e.g., 'diagram').
+        text: str - The PlantUML formatted text to convert to PNG.
+        chat_id: str - The Telegram user chat ID where the file should be sent.
+    Returns:
+        str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+    '''
+    try:
+        my_log.log_gemini_skills(f'save_plantuml_to_png {chat_id}\n\n{filename}\n{text}')
+
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        # Ensure filename has .png extension and is safe
+        if not filename.lower().endswith('.png'):
+            filename += '.png'
+        filename = utils.safe_fname(filename)
+
+        # Convert the PlantUML text to PNG bytes using the provided function
+        try:
+            png_bytes = my_plantuml.plantuml_to_png(text)
+        except Exception as conversion_error:
+            my_log.log_gemini_skills(f'save_plantuml_to_png: Error converting PlantUML to PNG: {conversion_error}\n\n{traceback.format_exc()}')
+            return f"FAIL: Error converting PlantUML to PNG: {conversion_error}"
+
+        # If bytes were successfully generated, prepare the item for storage
+        if png_bytes and isinstance(png_bytes, bytes):
+            item = {
+                'type': 'image/png file',
+                'filename': filename,
+                'data': png_bytes,
+            }
+            with STORAGE_LOCK:
+                if chat_id in STORAGE:
+                    STORAGE[chat_id].append(item)
+                else:
+                    STORAGE[chat_id] = [item,]
+            return "OK"
+        else:
+            # This case indicates that no PNG data was generated.
+            my_log.log_gemini_skills(f'save_plantuml_to_png: No PNG data could be generated for chat {chat_id}\n\nText length: {len(text)}')
+            return "FAIL: No PNG data could be generated."
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills(f'save_plantuml_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {error}"
 
 
 def save_to_docx(filename: str, text: str, chat_id: str) -> str:
@@ -248,117 +302,6 @@ def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
         traceback_error = traceback.format_exc()
         my_log.log_gemini_skills(f'save_to_excel: Unexpected error: {error}\n\n{traceback_error}\n\n{data}\n\n{chat_id}')
         return f"FAIL: An unexpected error occurred: {error}"
-
-
-# def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
-#     '''
-#     Send excel file to user.
-#     Args:
-#         filename: str - file name
-#         data: dict - panda dataframe example: {'Name':['John', 'Anna', 'Peter', 'Linda'], 'Age':[28,24,35,32], 'Country':['USA','UK','Australia','Germany']}
-#         chat_id: str - telegram user chat id
-#     Returns:
-#         str: 'OK' or 'FAIL'
-#     '''
-#     try:
-#         my_log.log_gemini_skills(f'save_to_excel {chat_id}\n\n {data}')
-
-#         chat_id = restore_id(chat_id)
-#         if chat_id == '[unknown]':
-#             return "FAIL, unknown chat id"
-
-#         if not filename.lower().endswith('.xlsx'):
-#             filename += '.xlsx'
-#             filename = utils.safe_fname(filename)
-
-#         df = pd.DataFrame(data)
-#         excel_buffer = io.BytesIO()
-#         df.to_excel(excel_buffer, index=False)
-#         excel_bytes = excel_buffer.getvalue()
-#         if excel_bytes:
-#             item = {
-#                 'type': 'excel file',
-#                 'filename': filename,
-#                 'data': excel_bytes,
-#             }
-#             with STORAGE_LOCK:
-#                 if chat_id in STORAGE:
-#                     STORAGE[chat_id].append(item)
-#                 else:
-#                     STORAGE[chat_id] = [item,]
-
-#             return "OK"
-#     except Exception as error:
-#         traceback_error = traceback.format_exc()
-#         my_log.log_gemini_skills(f'save_to_excel: {error}\n\n{traceback_error}\n\n{data}\n\n{chat_id}')
-#         return "FAIL"
-
-#     return "FAIL"
-
-
-# @cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
-# def tts_(
-#     text: str,
-#     lang: str = 'ru',
-#     chat_id: str = "",
-#     rate: str = '+0%',
-#     gender: str = 'auto',
-#     natural: bool = False,
-#     ) -> str:
-#     '''
-#     Generate and send audio message from text to user.
-#     Use it only if asked by user to generate audio from text.
-#     If you answer text starting with /tts you will get audio too (doubletap, dont do it).
-#     Args:
-#         text: str - text to say (up to 8000 symbols)
-#         lang: str - language code, default is 'ru'
-#         chat_id: str - telegram user chat id (Usually looks like 2 numbers in brackets '[9834xxxx] [24xx]')
-#         rate: str - speed rate, +-100%, default is '+0%'
-#         gender: str - voice gender, default is 'auto' (auto, male or female)
-#         natural: bool - use natural voice, better quality, default is False
-#     Returns:
-#         str: "OK" or "FAIL"
-#     '''
-
-#     chat_id = restore_id(chat_id)
-
-#     my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}" "{gender}" "{natural}" "{chat_id}"')
-
-
-#     if gender not in ('male', 'female'):
-#         if my_db.get_user_property(chat_id, 'tts_gender'):
-#             gender = my_db.get_user_property(chat_id, 'tts_gender')
-#         else:
-#             gender = 'female'
-
-#     if natural:
-#         if gender == 'female':
-#             gender = 'gemini_Leda'
-#         elif gender == 'male':
-#             gender = 'gemini_Puck'
-
-#     data = my_tts.tts(
-#         text=text,
-#         voice=lang,
-#         rate=rate,
-#         gender=gender
-#     )
-
-#     if data and chat_id:
-#         with STORAGE_LOCK:
-#             value = STORAGE.get(chat_id, None)
-#             if value:
-#                 value_ = value[:-1]
-#                 if data not in value_:
-#                     value = [*value_, data, time.time()]
-#                     STORAGE[chat_id] = value
-#             else:
-#                 STORAGE[chat_id] = [data, time.time()]
-#             my_log.log_gemini_skills(f'TTS OK. Send to user: {chat_id}')
-#             return 'OK. DO NOT REPEAT!'
-#     else:
-#         my_log.log_gemini_skills(f'TTS ERROR. Send to user: {chat_id}')
-#         return 'FAIL'
 
 
 def init():

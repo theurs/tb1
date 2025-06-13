@@ -127,7 +127,7 @@ level 3 - блокировать всё включая логи
 Для установки проекта выполните следующие шаги:
 
 1. Установите Python 3.12+.
-2. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin ffmpeg imagemagick pandoc python3-venv sox texlive-latex-base texlive-latex-recommended wkhtmltopdf`
+2. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin ffmpeg fonts-noto-core imagemagick pandoc python3-venv sox texlive-latex-base texlive-latex-recommended wkhtmltopdf`
    https://wkhtmltopdf.org/downloads.html это надо установить отдельно вручную для рисования таблиц
    yt-dlp надо установить отдельно, т.к. в репах нет актуальной свежей версии, а она нужна для скачивания тиктоков и музыки с ютуба.
    в файле `/etc/ImageMagick-6/policy.xml` надо найти и изменить

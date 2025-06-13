@@ -16,20 +16,21 @@ PRINT_LOCK = threading.Lock()
 
 
 SIMPLE_TEXT_LIST = (
-    'application/x-bat',
-    'application/xml',
+    'application/atom+xml',
+    'application/binary',
     'application/javascript',
     'application/json',
-    'application/x-sh',
-    'application/xhtml+xml',
-    'application/atom+xml',
-    'application/x-subrip',
-    'application/yaml',
+    'application/sql',
+    'application/x-bat',
     'application/x-perl',
     'application/x-php',
-    'application/binary',
-    'application/sql',
-    )
+    'application/x-sh',
+    'application/x-shellscript',
+    'application/x-subrip',
+    'application/xhtml+xml',
+    'application/xml',
+    'application/yaml',
+)
 
 
 PANDOC_SUPPORT_LIST = (
@@ -46,7 +47,7 @@ PANDOC_SUPPORT_LIST = (
     'application/x-msexcel',
     'application/x-fictionbook+xml',
     'image/vnd.djvu+multipage', # hack
-    )
+)
 
 
 supported_langs_trans = [

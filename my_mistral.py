@@ -691,8 +691,8 @@ if __name__ == '__main__':
     # print(img2txt('C:/Users/user/Downloads/2.jpg', 'реши все задачи, ответ по-русски'))
     # print(img2txt('C:/Users/user/Downloads/3.png', 'какой ответ и почему, по-русски'))
 
-    # print(ocr_image(r'C:/Users/user/Downloads/samples for ai/мат задачи 2.jpg'))
-    # print(ocr_pdf(r'C:/Users/user/Downloads/samples for ai/20220816043638.pdf'))
+    print(ocr_image(r'C:/Users/user/Downloads/samples for ai/картинки/мат задачи 2.jpg'))
+    # print(ocr_pdf(r'C:/Users/user/Downloads/samples for ai/картинки/20220816043638.pdf'))
 
     # with open('C:/Users/user/Downloads/1.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()

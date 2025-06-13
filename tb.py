@@ -9940,17 +9940,19 @@ def do_task(message, custom_prompt: str = ''):
                     tables = my_md_tables_to_png.find_markdown_tables(answer)
                     if tables:
                         for table in tables:
-                            image = my_md_tables_to_png.markdown_table_to_image_bytes(table)
-                            if image:
-                                m = send_photo(
-                                    message,
-                                    chat_id=message.chat.id,
-                                    photo=image,
-                                    reply_to_message_id = message.message_id,
-                                    reply_markup=get_keyboard('hide', message),
-                                )
-                                log_message(m)
-
+                            try:
+                                image = my_md_tables_to_png.markdown_table_to_image_bytes(table)
+                                if image:
+                                    m = send_photo(
+                                        message,
+                                        chat_id=message.chat.id,
+                                        photo=image,
+                                        reply_to_message_id = message.message_id,
+                                        reply_markup=get_keyboard('hide', message),
+                                    )
+                                    log_message(m)
+                            except Exception as error:
+                                my_log.log2(f'tb:do_task:send tables images: {error}')
 
     except Exception as unknown:
         traceback_error = traceback.format_exc()

@@ -35,6 +35,8 @@ gradio_client
 
 groq
 
+imgkit
+
 gTTS
 langdetect
 langcodes[data]

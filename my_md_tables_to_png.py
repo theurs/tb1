@@ -1,112 +1,221 @@
+# Убедитесь, что у вас установлены библиотеки и wkhtmltoimage
+# pip install imgkit markdown
+# https://wkhtmltopdf.org/downloads.html (нужно установить и добавить в PATH)
+
+
+import cachetools.func
 import io
-
-import matplotlib
-matplotlib.use('Agg')
-
-import matplotlib.pyplot as plt
-import pandas as pd
+import html
 import re
-from typing import List
+from typing import List, Optional
+
+import imgkit
+import markdown
+from PIL import Image
+
+import my_log
 
 
-def markdown_table_to_image_bytes(markdown_table_string: str) -> bytes:
+CSS1 = """
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+        body {
+            /* Используем современный, читаемый шрифт */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f7f8fa; /* Слегка серый фон, чтобы таблица выделялась */
+            color: #333;
+            margin: 0;
+            padding: 40px; /* Больше "воздуха" вокруг таблицы */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            border-radius: 8px; /* Скругленные углы для современного вида */
+            overflow: hidden; /* Прячет все, что выходит за рамки скругления */
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1); /* Мягкая, глубокая тень */
+            background-color: #ffffff;
+        }
+
+        th, td {
+            padding: 16px 20px;
+            text-align: left;
+            vertical-align: top;
+            /* Убираем вертикальные рамки, оставляем только горизонтальные разделители */
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        /* Стиль для заголовка таблицы */
+        thead th {
+            background-color: #f7f8fa;
+            color: #6c757d; /* Менее резкий цвет текста заголовка */
+            font-size: 12px;
+            font-weight: 600; /* Полужирное начертание */
+            text-transform: uppercase; /* Все буквы заглавные */
+            letter-spacing: 0.05em; /* Небольшое расстояние между буквами */
+            border-top: 0; /* Убираем верхнюю границу у заголовков */
+            border-bottom: 2px solid #dee2e6; /* Более жирный разделитель для хедера */
+        }
+
+        /* Убираем рамку у последней строки для чистого вида */
+        tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        /* Эффект при наведении курсора на строку */
+        tbody tr:hover {
+            background-color: #f1f3f5;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        /* Стиль для Markdown-кода внутри ячеек */
+        code {
+            background-color: #e9ecef;
+            color: #c92a2a; /* Красный для акцента на коде */
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.9em;
+        }
+
+        strong {
+            color: #212529;
+            font-weight: 600;
+        }
     """
-    Converts a Markdown table string into a beautifully styled PNG image and returns its bytes.
 
-    This function parses a simple Markdown table string, converts it into a
-    pandas DataFrame, and then renders the DataFrame as a table image using
-    Matplotlib with enhanced styling for better aesthetics. The image is saved
-    into an in-memory buffer and returned as bytes.
+
+CSS2 = """
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                background-color: #ffffff; /* Use a clean white background */
+                margin: 0;
+                padding: 20px; /* Add some padding around the table */
+                -webkit-font-smoothing: antialiased; /* Better font rendering */
+            }
+            table {
+                border-collapse: collapse;
+                margin: 0;
+                width: auto; /* Let the content define the width */
+                min-width: 600px;
+                max-width: 1400px; /* Prevent it from being excessively wide */
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+                table-layout: auto; /* Default algorithm for layout based on content */
+            }
+            th, td {
+                padding: 12px 15px;
+                border: 1px solid #dee2e6;
+                text-align: left;
+                vertical-align: top; /* Align content to the top for readability */
+                word-wrap: break-word; /* Wrap long words */
+            }
+            th {
+                background-color: #f8f9fa;
+                color: #212529;
+                font-weight: 600;
+            }
+            tbody tr:nth-child(even) {
+                background-color: #f8f9fa;
+            }
+            tbody tr:hover {
+                background-color: #e9ecef;
+            }
+        """
+
+BR = html.escape('<br>')
+
+@cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
+def markdown_table_to_image_bytes(
+    markdown_table_string: str,
+    css_style: Optional[str] = None
+) -> bytes:
+    """
+    Конвертирует Markdown-таблицу в стильное PNG-изображение в виде байтов.
+
+    Для автоматического подбора ширины колонок и переноса текста используется
+    движок рендеринга WebKit (через wkhtmltoimage), который применяет
+    стандартные алгоритмы верстки HTML-таблиц.
 
     Args:
-        markdown_table_string (str): A string containing the Markdown table.
-                                     Example format:
-                                     "| Header1 | Header2 |\n|---|---|\n| Cell1 | Cell2 |"
+        markdown_table_string: Строка, содержащая таблицу в формате Markdown.
+        css_style: Опциональная строка с кастомными CSS-стилями. Если None,
+                   используются стили по умолчанию.
 
     Returns:
-        bytes: The byte representation of the PNG image.
+        PNG-изображение в виде байтовой строки.
 
     Raises:
-        ValueError: If the input markdown_table_string is not a valid table format.
+        OSError: Если утилита `wkhtmltoimage` не найдена в системном PATH.
     """
-    # Split the input string into individual lines
-    lines = markdown_table_string.strip().split('\n')
 
-    if len(lines) < 2:
-        raise ValueError("Markdown table must have at least a header and a separator line.")
+    # Use default styles if none are provided
+    if css_style is None:
+        css_style = CSS1
 
-    # Parse headers from the first line.
-    headers = [h.strip() for h in lines[0].strip('|').split('|') if h.strip()]
-    if not headers:
-        raise ValueError("No headers found in the Markdown table.")
+    # Step 1: Convert Markdown to an HTML fragment.
+    table_html = markdown.markdown(
+        markdown_table_string, extensions=['tables', 'fenced_code']
+    )
 
-    # Parse data rows starting from the third line (after header and separator line).
-    data = []
-    for line in lines[2:]:
-        row = [cell.strip() for cell in line.strip('|').split('|') if cell.strip() or len(row) < len(headers)]
-        if len(row) < len(headers):
-            row.extend([''] * (len(headers) - len(row)))
-        elif len(row) > len(headers):
-            row = row[:len(headers)]
+    # Step 2: Assemble a full, self-contained HTML document.
+    # This includes the crucial UTF-8 meta tag and the CSS for styling.
+    full_html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            {css_style}
+        </style>
+    </head>
+    <body>
+        {table_html}
+    </body>
+    </html>
+    """
 
-        data.append(row)
+    # Step 3: Define options for imgkit.
+    # 'encoding' ensures correct text interpretation.
+    # 'enable-local-file-access' is a security best practice.
+    options = {
+        'quiet': '',
+        'encoding': "UTF-8",
+        'enable-local-file-access': None,
+        'format': 'png', # Explicitly set format to PNG
+    }
 
-    # Create a pandas DataFrame from the parsed data and headers
-    df = pd.DataFrame(data, columns=headers)
+    try:
+        # Step 1: Generate a raw, uncompressed PNG in memory using imgkit.
+        # This is fast but results in a large byte object.
+        raw_png_bytes = imgkit.from_string(full_html, False, options=options)
 
-    # --- Matplotlib setup for rendering the table with enhanced styling ---
-    # Adjust figsize based on content for better layout
-    fig_width = max(len(headers) * 2.5, 8) # Minimum width for better appearance
-    fig_height = max(len(df) * 0.4 + 1, 3) # Minimum height
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+        # Step 2: Use Pillow to re-compress the image data with optimization.
+        # Open the image from the raw bytes.
+        with Image.open(io.BytesIO(raw_png_bytes)) as img:
+            # Create an in-memory byte buffer to save the compressed image.
+            output_buffer = io.BytesIO()
+            # Save to the buffer with maximum PNG compression.
+            # `optimize=True` enables extra passes to find a smaller file size.
+            # `compress_level=9` is the highest zlib compression level.
+            # img.save(output_buffer, format='PNG', optimize=True, compress_level=9)
+            # img.save(output_buffer, format='PNG', compress_level=6)
+            img.save(output_buffer, format='PNG')
+            # Retrieve the compressed bytes from the buffer.
+            compressed_png_bytes = output_buffer.getvalue()
 
-    ax.axis('off') # Turn off the axes to display only the table content
-
-    # Create the table using Matplotlib's table function
-    table = ax.table(cellText=df.values,
-                     colLabels=df.columns,
-                     loc='center',
-                     cellLoc='center',
-                     bbox=[0, 0, 1, 1])
-
-    # --- Apply styling to the table cells ---
-    table.auto_set_font_size(False) # Disable auto font size to set manually
-    table.set_fontsize(12) # Set a comfortable font size
-    table.scale(1, 1.5) # Adjust cell height for better spacing
-
-    # Style header cells
-    for (i, j), cell in table.get_celld().items():
-        if i == 0: # Header row
-            cell.set_facecolor("#4CAF50") # Green background for headers
-            cell.set_text_props(color='white', weight='bold') # White, bold text
-            cell.set_edgecolor('black') # Black border for headers
-            cell.set_linewidth(1.5) # Thicker border for headers
-        else: # Data rows
-            if i % 2 == 1: # Odd rows (after header, so 1, 3, 5...)
-                cell.set_facecolor("#f2f2f2") # Light grey for odd rows
-            else: # Even rows
-                cell.set_facecolor("#ffffff") # White for even rows
-            cell.set_edgecolor('lightgray') # Lighter border for data cells
-            cell.set_linewidth(0.5) # Thinner border for data cells
-
-        cell.set_alpha(1.0) # Ensure full opacity
-        cell.set_text_props(color='black') # Default text color for data cells
-
-    # Set the title for the table
-    # plt.title("Styled Table Data", fontsize=18, pad=20, weight='bold') # Larger, bold title with padding
-
-    # Automatically adjust subplot parameters for a tight layout
-    plt.tight_layout(pad=3.0) # Add more padding around the figure
-
-    # --- Save the plot to an in-memory buffer ---
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format='png', bbox_inches='tight', dpi=75)
-    plt.close(fig)
-
-    image_bytes = buffer.getvalue()
-    buffer.close()
-
-    return image_bytes
+        return compressed_png_bytes
+    except OSError as e:
+        # Provide a more helpful error if wkhtmltoimage is not found.
+        my_log.log2(
+            "CRITICAL ERROR: 'wkhtmltoimage' not found.\n"
+            "Please install it from https://wkhtmltopdf.org/downloads.html "
+            "and ensure it's in your system's PATH."
+        )
+        raise e
 
 
 def find_markdown_tables(markdown_text: str) -> List[str]:
@@ -163,9 +272,25 @@ def find_markdown_tables(markdown_text: str) -> List[str]:
                         # Current line is not a data line (e.g., empty line, plain text, or another delimiter)
                         # So, the current table has ended.
                         break
-                
+
                 # Add the complete table to the list of found tables
-                tables.append("\n".join(current_table_lines))
+                if current_table_lines:
+                    # Склеиваем все строки в один блок
+                    raw_table_block = "\n".join(current_table_lines)
+                    # raw_table_block = raw_table_block.replace('<br>', '')
+                    raw_table_block = raw_table_block.replace(BR, '')
+
+                    # Находим маркеры: первый и последний '|'
+                    first_pipe_pos = raw_table_block.find('|')
+                    last_pipe_pos = raw_table_block.rfind('|')
+
+                    # Если маркеры есть — режем по ним. Нет — игнорируем блок.
+                    if first_pipe_pos != -1:
+                        clean_table = raw_table_block[first_pipe_pos : last_pipe_pos + 1]
+                        tables.append(clean_table)
+                    else:
+                        tables.append(raw_table_block)
+
                 # The outer while loop will handle advancing 'i' from its current position.
             else:
                 # The next line is not a delimiter, so this is not a table. Move to the next line.
@@ -182,28 +307,38 @@ if __name__ == "__main__":
 
     # --- Example Usage ---
     markdown_text_with_tables = """
-This is some introductory text.
 
-Here is the first table:
-| Header 1 | Header 2 | Header 3 |
-| :------- | :------: | --------: |
-| Row 1 Col 1 | Row 1 Col 2 | Row 1 Col 3 |
-| Row 2 Col 1 | Row 2 Col 2 | Row 2 Col 3 |
-Some text in between tables.
+blabla
 
-And here is a second table:
-| Item      | Quantity | Price  |
-|-----------|:--------:|-------:|
-| Apples    | 10       | 1.50   |
-| Oranges   | 5        | 0.75   |
-| Bananas   | 12       | 0.25   |
+Вот простая таблица в формате Markdown:
 
-Final paragraph after tables.
+<pre><code class="language-plaintext">| Заголовок 1 | Заголовок 2 | Заголовок 3 |
+|-------------|-------------|-------------|
+| Строка 1, Ячейка 1 | Строка 1, Ячейка 2 | Строка 1, Ячейка 3 |
+| Строка 2, Ячейка 1 | Строка 2, <br> Ячейка 2 | Строка 2, Ячейка 3 |
+| Строка 3, Ячейка 1 | Строка 3, Ячейка 2 | Строка 3, Ячейка 3 |
+</code></pre>'
+
+
+blabla
+
+| Заголовок 1 | Заголовок 2 | Заголовок 3 |
+|-------------|-------------|-------------|
+| Строка 1, Ячейка 1 | Строка 1, Ячейка 2 | Строка 1, Ячейка 3 |
+| Строка 2, Ячейка 1 | Строка 2, Ячейка 2 | Строка 2, Ячейка 3 |
+| Строка 3, Ячейка 1 | Строка 3, Ячейка 2 | Строка 3, Ячейка 3 |
+
+asdasd
+
+
+
+
 """
 
     found_tables = find_markdown_tables(markdown_text_with_tables)
+
     n = 1
-    for table in found_tables:
+    for table in reversed(found_tables):
         print(table)
 
         try:

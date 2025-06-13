@@ -126,7 +126,52 @@ CSS2 = """
             }
         """
 
+
 BR = html.escape('<br>')
+
+
+@cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
+def html_to_image_bytes(html: str, css_style: Optional[str] = None) -> bytes:
+    '''
+    Конвертирует HTML-страницу в PNG-изображение в виде байтов.
+    Страница должны быть полностью сформирована по стандарту HTML.
+
+    Args:
+        html: Строка, содержащая HTML-код страницы.
+        css_style: Опциональная строка с кастомными CSS-стилями. Если None,
+                   используются стили по умолчанию.
+
+    Returns:
+        PNG-изображение в виде байтовой строки.
+
+    Raises:
+        Exception: В случае ошибки во время конвертации.
+    '''
+    # Инжектим CSS в head, если он передан
+    if css_style:
+        style_block = f'<style>{css_style}</style>'
+        html = html.replace('</head>', f'{style_block}</head>', 1)
+
+    options = {
+        'quiet': '',
+        'encoding': "UTF-8",
+        'enable-local-file-access': None,
+        'format': 'png',
+    }
+
+    try:
+        # Рендер в сырые PNG байты
+        raw_png_bytes = imgkit.from_string(html, False, options=options)
+
+        # Оптимизация через Pillow
+        with Image.open(io.BytesIO(raw_png_bytes)) as img:
+            output_buffer = io.BytesIO()
+            img.save(output_buffer, format='PNG')
+            return output_buffer.getvalue()
+    except OSError as e:
+        my_log.log2("FATAL: 'wkhtmltoimage' not found. Check PATH.")
+        raise e
+
 
 @cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
 def markdown_table_to_image_bytes(

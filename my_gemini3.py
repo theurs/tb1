@@ -382,6 +382,7 @@ def chat(
                         my_skills.save_to_docx,
                         my_skills.save_diagram_to_png,
                         my_skills.save_pandas_chart_to_png,
+                        my_skills.save_html_to_png,
                         my_skills.help,
                     ]
                     chat = client.chats.create(

@@ -39,6 +39,7 @@ import my_google
 import my_gemini_google
 import my_groq
 import my_log
+import my_md_tables_to_png
 import my_pandoc
 import my_plantweb
 # import my_tts
@@ -116,6 +117,57 @@ def restore_id(chat_id: str) -> str:
     return chat_id
 
 
+def save_html_to_png(filename: str, html: str, chat_id: str) -> str:
+    '''
+    Save (render) HTML code to PNG file and send it to the user.
+    Args:
+        filename: str - The desired file name for the PNG file (e.g., 'sales_chart').
+        html: str - The HTML code to be saved as a PNG file. The page must be fully formed according to the HTML standard with css included.
+        chat_id: str - The Telegram user chat ID where the file should be sent.
+    Returns:
+        str: 'OK' or 'FAILED'
+    '''
+    try:
+        my_log.log_gemini_skills_html(f'"{filename}"\n\n"{html}"')
+
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        # Ensure filename has .png extension and is safe
+        if not filename.lower().endswith('.png'):
+            filename += '.png'
+        filename = utils.safe_fname(filename)
+
+        # save html to png file
+        try:
+            png_bytes = my_md_tables_to_png.html_to_image_bytes(html)
+        except Exception as e:
+            msg = f'FAILED: {str(e)}'
+            my_log.log_gemini_skills_html(msg)
+            return msg
+
+        if png_bytes and isinstance(png_bytes, bytes):
+            item = {
+                'type': 'image/png file',
+                'filename': filename,
+                'data': png_bytes,
+            }
+            with STORAGE_LOCK:
+                if chat_id in STORAGE:
+                    if item not in STORAGE[chat_id]:
+                        STORAGE[chat_id].append(item)
+                else:
+                    STORAGE[chat_id] = [item,]
+            return "OK"
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills_html(f'save_html_to_png: Unexpected error: {e}\n\n{traceback_error}\n\n{html}\n\n{filename}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {e}"
+
+    return 'FAILED'        
+
+
 def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:
     '''
     Send a chart generated from Pandas data as a PNG image file to the user.
@@ -132,7 +184,7 @@ def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
     '''
     try:
-        my_log.log_gemini_skills(f'save_pandas_chart_to_png {chat_id}\n\n{filename}\n{chart_type}\n{data}')
+        my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png {chat_id}\n\n{filename}\n{chart_type}\n{data}')
 
         chat_id = restore_id(chat_id)
         if chat_id == '[unknown]':
@@ -182,17 +234,17 @@ def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id
                         **pie_plot_params_for_kwargs
                     )
                 else:
-                    my_log.log_gemini_skills(f'save_pandas_chart_to_png: Pie chart requires "y" in plot_params and existing column.')
+                    my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: Pie chart requires "y" in plot_params and existing column.')
                     return "FAIL: Pie chart requires a 'y' parameter in plot_params pointing to a valid column."
             elif chart_type == 'scatter':
                 # Scatter plots require 'x' and 'y' in plot_params
                 if 'x' in plot_params and 'y' in plot_params and plot_params['x'] in df.columns and plot_params['y'] in df.columns:
                     df.plot(kind='scatter', x=plot_params['x'], y=plot_params['y'], ax=ax, **{k:v for k,v in plot_params.items() if k not in ['x', 'y']})
                 else:
-                    my_log.log_gemini_skills(f'save_pandas_chart_to_png: Scatter plot requires "x" and "y" in plot_params.')
+                    my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: Scatter plot requires "x" and "y" in plot_params.')
                     return "FAIL: Scatter plot requires 'x' and 'y' parameters in plot_params."
             else:
-                my_log.log_gemini_skills(f'save_pandas_chart_to_png: Unsupported chart type: {chart_type}')
+                my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: Unsupported chart type: {chart_type}')
                 return f"FAIL: Unsupported chart type: {chart_type}. Supported types: line, bar, pie, scatter."
 
             # Add title and labels if present in plot_params
@@ -215,7 +267,7 @@ def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id
             plt.close(fig) # Close the figure to free up memory
 
         except Exception as chart_error:
-            my_log.log_gemini_skills(f'save_pandas_chart_to_png: Error generating chart: {chart_error}\n\n{traceback.format_exc()}')
+            my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: Error generating chart: {chart_error}\n\n{traceback.format_exc()}')
             return f"FAIL: Error generating chart: {chart_error}"
 
         # If bytes were successfully generated, prepare the item for storage
@@ -234,12 +286,12 @@ def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id
             return "OK"
         else:
             # This case indicates that no PNG data was generated.
-            my_log.log_gemini_skills(f'save_pandas_chart_to_png: No PNG data could be generated for chat {chat_id}\n\nData: {data}\nChart Type: {chart_type}')
+            my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: No PNG data could be generated for chat {chat_id}\n\nData: {data}\nChart Type: {chart_type}')
             return "FAIL: No PNG data could be generated."
 
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills(f'save_pandas_chart_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nData: {data}\nChart Type: {chart_type}\nChat ID: {chat_id}')
+        my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nData: {data}\nChart Type: {chart_type}\nChat ID: {chat_id}')
         return f"FAIL: An unexpected error occurred: {error}"
 
 
@@ -263,7 +315,7 @@ def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> 
     '''
 
     try:
-        my_log.log_gemini_skills(f'save_diagram_to_png {chat_id}\n\n{filename}\n{text}\nEngine: {engine}')
+        my_log.log_gemini_skills_save_docs(f'save_diagram_to_png {chat_id}\n\n{filename}\n{text}\nEngine: {engine}')
 
         chat_id = restore_id(chat_id)
         if chat_id == '[unknown]':
@@ -283,7 +335,7 @@ def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> 
         try:
             png_output = my_plantweb.text_to_png(text, engine=engine, format='png')
         except Exception as rendering_error:
-            my_log.log_gemini_skills(f'save_diagram_to_png: Error rendering diagram: {rendering_error}\n\n{traceback.format_exc()}')
+            my_log.log_gemini_skills_save_docs(f'save_diagram_to_png: Error rendering diagram: {rendering_error}\n\n{traceback.format_exc()}')
             return f"FAIL: Error during diagram rendering: {rendering_error}"
 
         # Check the type of png_output to determine success or failure
@@ -303,16 +355,16 @@ def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> 
             return "OK"
         elif isinstance(png_output, str):
             # If a string is returned, it indicates an error message from text_to_png
-            my_log.log_gemini_skills(f'save_diagram_to_png: No PNG data could be generated for chat {chat_id} - {png_output}\n\nText length: {len(text)}')
+            my_log.log_gemini_skills_save_docs(f'save_diagram_to_png: No PNG data could be generated for chat {chat_id} - {png_output}\n\nText length: {len(text)}')
             return f"FAIL: No PNG data could be generated: {png_output}"
         else:
             # Unexpected return type
-            my_log.log_gemini_skills(f'save_diagram_to_png: Unexpected return type from text_to_png for chat {chat_id}\n\nText length: {len(text)}')
+            my_log.log_gemini_skills_save_docs(f'save_diagram_to_png: Unexpected return type from text_to_png for chat {chat_id}\n\nText length: {len(text)}')
             return "FAIL: An unexpected error occurred during PNG generation."
 
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills(f'save_diagram_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        my_log.log_gemini_skills_save_docs(f'save_diagram_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
         return f"FAIL: An unexpected error occurred: {error}"
 
 
@@ -327,7 +379,7 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
     '''
     try:
-        my_log.log_gemini_skills(f'save_to_docx {chat_id}\n\n{filename}\n{text}')
+        my_log.log_gemini_skills_save_docs(f'save_to_docx {chat_id}\n\n{filename}\n{text}')
 
         chat_id = restore_id(chat_id)
         if chat_id == '[unknown]':
@@ -342,7 +394,7 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
         try:
             docx_bytes = my_pandoc.convert_text_to_docx(text)
         except Exception as conversion_error:
-            my_log.log_gemini_skills(f'save_to_docx: Error converting text to DOCX: {conversion_error}\n\n{traceback.format_exc()}')
+            my_log.log_gemini_skills_save_docs(f'save_to_docx: Error converting text to DOCX: {conversion_error}\n\n{traceback.format_exc()}')
             return f"FAIL: Error converting text to DOCX: {conversion_error}"
 
         # If bytes were successfully generated, prepare the item for storage
@@ -361,12 +413,12 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
             return "OK"
         else:
             # This case indicates that no DOCX data was generated.
-            my_log.log_gemini_skills(f'save_to_docx: No DOCX data could be generated for chat {chat_id}\n\nText length: {len(text)}')
+            my_log.log_gemini_skills_save_docs(f'save_to_docx: No DOCX data could be generated for chat {chat_id}\n\nText length: {len(text)}')
             return "FAIL: No DOCX data could be generated."
 
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills(f'save_to_docx: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        my_log.log_gemini_skills_save_docs(f'save_to_docx: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
         return f"FAIL: An unexpected error occurred: {error}"
 
 
@@ -389,7 +441,7 @@ def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
     '''
     try:
-        my_log.log_gemini_skills(f'save_to_excel {chat_id}\n\n {data}')
+        my_log.log_gemini_skills_save_docs(f'save_to_excel {chat_id}\n\n {data}')
 
         chat_id = restore_id(chat_id)
         if chat_id == '[unknown]':
@@ -413,7 +465,7 @@ def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
                     # Validate that sheet_data is a dictionary, as expected for DataFrame creation
                     if not isinstance(sheet_data, dict):
                         # Log error for invalid data structure (assuming my_log exists)
-                        my_log.log_gemini_skills(f'save_to_excel: Invalid sheet data type for sheet "{sheet_name}". Expected dict, got {type(sheet_data)}')
+                        my_log.log_gemini_skills_save_docs(f'save_to_excel: Invalid sheet data type for sheet "{sheet_name}". Expected dict, got {type(sheet_data)}')
                         return f"FAIL: Invalid data for sheet '{sheet_name}'. Expected a dictionary for sheet content."
 
                     try:
@@ -423,7 +475,7 @@ def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
                         df.to_excel(writer, sheet_name=sheet_name, index=False)
                     except Exception as sheet_write_error:
                         # Log error for specific sheet write failure (assuming my_log and traceback exist)
-                        my_log.log_gemini_skills(f'save_to_excel: Error writing sheet "{sheet_name}": {sheet_write_error}\n\n{traceback.format_exc()}')
+                        my_log.log_gemini_skills_save_docs(f'save_to_excel: Error writing sheet "{sheet_name}": {sheet_write_error}\n\n{traceback.format_exc()}')
                         return f"FAIL: Error writing data to sheet '{sheet_name}': {sheet_write_error}"
 
         # After all sheets are written, get the bytes from the buffer
@@ -445,12 +497,12 @@ def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
             return "OK"
         else:
             # This case indicates that no Excel data was generated, even after attempting to write.
-            my_log.log_gemini_skills(f'save_to_excel: No Excel data could be generated for chat {chat_id}\n\n{data}')
+            my_log.log_gemini_skills_save_docs(f'save_to_excel: No Excel data could be generated for chat {chat_id}\n\n{data}')
             return "FAIL: No Excel data could be generated."
 
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills(f'save_to_excel: Unexpected error: {error}\n\n{traceback_error}\n\n{data}\n\n{chat_id}')
+        my_log.log_gemini_skills_save_docs(f'save_to_excel: Unexpected error: {error}\n\n{traceback_error}\n\n{data}\n\n{chat_id}')
         return f"FAIL: An unexpected error occurred: {error}"
 
 

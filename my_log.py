@@ -245,6 +245,15 @@ def log_gemini_skills_search(text: str) -> None:
     """для логов вызовов скилов поиска в джемини"""
     log2(text, 'gemini_skills_search')
 
+def log_gemini_skills_save_docs(text: str) -> None:
+    """для логов вызовов скилов для сохранения в документы в джемини"""
+    log2(text, 'gemini_skills_save_docs')
+
+
+def log_gemini_skills_html(text: str) -> None:
+    """для логов вызовов скилов html render в джемини"""
+    log2(text, 'gemini_skills_html')
+
 def log_bing_success(text: str) -> None:
     """для логов удачных комбинаций бинга, когда ему удалось нарисовать что-нибудь"""
     log2(text, 'bing_success')

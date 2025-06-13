@@ -16,6 +16,10 @@ def text_to_png(text: str, engine: str, format: str) -> bytes|str:
     '''
     output = ''
     try:
+
+        if engine == 'plantuml':
+            text = text.replace('skinparam handwritten true', '!option handwritten true')
+
         try:
             output = render(
                 text,
@@ -94,14 +98,56 @@ digraph finite_state_machine {
 
     CONTENT3 = """
 @startuml
-Alice -> Bob: Authentication Request
-Bob --> Alice: Authentication Response
+skinparam handwritten true
+skinparam monochrome true
 
-Alice -> "Web Server": Request for data
-"Web Server" -> Database: Query data
-Database --> "Web Server": Data response
-"Web Server" --> Alice: Data display
+title Процесс Мебельного Производства
 
+partition "Отдел Продаж" {
+  start
+  :Принять заказ клиента;
+  :Оформить производственное задание;
+}
+
+partition "Отдел Снабжения" {
+  :Проверить наличие материалов;
+  if (Материалы в наличии?) then (Да)
+    -> Доставить материалы в цех;
+  else (Нет)
+    :Заказать необходимые материалы;
+    :Получить материалы от поставщиков;
+    -> Доставить материалы в цех;
+  endif
+}
+
+partition "Производственный Цех" {
+  :Подготовить материалы (Раскрой, обработка);
+  :Изготовление деталей;
+  :Сборка мебельных изделий;
+  :Отделка (Покраска, лакировка, обивка и т.д.);
+}
+
+partition "Отдел Контроля Качества" {
+  :Провести контроль качества;
+  if (Продукция соответствует стандартам?) then (Да)
+    -> Передать на упаковку;
+  else (Нет)
+    :Выявить и исправить дефекты;
+    -> Провести повторный контроль качества;
+  endif
+}
+
+partition "Склад Готовой Продукции" {
+  :Упаковка готовой продукции;
+  :Размещение на складе;
+}
+
+partition "Отдел Логистики" {
+  :Планирование маршрута доставки;
+  :Отгрузка готовой продукции;
+  :Доставка клиенту;
+  end
+}
 @enduml
 """
 
@@ -121,17 +167,17 @@ Database --> "Web Server": Data response
         format='png'
     )
 
-    if data and isinstance(data, bytes):
-        with open(r'c:\users\user\Downloads\test.png', 'wb') as f:
-            f.write(data)
-    elif isinstance(data, str):
-        print(data)
+    # if data and isinstance(data, bytes):
+    #     with open(r'c:\users\user\Downloads\test.png', 'wb') as f:
+    #         f.write(data)
+    # elif isinstance(data, str):
+    #     print(data)
 
-    if data2 and isinstance(data2, bytes):
-        with open(r'c:\users\user\Downloads\test2.png', 'wb') as f:
-            f.write(data2)
-    elif isinstance(data2, str):
-        print(data2)
+    # if data2 and isinstance(data2, bytes):
+    #     with open(r'c:\users\user\Downloads\test2.png', 'wb') as f:
+    #         f.write(data2)
+    # elif isinstance(data2, str):
+    #     print(data2)
 
     if data3 and isinstance(data3, bytes):
         with open(r'c:\users\user\Downloads\test3.png', 'wb') as f:

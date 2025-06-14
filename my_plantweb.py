@@ -8,6 +8,7 @@ import re
 from plantweb.render import render
 
 import my_log
+import my_mermaid
 
 
 def extract_png_from_output(raw_output_bytes: bytes) -> bytes | str:
@@ -70,7 +71,7 @@ def text_to_png(text: str, engine: str, format: str) -> bytes | str:
             engine = 'graphviz'
 
         # Ditaa only supports PNG format, so enforce it if Ditaa engine is selected.
-        if engine == 'ditaa':
+        if engine in ('ditaa', 'mermaid'):
             format = 'png'
 
         # PlantUML specific adjustment: replace older skinparam syntax with newer !option.
@@ -82,12 +83,16 @@ def text_to_png(text: str, engine: str, format: str) -> bytes | str:
             # Render the diagram using the specified engine and format.
             # 'cacheopts': {'use_cache': False} is set to prevent plantweb's internal caching,
             # as an external cache (cachetools.func.ttl_cache) is already applied to this function.
-            rendered_output = render(
-                text,
-                engine=engine,
-                format=format,
-                cacheopts={'use_cache': False}
-            )
+            if engine == 'mermaid':
+                rendered_output = my_mermaid.generate_mermaid_png_bytes(text)
+                return rendered_output
+            else:
+                rendered_output = render(
+                    text,
+                    engine=engine,
+                    format=format,
+                    cacheopts={'use_cache': False}
+                )
         except Exception as e:
             # Catch exceptions that occur specifically during the diagram rendering process
             # and return the error message as a string.
@@ -113,7 +118,7 @@ def find_code_snippets(text: str) -> list[dict]:
     '''
     Searches for HTML code snippets in the text, specifically for diagram code blocks.
     The expected format is <pre><code class="language-[engine]">...</code></pre>
-    Supported engines are 'plantuml', 'dot', and 'ditaa'.
+    Supported engines are 'mermaid', 'plantuml', 'dot', and 'ditaa'.
     Returns a list of dictionaries, where each dictionary contains the 'engine' and the 'code'.
 
     Args:
@@ -122,6 +127,7 @@ def find_code_snippets(text: str) -> list[dict]:
     Returns:
         A list of dictionaries, e.g.,
         [
+            {'engine': 'mermaid', 'code': 'some script on mermaid'},
             {'engine': 'plantuml', 'code': 'some script on plantuml'},
             {'engine': 'dot', 'code': 'some script on dot'},
             {'engine': 'ditaa', 'code': 'some script on ditaa'},
@@ -130,7 +136,7 @@ def find_code_snippets(text: str) -> list[dict]:
     # Regular expression to find the code blocks.
     # It captures the engine name and the code content.
     # re.DOTALL allows the '.' to match newline characters.
-    pattern = re.compile(r'<pre><code class="language-(plantuml|dot|ditaa)">(.*?)</code></pre>', re.DOTALL)
+    pattern = re.compile(r'<pre><code class="language-(plantuml|dot|ditaa|mermaid)">(.*?)</code></pre>', re.DOTALL)
 
     # Find all matches in the input text.
     matches = pattern.findall(text)

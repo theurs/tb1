@@ -144,6 +144,8 @@ level 3 - блокировать всё включая логи
    source ~/.tb1/bin/activate
 
    sudo npm install -g @mermaid-js/mermaid-cli
+   npx puppeteer browsers install chrome-headless-shell
+
 
    ```
    

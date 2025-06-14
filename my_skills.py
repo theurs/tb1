@@ -40,6 +40,7 @@ import my_gemini_google
 import my_groq
 import my_log
 import my_md_tables_to_png
+import my_mermaid
 import my_pandoc
 import my_plantweb
 # import my_tts
@@ -300,7 +301,7 @@ def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> 
     Send a diagram as a PNG image file to the user, rendered from various text formats.
     Args:
         filename: str - The desired file name for the PNG file (e.g., 'diagram').
-        text: str - The diagram definition text in PlantUML, Graphviz (DOT), or Ditaa format.
+        text: str - The diagram definition text in Mermaid, PlantUML, Graphviz (DOT), or Ditaa format.
                      **Important considerations for 'text' parameter:**
                      - The input must strictly adhere to the syntax of the specified 'engine'.
                      - For PlantUML, syntax like `class` or `activity` is expected.
@@ -308,7 +309,7 @@ def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> 
                      - For Ditaa, ASCII art syntax with specific tags is used.
                      - `skinparam` or similar engine-specific options within the text
                        directly control the visual style and rendering of the diagram.
-        engine: str - The diagram rendering engine to use: 'plantuml', 'graphviz', or 'ditaa'.
+        engine: str - The diagram rendering engine to use: 'mermaid', 'plantuml', 'graphviz', or 'ditaa'.
         chat_id: str - The Telegram user chat ID where the file should be sent.
     Returns:
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
@@ -327,13 +328,16 @@ def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> 
         filename = utils.safe_fname(filename)
 
         # Validate the 'engine' parameter to prevent unsupported values from reaching text_to_png
-        supported_engines = {'plantuml', 'graphviz', 'ditaa'}
+        supported_engines = {'plantuml', 'graphviz', 'ditaa', 'mermaid'}
         if engine not in supported_engines:
             return f"FAIL: Unsupported diagram engine '{engine}'. Supported engines are: {', '.join(supported_engines)}."
 
         # Convert the diagram text to PNG bytes using the text_to_png function
         try:
-            png_output = my_plantweb.text_to_png(text, engine=engine, format='png')
+            if engine == 'mermaid':
+                png_output = my_mermaid.generate_mermaid_png_bytes(text)
+            else:
+                png_output = my_plantweb.text_to_png(text, engine=engine, format='png')
         except Exception as rendering_error:
             my_log.log_gemini_skills_save_docs(f'save_diagram_to_png: Error rendering diagram: {rendering_error}\n\n{traceback.format_exc()}')
             return f"FAIL: Error during diagram rendering: {rendering_error}"

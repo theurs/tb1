@@ -1,9 +1,30 @@
 import glob
 import os
+import tempfile
 import subprocess
+import shutil
+import threading
 
 import my_log
 import utils
+
+
+LOCK = threading.Lock()
+
+
+def clean_puppeteer_temp_dirs():
+    """
+    Удаляет временные папки 'puppeteer_dev_chrome_profile-*' из системной временной папки.
+    """
+    temp_dir = tempfile.gettempdir()
+    dir_pattern = os.path.join(temp_dir, 'puppeteer_dev_chrome_profile-*')
+
+    for d in glob.glob(dir_pattern):
+        if os.path.isdir(d): # Убедимся, что это директория
+            try:
+                shutil.rmtree(d)
+            except OSError as e:
+                my_log.log2(f"my_mermaid:clean_puppeteer_temp_dirs: Ошибка при удалении папки {d}: {e}")
 
 
 def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "puppeteer-config.txt_json") -> bytes | str:
@@ -24,58 +45,62 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
         Строка с сообщением об ошибке, если генерация диаграммы не удалась,
         или если 'mmdc' не найден.
     """
-    cmd = "mmdc"
-    is_linux = False
-    if 'windows' in utils.platform().lower():
-        cmd = "mmdc.cmd"
-    elif 'linux' in utils.platform().lower():
-        is_linux = True
+    with LOCK:
 
-    # Если это Linux и PUPPETEER_EXECUTABLE_PATH не установлен, пытаемся его найти
-    if is_linux:
-        if 'PUPPETEER_EXECUTABLE_PATH' not in os.environ:
-            home_dir = os.path.expanduser('~')
-            executable_pattern = os.path.join(home_dir, '.cache', 'puppeteer', 'chrome-headless-shell', '*', '*', 'chrome-headless-shell')
+        cmd = "mmdc"
+        is_linux = False
+        if 'windows' in utils.platform().lower():
+            cmd = "mmdc.cmd"
+        elif 'linux' in utils.platform().lower():
+            is_linux = True
 
-            my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH не задан. Ищем в: {executable_pattern}")
-            potential_executables = glob.glob(executable_pattern)
+        # Если это Linux и PUPPETEER_EXECUTABLE_PATH не установлен, пытаемся его найти
+        if is_linux:
+            if 'PUPPETEER_EXECUTABLE_PATH' not in os.environ:
+                home_dir = os.path.expanduser('~')
+                executable_pattern = os.path.join(home_dir, '.cache', 'puppeteer', 'chrome-headless-shell', '*', '*', 'chrome-headless-shell')
 
-            if potential_executables:
-                os.environ['PUPPETEER_EXECUTABLE_PATH'] = potential_executables[0]
-                my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен: {potential_executables[0]}")
+                my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH не задан. Ищем в: {executable_pattern}")
+                potential_executables = glob.glob(executable_pattern)
+
+                if potential_executables:
+                    os.environ['PUPPETEER_EXECUTABLE_PATH'] = potential_executables[0]
+                    my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен: {potential_executables[0]}")
+                else:
+                    my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell не найден в стандартных путях Puppeteer.")
             else:
-                my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell не найден в стандартных путях Puppeteer.")
-        else:
-            pass
-            # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH уже задан: {os.environ['PUPPETEER_EXECUTABLE_PATH']}")
+                pass
+                # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH уже задан: {os.environ['PUPPETEER_EXECUTABLE_PATH']}")
 
-    command = [cmd, "-e", "png", "-i", "-", "-o", "-", "-p", puppeteer_config_path]
+        command = [cmd, "-e", "png", "-i", "-", "-o", "-", "-p", puppeteer_config_path]
 
-    try:
-        process = subprocess.Popen(
-            command,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            env=os.environ.copy() 
-        )
+        try:
+            process = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=os.environ.copy() 
+            )
 
-        stdout_data, stderr_data = process.communicate(input=diagram_text.encode('utf-8'))
+            stdout_data, stderr_data = process.communicate(input=diagram_text.encode('utf-8'))
 
-        if process.returncode != 0:
-            env_info = f"PUPPETEER_EXECUTABLE_PATH: {os.environ.get('PUPPETEER_EXECUTABLE_PATH', 'Не задан')}"
-            error_message = stderr_data.decode('utf-8').strip()
-            my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: Ошибка subprocess (код {process.returncode}): {error_message}. {env_info}")
-            return f"Ошибка при генерации диаграммы: {error_message}. {env_info}"
+            clean_puppeteer_temp_dirs()
 
-        # my_log.log2("my_mermaid:generate_mermaid_png_bytes: Диаграмма успешно сгенерирована.")
-        return stdout_data
-    except FileNotFoundError:
-        my_log.log2("my_mermaid:generate_mermaid_png_bytes: Ошибка: mmdc не найден.")
-        return "mmdc не найден. Убедись, что mermaid-cli установлен и доступен в PATH."
-    except Exception as e:
-        my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: Неизвестная ошибка: {e}")
-        return f"Неизвестная ошибка: {e}"
+            if process.returncode != 0:
+                env_info = f"PUPPETEER_EXECUTABLE_PATH: {os.environ.get('PUPPETEER_EXECUTABLE_PATH', 'Не задан')}"
+                error_message = stderr_data.decode('utf-8').strip()
+                my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: Ошибка subprocess (код {process.returncode}): {error_message}. {env_info}")
+                return f"Ошибка при генерации диаграммы: {error_message}. {env_info}"
+
+            # my_log.log2("my_mermaid:generate_mermaid_png_bytes: Диаграмма успешно сгенерирована.")
+            return stdout_data
+        except FileNotFoundError:
+            my_log.log2("my_mermaid:generate_mermaid_png_bytes: Ошибка: mmdc не найден.")
+            return "mmdc не найден. Убедись, что mermaid-cli установлен и доступен в PATH."
+        except Exception as e:
+            my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: Неизвестная ошибка: {e}")
+            return f"Неизвестная ошибка: {e}"
 
 
 if __name__ == "__main__":

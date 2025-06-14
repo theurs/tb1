@@ -4,9 +4,13 @@
 
 
 import cachetools.func
+import glob
 import io
 import html
+import os
 import re
+import tempfile
+import threading
 from typing import List, Optional
 
 import imgkit
@@ -14,6 +18,9 @@ import markdown
 from PIL import Image
 
 import my_log
+
+
+LOCK = threading.Lock()
 
 
 CSS1 = """
@@ -130,6 +137,20 @@ CSS2 = """
 BR = html.escape('<br>')
 
 
+def clean_wkhtml_temp_files():
+    """
+    Удаляет временные HTML-файлы, созданные wkhtmltoimage, из системной временной папки.
+    """
+    temp_dir = tempfile.gettempdir()
+    file_pattern = os.path.join(temp_dir, 'wktemp-*.html')
+
+    for f in glob.glob(file_pattern):
+        try:
+            os.remove(f)
+        except OSError as e:
+            my_log.log2(f"my_md_tables_to_png:clean_wkhtml_temp_files: Ошибка при удалении файла {f}: {e}")
+
+
 @cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
 def html_to_image_bytes(html: str, css_style: Optional[str] = None) -> bytes:
     '''
@@ -147,30 +168,33 @@ def html_to_image_bytes(html: str, css_style: Optional[str] = None) -> bytes:
     Raises:
         Exception: В случае ошибки во время конвертации.
     '''
-    # Инжектим CSS в head, если он передан
-    if css_style:
-        style_block = f'<style>{css_style}</style>'
-        html = html.replace('</head>', f'{style_block}</head>', 1)
+    with LOCK:
+        # Инжектим CSS в head, если он передан
+        if css_style:
+            style_block = f'<style>{css_style}</style>'
+            html = html.replace('</head>', f'{style_block}</head>', 1)
 
-    options = {
-        'quiet': '',
-        'encoding': "UTF-8",
-        'enable-local-file-access': None,
-        'format': 'png',
-    }
+        options = {
+            'quiet': '',
+            'encoding': "UTF-8",
+            'enable-local-file-access': None,
+            'format': 'png',
+        }
 
-    try:
-        # Рендер в сырые PNG байты
-        raw_png_bytes = imgkit.from_string(html, False, options=options)
+        try:
+            # Рендер в сырые PNG байты
+            raw_png_bytes = imgkit.from_string(html, False, options=options)
 
-        # Оптимизация через Pillow
-        with Image.open(io.BytesIO(raw_png_bytes)) as img:
-            output_buffer = io.BytesIO()
-            img.save(output_buffer, format='PNG')
-            return output_buffer.getvalue()
-    except OSError as e:
-        my_log.log2("FATAL: 'wkhtmltoimage' not found. Check PATH.")
-        raise e
+            clean_wkhtml_temp_files()
+
+            # Оптимизация через Pillow
+            with Image.open(io.BytesIO(raw_png_bytes)) as img:
+                output_buffer = io.BytesIO()
+                img.save(output_buffer, format='PNG')
+                return output_buffer.getvalue()
+        except OSError as e:
+            my_log.log2("FATAL: 'wkhtmltoimage' not found. Check PATH.")
+            raise e
 
 
 @cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
@@ -196,71 +220,71 @@ def markdown_table_to_image_bytes(
     Raises:
         OSError: Если утилита `wkhtmltoimage` не найдена в системном PATH.
     """
+    with LOCK:
+        # Use default styles if none are provided
+        if css_style is None:
+            css_style = CSS1
 
-    # Use default styles if none are provided
-    if css_style is None:
-        css_style = CSS1
-
-    # Step 1: Convert Markdown to an HTML fragment.
-    table_html = markdown.markdown(
-        markdown_table_string, extensions=['tables', 'fenced_code']
-    )
-
-    # Step 2: Assemble a full, self-contained HTML document.
-    # This includes the crucial UTF-8 meta tag and the CSS for styling.
-    full_html = f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            {css_style}
-        </style>
-    </head>
-    <body>
-        {table_html}
-    </body>
-    </html>
-    """
-
-    # Step 3: Define options for imgkit.
-    # 'encoding' ensures correct text interpretation.
-    # 'enable-local-file-access' is a security best practice.
-    options = {
-        'quiet': '',
-        'encoding': "UTF-8",
-        'enable-local-file-access': None,
-        'format': 'png', # Explicitly set format to PNG
-    }
-
-    try:
-        # Step 1: Generate a raw, uncompressed PNG in memory using imgkit.
-        # This is fast but results in a large byte object.
-        raw_png_bytes = imgkit.from_string(full_html, False, options=options)
-
-        # Step 2: Use Pillow to re-compress the image data with optimization.
-        # Open the image from the raw bytes.
-        with Image.open(io.BytesIO(raw_png_bytes)) as img:
-            # Create an in-memory byte buffer to save the compressed image.
-            output_buffer = io.BytesIO()
-            # Save to the buffer with maximum PNG compression.
-            # `optimize=True` enables extra passes to find a smaller file size.
-            # `compress_level=9` is the highest zlib compression level.
-            # img.save(output_buffer, format='PNG', optimize=True, compress_level=9)
-            # img.save(output_buffer, format='PNG', compress_level=6)
-            img.save(output_buffer, format='PNG')
-            # Retrieve the compressed bytes from the buffer.
-            compressed_png_bytes = output_buffer.getvalue()
-
-        return compressed_png_bytes
-    except OSError as e:
-        # Provide a more helpful error if wkhtmltoimage is not found.
-        my_log.log2(
-            "CRITICAL ERROR: 'wkhtmltoimage' not found.\n"
-            "Please install it from https://wkhtmltopdf.org/downloads.html "
-            "and ensure it's in your system's PATH."
+        # Step 1: Convert Markdown to an HTML fragment.
+        table_html = markdown.markdown(
+            markdown_table_string, extensions=['tables', 'fenced_code']
         )
-        raise e
+
+        # Step 2: Assemble a full, self-contained HTML document.
+        # This includes the crucial UTF-8 meta tag and the CSS for styling.
+        full_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        {css_style}
+    </style>
+</head>
+<body>
+    {table_html}
+</body>
+</html>"""
+
+        # Step 3: Define options for imgkit.
+        # 'encoding' ensures correct text interpretation.
+        # 'enable-local-file-access' is a security best practice.
+        options = {
+            'quiet': '',
+            'encoding': "UTF-8",
+            'enable-local-file-access': None,
+            'format': 'png', # Explicitly set format to PNG
+        }
+
+        try:
+            # Step 1: Generate a raw, uncompressed PNG in memory using imgkit.
+            # This is fast but results in a large byte object.
+            raw_png_bytes = imgkit.from_string(full_html, False, options=options)
+
+            clean_wkhtml_temp_files()
+
+            # Step 2: Use Pillow to re-compress the image data with optimization.
+            # Open the image from the raw bytes.
+            with Image.open(io.BytesIO(raw_png_bytes)) as img:
+                # Create an in-memory byte buffer to save the compressed image.
+                output_buffer = io.BytesIO()
+                # Save to the buffer with maximum PNG compression.
+                # `optimize=True` enables extra passes to find a smaller file size.
+                # `compress_level=9` is the highest zlib compression level.
+                # img.save(output_buffer, format='PNG', optimize=True, compress_level=9)
+                # img.save(output_buffer, format='PNG', compress_level=6)
+                img.save(output_buffer, format='PNG')
+                # Retrieve the compressed bytes from the buffer.
+                compressed_png_bytes = output_buffer.getvalue()
+
+            return compressed_png_bytes
+        except OSError as e:
+            # Provide a more helpful error if wkhtmltoimage is not found.
+            my_log.log2(
+                "CRITICAL ERROR: 'wkhtmltoimage' not found.\n"
+                "Please install it from https://wkhtmltopdf.org/downloads.html "
+                "and ensure it's in your system's PATH."
+            )
+            raise e
 
 
 def find_markdown_tables(markdown_text: str) -> List[str]:

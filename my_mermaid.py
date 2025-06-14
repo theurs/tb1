@@ -68,7 +68,7 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
             my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: Ошибка subprocess (код {process.returncode}): {error_message}. {env_info}")
             return f"Ошибка при генерации диаграммы: {error_message}. {env_info}"
 
-        my_log.log2("my_mermaid:generate_mermaid_png_bytes: Диаграмма успешно сгенерирована.")
+        # my_log.log2("my_mermaid:generate_mermaid_png_bytes: Диаграмма успешно сгенерирована.")
         return stdout_data
     except FileNotFoundError:
         my_log.log2("my_mermaid:generate_mermaid_png_bytes: Ошибка: mmdc не найден.")

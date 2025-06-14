@@ -6,7 +6,6 @@ import os
 import subprocess
 import traceback
 
-import chardet
 import markdown
 import PyPDF2
 import pandas as pd
@@ -167,12 +166,11 @@ def convert_file_to_html(data: bytes, filename: str) -> str:
 
     if input_format == 'txt':
         # autodetect codepage and convert to utf8
-        try:
-            from_enc = chardet.detect(data)['encoding']
-            if from_enc != 'utf-8':
-                data = data.decode(from_enc).encode('utf-8')
-        except Exception as error:
-            my_log.log2(f'my_pandoc: convert_file_to_html detect txt encoding error: {error}')
+
+        data = utils.extract_text_from_bytes(data)
+        if not data:
+            my_log.log2(f'my_pandoc: convert_file_to_html: no data or unknown codepage {filename}')
+            return ''
 
     # Mapping of file extensions to pandoc input formats
     format_mapping: dict[str, str] = {

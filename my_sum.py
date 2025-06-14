@@ -17,7 +17,6 @@ from urllib.parse import urlparse
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.proxies import GenericProxyConfig
 
-import chardet
 # import magic
 import PyPDF2
 import requests
@@ -839,19 +838,13 @@ def summ_url(
             for page in pdf_reader.pages:
                 text += page.extract_text()
         else:
-            # Определяем кодировку текста
-            encoding = chardet.detect(content[:2000])['encoding']
             # Декодируем содержимое страницы
-            try:
-                content = content.decode(encoding)
-            except:
-                try:
-                    content = content.decode('utf-8')
-                except:
-                    if download_only:
-                        return ''
-                    else:
-                        return '', ''
+            content = utils.extract_text_from_bytes(content)
+            if not content:
+                if download_only:
+                    return ''
+                else:
+                    return '', ''
 
             text = trafilatura.extract(content,
                                        deduplicate=True,

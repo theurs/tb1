@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import cachetools.func
+import chardet
 import concurrent.futures
 import datetime
 import functools
@@ -2486,44 +2487,70 @@ def srt_to_text(cap_srt: str) -> str:
         return ''
 
 
+def extract_text_from_bytes(
+    file_bytes: Union[bytes, str],
+    confidence_threshold: float = 0.7,
+    decoding_errors: str = 'xmlcharrefreplace'
+    ) -> str | None:
+    """
+    Attempts to extract text from a bytes object or a file path,
+    by automatically detecting its encoding and handling decoding errors.
+
+    Args:
+        file_bytes (Union[bytes, str]): The content of the file as bytes,
+                                        or a string representing the file path.
+        confidence_threshold (float): The minimum confidence level required by chardet
+                                      to consider the detected encoding valid.
+                                      Default is 0.7 (70%).
+        decoding_errors (str): The strategy for handling decoding errors.
+                               Can be 'strict', 'ignore', 'replace',
+                               'xmlcharrefreplace', 'backslashreplace', 'namereplace'.
+                               Default is 'xmlcharrefreplace'.
+
+    Returns:
+        str: The decoded text if the operation was successful and with sufficient confidence.
+        None: If the bytes are likely not text, or if decoding failed.
+              For 'strict' error handling, a UnicodeDecodeError might be raised
+              if not caught by the caller.
+    """
+    # If the input is a string, treat it as a file path and read its content as bytes
+    if isinstance(file_bytes, str):
+        try:
+            with open(file_bytes, 'rb') as f:
+                file_bytes = f.read()
+        except FileNotFoundError:
+            my_log.log2(f"utils:extract_text_from_bytes: Error: File not found at path: {file_bytes}")
+            return None
+        except IOError as e:
+            my_log.log2(f"utils:extract_text_from_bytes: Error reading file {file_bytes}: {e}")
+            return None
+
+    # Return an empty string if the input bytes are empty
+    if not file_bytes:
+        return ""
+
+    # Detect the encoding of the bytes
+    detection_result = chardet.detect(file_bytes)
+    encoding = detection_result['encoding']
+    confidence = detection_result['confidence']
+
+    # If an encoding is detected with sufficient confidence
+    if encoding and confidence >= confidence_threshold:
+        try:
+            # Attempt to decode the bytes using the detected encoding and error handling strategy
+            return file_bytes.decode(encoding, errors=decoding_errors)
+        except UnicodeDecodeError:
+            # This block is reached only if errors='strict' and a decoding error occurs.
+            # For other error handling modes, an exception will not be raised here.
+            return None
+    else:
+        # If no encoding is detected or confidence is too low, assume it's not a text file
+        return None
+
+
 if __name__ == '__main__':
     pass
 
-    # with open('C:/Users/user/Downloads/1.srt', 'r', encoding='utf8') as f:
-    #     srt_text = f.read()
-    # text = srt_to_text(srt_text)
-    # print(text)
-
-    # print(get_filename_from_url('https://youtu.be/1234567890.ogg'))
-
-
-    # with open('C:/Users/user/Downloads/test.md', 'r', encoding='utf8') as f:
-    #     text = f.read()
-    #     html = bot_markdown_to_html(text)
-    #     print(html)
-
-
-
-#     t = '''
-# Конечно, вот как это будет выглядеть на латехе:
-
-# \[
-# y(x) = 
-# \begin{cases}
-# 10x, & \text{если } x \leq 4 \\
-# x - 2, & \text{если } x > 4
-# \end{cases}
-# \]
-
-# Если тебе нужно вставить это в документ или презентацию — просто скопируй этот фрагмент, он корректно отобразится в любом редакторе, поддерживающем LaTeX.
-#     '''
-#     print(bot_markdown_to_html(t))
-
-
-    with open('C:/Users/user/Downloads/video_2024-05-16_11-59-06.mp4', 'rb') as f:
-        data = f.read()
-        with open('C:/Users/user/Downloads/test.jpg', 'wb') as f:
-            r = extract_frames_as_bytes(data)
-            if r:
-                f.write(r)
-        
+    # print(extract_text_from_bytes(r'C:\Users\user\Downloads\samples for ai\простая небольшая таблица Имя,Возраст,Город,Профессия,Зарплат.xlsx'))
+    # print(extract_text_from_bytes(r'C:\Users\user\Downloads\samples for ai\Алиса в изумрудном городе (большая книга).txt'))
+    print(extract_text_from_bytes(r'C:\Users\user\Downloads\samples for ai\koi8r.txt'))

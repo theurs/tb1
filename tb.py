@@ -2,7 +2,6 @@
 
 
 import base64
-import chardet
 import concurrent.futures
 import io
 import importlib
@@ -3131,17 +3130,7 @@ def handle_document(message: telebot.types.Message):
             # if message.media_group_id
             # если прислали текстовый файл или pdf
             # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
-            if is_private and \
-                (message.document.mime_type in ('application/pdf',
-                                                'image/svg+xml',
-                                                'application/zip',
-                                                )+pandoc_support+simple_text or \
-                                                message.document.mime_type.startswith('text/') or \
-                                                message.document.mime_type.startswith('video/') or \
-                                                message.document.mime_type.startswith('image/') or \
-                                                message.document.file_name.lower().endswith('.psd') or \
-                                                message.document.file_name.lower().endswith('.aac') or \
-                                                message.document.mime_type.startswith('audio/')):
+            if is_private :
 
                 if message.document and message.document.mime_type.startswith('audio/') or \
                     message.document and message.document.mime_type.startswith('video/') or \
@@ -3270,20 +3259,13 @@ def handle_document(message: telebot.types.Message):
                             my_log.log2(f'tb:handle_document:svg: {error}')
                             bot_reply_tr(message, 'Не удалось распознать изображение')
                             return
-                    elif message.document.mime_type.startswith('text/') or \
-                        message.document.mime_type in simple_text:
-                        data__ = file_bytes.read()
-                        text = ''
-                        try:
-                            text = data__.decode('utf-8')
-                        except:
-                            try:
-                                # Определение кодировки
-                                result = chardet.detect(data__)
-                                encoding = result['encoding']
-                                text = data__.decode(encoding)
-                            except:
-                                pass
+                    else:
+                        text = utils.extract_text_from_bytes(downloaded_file)
+                        if not text:
+                            bot_reply_tr(message, 'Unknown type of file.')
+                            my_log.log2(f'tb:handle_document: unknown file or empty text {message.document.mime_type} Name: {message.document.file_name} Size: {file_info.file_size}')
+                            return
+
                     if text and text.strip():
                         # если это группа файлов, то прибавляем этот файл к группе
                         if message.media_group_id:

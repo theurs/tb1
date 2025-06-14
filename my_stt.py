@@ -125,8 +125,8 @@ def _stt_cache_key_generator(input_file: str, lang: str = 'ru', chat_id: str = '
     session-specific and doesn't affect the transcription result itself.
     """
     file_content_hash = _get_file_hash(input_file)
-    # The key must be a hashable object (e.g., a tuple of immutable types)
-    return (file_content_hash, lang, prompt)
+    speech_to_text_engine = my_db.get_user_property(chat_id, 'speech_to_text_engine') or DEFAULT_STT_ENGINE
+    return (file_content_hash, lang, prompt, speech_to_text_engine, chat_id)
 
 
 def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:

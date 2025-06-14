@@ -3121,7 +3121,6 @@ def handle_document(message: telebot.types.Message):
             DOCUMENT_LOCKS[chat_id_full] = lock
 
         pandoc_support = my_init.PANDOC_SUPPORT_LIST
-        simple_text = my_init.SIMPLE_TEXT_LIST
 
         if not message.document.mime_type:
             message.document.mime_type = 'application/xml'

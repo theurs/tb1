@@ -15,24 +15,6 @@ import my_ddg
 PRINT_LOCK = threading.Lock()
 
 
-SIMPLE_TEXT_LIST = (
-    'application/atom+xml',
-    'application/binary',
-    'application/javascript',
-    'application/json',
-    'application/sql',
-    'application/x-bat',
-    'application/x-perl',
-    'application/x-php',
-    'application/x-sh',
-    'application/x-shellscript',
-    'application/x-subrip',
-    'application/xhtml+xml',
-    'application/xml',
-    'application/yaml',
-)
-
-
 PANDOC_SUPPORT_LIST = (
     'application/vnd.ms-excel',
     'application/vnd.oasis.opendocument.spreadsheet',

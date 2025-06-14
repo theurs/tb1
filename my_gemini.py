@@ -450,8 +450,7 @@ def chat(query: str,
                         my_log.log_gemini(f'my_gemini:chat2:2:5: {error}\n{model}\n{key}')
                     else:
                         my_log.log_gemini(f'my_gemini:chat2:2:6: {error}\n{model}\n{key}')
-                if 'reason: "CONSUMER_SUSPENDED"' in str(error) or \
-                   'reason: "API_KEY_INVALID"' in str(error):
+                if any(reason in str(error) for reason in ['reason: "CONSUMER_SUSPENDED"', 'reason: "API_KEY_INVALID"']):
                     remove_key(key)
                 if 'finish_reason: ' in str(error) or 'block_reason: ' in str(error) or 'User location is not supported for the API use.' in str(error):
                     return ''

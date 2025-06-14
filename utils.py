@@ -2467,7 +2467,7 @@ def srt_to_text(cap_srt: str) -> str:
 
 def extract_text_from_bytes(
     file_bytes: Union[bytes, str],
-    confidence_threshold: float = 0.7,
+    confidence_threshold: float = 0.5,
     decoding_errors: str = 'xmlcharrefreplace'
     ) -> str | None:
     """

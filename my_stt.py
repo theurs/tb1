@@ -2,7 +2,7 @@
 # pip install -U google-generativeai
 # pip install assemblyai
 
-import cachetools.func
+import hashlib
 import os
 import random
 import subprocess
@@ -12,6 +12,8 @@ from io import BytesIO
 
 import speech_recognition as sr
 import assemblyai as aai
+from functools import wraps
+from cachetools import cached, TTLCache
 from pydub import AudioSegment
 
 import cfg
@@ -28,6 +30,103 @@ LOCKS = {}
 
 
 DEFAULT_STT_ENGINE = cfg.DEFAULT_STT_ENGINE if hasattr(cfg, 'DEFAULT_STT_ENGINE') else 'auto' # 'whisper', 'gemini', 'google', 'assembly.ai'
+
+
+# --- Custom Exception for Hashing Failures ---
+class HashingError(Exception):
+    """Custom exception raised for errors during the file hashing process."""
+    pass
+
+
+# --- Utility Function: File Hashing ---
+def _get_file_hash(filepath: str) -> str:
+    """
+    Generates a BLAKE2b hash for the given file, optimized for potentially large files.
+
+    For files up to 1 MB, the entire file content is hashed.
+    For files larger than 1 MB, it performs a sampled hash by combining
+    a fixed-size portion from the beginning and a fixed-size portion from the end
+    of the file. The total size of sampled data does not exceed 1 MB.
+    This approach provides a robust identifier for file content while
+    minimizing I/O operations for very large files, making it suitable for caching.
+
+    Args:
+        filepath (str): The path to the file whose content needs to be hashed.
+
+    Returns:
+        str: A hexadecimal string representing the BLAKE2b hash of the sampled
+             or full file content.
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+        PermissionError: If there are insufficient permissions to read the file.
+        HashingError: For any other general error during the hashing process
+                      (e.g., I/O errors, corruption that prevents reading).
+    """
+    # Define the maximum total size of data to sample from the file
+    MAX_TOTAL_SAMPLE_BYTES = 1 * 1024 * 1024  # 1 MB
+
+    hasher = hashlib.blake2b()
+
+    try:
+        file_size = os.path.getsize(filepath)
+
+        with open(filepath, 'rb') as f:
+            if file_size <= MAX_TOTAL_SAMPLE_BYTES:
+                # If the file is small enough (1 MB or less), read and hash the entire content.
+                # Reading in chunks (e.g., 64KB) is still efficient for smaller files.
+                while True:
+                    chunk = f.read(65536)  # Read in 64KB chunks
+                    if not chunk:
+                        break
+                    hasher.update(chunk)
+            else:
+                # If the file is larger than MAX_TOTAL_SAMPLE_BYTES, sample parts of it.
+                # This strategy reads two main parts: from the beginning and from the end.
+
+                # Calculate the size for the first chunk (half of the total sample size)
+                first_chunk_size = MAX_TOTAL_SAMPLE_BYTES // 2
+                hasher.update(f.read(first_chunk_size))
+
+                # Calculate the size for the second chunk (the remainder of the total sample size)
+                remaining_chunk_size = MAX_TOTAL_SAMPLE_BYTES - first_chunk_size
+
+                # Seek to the position for the second chunk:
+                # This positions the file pointer to read 'remaining_chunk_size' bytes
+                # from the very end of the file. `max(0, ...)` ensures the seek position
+                # is not negative, though for files larger than MAX_TOTAL_SAMPLE_BYTES,
+                # this won't be an issue.
+                f.seek(max(0, file_size - remaining_chunk_size))
+
+                # Read the second chunk and update the hasher
+                hasher.update(f.read(remaining_chunk_size))
+
+        return hasher.hexdigest()
+    except FileNotFoundError as e:
+        my_log.log2(f"my_stt:_get_file_hash: Error: File not found at {filepath}: {e}")
+        # Re-raise the original FileNotFoundError as it's a specific, actionable error.
+        raise
+    except PermissionError as e:
+        my_log.log2(f"my_stt:_get_file_hash: Error: Permission denied for {filepath}: {e}")
+        # Re-raise the original PermissionError for specific handling.
+        raise
+    except Exception as e:
+        # Catch any other unexpected errors during file operations or hashing.
+        my_log.log2(f"my_stt:_get_file_hash: Generic error hashing file {filepath}: {e}")
+        # Raise a custom HashingError, chaining the original exception for context.
+        raise HashingError(f"Failed to hash file {filepath}: {e}") from e
+
+
+# --- Cache Key Generator ---
+def _stt_cache_key_generator(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '') -> tuple:
+    """
+    Generates a unique cache key for the stt function based on file content,
+    language, and prompt. The chat_id is excluded from the key as it's typically
+    session-specific and doesn't affect the transcription result itself.
+    """
+    file_content_hash = _get_file_hash(input_file)
+    # The key must be a hashable object (e.g., a tuple of immutable types)
+    return (file_content_hash, lang, prompt)
 
 
 def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
@@ -58,7 +157,7 @@ def convert_to_ogg_with_ffmpeg(audio_file: str) -> str:
         if tmp_in_file:
             os.remove(tmp_in_file)
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+
 def stt_google(audio_file: str, language: str = 'ru') -> str:
     """
     Speech-to-text using Google's speech recognition API.
@@ -86,6 +185,10 @@ def stt_google(audio_file: str, language: str = 'ru') -> str:
     return text
 
 
+# --- Speech-to-Text Function with Caching ---
+# Apply the cached decorator with TTLCache for time-based expiration
+# and a custom key generator to hash file content.
+@cached(cache=TTLCache(maxsize=10, ttl=10*60), key=_stt_cache_key_generator)
 def stt(input_file: str, lang: str = 'ru', chat_id: str = '_', prompt: str = '') -> str:
     """
     Transcribes an audio file to text using a speech-to-text engine.
@@ -251,7 +354,6 @@ def stt_genai_worker(audio_file: str, part: tuple, n: int, fname: str, language:
         utils.remove_file(f'{fname}_{n}.ogg')
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def stt_genai(audio_file: str, language: str = 'ru') -> str:
     """
     Converts the given audio file to text using the Gemini API.
@@ -306,7 +408,6 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
     return result
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def assemblyai(audio_file: str, language: str = 'ru'):
     '''Converts the given audio file to text using the AssemblyAI API.'''
     try:
@@ -333,7 +434,6 @@ def miliseconds_to_str(miliseconds: int) -> str:
     return f'{hours:02}:{minutes:02}:{seconds:02}'
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def assemblyai_2(audio_file: str, language: str = 'ru') -> str:
     '''
     Converts the given audio file to text using the AssemblyAI API.
@@ -365,7 +465,6 @@ def assemblyai_2(audio_file: str, language: str = 'ru') -> str:
         return ''
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
 def assemblyai_to_caps(audio_file, language: str = 'ru') -> tuple[str | None, str | None]:
     '''
     Transcribes an audio file to subtitle formats (SRT and VTT) using the AssemblyAI API.

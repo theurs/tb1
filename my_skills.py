@@ -352,7 +352,9 @@ def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> 
                         STORAGE[chat_id].append(item)
                 else:
                     STORAGE[chat_id] = [item,]
+
             return "OK"
+
         elif isinstance(png_output, str):
             # If a string is returned, it indicates an error message from text_to_png
             my_log.log_gemini_skills_save_docs(f'save_diagram_to_png: No PNG data could be generated for chat {chat_id} - {png_output}\n\nText length: {len(text)}')

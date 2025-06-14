@@ -2,185 +2,107 @@
 
 
 import cachetools.func
+import html
+import re
+
 from plantweb.render import render
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=1*60)
-def text_to_png(text: str, engine: str, format: str) -> bytes|str:
-    '''
-    Рендерит диаграмму из текста PlantUML, Graphviz, Ditaa
-    Args:
-        text: str текст в формате PlantUML, Graphviz, Ditaa
-        engine: str 'plantuml', 'graphviz', 'ditaa'
-        format: str 'png', 'svg'. ditta поддерживает только png
-    '''
-    output = ''
-    try:
+def text_to_png(text: str, engine: str, format: str) -> bytes | str:
+    """
+    Renders a diagram from text using PlantUML, Graphviz, or Ditaa engines.
 
+    Args:
+        text: The diagram definition text in PlantUML, Graphviz (DOT), or Ditaa format.
+        engine: The diagram rendering engine to use: 'plantuml', 'graphviz', or 'ditaa'.
+                'dot' will be automatically mapped to 'graphviz'.
+        format: The desired output format: 'png' or 'svg'. Note that Ditaa only supports 'png'.
+                If 'ditaa' engine is selected, the format will be automatically set to 'png'.
+
+    Returns:
+        bytes: The rendered diagram as a byte string (e.g., PNG or SVG bytes) if successful.
+        str: An error message string if rendering fails or the output is not as expected.
+    """
+    try:
+        # Standardize the engine name for consistency with plantweb.render
+        if engine == 'dot':
+            engine = 'graphviz'
+
+        # Ditaa only supports PNG format, so enforce it if Ditaa engine is selected.
+        if engine == 'ditaa':
+            format = 'png'
+
+        # PlantUML specific adjustment: replace older skinparam syntax with newer !option.
+        # This ensures compatibility with newer PlantUML versions for handwritten style.
         if engine == 'plantuml':
             text = text.replace('skinparam handwritten true', '!option handwritten true')
 
         try:
-            output = render(
+            # Render the diagram using the specified engine and format.
+            # 'cacheopts': {'use_cache': False} is set to prevent plantweb's internal caching,
+            # as an external cache (cachetools.func.ttl_cache) is already applied to this function.
+            rendered_output = render(
                 text,
                 engine=engine,
                 format=format,
-                cacheopts={
-                    'use_cache': False
-                }
+                cacheopts={'use_cache': False}
             )
         except Exception as e:
-            return str(e)
+            # Catch exceptions that occur specifically during the diagram rendering process
+            # and return the error message as a string.
+            return f"Rendering failed: {e}"
 
-        if output:
-            if len(output) > 1:
-                if isinstance(output[0], bytes):
-                    return output[0]
+        # The 'render' function typically returns a list where the first element is the
+        # rendered content (bytes for PNG/SVG) and subsequent elements might be metadata.
+        # Check if the output is valid (not empty, and the first element is bytes).
+        if rendered_output and isinstance(rendered_output[0], bytes):
+            return rendered_output[0]
+        else:
+            # If the output from 'render' is not in the expected byte format or is empty,
+            # return a descriptive failure message.
+            return f"FAILED: Unexpected output format from renderer. Output: {rendered_output}"
 
     except Exception as e:
-        return str(e)
+        # Catch any broader, unexpected exceptions that might occur outside the
+        # specific rendering call but within the function's execution.
+        return f"An unexpected error occurred: {e}"
 
-    # print(output)
-    return 'FAILED ' + str(output)
+
+def find_code_snippets(text: str) -> list[dict]:
+    '''
+    Searches for HTML code snippets in the text, specifically for diagram code blocks.
+    The expected format is <pre><code class="language-[engine]">...</code></pre>
+    Supported engines are 'plantuml', 'dot', and 'ditaa'.
+    Returns a list of dictionaries, where each dictionary contains the 'engine' and the 'code'.
+
+    Args:
+        text: The input string to search within.
+
+    Returns:
+        A list of dictionaries, e.g.,
+        [
+            {'engine': 'plantuml', 'code': 'some script on plantuml'},
+            {'engine': 'dot', 'code': 'some script on dot'},
+            {'engine': 'ditaa', 'code': 'some script on ditaa'},
+        ]
+    '''
+    # Regular expression to find the code blocks.
+    # It captures the engine name and the code content.
+    # re.DOTALL allows the '.' to match newline characters.
+    pattern = re.compile(r'<pre><code class="language-(plantuml|dot|ditaa)">(.*?)</code></pre>', re.DOTALL)
+
+    # Find all matches in the input text.
+    matches = pattern.findall(text)
+
+    snippets = []
+    for match in matches:
+        engine = match[0] # The first captured group is the engine name.
+        code = match[1].strip() # The second captured group is the code content, strip whitespace.
+        snippets.append({'engine': engine, 'code': html.unescape(code)})
+
+    return snippets
 
 
 if __name__ == '__main__':
-    CONTENT1 = """
-digraph finite_state_machine {
-    rankdir=LR;
-    size="8,5"
-    node [shape = doublecircle]; LR_0 LR_3 LR_4 LR_8;
-    node [shape = circle];
-    LR_0 -> LR_2 [ label = "SS(B)" ];
-    LR_0 -> LR_1 [ label = "SS(S)" ];
-    LR_1 -> LR_3 [ label = "S($end)" ];
-    LR_2 -> LR_6 [ label = "SS(b)" ];
-    LR_2 -> LR_5 [ label = "SS(a)" ];
-    LR_2 -> LR_4 [ label = "S(A)" ];
-    LR_5 -> LR_7 [ label = "S(b)" ];
-    LR_5 -> LR_5 [ label = "S(a)" ];
-    LR_6 -> LR_6 [ label = "S(b)" ];
-    LR_6 -> LR_5 [ label = "S(a)" ];
-    LR_7 -> LR_8 [ label = "S(b)" ];
-    LR_7 -> LR_5 [ label = "S(a)" ];
-    LR_8 -> LR_6 [ label = "S(b)" ];
-    LR_8 -> LR_5 [ label = "S(a)" ];
-}"""
-
-    CONTENT2 = """
-@startditaa
-+------------------------+
-| [User]                 |
-|                        |
-|  +------------------+  |
-|  | Web Browser      |  |
-|  | {s}              |  |
-|  +------------------+  |
-|          |             |
-|          | HTTP        |
-|          v             |
-|  +------------------+  |
-|  | Application Server |
-|  | {d}              |  |
-|  +------------------+  |
-|          |             |
-|          | SQL         |
-|          v             |
-|  +------------------+  |
-|  | Database          |
-|  | {database}       |  |
-|  +------------------+  |
-+------------------------+
-   :Internet:
-   (Connection)
-@enduml
-"""
-
-    CONTENT3 = """
-@startuml
-skinparam handwritten true
-skinparam monochrome true
-
-title Процесс Мебельного Производства
-
-partition "Отдел Продаж" {
-  start
-  :Принять заказ клиента;
-  :Оформить производственное задание;
-}
-
-partition "Отдел Снабжения" {
-  :Проверить наличие материалов;
-  if (Материалы в наличии?) then (Да)
-    -> Доставить материалы в цех;
-  else (Нет)
-    :Заказать необходимые материалы;
-    :Получить материалы от поставщиков;
-    -> Доставить материалы в цех;
-  endif
-}
-
-partition "Производственный Цех" {
-  :Подготовить материалы (Раскрой, обработка);
-  :Изготовление деталей;
-  :Сборка мебельных изделий;
-  :Отделка (Покраска, лакировка, обивка и т.д.);
-}
-
-partition "Отдел Контроля Качества" {
-  :Провести контроль качества;
-  if (Продукция соответствует стандартам?) then (Да)
-    -> Передать на упаковку;
-  else (Нет)
-    :Выявить и исправить дефекты;
-    -> Провести повторный контроль качества;
-  endif
-}
-
-partition "Склад Готовой Продукции" {
-  :Упаковка готовой продукции;
-  :Размещение на складе;
-}
-
-partition "Отдел Логистики" {
-  :Планирование маршрута доставки;
-  :Отгрузка готовой продукции;
-  :Доставка клиенту;
-  end
-}
-@enduml
-"""
-
-    data = text_to_png(
-        text=CONTENT1,
-        engine='graphviz',
-        format='png'
-    )
-    data2 = text_to_png(
-        text=CONTENT2,
-        engine='ditaa',
-        format='png'
-    )
-    data3 = text_to_png(
-        text=CONTENT3,
-        engine='plantuml',
-        format='png'
-    )
-
-    # if data and isinstance(data, bytes):
-    #     with open(r'c:\users\user\Downloads\test.png', 'wb') as f:
-    #         f.write(data)
-    # elif isinstance(data, str):
-    #     print(data)
-
-    # if data2 and isinstance(data2, bytes):
-    #     with open(r'c:\users\user\Downloads\test2.png', 'wb') as f:
-    #         f.write(data2)
-    # elif isinstance(data2, str):
-    #     print(data2)
-
-    if data3 and isinstance(data3, bytes):
-        with open(r'c:\users\user\Downloads\test3.png', 'wb') as f:
-            f.write(data3)
-    elif isinstance(data3, str):
-        print(data3)
+    pass

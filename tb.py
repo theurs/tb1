@@ -53,6 +53,7 @@ import my_psd
 import my_openrouter
 import my_openrouter_free
 import my_pandoc
+import my_plantweb
 import my_skills
 import my_stat
 import my_stt
@@ -7607,7 +7608,8 @@ def reply_to_long_message(message: telebot.types.Message,
         allow_voice: Whether to allow voice responses.
     """
     try:
-        if not resp.strip():
+        resp = resp
+        if not resp:
             my_log.log2(f'tb:reply_to_long_message:2: empty message')
             return
 
@@ -7639,6 +7641,45 @@ def reply_to_long_message(message: telebot.types.Message,
                         continue
                     else:
                         _send_message(message, chunk, parse_mode, preview, reply_markup, send_message, resp, 5)
+
+        # если есть таблицы в ответе то отправить их картинками в догонку
+        if parse_mode == 'HTML':
+            tables = my_md_tables_to_png.find_markdown_tables(resp)
+            graphs = my_plantweb.find_code_snippets(resp)
+            if tables:
+                for table in tables:
+                    try:
+                        image = my_md_tables_to_png.markdown_table_to_image_bytes(table)
+                        if image:
+                            m = send_photo(
+                                message,
+                                chat_id=message.chat.id,
+                                photo=image,
+                                reply_to_message_id = message.message_id,
+                                reply_markup=get_keyboard('hide', message),
+                            )
+                            log_message(m)
+                    except Exception as error:
+                        my_log.log2(f'tb:do_task:send tables images: {error}')
+            if graphs:
+                for graph in graphs:
+                    try:
+                        image = my_plantweb.text_to_png(
+                            graph['code'],
+                            engine=graph['engine'],
+                            format='png'
+                        )
+                        if image and isinstance(image, bytes):
+                            m = send_photo(
+                                message,
+                                chat_id=message.chat.id,
+                                photo=image,
+                                reply_to_message_id = message.message_id,
+                                reply_markup=get_keyboard('hide', message),
+                            )
+                            log_message(m)
+                    except Exception as error:
+                        my_log.log2(f'tb:do_task:send graphs images: {error}')
 
     except Exception as unknown:
         traceback_error = traceback.format_exc()
@@ -9915,25 +9956,6 @@ def do_task(message, custom_prompt: str = ''):
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:cohere {error3}\n{error_traceback}')
 
-
-                # если есть таблицы в ответе то отправить их картинками в догонку
-                if answer.strip():
-                    tables = my_md_tables_to_png.find_markdown_tables(answer)
-                    if tables:
-                        for table in tables:
-                            try:
-                                image = my_md_tables_to_png.markdown_table_to_image_bytes(table)
-                                if image:
-                                    m = send_photo(
-                                        message,
-                                        chat_id=message.chat.id,
-                                        photo=image,
-                                        reply_to_message_id = message.message_id,
-                                        reply_markup=get_keyboard('hide', message),
-                                    )
-                                    log_message(m)
-                            except Exception as error:
-                                my_log.log2(f'tb:do_task:send tables images: {error}')
 
     except Exception as unknown:
         traceback_error = traceback.format_exc()

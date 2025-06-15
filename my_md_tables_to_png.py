@@ -135,6 +135,10 @@ CSS2 = """
 
 
 BR = html.escape('<br>')
+UL1 = html.escape('<ul>')
+UL2 = html.escape('</ul>')
+LI1 = html.escape('<li>')
+LI2 = html.escape('</li>')
 
 
 def clean_wkhtml_temp_files():
@@ -346,8 +350,12 @@ def find_markdown_tables(markdown_text: str) -> List[str]:
                 if current_table_lines:
                     # Склеиваем все строки в один блок
                     raw_table_block = "\n".join(current_table_lines)
-                    # raw_table_block = raw_table_block.replace('<br>', '')
+
                     raw_table_block = raw_table_block.replace(BR, '')
+                    raw_table_block = raw_table_block.replace(UL1, '')
+                    raw_table_block = raw_table_block.replace(UL2, '')
+                    raw_table_block = raw_table_block.replace(LI1, '')
+                    raw_table_block = raw_table_block.replace(LI2, '')
 
                     # Находим маркеры: первый и последний '|'
                     first_pipe_pos = raw_table_block.find('|')

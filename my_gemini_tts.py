@@ -334,7 +334,7 @@ def process_chunks_for_tts(json_file_path: str, base_output_dir: str, book_name:
     try:
         with open(json_file_path, 'r', encoding='utf-8') as f:
             chunks = json.load(f)
-        chunks = [x for x in chunks if '<<<РАЗДЕЛ' not in x]
+        chunks = [x for x in chunks if 'РАЗД+ЕЛ' not in x and 'КН+ИГИ' not in x and len(x)>30]
         print(f"Successfully loaded {len(chunks)} chunks from '{json_file_path}'.")
     except FileNotFoundError:
         print(f"Error: JSON file not found at '{json_file_path}'.")
@@ -373,8 +373,7 @@ def process_chunks_for_tts(json_file_path: str, base_output_dir: str, book_name:
         # The available `tts` tool *sends* audio, it does not return bytes
         # to be saved locally, so it cannot be used directly here.
         wav_bytes = generate_tts_wav_bytes(
-            text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца, исправляй очевидные опечатки в тексте\n\n{chunk}',
-            # text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца в очень быстром темпе не пропуская слов, исправляй очевидные опечатки в тексте\n\n{chunk}',
+            text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца\n\n{chunk}',
             voice_name="Iapetus" # Use the specified voice
         )
         # ----------------------------------------------------
@@ -407,7 +406,7 @@ if __name__ == "__main__":
     my_gemini.my_db.init(backup=False)
     my_gemini.load_users_keys()
 
-    json_input_path = r"C:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_processed_by_sections.json"
+    json_input_path = r"C:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_processed_by_sections_accents.json"
     base_download_directory = r"C:\Users\user\Downloads"
     book_subdirectory_name = "книга Значимые Цифры" # Example book name
 

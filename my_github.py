@@ -231,7 +231,7 @@ def ai(
                 break
             time.sleep(2)
 
-    return text
+    return text.strip()
 
 
 def remove_key(key: str):
@@ -572,8 +572,8 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     load_users_keys()
 
-    t = 'сколько тут звездочек?? ' + ('*'*40000)
-    print(ai(t, model=GROK_MODEL_FALLBACK))
+    t = 'напиши стих о родине слонов с хорошей рифмой'
+    print(ai(t, model=GROK_MODEL))
 
     # test_key('')
 

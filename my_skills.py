@@ -37,6 +37,7 @@ import cfg
 import my_db
 import my_google
 import my_gemini_google
+import my_github
 import my_groq
 import my_log
 import my_md_tables_to_png
@@ -1064,6 +1065,44 @@ def help(user_id: str) -> str:
 '''
 
     return help_msg
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl = 2*60)
+def compose_creative_text(prompt: str, context: str, user_id: str) -> str:
+    '''
+    Composes creative content such as songs, poems, and rhymed verses.
+    This tool is specifically designed for tasks where the user explicitly requests rhyming,
+    specific poetic forms (e.g., couplets, quatrains), or lyrical structures for songs,
+    as the model itself may not always produce high-quality rhyming or poetic depth.
+    The output will be the generated text *only*, without any additional commentary.
+
+    Args:
+        prompt: The user's full request for creative text generation, including any topic, style, length, or specific rhyming schemes.
+        context: Any additional conversational context or extracted details that might help the generation, such as previous turns of conversation or specific constraints not directly in the main prompt. If no additional context is available or relevant, provide an empty string.
+        user_id: The Telegram user ID.
+
+    Returns:
+        The generated song, poem, or rhymed text.
+    '''
+    try:
+        user_id = restore_id(user_id)
+
+        my_log.log_gemini_skills(f'compose_creative_text: {user_id} {prompt}\n\n{context}')
+
+        query = f'''{{"request_type": "creative_text_generation", "user_prompt": "{prompt}", "context": "{context}", "output_format_instruction": "The output must contain only the requested creative text (song, poem, rhymed verse) without any introductory phrases, conversational remarks, or concluding comments."}}'''
+
+        result = my_github.ai(query, model=my_github.GROK_MODEL, timeout=60, user_id=user_id)
+
+        if result:
+            my_log.log_gemini_skills(f'compose_creative_text: {user_id} {prompt} {context}\n\n{result}')
+            return result
+
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_gemini_skills(f'compose_creative_text: {error}\n\n{error_traceback}\n\n{prompt}\n\n{context}')
+
+    my_log.log_gemini_skills(f'compose_creative_text: {user_id} {prompt}\n\n{context}\n\nThe muse did not answer, come up with something yourself without the help of tools.')
+    return 'The muse did not answer, come up with something yourself without the help of tools.'
 
 
 if __name__ == '__main__':

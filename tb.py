@@ -1188,6 +1188,8 @@ def log_message_add(_type: str,
     """
     try:
         with LOG_GROUP_MESSAGES_LOCK:
+            if _chat_full_id in DDOS_BLOCKED_USERS:
+                return
             current_time = time.perf_counter_ns()
             value = (_type, _text, _chat_full_id, _chat_name, _m_ids, _message_chat_id, _message_message_id)
             if value not in LOG_GROUP_MESSAGES.values():

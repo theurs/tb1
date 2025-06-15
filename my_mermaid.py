@@ -49,28 +49,65 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
 
         cmd = "mmdc"
         is_linux = False
-        if 'windows' in utils.platform().lower():
+        is_windows = False 
+
+        platform_name = utils.platform().lower()
+        if 'windows' in platform_name:
             cmd = "mmdc.cmd"
-        elif 'linux' in utils.platform().lower():
+            is_windows = True
+        elif 'linux' in platform_name:
             is_linux = True
 
-        # Если это Linux и PUPPETEER_EXECUTABLE_PATH не установлен, пытаемся его найти
-        if is_linux:
-            if 'PUPPETEER_EXECUTABLE_PATH' not in os.environ:
-                home_dir = os.path.expanduser('~')
+        # Если PUPPETEER_EXECUTABLE_PATH не установлен, пытаемся его найти
+        if 'PUPPETEER_EXECUTABLE_PATH' not in os.environ:
+            home_dir = os.path.expanduser('~') # Домашняя директория пользователя, одинаково для Linux и Windows
+
+            if is_linux:
                 executable_pattern = os.path.join(home_dir, '.cache', 'puppeteer', 'chrome-headless-shell', '*', '*', 'chrome-headless-shell')
 
-                my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH не задан. Ищем в: {executable_pattern}")
+                my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH не задан (Linux). Ищем в: {executable_pattern}")
                 potential_executables = glob.glob(executable_pattern)
 
                 if potential_executables:
                     os.environ['PUPPETEER_EXECUTABLE_PATH'] = potential_executables[0]
                     my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен: {potential_executables[0]}")
                 else:
-                    my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell не найден в стандартных путях Puppeteer.")
-            else:
-                pass
-                # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH уже задан: {os.environ['PUPPETEER_EXECUTABLE_PATH']}")
+                    my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell не найден в стандартных путях Puppeteer для Linux.")
+            elif is_windows:
+                my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH не задан (Windows). Пытаемся найти chrome-headless-shell.exe или chrome.exe.")
+
+                # Приоритет 1: Собственный кеш Puppeteer для chrome-headless-shell.exe (в ~/.cache)
+                puppeteer_cache_pattern = os.path.join(home_dir, '.cache', 'puppeteer', 'chrome-headless-shell', '*', '*', 'chrome-headless-shell.exe')
+
+                my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: Ищем chrome-headless-shell.exe в кеше Puppeteer: {puppeteer_cache_pattern}")
+                potential_executables = glob.glob(puppeteer_cache_pattern)
+
+                if potential_executables:
+                    os.environ['PUPPETEER_EXECUTABLE_PATH'] = potential_executables[0]
+                    my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен из кеша Puppeteer: {potential_executables[0]}")
+
+                # Приоритет 2: Стандартные пути установки Google Chrome, если не найдено в кеше Puppeteer
+                if 'PUPPETEER_EXECUTABLE_PATH' not in os.environ:
+                    my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell.exe не найден в кеше Puppeteer. Ищем chrome.exe в стандартных путях Google Chrome.")
+                    chrome_paths = [
+                        os.path.join(os.environ.get('PROGRAMFILES', 'C:\\Program Files'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+                        os.path.join(os.environ.get('PROGRAMFILES(X86)', 'C:\\Program Files (x86)'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+                        os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Google', 'Chrome', 'Application', 'chrome.exe')
+                    ]
+
+                    found_chrome = False
+                    for path in chrome_paths:
+                        if os.path.exists(path):
+                            os.environ['PUPPETEER_EXECUTABLE_PATH'] = path
+                            my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен из стандартного пути Chrome: {path}")
+                            found_chrome = True
+                            break
+
+                    if not found_chrome:
+                        my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell.exe или chrome.exe не найдены в стандартных путях Puppeteer или Chrome.")
+        else:
+            pass
+            # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH уже задан: {os.environ['PUPPETEER_EXECUTABLE_PATH']}")
 
         command = [cmd, "-e", "png", "-i", "-", "-o", "-", "-p", puppeteer_config_path]
 
@@ -80,7 +117,7 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                env=os.environ.copy() 
+                env=os.environ.copy()
             )
 
             stdout_data, stderr_data = process.communicate(input=diagram_text.encode('utf-8'))
@@ -92,8 +129,7 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
                 error_message = stderr_data.decode('utf-8').strip()
                 my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: Ошибка subprocess (код {process.returncode}): {error_message}. {env_info}")
                 return f"Ошибка при генерации диаграммы: {error_message}. {env_info}"
-
-            # my_log.log2("my_mermaid:generate_mermaid_png_bytes: Диаграмма успешно сгенерирована.")
+# my_log.log2("my_mermaid:generate_mermaid_png_bytes: Диаграмма успешно сгенерирована.")
             return stdout_data
         except FileNotFoundError:
             my_log.log2("my_mermaid:generate_mermaid_png_bytes: Ошибка: mmdc не найден.")

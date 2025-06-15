@@ -373,8 +373,8 @@ def process_chunks_for_tts(json_file_path: str, base_output_dir: str, book_name:
         # The available `tts` tool *sends* audio, it does not return bytes
         # to be saved locally, so it cannot be used directly here.
         wav_bytes = generate_tts_wav_bytes(
-            # text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца, исправляй очевидные опечатки в тексте\n\n{chunk}',
-            text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца в очень быстром темпе не пропуская слов, исправляй очевидные опечатки в тексте\n\n{chunk}',
+            text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца, исправляй очевидные опечатки в тексте\n\n{chunk}',
+            # text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца в очень быстром темпе не пропуская слов, исправляй очевидные опечатки в тексте\n\n{chunk}',
             voice_name="Iapetus" # Use the specified voice
         )
         # ----------------------------------------------------

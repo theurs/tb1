@@ -1,4 +1,6 @@
 import asyncio
+import json
+import os
 import io
 import time
 import traceback
@@ -329,27 +331,126 @@ def test1():
         print("Failed to generate WAV data for the long text.")
 
 
-def test2_read_a_book():
-    input_text = r"C:\Users\user\Downloads\samples for ai\большая книга только первая глава.txt"
-    long_text = open(input_text, 'r', encoding='utf-8').read()
-    print("Starting synchronous chunked generation...")
-    final_wav_data = generate_audio_bytes_chunked_sync(long_text, lang = 'ru')
+# def test2_read_a_book():
+#     input_text = r"C:\Users\user\Downloads\samples for ai\большая книга только первая глава.txt"
+#     long_text = open(input_text, 'r', encoding='utf-8').read()
+#     print("Starting synchronous chunked generation...")
+#     final_wav_data = generate_audio_bytes_chunked_sync(long_text, lang = 'ru')
 
-    if final_wav_data:
-        print(f"Successfully generated WAV data, size: {len(final_wav_data)} bytes.")
-        try:
-            output_filename = r"c:\Users\user\Downloads\output_audio_long_chunked_book.wav"
-            with open(output_filename, "wb") as f:
-                f.write(final_wav_data)
-            print(f"Saved final WAV to {output_filename}")
-        except Exception as e:
-            print(f"Error saving final WAV file: {e}")
-    else:
-        print("Failed to generate WAV data for the long text.")
+#     if final_wav_data:
+#         print(f"Successfully generated WAV data, size: {len(final_wav_data)} bytes.")
+#         try:
+#             output_filename = r"c:\Users\user\Downloads\output_audio_long_chunked_book.wav"
+#             with open(output_filename, "wb") as f:
+#                 f.write(final_wav_data)
+#             print(f"Saved final WAV to {output_filename}")
+#         except Exception as e:
+#             print(f"Error saving final WAV file: {e}")
+#     else:
+#         print("Failed to generate WAV data for the long text.")
+
+
+# def test2_read_a_book():
+#     """
+#     Reads a JSON file containing text chunks, converts each chunk to audio using TTS,
+#     and saves the audio as WAV files in a structured directory.
+#     It skips chunks that have already been processed and saved.
+#     Assumes `generate_audio_bytes_chunked_sync` function is available in the scope.
+#     """
+#     # Configuration
+#     json_input_path = r"C:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_processed_by_sections.json"
+
+#     # Extract a meaningful name for the output directory from the JSON filename
+#     # E.g., 'myachev_Significant_Digits_processed_by_sections' from the full path
+#     base_filename_without_ext = os.path.splitext(os.path.basename(json_input_path))[0]
+
+#     output_base_dir = r"C:\Users\user\Downloads"
+#     output_book_dir = os.path.join(output_base_dir, f"book_{base_filename_without_ext}")
+
+#     # Create the output directory if it doesn't exist
+#     try:
+#         os.makedirs(output_book_dir, exist_ok=True)
+#         print(f"Каталог для сохранения аудио: '{output_book_dir}' (создан/проверен).")
+#     except OSError as e:
+#         print(f"Ошибка при создании каталога '{output_book_dir}': {e}")
+#         return
+
+#     all_tts_chunks = []
+#     try:
+#         with open(json_input_path, 'r', encoding='utf-8') as f:
+#             all_tts_chunks = json.load(f)
+#         print(f"Загружено {len(all_tts_chunks)} частей из файла '{json_input_path}'.")
+#     except FileNotFoundError:
+#         print(f"Ошибка: Файл JSON не найден по пути '{json_input_path}'.")
+#         return
+#     except json.JSONDecodeError:
+#         print(f"Ошибка: Не удалось декодировать JSON из файла '{json_input_path}'. Проверьте формат файла.")
+#         return
+#     except Exception as e:
+#         print(f"Произошла непредвиденная ошибка при чтении файла JSON: {e}")
+#         return
+
+#     processed_count = 0
+#     skipped_count = 0
+#     failed_count = 0
+#     section_markers_count = 0
+#     total_chunks = len(all_tts_chunks)
+
+#     print("\nНачинаю генерацию TTS для частей...")
+#     for i, chunk_text in enumerate(all_tts_chunks):
+#         # Format filename with leading zeros for proper sorting
+#         chunk_filename = f"chunk_{i:04d}.wav"
+#         output_filepath = os.path.join(output_book_dir, chunk_filename)
+
+#         # Check for special section markers from the first script
+#         if chunk_text.startswith("<<<РАЗДЕЛ_") and chunk_text.endswith("_КНИГИ>>>"):
+#             print(f"[{i+1}/{total_chunks}] Обнаружен маркер раздела: '{chunk_text}'. Пропускаю генерацию аудио для маркера.")
+#             section_markers_count += 1
+#             # You might consider creating an empty WAV or a short silence for these markers
+#             # For now, we just skip audio generation for the marker text itself.
+#             continue
+
+#         # Check if the file already exists and is not zero size
+#         if os.path.exists(output_filepath) and os.path.getsize(output_filepath) > 0:
+#             print(f"[{i+1}/{total_chunks}] Пропускаю '{chunk_filename}' - файл уже существует и не пуст.")
+#             skipped_count += 1
+#             continue
+#         # If the file exists but is zero size, it will not be skipped and will be re-processed.
+#         # If the file does not exist, it will also not be skipped and will be processed.
+
+#         print(f"[{i+1}/{total_chunks}] Обрабатываю часть (длина: {len(chunk_text)} символов): '{chunk_text[:70]}...'")
+
+#         # Call the external TTS function.
+#         # `generate_audio_bytes_chunked_sync` is assumed to be available in the global scope.
+#         try:
+#             final_wav_data = generate_audio_bytes_chunked_sync(chunk_text, lang='ru')
+
+#             if final_wav_data:
+#                 try:
+#                     with open(output_filepath, "wb") as f:
+#                         f.write(final_wav_data)
+#                     print(f"  Сохранено в '{output_filepath}'")
+#                     processed_count += 1
+#                 except Exception as e:
+#                     print(f"  Ошибка при сохранении WAV файла '{output_filepath}': {e}")
+#                     failed_count += 1
+#             else:
+#                 print(f"  Не удалось сгенерировать данные WAV для части {i+1}.")
+#                 failed_count += 1
+#         except Exception as e:
+#             print(f"  Произошла ошибка во время генерации TTS для части {i+1}: {e}")
+#             failed_count += 1
+
+#     print("\n--- Сводка по процессу TTS ---")
+#     print(f"Всего частей в файле JSON: {total_chunks}")
+#     print(f"Успешно обработано и сохранено: {processed_count}")
+#     print(f"Пропущено (файлы уже существуют): {skipped_count}")
+#     print(f"Пропущено (маркеры разделов): {section_markers_count}")
+#     print(f"Не удалось обработать: {failed_count}")
 
 
 if __name__ == "__main__":
     my_gemini.load_users_keys()
 
     # test1()
-    test2_read_a_book()
+    # test2_read_a_book()

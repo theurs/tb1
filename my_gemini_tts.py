@@ -1,6 +1,7 @@
 # https://github.com/google-gemini/cookbook/blob/main/quickstarts/Get_started_TTS.ipynb
 
 import io
+import json
 import os
 import time
 
@@ -59,8 +60,8 @@ def generate_tts_wav_bytes(
     #     return None
 
     # Если текст слишком длинный, разбиваем на чанки и используем параллельную обработку
-    if len(text_to_speak) > 2000:
-        chunks = utils.split_text(text_to_speak, 2000)
+    if len(text_to_speak) > 2200:
+        chunks = utils.split_text(text_to_speak, 2200)
         return tts_chunked_text(chunks=chunks, voice_name=voice_name, model=model_id, lang=lang)
 
     response = None
@@ -270,39 +271,135 @@ def tts_chunked_text(
     return wav_bytes
 
 
-def tts_chunked_text_to_files(chunks: list[str], output_dir: str, voice_name: str = "Iapetus") -> None:
-    '''
-    Синтезирует речь для каждого чанка текста и сохраняет результаты в отдельные
-    wav-файлы в указанной папке. Пропускает генерацию, если файл уже существует
-    и имеет ненулевой размер.
+# def tts_chunked_text_to_files(chunks: list[str], output_dir: str, voice_name: str = "Iapetus") -> None:
+#     '''
+#     Синтезирует речь для каждого чанка текста и сохраняет результаты в отдельные
+#     wav-файлы в указанной папке. Пропускает генерацию, если файл уже существует
+#     и имеет ненулевой размер.
+
+#     Args:
+#         chunks: Список текстовых чанков для синтеза.
+#         output_dir: Путь к папке, куда будут сохраняться файлы (например, "c:/output/audio/").
+#         voice_name: Имя голоса Gemini для синтеза. По умолчанию "Iapetus".
+#     '''
+
+#     for i, chunk in enumerate(chunks):
+#         # Файлы будут названы 0001.wav, 0002.wav и т.д.
+#         file_name = os.path.join(output_dir, f"{i+1:04d}.wav")
+
+#         if os.path.exists(file_name) and os.path.getsize(file_name) > 0:
+#             # my_log.log_gemini(f"Файл для чанка {i+1} уже существует и не пуст '{file_name}', пропуск генерации.")
+#             continue # Пропустить текущий чанк, если файл уже есть и имеет ненулевой размер
+
+#         # my_log.log_gemini(f"Обработка чанка {i+1} и сохранение в {file_name}")
+
+#         wav_bytes = generate_tts_wav_bytes(text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца\n\n{chunk}', voice_name=voice_name)
+
+#         if wav_bytes:
+#             try:
+#                 with open(file_name, "wb") as f:
+#                     f.write(wav_bytes)
+#                 # my_log.log_gemini(f"Чанк {i+1} успешно сохранен: {file_name}")
+#             except IOError as e:
+#                 my_log.log_gemini(f"Ошибка при записи файла '{file_name}': {e}")
+#         else:
+#             my_log.log_gemini(f"Не удалось сгенерировать аудио для чанка {i+1}: '{chunk[:50]}...'")
+
+
+def process_chunks_for_tts(json_file_path: str, base_output_dir: str, book_name: str) -> None:
+    """
+    Reads text chunks from a JSON file, synthesizes speech for each chunk
+    using a placeholder TTS function, and saves the audio as WAV files.
+    Skips chunks for which a non-empty WAV file already exists.
 
     Args:
-        chunks: Список текстовых чанков для синтеза.
-        output_dir: Путь к папке, куда будут сохраняться файлы (например, "c:/output/audio/").
-        voice_name: Имя голоса Gemini для синтеза. По умолчанию "Iapetus".
-    '''
+        json_file_path: Path to the JSON file containing the list of text chunks.
+        base_output_dir: The base directory for saving audio files (e.g., "downloads").
+        book_name: The name of the book, used to create a subdirectory
+                   within the base output directory (e.g., "книгаХХХ").
+    """
+    # Construct the full output directory path
+    output_dir = os.path.join(base_output_dir, book_name)
 
+    # Create the output directory if it doesn't exist
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+        print(f"Output directory ensured: '{output_dir}'")
+    except OSError as e:
+        print(f"Error creating output directory '{output_dir}': {e}")
+        return
+
+    # Load chunks from the JSON file
+    chunks = []
+    try:
+        with open(json_file_path, 'r', encoding='utf-8') as f:
+            chunks = json.load(f)
+        chunks = [x for x in chunks if '<<<РАЗДЕЛ' not in x]
+        print(f"Successfully loaded {len(chunks)} chunks from '{json_file_path}'.")
+    except FileNotFoundError:
+        print(f"Error: JSON file not found at '{json_file_path}'.")
+        return
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from '{json_file_path}'.")
+        return
+    except Exception as e:
+        print(f"An error occurred while reading JSON: {e}")
+        return
+
+    # Initialize statistics counters
+    total_chunks = len(chunks)
+    processed_count = 0
+    skipped_count = 0
+    failed_count = 0
+
+    print("\n--- Starting TTS processing ---")
+    print(f"Total chunks to process: {total_chunks}")
+
+    # Process each chunk
     for i, chunk in enumerate(chunks):
-        # Файлы будут названы 0001.wav, 0002.wav и т.д.
+        # Construct the desired output filename
         file_name = os.path.join(output_dir, f"{i+1:04d}.wav")
 
+        # Check if the file already exists and is not empty
         if os.path.exists(file_name) and os.path.getsize(file_name) > 0:
-            # my_log.log_gemini(f"Файл для чанка {i+1} уже существует и не пуст '{file_name}', пропуск генерации.")
-            continue # Пропустить текущий чанк, если файл уже есть и имеет ненулевой размер
+            print(f"Chunk {i+1}/{total_chunks}: File already exists and is not empty, skipping generation: '{file_name}'")
+            skipped_count += 1
+            continue # Skip to the next chunk
 
-        # my_log.log_gemini(f"Обработка чанка {i+1} и сохранение в {file_name}")
+        print(f"Chunk {i+1}/{total_chunks}: Processing and saving to '{file_name}'")
 
-        wav_bytes = generate_tts_wav_bytes(text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца\n\n{chunk}', voice_name=voice_name)
+        # --- Call the placeholder TTS generation function ---
+        # Replace this with your actual call to a TTS API that returns WAV bytes.
+        # The available `tts` tool *sends* audio, it does not return bytes
+        # to be saved locally, so it cannot be used directly here.
+        wav_bytes = generate_tts_wav_bytes(
+            # text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца, исправляй очевидные опечатки в тексте\n\n{chunk}',
+            text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца в очень быстром темпе не пропуская слов, исправляй очевидные опечатки в тексте\n\n{chunk}',
+            voice_name="Iapetus" # Use the specified voice
+        )
+        # ----------------------------------------------------
 
         if wav_bytes:
             try:
+                # Save the generated WAV bytes to the file
                 with open(file_name, "wb") as f:
                     f.write(wav_bytes)
-                # my_log.log_gemini(f"Чанк {i+1} успешно сохранен: {file_name}")
+                print(f"Chunk {i+1}/{total_chunks} successfully saved: {file_name}")
+                processed_count += 1
             except IOError as e:
-                my_log.log_gemini(f"Ошибка при записи файла '{file_name}': {e}")
+                print(f"Error writing file '{file_name}': {e}")
+                failed_count += 1
         else:
-            my_log.log_gemini(f"Не удалось сгенерировать аудио для чанка {i+1}: '{chunk[:50]}...'")
+            print(f"Failed to generate audio for chunk {i+1}/{total_chunks}. Placeholder returned None.")
+            failed_count += 1
+
+    # Print summary statistics
+    print("\n--- TTS Processing Summary ---")
+    print(f"Total chunks considered: {total_chunks}")
+    print(f"Chunks processed and saved: {processed_count}")
+    print(f"Chunks skipped (file existed): {skipped_count}")
+    print(f"Chunks failed to process: {failed_count}")
+    print("----------------------------")
 
 
 if __name__ == "__main__":
@@ -310,18 +407,8 @@ if __name__ == "__main__":
     my_gemini.my_db.init(backup=False)
     my_gemini.load_users_keys()
 
-    output_dir = r"c:\Users\user\Downloads"
+    json_input_path = r"C:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_processed_by_sections.json"
+    base_download_directory = r"C:\Users\user\Downloads"
+    book_subdirectory_name = "книга Значимые Цифры" # Example book name
 
-    with open(r'C:\Users\user\Downloads\samples for ai\большая книга только первая глава.txt', 'r', encoding='utf-8') as f:
-        text = f.read()
-
-    # Вызываем generate_tts_wav_bytes, которая сама решит, вызывать ли tts_chunked_text
-    data = generate_tts_wav_bytes(text_to_speak=text, voice_name="Leda")
-
-    if data:
-        output_ogg_filename = os.path.join(output_dir, "gemini_tts_output_parallel.wav")
-        with open(output_ogg_filename, "wb") as f:
-            f.write(data)
-        print(f"Аудио сохранено в {output_ogg_filename}")
-    else:
-        print("Не удалось сгенерировать аудио.")
+    process_chunks_for_tts(json_input_path, base_download_directory, book_subdirectory_name)

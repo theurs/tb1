@@ -295,7 +295,7 @@ def ai(prompt: str = '',
                     model=model,
                     temperature=temperature,
                     max_tokens=max_tokens_,
-                    response_format = ResponseFormat(type = resp_type),
+                    response_format = {"type": resp_type},
                     timeout=timeout
                 )
             except PermissionDeniedError:
@@ -307,6 +307,7 @@ def ai(prompt: str = '',
                     continue
                 if 'Rate limit reached for model' in str(error).lower():
                     continue
+                my_log.log_groq(f'GROQ {error} {key} {model} {str(mem)[:1000]}')
             try:
                 resp = chat_completion.choices[0].message.content.strip()
             except (IndexError, AttributeError):

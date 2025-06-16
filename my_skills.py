@@ -60,8 +60,13 @@ def text_to_image(prompt: str) -> str:
     '''
     Generate and send image message from text to user.
     Use it only if asked by user to generate image from text.
+    Avoid using text_to_image for precise mathematical expressions, structured diagrams,
+    or data-driven charts; instead, use save_diagram_to_image or save_pandas_chart_to_image
+    for those specific tasks.
+
     Args:
         prompt: str - text to generate image from
+
     '''
     my_log.log_gemini_skills(f'/img "{prompt}"')
     return "The function itself does not return an image. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /img command, followed by a space, and then the prompt provided, up to 100 words. This specific message format will be automatically recognized by an external system as a request to generate and send an image to the user."
@@ -170,7 +175,7 @@ def save_html_to_image(filename: str, html: str, chat_id: str) -> str:
 
 def save_pandas_chart_to_image(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:
     '''
-    Send a chart generated from Pandas data as a image image file to the user.
+    Send a chart generated from Pandas data as an image file to the user.
     Args:
         filename: str - The desired file name for the image file (e.g., 'sales_chart').
         data: dict - A dictionary where keys are column names and values are lists of data.
@@ -179,7 +184,11 @@ def save_pandas_chart_to_image(filename: str, data: dict, chart_type: str, chat_
         chat_id: str - The Telegram user chat ID where the file should be sent.
         plot_params: Optional[dict] - Optional dictionary of additional plotting parameters for Matplotlib/Pandas.
                                       Example: {'x': 'Date', 'y': 'Sales', 'title': 'Daily Sales', 'xlabel': 'Date', 'ylabel': 'Amount'}.
-                                      For 'pie' charts, you can also specify 'labels_column' to use a column's values as slice labels (e.g., {'y': 'Share (%)', 'labels_column': 'Category', 'title': 'Monthly Expenses'}).
+                                      For 'pie' charts:
+                                      - You must specify 'y' to indicate the column containing the values for slices.
+                                      - You can optionally specify 'labels_column' to use a column's values as slice labels. If provided, the data will be grouped by this column and values summed for slices.
+                                      - Example: {'y': 'Share (%)', 'labels_column': 'Category', 'title': 'Monthly Expenses'}.
+                                      - The 'labels' parameter should NOT be used directly in plot_params for 'pie' charts, as labels are derived from the 'labels_column' or default index.
     Returns:
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
     '''
@@ -746,77 +755,83 @@ def decode_string(s: str) -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
-def calc(expression: str, chat_id: str = '') -> str:
-    '''Calculate expression with pythons eval(). Use it for all calculations.
+def calc(expression: str, strict: bool, user_id: str) -> str:
+    '''Calculate expression with python. The expression can be strict or a free-form task;
+    strict expressions are calculated on a simple calculator, while free-form expressions
+    are executed on a virtual machine and can be of almost any complexity.
     Args:
         expression: The expression to calculate.
-        chat_id: The chat ID to send the search results to.
+        strict: Whether the expression is strict or not.
+        user_id: The telegram user ID to send the search results to.
 
     Returns:
         A string containing the result of the calculation.
 
-    Available modules: decimal, math, mpmath, numbers, numpy, random, datetime.
-    Do not import them, they are already imported.
-    Use only one letter variables.
-    Avoid text in math expressions.
-
-    You can also make requests in natural language if you need to do more complex calculations, for example: What is the digit after the decimal point in the number pi at position 7864?
-
-    return str(eval(expression))
-    Examples: calc("56487*8731") -> '493187997'
-              calc("pow(10, 2)") -> '100'
-              calc("math.sqrt(2+2)/3") -> '0.6666666666666666'
-              calc("decimal.Decimal('0.234234')*2") -> '0.468468'
-              calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)")
+    Examples: calc("56487*8731", strict=True, user_id="[12345678] [0]") -> '493187997'
+              calc("pow(10, 2)", strict=True, user_id="[12345678] [0]") -> '100'
+              calc("math.sqrt(2+2)/3", strict=True, user_id="[12345678] [0]") -> '0.6666666666666666'
+              calc("decimal.Decimal('0.234234')*2", strict=True, user_id="[12345678] [0]") -> '0.468468'
+              calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)", strict=True, user_id="[12345678] [0]")
+              calc('Generate lists of numbers for plotting the graph of the sin(x) function in the range from -5 to 5 with a step of 0.1.', strict=False, user_id="[12345678] [0]")
               etc
+    Returns:
+        A string containing the result of the calculation.
     '''
+
     try:
-        chat_id = restore_id(chat_id)
+        user_id = restore_id(user_id)
 
-        my_log.log_gemini_skills(f'New calc: {chat_id} {expression}')
+        my_log.log_gemini_skills(f'New calc: {user_id} Strict: {strict} {expression}')
 
-        # decimal, math, mpmath, numbers, numpy, random, datetime
-        allowed_functions = {
-            'math': math,
-            'decimal': decimal,
-            'mpmath': mpmath,
-            'numbers': numbers,
-            'numpy': numpy,
-            'np': np,
-            'random': random,
-            'datetime': datetime,
-            # 'my_factorial': my_factorial,
-            'abs': abs,
-            'max': max,
-            'min': min,
-            'round': round,
-            'sum': sum,
-            'pow': pow,
-            'complex': complex,
-            'divmod': divmod,
-            'float': float,
-            'int': int,
-        }
+        if strict:
 
-        result = str(simple_eval(expression, functions=allowed_functions))
+            # decimal, math, mpmath, numbers, numpy, random, datetime
+            allowed_functions = {
+                'math': math,
+                'decimal': decimal,
+                'mpmath': mpmath,
+                'numbers': numbers,
+                'numpy': numpy,
+                'np': np,
+                'random': random,
+                'datetime': datetime,
+                # 'my_factorial': my_factorial,
+                'abs': abs,
+                'max': max,
+                'min': min,
+                'round': round,
+                'sum': sum,
+                'pow': pow,
+                'complex': complex,
+                'divmod': divmod,
+                'float': float,
+                'int': int,
+            }
 
-        my_log.log_gemini_skills(f'Internal calc result: {result}')
+            result = str(simple_eval(expression, functions=allowed_functions))
 
-        return result
-    except Exception as error:
-        #first try groq
-        r = my_groq.calc(expression, user_id=chat_id)
-        if r:
-            return r
-        r1, r0 = my_gemini_google.calc(expression, chat_id)
-        result = f'{r0}\n\n{r1}'.strip()
-        if result:
-            my_log.log_gemini_skills(f'Google calc result: {result}')
+            my_log.log_gemini_skills(f'Internal calc result: {result}')
+
             return result
-        else:
-            traceback_error = traceback.format_exc()
-            my_log.log_gemini_skills(f'Calc error: {expression}\n{error}\n\n{traceback_error}')
-            return f'Error: {error}\n\n{traceback_error}'
+    except Exception as error:
+        my_log.log_gemini_skills(f'Calc strict error: {expression}\n{error}')
+
+    #first try groq
+    r = my_groq.calc(expression, user_id=user_id)
+    if r:
+        my_log.log_gemini_skills(f'Groq calc result: {r}')
+        return r
+
+    # try gemini calc
+    r1, r0 = my_gemini_google.calc(expression, user_id)
+    result = f'{r0}\n\n{r1}'.strip()
+
+    if result:
+        my_log.log_gemini_skills(f'Google calc result: {result}')
+        return result
+    else:
+        my_log.log_gemini_skills(f'Calc error: Failed to calculate {expression}')
+        return f'Error: failed to calculate {expression}'
 
 
 calc_tool = calc
@@ -1175,8 +1190,14 @@ if __name__ == '__main__':
     # print(f"Time in Moscow: {moscow_time}")
 
     # test_calc()
+    r = calc(
+        'Generate lists of numbers for plotting the graph of the sin(x) function in the range from -5 to 5 with a step of 0.1.',
+        strict=False,
+        user_id='test'
+    )
+    print(r)
 
-    print(restore_id('-1234567890'))
+    # print(restore_id('-1234567890'))
 
     # print(sys.get_int_max_str_digits())
     # print(sys.set_int_max_str_digits())

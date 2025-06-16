@@ -31,7 +31,6 @@ from typing import Callable, List, Optional, Tuple, Union
 #from random import betavariate, choice, choices, expovariate, gammavariate, gauss, getrandbits, getstate, lognormvariate, normalvariate, paretovariate, randbytes, randint, randrange, sample, seed, setstate, shuffle, triangular, uniform, vonmisesvariate, weibullvariate
 
 from geopy.geocoders import Nominatim
-from sqlitedict import SqliteDict
 
 import cfg
 import my_db
@@ -53,7 +52,6 @@ MAX_REQUEST = 25000
 
 
 # {id:[{type,filename,data},{}],}
-# STORAGE = SqliteDict('db/skills_storage.db', autocommit=True)
 STORAGE = {}
 STORAGE_LOCK = threading.Lock()
 
@@ -119,12 +117,12 @@ def restore_id(chat_id: str) -> str:
     return chat_id
 
 
-def save_html_to_png(filename: str, html: str, chat_id: str) -> str:
+def save_html_to_image(filename: str, html: str, chat_id: str) -> str:
     '''
-    Save (render) HTML code to PNG file and send it to the user.
+    Save (render) HTML code to image file and send it to the user.
     Args:
-        filename: str - The desired file name for the PNG file (e.g., 'sales_chart').
-        html: str - The HTML code to be saved as a PNG file. The page must be fully formed according to the HTML standard with css included.
+        filename: str - The desired file name for the image file (e.g., 'sales_chart').
+        html: str - The HTML code to be saved as a image file. The page must be fully formed according to the HTML standard with css included.
         chat_id: str - The Telegram user chat ID where the file should be sent.
     Returns:
         str: 'OK' or 'FAILED'
@@ -164,17 +162,17 @@ def save_html_to_png(filename: str, html: str, chat_id: str) -> str:
             return "OK"
     except Exception as e:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills_html(f'save_html_to_png: Unexpected error: {e}\n\n{traceback_error}\n\n{html}\n\n{filename}\n\n{chat_id}')
+        my_log.log_gemini_skills_html(f'save_html_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{html}\n\n{filename}\n\n{chat_id}')
         return f"FAIL: An unexpected error occurred: {e}"
 
     return 'FAILED'        
 
 
-def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:
+def save_pandas_chart_to_image(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:
     '''
-    Send a chart generated from Pandas data as a PNG image file to the user.
+    Send a chart generated from Pandas data as a image image file to the user.
     Args:
-        filename: str - The desired file name for the PNG file (e.g., 'sales_chart').
+        filename: str - The desired file name for the image file (e.g., 'sales_chart').
         data: dict - A dictionary where keys are column names and values are lists of data.
                      Example: {'Date': ['2023-01-01', '2023-01-02'], 'Sales': [100, 150]}
         chart_type: str - The type of chart to generate (e.g., 'line', 'bar', 'pie', 'scatter').
@@ -186,7 +184,7 @@ def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
     '''
     try:
-        my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png {chat_id}\n\n{filename}\n{chart_type}\n{data}')
+        my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_image {chat_id}\n\n{filename}\n{chart_type}\n{data}')
 
         chat_id = restore_id(chat_id)
         if chat_id == '[unknown]':
@@ -236,17 +234,17 @@ def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id
                         **pie_plot_params_for_kwargs
                     )
                 else:
-                    my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: Pie chart requires "y" in plot_params and existing column.')
+                    my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_image: Pie chart requires "y" in plot_params and existing column.')
                     return "FAIL: Pie chart requires a 'y' parameter in plot_params pointing to a valid column."
             elif chart_type == 'scatter':
                 # Scatter plots require 'x' and 'y' in plot_params
                 if 'x' in plot_params and 'y' in plot_params and plot_params['x'] in df.columns and plot_params['y'] in df.columns:
                     df.plot(kind='scatter', x=plot_params['x'], y=plot_params['y'], ax=ax, **{k:v for k,v in plot_params.items() if k not in ['x', 'y']})
                 else:
-                    my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: Scatter plot requires "x" and "y" in plot_params.')
+                    my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_image: Scatter plot requires "x" and "y" in plot_params.')
                     return "FAIL: Scatter plot requires 'x' and 'y' parameters in plot_params."
             else:
-                my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: Unsupported chart type: {chart_type}')
+                my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_image: Unsupported chart type: {chart_type}')
                 return f"FAIL: Unsupported chart type: {chart_type}. Supported types: line, bar, pie, scatter."
 
             # Add title and labels if present in plot_params
@@ -260,7 +258,7 @@ def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id
             # Adjust layout to prevent labels/titles from overlapping
             plt.tight_layout()
 
-            # Save the plot to a BytesIO object in PNG format
+            # Save the plot to a BytesIO object in image format
             buffer = io.BytesIO()
             plt.savefig(buffer, format='png', bbox_inches='tight') # bbox_inches='tight' crops whitespace
             buffer.seek(0) # Rewind the buffer to the beginning
@@ -269,7 +267,7 @@ def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id
             plt.close(fig) # Close the figure to free up memory
 
         except Exception as chart_error:
-            my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: Error generating chart: {chart_error}\n\n{traceback.format_exc()}')
+            my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_image: Error generating chart: {chart_error}\n\n{traceback.format_exc()}')
             return f"FAIL: Error generating chart: {chart_error}"
 
         # If bytes were successfully generated, prepare the item for storage
@@ -287,21 +285,21 @@ def save_pandas_chart_to_png(filename: str, data: dict, chart_type: str, chat_id
                     STORAGE[chat_id] = [item,]
             return "OK"
         else:
-            # This case indicates that no PNG data was generated.
-            my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: No PNG data could be generated for chat {chat_id}\n\nData: {data}\nChart Type: {chart_type}')
-            return "FAIL: No PNG data could be generated."
+            # This case indicates that no image data was generated.
+            my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_image: No image data could be generated for chat {chat_id}\n\nData: {data}\nChart Type: {chart_type}')
+            return "FAIL: No image data could be generated."
 
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nData: {data}\nChart Type: {chart_type}\nChat ID: {chat_id}')
+        my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_image: Unexpected error: {error}\n\n{traceback_error}\n\nData: {data}\nChart Type: {chart_type}\nChat ID: {chat_id}')
         return f"FAIL: An unexpected error occurred: {error}"
 
 
-def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> str:
+def save_diagram_to_image(filename: str, text: str, engine: str, chat_id: str) -> str:
     '''
-    Send a diagram as a PNG image file to the user, rendered from various text formats.
+    Send a diagram as an image file to the user, rendered from various text formats.
     Args:
-        filename: str - The desired file name for the PNG file (e.g., 'diagram').
+        filename: str - The desired file name for the image file (e.g., 'diagram').
         text: str - The diagram definition text in Mermaid, PlantUML, Graphviz (DOT), or Ditaa format.
                      **Important considerations for 'text' parameter:**
                      - The input must strictly adhere to the syntax of the specified 'engine'.
@@ -317,7 +315,7 @@ def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> 
     '''
 
     try:
-        my_log.log_gemini_skills_save_docs(f'save_diagram_to_png {chat_id}\n\n{filename}\n{text}\nEngine: {engine}')
+        my_log.log_gemini_skills_save_docs(f'save_diagram_to_image {chat_id}\n\n{filename}\n{text}\nEngine: {engine}')
 
         chat_id = restore_id(chat_id)
         if chat_id == '[unknown]':
@@ -328,19 +326,19 @@ def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> 
             filename += '.png'
         filename = utils.safe_fname(filename)
 
-        # Validate the 'engine' parameter to prevent unsupported values from reaching text_to_png
+        # Validate the 'engine' parameter to prevent unsupported values from reaching text_to_image
         supported_engines = {'plantuml', 'graphviz', 'ditaa', 'mermaid'}
         if engine not in supported_engines:
             return f"FAIL: Unsupported diagram engine '{engine}'. Supported engines are: {', '.join(supported_engines)}."
 
-        # Convert the diagram text to PNG bytes using the text_to_png function
+        # Convert the diagram text to image bytes using the text_to_image function
         try:
             if engine == 'mermaid':
                 png_output = my_mermaid.generate_mermaid_png_bytes(text)
             else:
                 png_output = my_plantweb.text_to_png(text, engine=engine, format='png')
         except Exception as rendering_error:
-            my_log.log_gemini_skills_save_docs(f'save_diagram_to_png: Error rendering diagram: {rendering_error}\n\n{traceback.format_exc()}')
+            my_log.log_gemini_skills_save_docs(f'save_diagram_to_image: Error rendering diagram: {rendering_error}\n\n{traceback.format_exc()}')
             return f"FAIL: Error during diagram rendering: {rendering_error}"
 
         # Check the type of png_output to determine success or failure
@@ -361,23 +359,23 @@ def save_diagram_to_png(filename: str, text: str, engine: str, chat_id: str) -> 
             return "OK"
 
         elif isinstance(png_output, str):
-            # If a string is returned, it indicates an error message from text_to_png
-            my_log.log_gemini_skills_save_docs(f'save_diagram_to_png: No PNG data could be generated for chat {chat_id} - {png_output}\n\nText length: {len(text)}')
-            return f"FAIL: No PNG data could be generated: {png_output}"
+            # If a string is returned, it indicates an error message from text_to_image
+            my_log.log_gemini_skills_save_docs(f'save_diagram_to_image: No image data could be generated for chat {chat_id} - {png_output}\n\nText length: {len(text)}')
+            return f"FAIL: No image data could be generated: {png_output}"
         else:
             # Unexpected return type
-            my_log.log_gemini_skills_save_docs(f'save_diagram_to_png: Unexpected return type from text_to_png for chat {chat_id}\n\nText length: {len(text)}')
-            return "FAIL: An unexpected error occurred during PNG generation."
+            my_log.log_gemini_skills_save_docs(f'save_diagram_to_image: Unexpected return type from text_to_image for chat {chat_id}\n\nText length: {len(text)}')
+            return "FAIL: An unexpected error occurred during image generation."
 
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills_save_docs(f'save_diagram_to_png: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        my_log.log_gemini_skills_save_docs(f'save_diagram_to_image: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
         return f"FAIL: An unexpected error occurred: {error}"
 
 
 def save_to_docx(filename: str, text: str, chat_id: str) -> str:
     '''
-    Send DOCX file to user, converted from markdown text.
+    Send DOCX file to user, converted from markdown text(~~ for strikethrough).
     Args:
         filename: str - The desired file name for the DOCX file (e.g., 'document').
         text: str - The markdown formatted text to convert to DOCX.
@@ -398,11 +396,11 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
         filename = utils.safe_fname(filename)
 
         # Convert the markdown text to DOCX bytes using the provided function
-        try:
-            docx_bytes = my_pandoc.convert_text_to_docx(text)
-        except Exception as conversion_error:
-            my_log.log_gemini_skills_save_docs(f'save_to_docx: Error converting text to DOCX: {conversion_error}\n\n{traceback.format_exc()}')
-            return f"FAIL: Error converting text to DOCX: {conversion_error}"
+        docx_bytes = my_pandoc.convert_markdown_to_document(text, 'docx')
+        if isinstance(docx_bytes, str):
+            # If a string is returned, it indicates an error message from convert_markdown_to_document
+            my_log.log_gemini_skills_save_docs(f'save_to_docx: No DOCX data could be generated for chat {chat_id} - {docx_bytes}')
+            return f"FAIL: No DOCX data could be generated: {docx_bytes}"
 
         # If bytes were successfully generated, prepare the item for storage
         if docx_bytes:
@@ -510,6 +508,69 @@ def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log_gemini_skills_save_docs(f'save_to_excel: Unexpected error: {error}\n\n{traceback_error}\n\n{data}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {error}"
+
+
+def save_to_pdf(filename: str, text: str, chat_id: str) -> str:
+    """
+    Send PDF file to user, converted from markdown text(~~ for strikethrough).
+
+    Args:
+        filename: str - The desired file name for the PDF file (e.g., 'document').
+        text: str - The markdown formatted text to convert to PDF.
+        chat_id: str - The Telegram user chat ID where the file should be sent.
+
+    Returns:
+        str: 'OK' if the file was successfully sent, or a detailed 'FAIL' message otherwise.
+    """
+    try:
+        # Log the function call for debugging/monitoring purposes
+        my_log.log_gemini_skills_save_docs(f'save_to_pdf {chat_id}\n\n{filename}\n{text}')
+
+        # Restore the actual chat ID
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        # Ensure filename has .pdf extension and is safe for file system operations
+        if not filename.lower().endswith('.pdf'):
+            filename += '.pdf'
+        filename = utils.safe_fname(filename)
+
+        # Convert the markdown text to PDF bytes using the underlying utility
+        pdf_bytes = None
+
+        data = my_pandoc.convert_markdown_to_document(text, 'pdf')
+        if isinstance(data, str):
+            my_log.log_gemini_skills_save_docs(f'save_to_pdf: Error converting text to PDF: {data}')
+            return data
+
+        pdf_bytes = io.BytesIO(data).getvalue()
+
+        # If PDF bytes were successfully generated, prepare the item for storage
+        if pdf_bytes:
+            item = {
+                'type': 'pdf file', # Define the type for the stored item
+                'filename': filename,
+                'data': pdf_bytes,
+            }
+            # Use a global storage mechanism with a lock to ensure thread safety
+            with STORAGE_LOCK:
+                if chat_id in STORAGE:
+                    if item not in STORAGE[chat_id]: # Avoid duplicate entries if necessary
+                        STORAGE[chat_id].append(item)
+                else:
+                    STORAGE[chat_id] = [item,]
+            return "OK"
+        else:
+            # This case indicates that no PDF data was generated, even after attempting conversion.
+            my_log.log_gemini_skills_save_docs(f'save_to_pdf: No PDF data could be generated for chat {chat_id}\n\nText length: {len(text)}')
+            return "FAIL: No PDF data could be generated."
+
+    except Exception as error:
+        # Catch any unexpected errors that occur during the function's execution
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills_save_docs(f'save_to_pdf: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
         return f"FAIL: An unexpected error occurred: {error}"
 
 

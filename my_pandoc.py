@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 
+import cachetools.func
 import io
 import os
 import subprocess
+import tempfile
 import traceback
 
 import markdown
@@ -11,6 +13,7 @@ import PyPDF2
 import pandas as pd
 from bs4 import BeautifulSoup
 from pptx import Presentation
+from pygments.formatters import HtmlFormatter
 
 import my_log
 import utils
@@ -113,39 +116,216 @@ def convert_djvu2pdf(input_file: str) -> str:
     return output_file
 
 
-def convert_text_to_docx(text: str) -> bytes:
-    '''convert md text to docx file'''
-    output_file = utils.get_tmp_fname() + '.docx'
-    html = markdown.markdown(text, extensions=['tables', 'fenced_code'])
-    subprocess.run(['pandoc', '+RTS', '-M256M', '-RTS', '-f', 'html', '-t', 'docx', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
-    with open(output_file, 'rb') as f:
-        data = f.read()
-    utils.remove_file(output_file)
-    return data
+@cachetools.func.ttl_cache(maxsize=10, ttl=5 * 60)
+def convert_markdown_to_document(text: str, output_format: str) -> bytes | str:
+    """
+    Converts Markdown-formatted text to a specified document format (DOCX or PDF).
+    Uses Pandoc for DOCX and wkhtmltopdf for PDF.
+    Assumes Pandoc and wkhtmltopdf are installed and accessible in the system's PATH.
 
+    Args:
+        text (str): The input text in Markdown format.
+        output_format (str): The desired output format ('docx' or 'pdf').
 
-def convert_text_to_odt(text: str) -> bytes:
-    '''convert md text to odt file'''
-    output_file = utils.get_tmp_fname() + '.odt'
-    html = utils.bot_markdown_to_html(text)
-    html = html.replace('\n', '<br>')
-    subprocess.run(['pandoc', '+RTS', '-M256M', '-RTS', '-f', 'html', '-t', 'odt', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
-    with open(output_file, 'rb') as f:
-        data = f.read()
-    utils.remove_file(output_file)
-    return data
+    Returns:
+        bytes | str: The content of the generated document file. Or error string.
 
+    """
 
-def convert_text_to_pdf(text: str) -> bytes:
-    '''convert text to pdf file'''
-    output_file = utils.get_tmp_fname() + '.pdf'
-    html = utils.bot_markdown_to_html(text)
-    html = html.replace('\n', '<br>')
-    subprocess.run(['pandoc', '+RTS', '-M256M', '-RTS', '-f', 'html', '-t', 'pdf', '-o', output_file, '-'], input=html.encode('utf-8'), stdout=subprocess.PIPE)
-    with open(output_file, 'rb') as f:
-        data = f.read()
-    utils.remove_file(output_file)
-    return data
+    temp_input_file = None # Может быть HTML или Markdown
+    output_document_file = None
+
+    try:
+        if output_format == 'docx':
+            file_extension = '.docx'
+            # Для DOCX: создаем временный файл с исходным Markdown
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.md', encoding='utf-8') as f_md:
+                temp_input_file = f_md.name
+                f_md.write(text)
+
+            output_document_file = utils.get_tmp_fname() + file_extension
+
+            # Команда для Pandoc: читаем Markdown, выводим в DOCX, используем стиль подсветки
+            command = [
+                'pandoc', '+RTS', '-M256M', '-RTS',
+                '-f', 'markdown',              # Входной формат: Markdown
+                '-t', 'docx',
+                '--highlight-style=pygments',  # Активируем подсветку Pandoc
+                '-o', output_document_file,
+                temp_input_file
+            ]
+
+        elif output_format == 'pdf':
+            file_extension = '.pdf'
+            # Для PDF: сначала генерируем HTML с Pygments CSS, как раньше
+            pygments_css = HtmlFormatter(style='default').get_style_defs('.codehilite')
+
+            STYLE = f"""<style>
+              /* Общие стили для тела документа */
+              body {{
+                font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; /* Выбирай шрифты с поддержкой кириллицы */
+                line-height: 1.6;
+                color: #333;
+                margin: 20mm; /* Поля для страницы, чтобы выглядело как документ */
+              }}
+
+              /* Заголовки */
+              h1 {{
+                font-size: 2.5em;
+                border-bottom: 1px solid #ccc;
+                padding-bottom: 0.3em;
+                margin-top: 1.5em;
+                margin-bottom: 0.8em;
+                color: #0056b3; /* Чуть темнее синий для заголовков */
+              }}
+              h2 {{
+                font-size: 2em;
+                border-bottom: 1px dashed #eee;
+                padding-bottom: 0.3em;
+                margin-top: 1.2em;
+                margin-bottom: 0.6em;
+                color: #0056b3;
+              }}
+              h3 {{
+                font-size: 1.5em;
+                margin-top: 1em;
+                margin-bottom: 0.5em;
+                color: #0056b3;
+              }}
+              h4, h5, h6 {{
+                font-size: 1.2em;
+                margin-top: 0.8em;
+                margin-bottom: 0.4em;
+                color: #0056b3;
+              }}
+
+              /* Параграфы */
+              p {{
+                margin-bottom: 1em;
+              }}
+
+              /* Списки */
+              ul, ol {{
+                margin-left: 20px;
+                margin-bottom: 1em;
+              }}
+              li {{
+                margin-bottom: 0.5em;
+              }}
+
+              /* Жирный и курсив */
+              strong, b {{
+                font-weight: bold;
+              }}
+              em, i {{
+                font-style: italic;
+              }}
+
+              /* Цитаты */
+              blockquote {{
+                border-left: 4px solid #b3d9ff; /* Легкая синяя полоса */
+                padding: 10px 15px;
+                margin: 1em 0;
+                color: #555;
+                background-color: #f0f8ff; /* Очень легкий фон */
+              }}
+
+              /* Код в строке */
+              code {{
+                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+                background-color: #f8f8f8;
+                padding: 2px 4px;
+                border-radius: 3px;
+                font-size: 0.9em;
+              }}
+
+              /* Блоки кода */
+              pre {{
+                background-color: #f8f8f8;
+                padding: 10px 15px;
+                border-radius: 5px;
+                overflow-x: auto; /* Для длинных строк кода */
+                margin-bottom: 1em;
+              }}
+              pre code {{
+                background-color: transparent; /* Убираем фон для внутреннего кода */
+                padding: 0;
+                font-size: 1em; /* Размер шрифта для блоков кода */
+                display: block; /* Чтобы код занимал всю ширину pre */
+              }}
+
+              /* Ссылки */
+              a {{
+                color: #007bff;
+                text-decoration: none;
+              }}
+              a:hover {{
+                text-decoration: underline;
+              }}
+
+              /* Горизонтальная линия */
+              hr {{
+                border: 0;
+                border-top: 1px solid #ccc;
+                margin: 2em 0;
+              }}
+
+              /* Изображения */
+              img {{
+                max-width: 100%; /* Чтобы изображения не вылезали за пределы страницы */
+                height: auto;
+                display: block; /* Центрирование, если нужно, можно добавить margin: 0 auto; */
+                margin-bottom: 1em;
+              }}
+
+              /* Стили для синтаксической подсветки Pygments */
+              {pygments_css}
+            </style>
+            """
+
+            raw_html_body = markdown.markdown(text, extensions=['smarty', 'toc', 'extra', 'codehilite', 'sane_lists', 'markdown_del_ins'])
+            html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Документ из Markdown</title>
+    {STYLE}
+</head>
+<body>
+{raw_html_body}
+</body>
+</html>"""
+
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.html', encoding='utf-8') as f_html:
+                temp_input_file = f_html.name
+                f_html.write(html_content)
+
+            output_document_file = utils.get_tmp_fname() + file_extension
+            # Команда для wkhtmltopdf: читаем HTML, выводим в PDF
+            command = ['wkhtmltopdf', temp_input_file, output_document_file]
+
+        else:
+            return f"Unsupported output format: {output_format}. Choose 'docx' or 'pdf'."
+
+        # Выполняем команду конвертации
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+
+        if result.returncode != 0:
+            error_message = f"Conversion to {output_format} failed with error code {result.returncode}:\n{result.stderr}"
+            return f"Failed to convert text to {output_format}: {error_message}"
+
+        # Читаем сгенерированный файл
+        with open(output_document_file, 'rb') as f_doc:
+            document_data = f_doc.read()
+
+        return document_data
+
+    finally:
+        # Удаляем временные файлы
+        if temp_input_file:
+            utils.remove_file(temp_input_file)
+        if output_document_file:
+            utils.remove_file(output_document_file)
 
 
 def convert_file_to_html(data: bytes, filename: str) -> str:
@@ -461,8 +641,6 @@ if __name__ == '__main__':
     # result = fb2_to_text(open('1.pdf', 'rb').read(), '.pdf')
     # print(result)
     # print(convert_djvu2pdf('/home/ubuntu/tmp/2.djvu'))
-
-
 
     # with open('c:/Users/user/Downloads/2.docx', 'rb') as f:
     #     html = convert_file_to_html(f.read(), '2.docx')

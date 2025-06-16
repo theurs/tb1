@@ -4941,7 +4941,7 @@ def save_history(message: telebot.types.Message):
             m = send_document(
                 message,
                 message.chat.id,
-                document=my_pandoc.convert_text_to_docx(prompt),
+                document=my_pandoc.convert_markdown_to_document(prompt, 'docx'),
                 message_thread_id=message.message_thread_id,
                 caption='resp.docx',
                 visible_file_name = 'resp.docx',
@@ -9296,7 +9296,7 @@ def do_task(message, custom_prompt: str = ''):
                                 my_log.log_echo(message, f'[{gmodel} + {help_model}] {answer}')
                             else:
                                 my_log.log_echo(message, f'[{gmodel}] {answer}')
- 
+
 
                             try: # если в ответе есть файлы, то отправляем его
                                 # Получаем данные из STORAGE.
@@ -9330,12 +9330,22 @@ def do_task(message, custom_prompt: str = ''):
                                                 )
                                                 log_message(m)
                                                 continue
+                                            elif _type in ('pdf file',):
+                                                m = send_document(
+                                                    message=message,
+                                                    chat_id=message.chat.id,
+                                                    document=data,
+                                                    reply_to_message_id = message.message_id,
+                                                    reply_markup=get_keyboard('hide', message),
+                                                    caption=filename,
+                                                    visible_file_name=filename,
+                                                )
                                         except Exception as individual_error:
                                             # Логируем ошибку для этого конкретного элемента, но продолжаем цикл
                                             my_log.log2(f'tb:do_task:send_file_item_error for chat {chat_id_full}, item {i}: {individual_error}')
                                             # Опционально: можно здесь сделать что-то еще, например, пропустить этот элемент
                                             continue # Продолжаем к следующему элементу в списке
-                                    
+
                                     # После попытки отправки всех потенциальных аудиосообщений, удаляем запись из STORAGE
                                     # Удаляем только после того, как прошли по всему списку, независимо от ошибок отдельных отправок
                                     my_skills.STORAGE.pop(chat_id_full)

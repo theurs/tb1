@@ -109,7 +109,7 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
             pass
             # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH уже задан: {os.environ['PUPPETEER_EXECUTABLE_PATH']}")
 
-        command = [cmd, "-e", "png", "-i", "-", "-o", "-", "-p", puppeteer_config_path]
+        command = [cmd, "-e", "png", "-i", "-", "-o", "-", "-s", "2", "-p", puppeteer_config_path]
 
         try:
             process = subprocess.Popen(
@@ -142,11 +142,53 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
 if __name__ == "__main__":
     mermaid_diagram = """
 graph TD
-    A[Начало] --> B{Решение}
-    B -- Да --> C[Действие 1]
-    B -- Нет --> D[Действие 2]
-    C --> E[Конец]
-    D --> E
+    subgraph Инициализация Системы
+        A[Старт Приложения] --> B(Загрузка Конфигурации)
+        B --> C{Проверка Подключения к БД?}
+        C -- Да --> D[Подключение к Базе Данных]
+        C -- Нет --> E(Сообщение об Ошибке и Выход)
+        D --> F[Инициализация Модулей]
+    end
+
+    subgraph Обработка Запросов Пользователя
+        G[Ожидание Входящих Запросов]
+        F --> G
+
+        G --> H{Тип Запроса?}
+        H -- Запрос Данных --> I[Валидация Запроса]
+        H -- Запись Данных --> J[Валидация Запроса на Запись]
+        H -- Отчет --> K[Генерация Отчета]
+        H -- Неизвестный --> L(Ошибка: Неизвестный Запрос)
+    end
+
+    subgraph Модуль Обработки Данных
+        I --> M(Извлечение Данных из БД)
+        J --> N(Запись Данных в БД)
+
+        M --> P{Данные Найдены?}
+        P -- Да --> Q[Форматирование Результата]
+        P -- Нет --> R(Сообщение: Данные не найдены)
+
+        N --> S{Запись Успешна?}
+        S -- Да --> T(Подтверждение Записи)
+        S -- Нет --> U(Ошибка Записи: Откат Транзакции)
+    end
+
+    subgraph Модуль Генерации Отчетов
+        K --> V(Сбор Данных для Отчета)
+        V --> W[Анализ и Агрегация]
+        W --> X(Генерация PDF/Excel Отчета)
+        X --> Y(Отправка Отчета Пользователю)
+    end
+
+    Q --> Z(Отправка Ответа Пользователю)
+    R --> Z
+    T --> Z
+    U --> Z
+    L --> Z
+
+    E --- Завершение ---> END_APP(Завершение Приложения)
+    Z --- Продолжение ---> G
     """
     try:
         png_bytes = generate_mermaid_png_bytes(mermaid_diagram)

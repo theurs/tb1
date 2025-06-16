@@ -4,6 +4,7 @@ import io
 import json
 import os
 import time
+import unicodedata
 
 from google import genai
 from google.genai.types import (
@@ -30,6 +31,28 @@ POSSIBLE_MODELS_TTS = [
     "gemini-2.5-flash-preview-tts",
     "gemini-2.5-pro-preview-tts"
 ]
+
+
+def visual_len(text: str) -> int:
+    """
+    Вычисляет 'визуальную' длину строки, считая базовые символы
+    с последующими комбинирующими Unicode знаками (например, ударениями)
+    как один логический символ.
+
+    Args:
+        text (str): Входная строка.
+
+    Returns:
+        int: Визуальная длина строки.
+    """
+    length = 0
+    for char in text:
+        # Проверяем, является ли символ НЕ комбинирующим знаком.
+        # Комбинирующие знаки (например, ударения) имеют категорию,
+        # начинающуюся с 'M' (Mark: Mn, Me, Mc).
+        if unicodedata.category(char)[0] != 'M':
+            length += 1
+    return length
 
 
 def generate_tts_wav_bytes(
@@ -60,7 +83,7 @@ def generate_tts_wav_bytes(
     #     return None
 
     # Если текст слишком длинный, разбиваем на чанки и используем параллельную обработку
-    if len(text_to_speak) > 2200:
+    if visual_len(text_to_speak) > 2200:
         chunks = utils.split_text(text_to_speak, 2200)
         return tts_chunked_text(chunks=chunks, voice_name=voice_name, model=model_id, lang=lang)
 
@@ -306,6 +329,53 @@ def tts_chunked_text(
 #             my_log.log_gemini(f"Не удалось сгенерировать аудио для чанка {i+1}: '{chunk[:50]}...'")
 
 
+def replace_plus_with_unicode_accents(text: str) -> str:
+    """
+    Заменяет знак '+' перед ударной гласной на юникодный знак ударения.
+    Поддерживает русские и английские гласные.
+
+    Args:
+        text (str): Исходный текст с ударениями, обозначенными знаком '+'
+                    перед ударной гласной (например, "прив+ет").
+
+    Returns:
+        str: Текст, где '+' и следующая за ней гласная заменены на
+             соответствующую юникодную букву под ударением.
+    """
+    # Карта соответствия гласных с ударением
+    ACCENT_MAP = {
+        # Русские строчные
+        'а': 'а́', 'е': 'е́', 'и': 'и́', 'о': 'о́', 'у': 'у́',
+        'ы': 'ы́', 'э': 'э́', 'ю': 'ю́', 'я': 'я́',
+        # Русские заглавные
+        'А': 'А́', 'Е': 'Е́', 'И': 'И́', 'О': 'О́', 'У': 'У́',
+        'Ы': 'Ы́', 'Э': 'Э́', 'Ю': 'Ю́', 'Я': 'Я́',
+        # Английские строчные (для общих случаев или заимствований)
+        'a': 'á', 'e': 'é', 'i': 'í', 'o': 'ó', 'u': 'ú', 'y': 'ý',
+        # Английские заглавные
+        'A': 'Á', 'E': 'É', 'I': 'Í', 'O': 'Ó', 'U': 'Ú', 'Y': 'Ý',
+    }
+
+    result_chars = []
+    i = 0
+    while i < len(text):
+        if text[i] == '+':
+            # Проверяем, есть ли следующий символ и является ли он гласной из нашей карты
+            if i + 1 < len(text) and text[i+1] in ACCENT_MAP:
+                # Если да, добавляем ударную гласную и пропускаем '+' и саму гласную
+                result_chars.append(ACCENT_MAP[text[i+1]])
+                i += 2
+            else:
+                # Если '+' не перед ударной гласной, оставляем как есть
+                result_chars.append(text[i])
+                i += 1
+        else:
+            # Если это не '+', просто добавляем символ
+            result_chars.append(text[i])
+            i += 1
+    return "".join(result_chars)
+
+
 def process_chunks_for_tts(json_file_path: str, base_output_dir: str, book_name: str) -> None:
     """
     Reads text chunks from a JSON file, synthesizes speech for each chunk
@@ -373,7 +443,7 @@ def process_chunks_for_tts(json_file_path: str, base_output_dir: str, book_name:
         # The available `tts` tool *sends* audio, it does not return bytes
         # to be saved locally, so it cannot be used directly here.
         wav_bytes = generate_tts_wav_bytes(
-            text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца\n\n{chunk}',
+            text_to_speak=f'читай фрагмент книги на русском языке ровным спокойным голосом профессионального чтеца\n\n{replace_plus_with_unicode_accents(chunk)}',
             voice_name="Iapetus" # Use the specified voice
         )
         # ----------------------------------------------------

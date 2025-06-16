@@ -62,7 +62,7 @@ def text_to_image(prompt: str) -> str:
     Use it only if asked by user to generate image from text.
     Avoid using text_to_image for precise mathematical expressions, structured diagrams,
     or data-driven charts; instead, use save_diagram_to_image or save_pandas_chart_to_image
-    for those specific tasks.
+    for those specific tasks. Use save_html_to_image for mostly textual content.
 
     Args:
         prompt: str - text to generate image from

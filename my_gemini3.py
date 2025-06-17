@@ -892,7 +892,11 @@ TEXT:
     translated_dict = utils.string_to_dict(translated)
     if translated_dict:
         if isinstance(translated_dict, dict):
-            l1 = translated_dict['translation']
+            try:
+                l1 = translated_dict['translation']
+            except KeyError as error:
+                my_log.log_gemini(f'my_gemini3:translate: key error {str(translated_dict)}')
+                raise error
         elif isinstance(translated_dict, str):
             return translated_dict
         elif isinstance(translated_dict, list):

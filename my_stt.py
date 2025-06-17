@@ -39,7 +39,7 @@ class HashingError(Exception):
 
 
 # --- Utility Function: File Hashing ---
-def _get_file_hash(filepath: str) -> str:
+def _get_file_hash(filepath: str|bytes) -> str:
     """
     Generates a BLAKE2b hash for the given file, optimized for potentially large files.
 
@@ -68,7 +68,15 @@ def _get_file_hash(filepath: str) -> str:
 
     hasher = hashlib.blake2b()
 
+    tmpfname = None
+
     try:
+        if isinstance(filepath, bytes):
+            tmpfname = utils.get_tmp_fname()
+            with open(tmpfname, 'wb') as f:
+                f.write(filepath)
+            filepath = tmpfname
+
         file_size = os.path.getsize(filepath)
 
         with open(filepath, 'rb') as f:
@@ -115,6 +123,9 @@ def _get_file_hash(filepath: str) -> str:
         my_log.log2(f"my_stt:_get_file_hash: Generic error hashing file {filepath}: {e}")
         # Raise a custom HashingError, chaining the original exception for context.
         raise HashingError(f"Failed to hash file {filepath}: {e}") from e
+    finally:
+        if tmpfname:
+            os.remove(tmpfname)
 
 
 # --- Cache Key Generator ---

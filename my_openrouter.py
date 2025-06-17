@@ -233,6 +233,9 @@ def ai(prompt: str = '',
                 return ai(prompt, mem, user_id, system, model, temperature*2, max_tokens, timeout)
             text = ''
 
+        if not text:
+            if response_str:
+                text = response_str
         return status, text
 
 

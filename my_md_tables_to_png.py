@@ -408,7 +408,7 @@ def find_markdown_tables(markdown_text: str) -> List[str]:
     return tables
 
 
-# # @ttl_cache(maxsize=100, ttl=5*60)
+@cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
 def html_to_image_bytes_playwright(
     html: str,
     css_style: Optional[str] = None,

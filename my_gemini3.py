@@ -77,7 +77,7 @@ def get_config(
     #     THINKING_BUDGET = None
     # thinking_config = ThinkingConfig(
     #     thinking_budget=THINKING_BUDGET,
-    #     include_thoughts=True,
+    #     # include_thoughts=True,
     # )
     json = "application/json" if json_output else None
     gen_config = GenerateContentConfig(
@@ -381,7 +381,7 @@ def chat(
                         my_skills.speech_to_text,
                         my_skills.edit_image,
                         my_skills.translate_documents,
-                        my_skills.compose_creative_text,
+                        # my_skills.compose_creative_text, # its too slow
                         my_skills.text_to_image,
                         my_skills.save_to_excel,
                         my_skills.save_to_docx,
@@ -1076,8 +1076,17 @@ if __name__ == "__main__":
 
     # один раз запустить надо
     # converts_all_mems()
-    # print(list_models(include_context=False))
+    # print(list_models(include_context=True))
 
-    chat_cli(model = cfg.gemini_flash_light_model)
+    # chat_cli(model = 'gemini-2.5-flash-lite-preview-06-17')
+
+    reset('test')
+    with open(r'c:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_-_znachaschie_tsifryi_106746.txt', 'r', encoding='utf-8') as f:
+        t = f.read()
+    q = f'Составь оглавление книги из текста:\n\n\n{t}'
+    # print(chat(q, 'test', model = 'gemini-2.5-flash-lite-preview-06-17', system='отвечай всегда по-русски'))
+    print(len(q))
+    print(chat(q, 'test', model = 'gemini-2.5-flash-preview-05-20', system='отвечай всегда по-русски'))
+
 
     my_db.close()

@@ -2576,59 +2576,65 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
         file_name: Название файла
         message: Сообщение
     '''
-    bot_reply_tr(message, 'Processing audio file...')
-    with ShowAction(message, 'typing', 15):
-        if isinstance(data, str):
-            data = utils.download_audio_file_as_bytes(data)
-            if not data:
-                bot_reply_tr(message, 'Audio file not found')
-                return
+    try:
+        bot_reply_tr(message, 'Processing audio file...')
+        with ShowAction(message, 'typing', 15):
+            if isinstance(data, str):
+                data = utils.download_audio_file_as_bytes(data)
+                if not data:
+                    bot_reply_tr(message, 'Audio file not found')
+                    return
 
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
+            chat_id_full = get_topic_id(message)
+            lang = get_lang(chat_id_full, message)
 
-        text = my_stt.stt(
-            input_file=data,
-            lang=lang,
-            chat_id=chat_id_full
-        )
+            text = my_stt.stt(
+                input_file=data,
+                lang=lang,
+                chat_id=chat_id_full
+            )
 
-        if text:
-            # send captions
-            kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
-            try:
-                m3 = send_document(
-                    message,
-                    message.chat.id,
-                    text.encode('utf-8', 'replace'),
-                    reply_to_message_id=message.message_id,
-                    caption = tr(f'Transcription generated at @{_bot_name}', lang),
-                    reply_markup=kbd,
-                    parse_mode='HTML',
-                    disable_notification = True,
-                    visible_file_name = file_name + '.txt',
-                    message_thread_id = message.message_thread_id,
-                )
-                log_message(m3)
+            if text:
+                # send captions
+                kbd = get_keyboard('hide', message) if message.chat.type != 'private' else None
+                try:
+                    m3 = send_document(
+                        message,
+                        message.chat.id,
+                        text.encode('utf-8', 'replace'),
+                        reply_to_message_id=message.message_id,
+                        caption = tr(f'Transcription generated at @{_bot_name}', lang),
+                        reply_markup=kbd,
+                        parse_mode='HTML',
+                        disable_notification = True,
+                        visible_file_name = file_name + '.txt',
+                        message_thread_id = message.message_thread_id,
+                    )
+                    log_message(m3)
 
-                # сохранить как файл для дальнейших вопросов по нему субтитры или srt или vtt или чистый текст
-                saved_text = text
+                    # сохранить как файл для дальнейших вопросов по нему субтитры или srt или vtt или чистый текст
+                    saved_text = text
 
-                my_db.set_user_property(chat_id_full, 'saved_file_name', f'transcribed audio file: captions_{utils.get_full_time().replace(":", "-")}.txt')
-                my_db.set_user_property(chat_id_full, 'saved_file', saved_text)
+                    my_db.set_user_property(chat_id_full, 'saved_file_name', f'transcribed audio file: captions_{utils.get_full_time().replace(":", "-")}.txt')
+                    my_db.set_user_property(chat_id_full, 'saved_file', saved_text)
 
-                msg = tr('Transcription created successfully, use /ask command to query your text.', lang)
+                    msg = tr('Transcription created successfully, use /ask command to query your text.', lang)
 
-                COMMAND_MODE[chat_id_full] = ''
+                    COMMAND_MODE[chat_id_full] = ''
 
-                bot_reply(message, msg)
+                    bot_reply(message, msg)
 
-            except Exception as error_transcribe:
-                my_log.log2(f'tb:handle_voice:transcribe: {error_transcribe}')
+                except Exception as error_transcribe:
+                    my_log.log2(f'tb:handle_voice:transcribe: {error_transcribe}')
+                    bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
+
+            else:
                 bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
 
-        else:
-            bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:transcribe: {error}\n\n{str(message)}\n\n{traceback_error}')
+        bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
 
 
 @bot.message_handler(content_types = ['voice', 'video', 'video_note', 'audio'], func=authorized)

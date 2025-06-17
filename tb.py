@@ -844,6 +844,17 @@ def img2txt(text,
         if chat_id_full in WHO_ANSWERED:
             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
+
+        # user_want_to_edit_image = '<<EDIT_IMAGE>>' in text
+        # if user_want_to_edit_image:
+        #     r = img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
+        #     if r:
+        #         add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+        #     else:
+        #         add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+        #     return r
+
+
         return text
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()

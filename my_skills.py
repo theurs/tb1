@@ -56,6 +56,43 @@ STORAGE = {}
 STORAGE_LOCK = threading.Lock()
 
 
+def restore_id(chat_id: str) -> str:
+    '''
+    Restore user id from string (they often miss brackets and add some crap)
+
+    Args:
+        chat_id: str
+    Returns:
+        chat_id in format '[number1] [number2]'
+    '''
+    def is_integer(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+
+    pattern = r'^\[-?\d+\] \[\d+\]$'
+    if re.fullmatch(pattern, chat_id):
+        return chat_id
+
+    # remove all symbols except numbers, minus and brackets
+    chat_id = re.sub(r'[^0-9\-]', ' ', chat_id)
+    chat_id = re.sub(r'\s+', ' ', chat_id).strip()
+
+    # chat_id может приехать в виде одного числа - надо проверять и переделывать, добавлять скобки и число
+    if is_integer(chat_id):
+        chat_id = f"[{chat_id}] [0]"
+    # если нет второго числа до добавить '[0]'
+    if chat_id.count('[') == 1:
+        chat_id = f"{chat_id} [0]"
+
+    chat_id = chat_id.strip()
+    if not chat_id:
+        chat_id = '[unknown]'
+    return chat_id
+
+
 def text_to_image(prompt: str) -> str:
     '''
     Generate and send image message from text to user.
@@ -119,43 +156,6 @@ def edit_image(user_id: str) -> str:
     user_id = restore_id(user_id)
     my_log.log_gemini_skills(f'/edit_image {user_id}')
     return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Any images send by user to telegram bot with caption starting ! symbol will be edited automatically using external service."
-
-
-def restore_id(chat_id: str) -> str:
-    '''
-    Restore user id from string (they often miss brackets and add some crap)
-
-    Args:
-        chat_id: str
-    Returns:
-        chat_id in format '[number1] [number2]'
-    '''
-    def is_integer(s):
-        try:
-            int(s)
-            return True
-        except ValueError:
-            return False
-
-    pattern = r'^\[-?\d+\] \[\d+\]$'
-    if re.fullmatch(pattern, chat_id):
-        return chat_id
-
-    # remove all symbols except numbers, minus and brackets
-    chat_id = re.sub(r'[^0-9\-]', ' ', chat_id)
-    chat_id = re.sub(r'\s+', ' ', chat_id).strip()
-
-    # chat_id может приехать в виде одного числа - надо проверять и переделывать, добавлять скобки и число
-    if is_integer(chat_id):
-        chat_id = f"[{chat_id}] [0]"
-    # если нет второго числа до добавить '[0]'
-    if chat_id.count('[') == 1:
-        chat_id = f"{chat_id} [0]"
-
-    chat_id = chat_id.strip()
-    if not chat_id:
-        chat_id = '[unknown]'
-    return chat_id
 
 
 def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_height: int, chat_id: str) -> str:
@@ -743,6 +743,7 @@ def search_google_deep(query: str, lang: str, user_id: str) -> str:
     """
     Deep searches Google for the given query and returns the search results.
     You are able to mix this functions with other functions and your own ability to get best results for your needs.
+    This tool can also find direct links to images.
 
     Args:
         query: The search query string.

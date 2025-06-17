@@ -72,7 +72,7 @@ def text_to_image(prompt: str) -> str:
     return "The function itself does not return an image. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /img command, followed by a space, and then the prompt provided, up to 100 words. This specific message format will be automatically recognized by an external system as a request to generate and send an image to the user."
 
 
-def tts(text: str, lang: str, rate: str):
+def tts(text: str, lang: str, rate: str) -> str:
     '''
     Generate and send audio message from text to user.
     Use it only if asked by user to generate audio from text.
@@ -83,6 +83,30 @@ def tts(text: str, lang: str, rate: str):
     '''
     my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}"')
     return "The function itself does not return an audio message. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /tts command, followed by a space, and then the lang provided 'en' ru' 'auto', followed by a space, and then the speed provided, followed by a space, and then the prompt provided. This specific message format will be automatically recognized by an external system as a request to generate and send an audio message to the user."
+
+
+def speech_to_text(user_id: str) -> str:
+    '''
+    Transcribe audio message from telegram user.
+
+    Args:
+        user_id: str - telegram user id
+    '''
+    user_id = restore_id(user_id)
+    my_log.log_gemini_skills(f'/stt {user_id}')
+    return "The function itself does not return an transcribed text. It returns a string containing instructions for the assistant. Any audio-video files send by user to telegram bot will be transcribed automatically and assistant can work with this text."
+
+
+def translate_documents(user_id: str) -> str:
+    '''
+    Translate documents to another language.
+
+    Args:
+        user_id: str - telegram user id
+    '''
+    user_id = restore_id(user_id)
+    my_log.log_gemini_skills(f'/translate_documents {user_id}')
+    return "The function itself does not return an translated text. It returns a string containing instructions for the assistant. If user send document to telegram bot with caption like `!tr lang` it will translated automatically. Any documents send by user to telegram bot will by converted to markdown text for assistant."
 
 
 def restore_id(chat_id: str) -> str:
@@ -122,18 +146,30 @@ def restore_id(chat_id: str) -> str:
     return chat_id
 
 
-def save_html_to_image(filename: str, html: str, chat_id: str) -> str:
-    '''
-    Save (render) HTML code to image file and send it to the user.
+def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_height: int, chat_id: str) -> str:
+    """Save (render) HTML code to image file and send it to the user.
+    This function renders the HTML content in a headless browser environment,
+    supporting full HTML5, CSS3, and JavaScript execution. This means you
+    can use JavaScript to create dynamic content, draw on <canvas> elements,
+    manipulate the DOM, and generate any visual output that a web browser can display.
+
     Args:
         filename: str - The desired file name for the image file (e.g., 'sales_chart').
-        html: str - The HTML code to be saved as a image file. The page must be fully formed according to the HTML standard with css included.
+        html: str - The HTML code to be saved as an image file. The page must be fully
+                    formed according to the HTML standard with CSS and JavaScript included.
+                    You can embed JavaScript directly within <script> tags to create complex
+                    visualizations, animations, or interactive elements that will be rendered
+                    into the final image.
+        viewport_width: int - The width of the viewport in pixels.
+        viewport_height: int - The height of the viewport in pixels.
+
         chat_id: str - The Telegram user chat ID where the file should be sent.
+
     Returns:
         str: 'OK' or 'FAILED'
-    '''
+    """
     try:
-        my_log.log_gemini_skills_html(f'"{filename}"\n\n"{html}"')
+        my_log.log_gemini_skills_html(f'"{filename} {viewport_width}x{viewport_height}"\n\n"{html}"')
 
         chat_id = restore_id(chat_id)
         if chat_id == '[unknown]':
@@ -146,7 +182,7 @@ def save_html_to_image(filename: str, html: str, chat_id: str) -> str:
 
         # save html to png file
         try:
-            png_bytes = my_md_tables_to_png.html_to_image_bytes(html)
+            png_bytes = my_md_tables_to_png.html_to_image_bytes_playwright(html, width=viewport_width, height=viewport_height)
         except Exception as e:
             msg = f'FAILED: {str(e)}'
             my_log.log_gemini_skills_html(msg)
@@ -167,7 +203,7 @@ def save_html_to_image(filename: str, html: str, chat_id: str) -> str:
             return "OK"
     except Exception as e:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills_html(f'save_html_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{html}\n\n{filename}\n\n{chat_id}')
+        my_log.log_gemini_skills_html(f'save_html_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{html}\n\n{filename} {viewport_width}x{viewport_height}\n\n{chat_id}')
         return f"FAIL: An unexpected error occurred: {e}"
 
     return 'FAILED'        

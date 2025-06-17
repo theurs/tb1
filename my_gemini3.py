@@ -377,6 +377,8 @@ def chat(
                         my_skills.get_weather,
                         my_skills.get_currency_rates,
                         my_skills.tts,
+                        my_skills.speech_to_text,
+                        my_skills.translate_documents,
                         my_skills.compose_creative_text,
                         my_skills.text_to_image,
                         my_skills.save_to_excel,

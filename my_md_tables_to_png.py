@@ -9,6 +9,7 @@ import io
 import html
 import os
 import re
+import shutil
 import tempfile
 import threading
 from typing import List, Optional
@@ -16,6 +17,7 @@ from typing import List, Optional
 import imgkit
 import markdown
 from PIL import Image
+from playwright.sync_api import sync_playwright
 
 import my_log
 
@@ -158,22 +160,22 @@ def clean_wkhtml_temp_files():
 @cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
 def html_to_image_bytes(html: str, css_style: Optional[str] = None) -> bytes:
     '''
-    Конвертирует HTML-страницу в PNG-изображение в виде байтов.
-    Страница должны быть полностью сформирована по стандарту HTML.
+    Converts an HTML page to a PNG image as bytes.
+    The page must be fully formed according to the HTML standard.
 
     Args:
-        html: Строка, содержащая HTML-код страницы.
-        css_style: Опциональная строка с кастомными CSS-стилями. Если None,
-                   используются стили по умолчанию.
+        html: A string containing the HTML code of the page.
+        css_style: Optional string with custom CSS styles. If None,
+                   default styles are used.
 
     Returns:
-        PNG-изображение в виде байтовой строки.
+        PNG image as a byte string.
 
     Raises:
-        Exception: В случае ошибки во время конвертации.
+        Exception: In case of an error during conversion.
     '''
     with LOCK:
-        # Инжектим CSS в head, если он передан
+        # Inject CSS into the head if provided
         if css_style:
             style_block = f'<style>{css_style}</style>'
             html = html.replace('</head>', f'{style_block}</head>', 1)
@@ -185,26 +187,52 @@ def html_to_image_bytes(html: str, css_style: Optional[str] = None) -> bytes:
             'format': 'png',
         }
 
+        # --- Предварительная проверка наличия wkhtmltoimage в PATH ---
+        wkhtmltoimage_path = shutil.which('wkhtmltoimage')
+        if not wkhtmltoimage_path:
+            error_msg = (
+                "FATAL: 'wkhtmltoimage' executable could not be found in the system's PATH. "
+                "Its directory might not be included in the PATH environment variable for the "
+                "user running this script, or it might lack execute permissions. "
+                "Please verify 'wkhtmltoimage' installation and PATH configuration for the current environment."
+            )
+            my_log.log2(error_msg)
+            # Выбрасываем FileNotFoundError, так как это более точная ошибка для "не найдено"
+            raise FileNotFoundError(error_msg)
+
         try:
-            # Рендер в сырые PNG байты
+            # Render to raw PNG bytes
             raw_png_bytes = imgkit.from_string(html, False, options=options)
 
             clean_wkhtml_temp_files()
 
-            # Оптимизация через Pillow
+            # Optimize via Pillow
             with Image.open(io.BytesIO(raw_png_bytes)) as img:
                 output_buffer = io.BytesIO()
                 img.save(output_buffer, format='PNG')
                 return output_buffer.getvalue()
         except OSError as e:
-            my_log.log2("FATAL: 'wkhtmltoimage' not found. Check PATH.")
+            # Если мы дошли до этого блока, значит wkhtmltoimage_path был найден,
+            # но OSError все равно произошел во время выполнения.
+            # Это указывает на проблему во время запуска или выполнения, а не на отсутствие файла.
+            # Здесь мы предполагаем, что это может быть связано с проблемами рендеринга HTML.
+            my_log.log2(
+                f"FATAL: An OSError occurred during the execution of 'wkhtmltoimage' (found at '{wkhtmltoimage_path}'). "
+                f"This often indicates an issue with the HTML content itself, a rendering problem by 'wkhtmltoimage', "
+                f"or insufficient system resources. The program might have failed to render the image correctly. "
+                f"Original OS error details: {e}"
+            )
+            raise e
+        except Exception as e:
+            # Ловим другие потенциальные исключения, которые могут возникнуть в процессе
+            my_log.log2(f"FATAL: An unexpected error occurred during HTML to image conversion: {e}")
             raise e
 
 
 @cachetools.func.ttl_cache(maxsize=100, ttl=5*60)
 def markdown_table_to_image_bytes(
     markdown_table_string: str,
-    css_style: Optional[str] = None
+    css_style: Optional[str] = None,
 ) -> bytes:
     """
     Конвертирует Markdown-таблицу в стильное PNG-изображение в виде байтов.
@@ -256,7 +284,7 @@ def markdown_table_to_image_bytes(
             'quiet': '',
             'encoding': "UTF-8",
             'enable-local-file-access': None,
-            'format': 'png', # Explicitly set format to PNG
+            'format': 'png',
         }
 
         try:
@@ -380,57 +408,200 @@ def find_markdown_tables(markdown_text: str) -> List[str]:
     return tables
 
 
+# # @ttl_cache(maxsize=100, ttl=5*60)
+def html_to_image_bytes_playwright(
+    html: str,
+    css_style: Optional[str] = None,
+    javascript_delay_ms: int = 2000,
+    width: int = 1920,
+    height: int = 1080,
+    ) -> bytes:
+    '''
+    Converts an HTML page to a PNG image as bytes using Playwright.
+    The page must be fully formed according to the HTML standard.
+    Supports full HTML5, CSS3, and JavaScript execution for dynamic content rendering.
+
+    Args:
+        html: A string containing the HTML code of the page.
+        css_style: Optional string with custom CSS styles. If None,
+                   default styles are used.
+        javascript_delay_ms: Optional delay in milliseconds to wait after loading HTML
+                             and before taking a screenshot. Useful for pages with
+                             JavaScript that needs time to execute and render content
+                             (e.g., canvas drawings, dynamic DOM manipulation).
+                             Defaults to 2000ms (2 seconds).
+
+    Returns:
+        PNG image as a byte string.
+
+    Raises:
+        Exception: In case of an error during conversion.
+    '''
+    with LOCK:
+        # Inject CSS into the head if provided
+        if css_style:
+            style_block = f'<style>{css_style}</style>'
+            # Простая замена </head> может быть не совсем надежной для всех HTML-структур,
+            # но для большинства случаев она работает.
+            html = html.replace('</head>', f'{style_block}</head>', 1)
+
+        browser = None
+        try:
+            with sync_playwright() as p:
+                # Запускаем браузер в безголовом режиме (без графического интерфейса)
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+                page.set_viewport_size({"width": width, "height": height})
+
+                # Устанавливаем содержимое страницы напрямую из HTML строки
+                page.set_content(html)
+
+                # Ждем, пока сетевая активность не утихнет. Это часто помогает
+                # убедиться, что все ресурсы загружены и начальный JS выполнен.
+                page.wait_for_load_state('networkidle')
+
+                # Добавляем явную задержку для выполнения JavaScript,
+                # особенно полезно для сложных вычислений или анимаций на Canvas.
+                if javascript_delay_ms > 0:
+                    page.wait_for_timeout(javascript_delay_ms)
+
+                # Делаем скриншот страницы в формате PNG
+                raw_png_bytes = page.screenshot(type='png')
+
+
+                return raw_png_bytes
+
+                # # Оптимизируем изображение с помощью Pillow, как в исходном коде
+                # # Убедитесь, что 'PIL' (Pillow) установлена: pip install Pillow
+                # # from PIL import Image # Если не импортирована выше
+                # with Image.open(io.BytesIO(raw_png_bytes)) as img:
+                #     output_buffer = io.BytesIO()
+                #     img.save(output_buffer, format='PNG')
+                #     return output_buffer.getvalue()
+
+        except Exception as e:
+            my_log.log_gemini(f"Error converting HTML to image: {e}")
+            raise Exception(f"Failed to convert HTML to image: {e}") from e
+        finally:
+            # Убеждаемся, что браузер всегда закрывается
+            if browser:
+                try:
+                    browser.close()
+                except Exception as e:
+                    if 'Event loop is closed! Is Playwright already stopped?' not in str(e):
+                        my_log.log_gemini(f"Error closing browser: {e}")
+
+
 if __name__ == "__main__":
 
-    # --- Example Usage ---
-    markdown_text_with_tables = """
+#     # --- Example Usage ---
+#     markdown_text_with_tables = """
 
-blabla
+# blabla
 
-Вот простая таблица в формате Markdown:
+# Вот простая таблица в формате Markdown:
 
-<pre><code class="language-plaintext">| Заголовок 1 | Заголовок 2 | Заголовок 3 |
-|-------------|-------------|-------------|
-| Строка 1, Ячейка 1 | Строка 1, Ячейка 2 | Строка 1, Ячейка 3 |
-| Строка 2, Ячейка 1 | Строка 2, <br> Ячейка 2 | Строка 2, Ячейка 3 |
-| Строка 3, Ячейка 1 | Строка 3, Ячейка 2 | Строка 3, Ячейка 3 |
-</code></pre>'
-
-
-blabla
-
-| Заголовок 1 | Заголовок 2 | Заголовок 3 |
-|-------------|-------------|-------------|
-| Строка 1, Ячейка 1 | Строка 1, Ячейка 2 | Строка 1, Ячейка 3 |
-| Строка 2, Ячейка 1 | Строка 2, Ячейка 2 | Строка 2, Ячейка 3 |
-| Строка 3, Ячейка 1 | Строка 3, Ячейка 2 | Строка 3, Ячейка 3 |
-
-asdasd
+# <pre><code class="language-plaintext">| Заголовок 1 | Заголовок 2 | Заголовок 3 |
+# |-------------|-------------|-------------|
+# | Строка 1, Ячейка 1 | Строка 1, Ячейка 2 | Строка 1, Ячейка 3 |
+# | Строка 2, Ячейка 1 | Строка 2, <br> Ячейка 2 | Строка 2, Ячейка 3 |
+# | Строка 3, Ячейка 1 | Строка 3, Ячейка 2 | Строка 3, Ячейка 3 |
+# </code></pre>'
 
 
+# blabla
+
+# | Заголовок 1 | Заголовок 2 | Заголовок 3 |
+# |-------------|-------------|-------------|
+# | Строка 1, Ячейка 1 | Строка 1, Ячейка 2 | Строка 1, Ячейка 3 |
+# | Строка 2, Ячейка 1 | Строка 2, Ячейка 2 | Строка 2, Ячейка 3 |
+# | Строка 3, Ячейка 1 | Строка 3, Ячейка 2 | Строка 3, Ячейка 3 |
+
+# asdasd
 
 
-"""
 
-    found_tables = find_markdown_tables(markdown_text_with_tables)
 
-    n = 1
-    for table in reversed(found_tables):
-        print(table)
+# """
 
-        try:
-            # Call the function to get the styled image bytes
-            image_data_bytes = markdown_table_to_image_bytes(table)
+#     found_tables = find_markdown_tables(markdown_text_with_tables)
 
-            # Save it directly to a file (for demonstration/testing):
-            output_filename = f"c:/Users/user/Downloads/{n}.png"
-            n += 1
-            with open(output_filename, "wb") as f:
-                f.write(image_data_bytes)
-            print(f"Styled image successfully created and saved to '{output_filename}' from bytes.")
+#     n = 1
+#     for table in reversed(found_tables):
+#         print(table)
 
-        except ValueError as e:
-            print(f"Error processing Markdown table: {e}")
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+#         try:
+#             # Call the function to get the styled image bytes
+#             image_data_bytes = markdown_table_to_image_bytes(table)
 
+#             # Save it directly to a file (for demonstration/testing):
+#             output_filename = f"c:/Users/user/Downloads/{n}.png"
+#             n += 1
+#             with open(output_filename, "wb") as f:
+#                 f.write(image_data_bytes)
+#             print(f"Styled image successfully created and saved to '{output_filename}' from bytes.")
+
+#         except ValueError as e:
+#             print(f"Error processing Markdown table: {e}")
+#         except Exception as e:
+#             print(f"An unexpected error occurred: {e}")
+
+    example_html = """
+<canvas id="mandelbrotCanvas" width="800" height="700" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('mandelbrotCanvas');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // Mandelbrot parameters
+    const MAX_ITERATIONS = 200; // Увеличено количество итераций для большей детализации
+
+    // Определение границ комплексной плоскости для стандартного вида фрактала
+    const minRe = -2.5;
+    const maxRe = 1.0;
+    const minIm = -1.25;
+    const maxIm = 1.25;
+
+    for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
+            // Преобразование координат пикселей в координаты комплексной плоскости
+            let ca = minRe + (x / width) * (maxRe - minRe);
+            let cb = minIm + (y / height) * (maxIm - minIm);
+
+            let a = ca;
+            let b = cb;
+
+            let n = 0;
+            while (n < MAX_ITERATIONS) {
+                let aa = a * a - b * b;
+                let bb = 2 * a * b;
+                a = aa + ca;
+                b = bb + cb;
+
+                if (a * a + b * b > 4) { // Проверка, выходит ли точка за границы
+                    break;
+                }
+                n++;
+            }
+
+            let color;
+            if (n === MAX_ITERATIONS) {
+                color = 'black'; // Точка внутри множества
+            } else {
+                // Окрашивание в зависимости от количества итераций
+                let hue = (n * 10) % 360; // Изменение множителя для распределения цветов
+                let saturation = 100;
+                let lightness = 20 + (n / MAX_ITERATIONS) * 50; // Варьирование яркости для градиента
+                color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            }
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, 1, 1);
+        }
+    }
+</script>
+
+    """
+    image_data_bytes = html_to_image_bytes_playwright(example_html)
+    with open("c:/Users/user/Downloads/html 1.png", "wb") as f:
+        f.write(image_data_bytes)

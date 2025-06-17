@@ -2468,7 +2468,7 @@ def srt_to_text(cap_srt: str) -> str:
 def extract_text_from_bytes(
     file_bytes: Union[bytes, str],
     confidence_threshold: float = 0.5,
-    decoding_errors: str = 'xmlcharrefreplace'
+    decoding_errors: str = 'replace'
     ) -> str | None:
     """
     Attempts to extract text from a bytes object or a file path,
@@ -2483,7 +2483,7 @@ def extract_text_from_bytes(
         decoding_errors (str): The strategy for handling decoding errors.
                                Can be 'strict', 'ignore', 'replace',
                                'xmlcharrefreplace', 'backslashreplace', 'namereplace'.
-                               Default is 'xmlcharrefreplace'.
+                               Default is 'decoding_errors'.
 
     Returns:
         str: The decoded text if the operation was successful and with sufficient confidence.
@@ -2506,6 +2506,12 @@ def extract_text_from_bytes(
     # Return an empty string if the input bytes are empty
     if not file_bytes:
         return ""
+
+    # try utf-8 first
+    try:
+        return file_bytes.decode('utf-8')
+    except UnicodeDecodeError:
+        pass
 
     # Detect the encoding of the bytes
     detection_result = chardet.detect(file_bytes)
@@ -2531,4 +2537,4 @@ if __name__ == '__main__':
 
     # print(extract_text_from_bytes(r'C:\Users\user\Downloads\samples for ai\простая небольшая таблица Имя,Возраст,Город,Профессия,Зарплат.xlsx'))
     # print(extract_text_from_bytes(r'C:\Users\user\Downloads\samples for ai\Алиса в изумрудном городе (большая книга).txt'))
-    print(extract_text_from_bytes(r'C:\Users\user\Downloads\samples for ai\koi8r.txt'))
+    print(extract_text_from_bytes(r'C:\Users\user\Downloads\2.txt'))

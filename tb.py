@@ -520,65 +520,65 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_log.log2(f'tb:add_to_bots_mem:{unexpected_error}\n\n{traceback_error}')
 
 
-def get_intention(query, chat_id_full) -> str:
-    '''
-    Попытка определить намерение юзера когда он отправляет картинку с инструкцией
-    Является ли этот запрос просьбой отредактировать или создать новое изображение
-    или это запрос на генерацию текста по картинке (вопрос или типа того)
+# def get_intention(query, chat_id_full) -> str:
+#     '''
+#     Попытка определить намерение юзера когда он отправляет картинку с инструкцией
+#     Является ли этот запрос просьбой отредактировать или создать новое изображение
+#     или это запрос на генерацию текста по картинке (вопрос или типа того)
 
-    Возвращает 'edit_image' - если пользователь хочет изменить предоставленное изображение,
-    'ask_image' - если пользователь задает вопрос об изображении
-    пустую строку если что то пошло не так
-    '''
-    q = f"""{my_init.GET_INTENTION_PROMPT}
+#     Возвращает 'edit_image' - если пользователь хочет изменить предоставленное изображение,
+#     'ask_image' - если пользователь задает вопрос об изображении
+#     пустую строку если что то пошло не так
+#     '''
+#     q = f"""{my_init.GET_INTENTION_PROMPT}
 
 
-{query}
-"""
-    r = ''
+# {query}
+# """
+#     r = ''
 
-    # r = my_gemini3.chat(
-    #     q,
-    #     chat_id = chat_id_full,
-    #     temperature=0.1,
-    #     # model=cfg.gemini_flash_light_model,
-    #     model = cfg.gemini25_flash_model,
-    #     # max_tokens=10,
-    #     use_skills=False,
-    #     do_not_update_history=True,
-    #     timeout=20
-    # )
+#     # r = my_gemini3.chat(
+#     #     q,
+#     #     chat_id = chat_id_full,
+#     #     temperature=0.1,
+#     #     # model=cfg.gemini_flash_light_model,
+#     #     model = cfg.gemini25_flash_model,
+#     #     # max_tokens=10,
+#     #     use_skills=False,
+#     #     do_not_update_history=True,
+#     #     timeout=20
+#     # )
 
-    if not r:
-        r = my_groq.chat(
-            q,
-            chat_id = chat_id_full,
-            temperature=0.1,
-            model=my_groq.DEFAULT_MODEL,
-            # max_tokens=10,
-            update_memory=False,
-            timeout=20
-        )
+#     if not r:
+#         r = my_groq.chat(
+#             q,
+#             chat_id = chat_id_full,
+#             temperature=0.1,
+#             model=my_groq.DEFAULT_MODEL,
+#             # max_tokens=10,
+#             update_memory=False,
+#             timeout=20
+#         )
 
-    if not r:
-        r = my_mistral.chat(
-            q,
-            chat_id = chat_id_full,
-            temperature=0.1,
-            model=my_mistral.SMALL_MODEL,
-            # max_tokens=10,
-            do_not_update_history=True,
-            timeout=20
-        )
+#     if not r:
+#         r = my_mistral.chat(
+#             q,
+#             chat_id = chat_id_full,
+#             temperature=0.1,
+#             model=my_mistral.SMALL_MODEL,
+#             # max_tokens=10,
+#             do_not_update_history=True,
+#             timeout=20
+#         )
 
-    if r and len(r) > 20:
-        r = r[:20]
+#     if r and len(r) > 20:
+#         r = r[:20]
 
-    if r and ('edit_image' in r.lower()):
-        return 'edit_image'
-    if r and ('ask_image' in r.lower()):
-        return 'ask_image'
-    return ''
+#     if r and ('edit_image' in r.lower()):
+#         return 'edit_image'
+#     if r and ('ask_image' in r.lower()):
+#         return 'ask_image'
+#     return ''
 
 
 def img2img(text,
@@ -648,30 +648,27 @@ def img2txt(text,
             else:
                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
             return r
-        elif len(query) > 10:
-
-            default_prompts = (
-                tr(my_init.PROMPT_DESCRIBE, lang),
-                tr(my_init.PROMPT_COPY_TEXT, lang),
-                tr(my_init.PROMPT_COPY_TEXT_TTS, lang),
-                tr(my_init.PROMPT_COPY_TEXT_TR, lang),
-                tr(my_init.PROMPT_REPROMPT, lang),
-                tr(my_init.PROMPT_SOLVE, lang),
-                tr(my_init.PROMPT_QRCODE, lang),
-                'Правильный ответ',
-                'правильный ответ',
-            )
-
-            if not any([q in query for q in default_prompts]) and not query.lower().startswith('реши '):
-                intention = get_intention(query, chat_id_full)
-                if intention == 'edit_image':
-                    r = img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
-                    if r:
-                        add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-                    else:
-                        add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-                    return r
-
+        # elif len(query) > 10:
+        #     default_prompts = (
+        #         tr(my_init.PROMPT_DESCRIBE, lang),
+        #         tr(my_init.PROMPT_COPY_TEXT, lang),
+        #         tr(my_init.PROMPT_COPY_TEXT_TTS, lang),
+        #         tr(my_init.PROMPT_COPY_TEXT_TR, lang),
+        #         tr(my_init.PROMPT_REPROMPT, lang),
+        #         tr(my_init.PROMPT_SOLVE, lang),
+        #         tr(my_init.PROMPT_QRCODE, lang),
+        #         'Правильный ответ',
+        #         'правильный ответ',
+        #     )
+        #     if not any([q in query for q in default_prompts]) and not query.lower().startswith('реши '):
+        #         intention = get_intention(query, chat_id_full)
+        #         if intention == 'edit_image':
+        #             r = img2img(text, lang, chat_id_full, query, model, temperature, system_message, timeout)
+        #             if r:
+        #                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+        #             else:
+        #                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+        #             return r
 
         if temperature is None:
             temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1

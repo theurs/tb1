@@ -109,6 +109,18 @@ def translate_documents(user_id: str) -> str:
     return "The function itself does not return an translated text. It returns a string containing instructions for the assistant. If user send document to telegram bot with caption like `!tr lang` it will translated automatically. Any documents send by user to telegram bot will by converted to markdown text for assistant."
 
 
+def edit_image(user_id: str) -> str:
+    '''
+    Edit images.
+
+    Args:
+        user_id: str - telegram user id
+    '''
+    user_id = restore_id(user_id)
+    my_log.log_gemini_skills(f'/edit_image {user_id}')
+    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Any images send by user to telegram bot with caption starting ! symbol will be edited automatically using external service."
+
+
 def restore_id(chat_id: str) -> str:
     '''
     Restore user id from string (they often miss brackets and add some crap)

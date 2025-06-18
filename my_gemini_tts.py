@@ -126,7 +126,7 @@ def generate_tts_wav_bytes(
                 my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:4: Timeout {e}")
                 return None
             my_log.log_gemini(f"my_gemini_tts:generate_tts_wav_bytes:5: Ошибка при вызове API Gemini TTS: {e}")
-            time.sleep(1) # Небольшая задержка перед следующей попыткой
+            time.sleep(3) # Небольшая задержка перед следующей попыткой
 
     if response is None: # Если все попытки не увенчались успехом
         return None

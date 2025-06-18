@@ -83,8 +83,8 @@ def generate_tts_wav_bytes(
     #     return None
 
     # Если текст слишком длинный, разбиваем на чанки и используем параллельную обработку
-    if visual_len(text_to_speak) > 2200:
-        chunks = utils.split_text(text_to_speak, 2200)
+    if visual_len(text_to_speak) > 1500:
+        chunks = utils.split_text(text_to_speak, 1500)
         return tts_chunked_text(chunks=chunks, voice_name=voice_name, model=model_id, lang=lang)
 
     response = None

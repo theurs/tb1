@@ -1932,7 +1932,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.row(button_gemini_flash25, button_mistral)
             markup.row(button_llama4_maverick, button_cohere)
             markup.row(button_gpt_4o, button_gpt_41)
-            # markup.row(button_gemini_lite, button_gemini_flash20)
+            markup.row(button_gemini_lite, button_gemini_flash20)
             markup.row(button_deepseek_v3, button_openrouter)
 
             if voice_title in ('OpenAI', 'Gemini'):

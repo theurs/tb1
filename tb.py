@@ -1860,9 +1860,9 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button_gemini_learnlm = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-learn')
 
             if chat_mode == 'gemini-lite':
-                msg = '✅ Gemini 2.0 Flash Lite'
+                msg = '✅ Gemini 2.5 Flash Lite'
             else:
-                msg = 'Gemini 2.0 Flash Lite'
+                msg = 'Gemini 2.5 Flash Lite'
             button_gemini_lite = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-lite')
 
             if chat_mode == 'mistral':
@@ -1929,10 +1929,12 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             msg = '==='
             button_filler1 = telebot.types.InlineKeyboardButton(msg, callback_data='switch_do_nothing')
 
-            markup.row(button_gemini_flash25, button_gemini_flash20)
-            markup.row(button_mistral, button_llama4_maverick)
-            markup.row(button_gpt_4o, button_gpt_41, button_openrouter)
-            markup.row(button_cohere, button_deepseek_v3)
+            markup.row(button_gemini_flash25, button_mistral)
+            markup.row(button_llama4_maverick, button_cohere)
+            markup.row(button_gpt_4o, button_gpt_41)
+            # markup.row(button_gemini_lite, button_gemini_flash20)
+            markup.row(button_deepseek_v3, button_openrouter)
+
             if voice_title in ('OpenAI', 'Gemini'):
                 markup.row(button_filler1)
 
@@ -9070,13 +9072,20 @@ def do_task(message, custom_prompt: str = ''):
                     with ShowAction(message, action):
                         try:
                             temp = my_db.get_user_property(chat_id_full, 'temperature') or 1
+
+                            # у флеш 2.5 лайт мысли отключены по умолчанию, их надо вручную включать
+                            THINKING_BUDGET = -1
+                            if gmodel == cfg.gemini_flash_light_model:
+                                THINKING_BUDGET = 10000
+
                             answer = my_gemini3.chat(
                                 message.text,
                                 chat_id_full,
                                 temp,
                                 model = gmodel,
                                 system = hidden_text,
-                                use_skills=True
+                                use_skills=True,
+                                THINKING_BUDGET = THINKING_BUDGET
                             )
 
                             if not answer and gmodel == cfg.gemini_pro_model:
@@ -9123,7 +9132,8 @@ def do_task(message, custom_prompt: str = ''):
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
-                                    use_skills=True
+                                    use_skills=True,
+                                    THINKING_BUDGET = THINKING_BUDGET,
                                 )
                                 WHO_ANSWERED[chat_id_full] = gmodel
 

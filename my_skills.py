@@ -45,6 +45,7 @@ import my_pandoc
 import my_plantweb
 # import my_tts
 import my_sum
+import my_qrcode_generate
 import utils
 
 
@@ -109,7 +110,55 @@ def text_to_image(prompt: str) -> str:
     return "The function itself does not return an image. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /img command, followed by a space, and then the prompt provided, up to 100 words. This specific message format will be automatically recognized by an external system as a request to generate and send an image to the user."
 
 
-def tts(text: str, lang: str, rate: str) -> str:
+def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:
+    '''
+    Send qrcode message to telegram user.
+
+    Args:
+        text: str - text to generate qrcode from
+        logo_url: str - url to logo image, use 'DEFAULT' or empty string for default logo.
+        user_id: str - user id
+    Returns:
+        str: 'OK' or error message
+    '''
+    try:
+        my_log.log_gemini_skills(f'/qrcode "{text}" "{logo_url}" "{user_id}"')
+
+        user_id = restore_id(user_id)
+        if not logo_url:
+            logo_url = 'DEFAULT'
+        if logo_url != 'DEFAULT':
+            logo_data = utils.download_image_as_bytes(logo_url)
+            if not logo_data:
+                return "Failed to download logo image."
+        else:
+            logo_data = './pics/photo_2023-07-10_01-36-39.jpg'
+
+        png_bytes = my_qrcode_generate.generate_qr_with_logo_bytes(text, logo_data)
+        if isinstance(png_bytes, str):
+            return png_bytes
+
+        if isinstance(png_bytes, bytes) and len(png_bytes) > 0:
+            item = {
+                'type': 'image/png file',
+                'filename': 'https://t.me/kun4sun_bot',
+                'data': png_bytes,
+            }
+            with STORAGE_LOCK:
+                if user_id in STORAGE:
+                    if item not in STORAGE[user_id]:
+                        STORAGE[user_id].append(item)
+                else:
+                    STORAGE[user_id] = [item,]
+            return "OK"
+
+    except Exception as e:
+        my_log.log_gemini_skills(f'my_skills.py:text_to_qrcode - Failed to generate qrcode: {e}')
+
+    return "Failed to generate qrcode."
+
+
+def tts(user_id: str) -> str:
     '''
     Generate and send audio message from text to user.
     Use it only if asked by user to generate audio from text.
@@ -118,7 +167,8 @@ def tts(text: str, lang: str, rate: str) -> str:
         lang: str - language code, default is 'ru'
         rate: str - speed rate, +-100%, default is '+0%'
     '''
-    my_log.log_gemini_skills(f'/tts "{text}" "{lang}" "{rate}"')
+    user_id = restore_id(user_id)
+    my_log.log_gemini_skills(f'/tts {user_id}')
     return "The function itself does not return an audio message. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /tts command, followed by a space, and then the lang provided 'en' ru' 'auto', followed by a space, and then the speed provided, followed by a space, and then the prompt provided. This specific message format will be automatically recognized by an external system as a request to generate and send an audio message to the user."
 
 
@@ -132,6 +182,18 @@ def speech_to_text(user_id: str) -> str:
     user_id = restore_id(user_id)
     my_log.log_gemini_skills(f'/stt {user_id}')
     return "The function itself does not return an transcribed text. It returns a string containing instructions for the assistant. Any audio-video files send by user to telegram bot will be transcribed automatically and assistant can work with this text."
+
+
+def translate_text(user_id: str) -> str:
+    '''
+    Translate text to another language.
+
+    Args:
+        user_id: str - telegram user id
+    '''
+    user_id = restore_id(user_id)
+    my_log.log_gemini_skills(f'/translate_text {user_id}')
+    return "The function itself does not return an translated text. It returns a string containing instructions for the assistant. There are no tools for text translation, assistant have to translate all text by itself, as if he is a professional translator, using synonyms and context for better translation."
 
 
 def translate_documents(user_id: str) -> str:
@@ -709,6 +771,7 @@ def search_google_fast(query: str, lang: str, user_id: str) -> str:
     """
     Fast searches Google for the given query and returns the search results.
     You are able to mix this functions with other functions and your own ability to get best results for your needs.
+    This tool should not be used instead of other functions, such as text translation.
 
     Args:
         query: The search query string.

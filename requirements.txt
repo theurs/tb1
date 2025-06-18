@@ -84,6 +84,7 @@ re_edge_gpt
 
 requests[socks]
 
+segno
 sqlitedict
 SpeechRecognition
 simpleeval

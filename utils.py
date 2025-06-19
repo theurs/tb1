@@ -184,6 +184,99 @@ def bot_markdown_to_tts(text: str) -> str:
 # гребаный маркдаун ###################################################################
 
 
+def clean_markdown_tables(markdown_text: str) -> str:
+    """
+    Удаляет (заменяет на пробел) определенные HTML-эскейпнутые символы из строк, находящихся
+    внутри Markdown таблиц.
+
+    Args:
+        markdown_text (str): Входной текст Markdown.
+
+    Returns:
+        str: Очищенный текст Markdown.
+    """
+    # 1. Определяем символы, которые нужно удалить (HTML-эскейпнутые)
+    # Эти переменные будут создаваться каждый раз при вызове функции,
+    # что нормально для такого рода задач, но если бы функция вызывалась
+    # очень часто в цикле, их можно было бы вынести в глобальную область
+    # или как константы класса для оптимизации.
+    BR = html.escape('<br>')
+    UL1 = html.escape('<ul>')
+    UL2 = html.escape('</ul>')
+    LI1 = html.escape('<li>')
+    LI2 = html.escape('</li>')
+
+    # Создаем список всех символов для удаления
+    CHARS_TO_REMOVE = [BR, UL1, UL2, LI1, LI2]
+
+    # Объединяем их в одно регулярное выражение для эффективной замены.
+    # Важно экранировать специальные символы регулярных выражений.
+    REPLACEMENT_PATTERN = re.compile('|'.join(map(re.escape, CHARS_TO_REMOVE)))
+
+    # 2. Вспомогательные функции (вложенные, чтобы они были частью этой функции)
+    def _clean_string(s: str) -> str:
+        """Заменяет указанные HTML-эскейпнутые теги пустой строкой в данной строке."""
+        return REPLACEMENT_PATTERN.sub(' ', s)
+
+    def _is_table_separator(line: str) -> bool:
+        """
+        Проверяет, является ли строка разделителем Markdown таблицы.
+        Примеры: "|---|", "|:---:|", "|-----|:-----|"
+        """
+        return bool(re.fullmatch(r'^\s*\|(?:\s*[:\-]+\s*\|)+\s*$', line))
+
+    def _is_table_line(line: str) -> bool:
+        """
+        Проверяет, является ли строка заголовком или строкой данных Markdown таблицы.
+        Примеры: "| Колонка 1 | Колонка 2 |", "| Данные 1 | Данные 2 |"
+        """
+        return bool(re.fullmatch(r'^\s*\|.*\|.*\s*$', line))
+
+    # 3. Основная логика обработки текста
+    lines = markdown_text.splitlines()
+    processed_lines = []
+    i = 0
+
+    while i < len(lines):
+        current_line = lines[i]
+        next_line = lines[i+1] if i + 1 < len(lines) else None
+
+        # Проверяем, является ли текущая строка потенциальным заголовком таблицы
+        # И если следующая строка - это разделитель таблицы.
+        if _is_table_line(current_line) and next_line is not None and _is_table_separator(next_line):
+            # Мы нашли начало блока таблицы
+            table_content = []
+            table_content.append(current_line)  # Добавляем строку заголовка
+            table_content.append(next_line)     # Добавляем строку-разделитель
+
+            j = i + 2  # Начинаем проверять строки данных после заголовка и разделителя
+
+            # Собираем все строки данных таблицы
+            while j < len(lines):
+                data_line = lines[j]
+                # Строка данных таблицы или пустая строка, которая может быть частью таблицы
+                # (хотя пустые строки обычно завершают таблицу)
+                if _is_table_line(data_line) or data_line.strip() == '':
+                    table_content.append(data_line)
+                else:
+                    # Таблица закончилась (встретилась строка, не похожая на таблицу)
+                    break
+                j += 1
+
+            # Обрабатываем собранные строки таблицы
+            for line_in_table in table_content:
+                processed_lines.append(_clean_string(line_in_table))
+
+            # Перемещаем основной указатель `i` за пределы обработанного блока таблицы
+            i = j
+        else:
+            # Это не часть таблицы или не начало таблицы, добавляем строку как есть
+            processed_lines.append(current_line)
+            i += 1
+
+    return "\n".join(processed_lines)
+
+
 def replace_math_byte_sequences(text: str) -> str:
     """
     Replaces byte sequences like <0xXX><0xYY><0xZZ> or <0xXX><0xYY>
@@ -564,6 +657,11 @@ def bot_markdown_to_html(text: str) -> str:
     # испорченные символы > <
     text = text.replace('&amp;gt;', '&gt;')
     text = text.replace('&amp;lt;', '&lt;')
+
+
+    # удаляем внутри таблиц запрещенные теги типа <br>
+    text = clean_markdown_tables(text)
+
 
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:

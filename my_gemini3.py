@@ -372,12 +372,21 @@ def chat(
 
         # current date time string
         now = utils.get_full_time()
-        system_ = (
+        saved_file_name = my_db.get_user_property(chat_id, 'saved_file_name') or ''
+        if saved_file_name:
+            saved_file = my_db.get_user_property(chat_id, 'saved_file')
+        else:
+            saved_file = ''
+        saved_file_size = len(saved_file)
+        system_ = [
             f'Current date and time: {now}\n',
             f'Use this telegram chat id for API function calls: {chat_id}',
             *SYSTEM_,
             system,
-        )
+        ]
+        if saved_file_name:
+            my_skills.STORAGE_ALLOWED_IDS[chat_id] = chat_id
+            system_.insert(1, f'Telegram user have saved file/files and assistant can query it: {saved_file_name} ({saved_file_size} chars)')
 
         for _ in range(3):
             response = None
@@ -411,6 +420,7 @@ def chat(
                         my_skills.save_diagram_to_image,
                         my_skills.save_pandas_chart_to_image,
                         my_skills.save_html_to_image,
+                        my_skills.query_user_file,
                         my_skills.help,
                     ]
                     chat = client.chats.create(
@@ -528,6 +538,9 @@ def chat(
         else:
             my_log.log_gemini(f'my_gemini3:chat:unknown_error:2: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}')
         return ''
+    finally:
+        if chat_id in my_skills.STORAGE_ALLOWED_IDS:
+            del my_skills.STORAGE_ALLOWED_IDS[chat_id]
 
 
 def count_chars(mem) -> int:

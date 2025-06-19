@@ -241,6 +241,10 @@ def log_gemini_skills(text: str) -> None:
     """для логов вызовов скилов в джемини"""
     log2(text, 'gemini_skills')
 
+def log_gemini_skills_query_file(text: str) -> None:
+    """для логов вызовов скилов в джемини query_file"""
+    log2(text, 'gemini_skills_query_file')
+
 def log_gemini_skills_search(text: str) -> None:
     """для логов вызовов скилов поиска в джемини"""
     log2(text, 'gemini_skills_search')

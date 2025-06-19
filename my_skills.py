@@ -33,14 +33,17 @@ from typing import Callable, List, Optional, Tuple, Union
 from geopy.geocoders import Nominatim
 
 import cfg
+import my_cohere
 import my_db
 import my_google
+import my_gemini
 import my_gemini_google
 import my_github
 import my_groq
 import my_log
 import my_md_tables_to_png
 import my_mermaid
+import my_mistral
 import my_pandoc
 import my_plantweb
 # import my_tts
@@ -55,6 +58,11 @@ MAX_REQUEST = 25000
 # {id:[{type,filename,data},{}],}
 STORAGE = {}
 STORAGE_LOCK = threading.Lock()
+
+# какому юзеру можно запрашивать какие ид в функции запроса файла
+# это должно защитить от взлома промпта и запросов к чужим файлам
+# {user_id(str):user_id(str),}
+STORAGE_ALLOWED_IDS = {}
 
 
 def restore_id(chat_id: str) -> str:
@@ -92,6 +100,59 @@ def restore_id(chat_id: str) -> str:
     if not chat_id:
         chat_id = '[unknown]'
     return chat_id
+
+
+def query_user_file(query: str, user_id: str) -> str:
+    '''
+    Query saved user file
+
+    Args:
+        query: str - user query
+        user_id: str - user id
+
+    Returns:
+        str
+    '''
+    user_id = restore_id(user_id)
+    if user_id not in STORAGE_ALLOWED_IDS or STORAGE_ALLOWED_IDS[user_id] != user_id:
+        my_log.log_gemini_skills_query_file(f'/query_last_file "{query}" "{user_id}" - Unauthorized access detected.')
+        return 'Unauthorized access detected.'
+
+    my_log.log_gemini_skills_query_file(f'/query_last_file "{query}" "{user_id}"')
+
+    saved_file_name = my_db.get_user_property(user_id, 'saved_file_name') or ''
+    if saved_file_name:
+        saved_file = my_db.get_user_property(user_id, 'saved_file')
+    else:
+        saved_file = ''
+
+    q = f'''Answer the user`s query using saved text and your own mind, answer plain text with fancy markdown formatting, do not use code block for answer.
+
+User query: {query}
+
+URL/file: {saved_file_name}
+
+Saved text: {saved_file}
+'''
+
+    temperature = my_db.get_user_property(user_id, 'temperature') or 1
+    role = my_db.get_user_property(user_id, 'role') or ''
+
+    result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini25_flash_model, system=role)
+    if not result:
+        result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
+    if not result:
+        result = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST], system=role)
+    if not result:
+        result = my_mistral.ai(q[:my_mistral.MAX_SUM_REQUEST], system=role)
+    if not result:
+        result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=temperature, max_tokens_ = 4000, system=role)
+
+    if result:
+        my_log.log_gemini_skills_query_file(result)
+        return result
+    else:
+        return 'No result was given.'
 
 
 def text_to_image(prompt: str) -> str:

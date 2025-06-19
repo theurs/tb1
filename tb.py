@@ -551,15 +551,16 @@ def img2img(
     return my_gemini_genimg.regenerate_image(query, sources_images=images, user_id=chat_id_full)
 
 
-def img2txt(text,
-            lang: str,
-            chat_id_full: str,
-            query: str = '',
-            model: str = '',
-            temperature: float = 0,
-            system_message: str = '',
-            timeout: int = 120,
-            ) -> str:
+def img2txt(
+    text,
+    lang: str,
+    chat_id_full: str,
+    query: str = '',
+    model: str = '',
+    temperature: float = 0,
+    system_message: str = '',
+    timeout: int = 120,
+    ) -> str:
     """
     Generate the text description of an image.
 
@@ -622,14 +623,12 @@ def img2txt(text,
         try:
             chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
 
-
             # запрос на OCR?
             if query.startswith('OCR\n\n'):
                 if not text:
                     text = my_mistral.ocr_image(data, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_mistral_ocr'
-
 
             # попробовать с помощью openrouter
             # если модель не указана явно то определяем по режиму чата
@@ -773,6 +772,9 @@ def img2txt(text,
         if chat_id_full in WHO_ANSWERED:
             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
+
+        # добавляем в UNCAPTIONED_IMAGES[chat_id_full] эту картинку что бы она стала последней
+        UNCAPTIONED_IMAGES[chat_id_full] = (time.time(), data)
 
         # если запрос на редактирование
         if "<<EDIT IMAGE>>" in text and len(text) < 30:
@@ -4777,6 +4779,9 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
             chat_id_full = get_topic_id(message)
 
         mode = my_db.get_user_property(chat_id_full, 'chat_mode')
+
+        if chat_id_full in UNCAPTIONED_IMAGES:
+            del UNCAPTIONED_IMAGES[chat_id_full]
 
         if mode:
             if 'gemini' in mode or 'gemma' in mode or 'gemma' in mode or 'gemma' in mode:
@@ -9225,7 +9230,7 @@ def do_task(message, custom_prompt: str = ''):
                                     del WHO_ANSWERED[chat_id_full]
                                 # отменяем ответ
                                 my_gemini3.undo(chat_id_full)
-                                
+
                                 last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
                                 query = message.text
                                 if not last_image:

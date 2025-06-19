@@ -777,7 +777,7 @@ def img2txt(
         UNCAPTIONED_IMAGES[chat_id_full] = (time.time(), data)
 
         # если запрос на редактирование
-        if "<<EDIT IMAGE>>" in text and len(text) < 30:
+        if "EDIT IMAGE" in text and len(text) < 30:
             if 'gemini' in chat_mode:
                 my_gemini3.undo(chat_id_full)
 
@@ -9225,7 +9225,7 @@ def do_task(message, custom_prompt: str = ''):
 
 
                             # <<EDIT IMAGE>> flag in answer
-                            if '<<EDIT IMAGE>>' in answer and len(answer) < 30:
+                            if 'EDIT IMAGE' in answer and len(answer) < 30:
                                 if chat_id_full in WHO_ANSWERED:
                                     del WHO_ANSWERED[chat_id_full]
                                 # отменяем ответ

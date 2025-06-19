@@ -278,7 +278,7 @@ def edit_image(user_id: str) -> str:
     '''
     user_id = restore_id(user_id)
     my_log.log_gemini_skills(f'/edit_image {user_id}')
-    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Any images send by user to telegram bot with caption starting ! symbol will be edited automatically using external service."
+    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Anwser to user codeword <<EDIT IMAGE>> to indicate you understood this query was a request to edit image, dont add any other text."
 
 
 def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_height: int, chat_id: str) -> str:

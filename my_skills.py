@@ -230,7 +230,7 @@ def tts(user_id: str) -> str:
     '''
     user_id = restore_id(user_id)
     my_log.log_gemini_skills(f'/tts {user_id}')
-    return "The function itself does not return an audio message. It returns a string containing instructions for the assistant. When generating an audio message, the assistant's output must be exclusively the /tts command in the format /tts [lang ru en etc] [speed +-100%] [text], with absolutely no preceding or additional explanatory text, as this exact message will be processed by the external audio generation system. Example: /tts en +50% Hello, how are you?"
+    return "When generating an audio message for the user, your output must be exclusively the /tts command in the format /tts [lang ru en etc] [speed +-100%] [text], with absolutely no preceding or additional explanatory text, because this exact message is directly processed by the external audio generation system for delivery to the user. For example: /tts en +50% Hello, how are you? Do NOT respond with text like 'Here is your audio: /tts en +50% Hello, how are you?' as this will fail."
 
 
 def speech_to_text(user_id: str) -> str:

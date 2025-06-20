@@ -759,6 +759,11 @@ def img2txt(
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'meta-llama/llama-4-maverick:free'
 
+            # llama-4-maverick at groq
+            if not text:
+                text = my_groq.img2txt(data, query, model = 'meta-llama/llama-4-maverick-17b-128e-instruct', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'meta-llama/llama-4-maverick-17b-128e-instruct'
 
         except Exception as img_from_link_error:
             traceback_error = traceback.format_exc()

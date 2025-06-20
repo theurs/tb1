@@ -176,7 +176,7 @@ def img2txt(image_data: Union[str, bytes],
             chat_completion = client.chat.completions.create(
                 messages=mem,
                 model=model,
-                response_format = ResponseFormat(type = resp_type),
+                response_format = {"type": resp_type},
                 temperature = temperature,
             )
 
@@ -959,7 +959,7 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     load_users_keys()
 
-    # print(img2txt('C:/Users/user/Downloads/4.jpg', prompt = 'Извлеки весь текст, сохрани исходное форматирование', model='llama-3.2-90b-vision-preview'))
+    # print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи 3.jpg', prompt = 'Извлеки весь текст, сохрани исходное форматирование', model='meta-llama/llama-4-maverick-17b-128e-instruct'))
 
     # my_db.init(backup=False)
 

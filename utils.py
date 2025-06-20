@@ -663,6 +663,10 @@ def bot_markdown_to_html(text: str) -> str:
     text = clean_markdown_tables(text)
 
 
+    # исправляем парные экранированные кавычки (возможно они появляются позже и надо будет исправлять иначе)
+    text = re.sub(r'\\"(.*?)\\"', r'"\1"', text)
+
+
     # меняем обратно хеши на блоки кода
     for match, random_string in list_of_code_blocks2:
         # new_match = html.escape(match)

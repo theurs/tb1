@@ -1593,9 +1593,6 @@ def download_audio_file_as_bytes(url: str,  limit_size: int = 200) -> bytes:
             audio_data += chunk
             downloaded_size += len(chunk)
 
-            # Log the progress
-            my_log.log2(f'utils:download_audio_file_as_bytes: Downloaded {downloaded_size} bytes out of {content_length if content_length else "unknown"} bytes.')
-
         return audio_data
 
     except Exception as error:

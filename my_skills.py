@@ -344,7 +344,20 @@ def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_h
     return 'FAILED'        
 
 
-def save_pandas_chart_to_image(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:
+def save_pandas_chart_to_image(user_id: str) -> str:
+    '''
+    Send a charts to telegram user.
+    Args:
+        user_id: str - telegram user id
+    Returns:
+        str: 
+    '''
+    user_id = restore_id(user_id)
+    my_log.log_gemini_skills(f'/save_pandas_chart_to_image {user_id}')
+    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use save_html_to_image for drawing charts in html. Keep in mind it should be look like a real chart with axis and legend."
+
+
+def save_pandas_chart_to_image_(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:
     '''
     Send a chart generated from Pandas data as an image file to the user.
     Args:

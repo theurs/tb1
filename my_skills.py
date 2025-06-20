@@ -979,6 +979,19 @@ def calc(expression: str, strict: bool, user_id: str) -> str:
                 'divmod': divmod,
                 'float': float,
                 'int': int,
+                'bin': bin,
+                'oct': oct,
+                'hex': hex,
+                'bool': bool,
+                'chr': chr,
+                'ord': ord,
+                'len': len,
+                'range': range,
+                'list': list,
+                'dict': dict,
+                'set': set,
+                'frozenset': frozenset,
+                'tuple': tuple,                
             }
 
             result = str(simple_eval(expression, functions=allowed_functions))
@@ -1364,8 +1377,8 @@ if __name__ == '__main__':
 
     # test_calc()
     r = calc(
-        'Generate lists of numbers for plotting the graph of the sin(x) function in the range from -5 to 5 with a step of 0.1.',
-        strict=False,
+        'bin(48)',
+        strict=True,
         user_id='test'
     )
     print(r)

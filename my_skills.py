@@ -945,6 +945,7 @@ def calc(expression: str, strict: bool, user_id: str) -> str:
     '''Calculate expression with python. The expression can be strict or a free-form task;
     strict expressions are calculated on a simple calculator, while free-form expressions
     are executed on a virtual machine and can be of almost any complexity.
+    It can only return text results, do not try to draw images or videos, etc.
     Args:
         expression: The expression to calculate.
         strict: Whether the expression is strict or not.

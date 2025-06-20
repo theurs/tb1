@@ -376,7 +376,7 @@ def chat(
         now = utils.get_full_time()
         saved_file_name = my_db.get_user_property(chat_id, 'saved_file_name') or ''
         if saved_file_name:
-            saved_file = my_db.get_user_property(chat_id, 'saved_file')
+            saved_file = my_db.get_user_property(chat_id, 'saved_file') or ''
         else:
             saved_file = ''
         saved_file_size = len(saved_file)

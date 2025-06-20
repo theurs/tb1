@@ -447,9 +447,12 @@ def chat(
                     )
                 response = chat.send_message(query,)
             except Exception as error:
+                
                 if '429 RESOURCE_EXHAUSTED' in str(error):
                     my_log.log_gemini(f'my_gemini3:chat:2: {str(error)} {model} {key}')
                     return ''
+                elif 'API key expired. Please renew the API key.' in str(error) or '429 Quota exceeded for quota metric' in str(error):
+                    my_gemini.remove_key(key)
                 elif 'timeout' in str(error).lower():
                     my_log.log_gemini(f'my_gemini3:chat:timeout: {str(error)} {model} {key}')
                     return ''

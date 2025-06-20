@@ -204,7 +204,7 @@ def _process_single_chunk(
     text_with_instruction = chunk_text
 
     if not chunk_text.strip():
-        my_log.log_gemini(f"my_gemini_tts:_process_single_chunk:0: Пустой текст для фрагмента {chunk_index}. Фрагмент будет пропущен.")
+        # my_log.log_gemini(f"my_gemini_tts:_process_single_chunk:0: Пустой текст для фрагмента {chunk_index}. Фрагмент будет пропущен.")
         return
 
     wav_bytes = generate_tts_wav_bytes(

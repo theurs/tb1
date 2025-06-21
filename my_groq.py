@@ -6,6 +6,7 @@ import base64
 import cachetools.func
 import random
 import re
+import requests
 import time
 import threading
 import traceback
@@ -1006,18 +1007,103 @@ def test_key(key: str) -> bool:
     return bool(r)
 
 
+def get_groq_response_with_image(prompt: str, user_id: str = '') -> tuple[str, list]:
+    """
+    Отправляет запрос к Groq API с моделью compound-beta и возвращает текстовый ответ и изображения.
+
+    Args:
+        prompt (str): Текстовый запрос для модели.
+
+    Returns:
+        tuple: Кортеж, содержащий:
+               - str: Текстовый ответ от модели.
+               - list: Список изображений в байтах, если изображения были сгенерированы.
+    """
+    try:
+        url = "https://api.groq.com/openai/v1/chat/completions"
+
+        api_key = get_next_key()
+        model = 'compound-beta-mini'
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        }
+
+        for _ in range(3):
+            try:
+                response = requests.post(url, headers=headers, json=payload, timeout=60)
+                # Проверяем, успешен ли запрос
+                response.raise_for_status() 
+
+                response_data = response.json()
+
+                # Проверяем наличие ошибок в ответе API
+                if 'error' in response_data:
+                    raise Exception(f"API Error: {response_data['error']['message']}")
+
+                # --- Извлечение данных ---
+
+                # 1. Извлекаем основной текстовый ответ
+                message = response_data['choices'][0]['message']
+                text_content = message.get('content', '')
+
+                # 2. Извлекаем изображения
+                images = []
+                if 'executed_tools' in message:
+                    for tool_call in message['executed_tools']:
+                        if 'code_results' in tool_call:
+                            for result in tool_call['code_results']:
+                                # Изображения передаются как base64 закодированные PNG
+                                if 'png' in result:
+                                    base64_image_data = result['png']
+                                    # Декодируем строку base64 в байты
+                                    image_bytes = base64.b64decode(base64_image_data)
+                                    images.append(image_bytes)
+
+                if user_id:
+                    my_db.add_msg(user_id, model)
+
+                return text_content, images
+
+            except requests.exceptions.RequestException as e:
+                my_log.log_groq(f'get_groq_response_with_image: error: {e}')
+            except (KeyError, IndexError) as e:
+                my_log.log_groq(f'get_groq_response_with_image: error: {e}')
+            except Exception as e:
+                my_log.log_groq(f'get_groq_response_with_image: error: {e}')
+
+            time.sleep(3)
+
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log_groq(f'get_groq_response_with_image: error: {e}\n\n{traceback_error}')
+
+    return None, []
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     load_users_keys()
 
-    text, images = get_groq_response_with_image('Построй график функции x=x^3 в диапазоне от -5 до 5')
-    if text and images:
-        n = 1
-        for image in images:
-            with open(r'c:\Users\user\Downloads\test' + str(n) + '.png', 'wb') as f:
-                f.write(image)
-        print(text)
+    # text, images = get_groq_response_with_image('Построй график функции x=x^3 в диапазоне от -5 до 5')
+    # if text and images:
+    #     n = 1
+    #     for image in images:
+    #         with open(r'c:\Users\user\Downloads\test' + str(n) + '.png', 'wb') as f:
+    #             f.write(image)
+    #     print(text)
 
     # print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи 3.jpg', prompt = 'Извлеки весь текст, сохрани исходное форматирование', model='meta-llama/llama-4-maverick-17b-128e-instruct'))
 

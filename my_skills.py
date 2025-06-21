@@ -344,17 +344,48 @@ def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_h
     return 'FAILED'        
 
 
-def save_chart_and_graphs_to_image(user_id: str) -> str:
+def save_chart_and_graphs_to_image(prompt: str, filename: str, user_id: str) -> str:
     '''
     Send a charts to telegram user. Any visual plots.
     Args:
+        prompt: str - prompt text to generate chart and graphs
+        filename: str - filename
         user_id: str - telegram user id
     Returns:
-        str: 
+        str: 'OK' message or error message
     '''
     user_id = restore_id(user_id)
-    my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id}')
-    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use use save_html_to_image for drawing charts in html, when drawing with html keep in mind it should be look like a real chart with axis and legend end etc."
+    my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id} {filename} {prompt}')
+    # return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use use save_html_to_image for drawing charts in html, when drawing with html keep in mind it should be look like a real chart with axis and legend end etc."
+
+    try:
+        if not filename.endswith('.png'):
+            filename += '.png'
+
+        text, images = my_groq.get_groq_response_with_image(prompt, user_id)
+
+        if text and images:
+            for image in images:
+                item = {
+                    'type': 'image/png file',
+                    'filename': filename,
+                    'data': image,
+                }
+                with STORAGE_LOCK:
+                    if user_id in STORAGE:
+                        if item not in STORAGE[user_id]:
+                            STORAGE[user_id].append(item)
+                    else:
+                        STORAGE[user_id] = [item,]
+            my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id} {filename} {prompt}\n\n{text}')
+            return text
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills(f'save_chart_and_graphs_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{prompt}\n\n{user_id}')
+        return f"FAIL: An unexpected error occurred: {e}"
+
+    my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id} {filename} {prompt}\n\nFAILED')
+    return 'FAILED'
 
 
 def save_pandas_chart_to_image_(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:

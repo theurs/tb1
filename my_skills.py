@@ -354,7 +354,7 @@ def save_chart_and_graphs_to_image(user_id: str) -> str:
     '''
     user_id = restore_id(user_id)
     my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id}')
-    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use query to calc(it can draw many charts in 1 query!) or use save_html_to_image for drawing charts in html, when drawing with html keep in mind it should be look like a real chart with axis and legend end etc."
+    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use use save_html_to_image for drawing charts in html, when drawing with html keep in mind it should be look like a real chart with axis and legend end etc."
 
 
 def save_pandas_chart_to_image_(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:
@@ -945,7 +945,6 @@ def calc(expression: str, strict: bool, user_id: str) -> str:
     '''Calculate expression with python. The expression can be strict or a free-form task;
     strict expressions are calculated on a simple calculator, while free-form expressions
     are executed on a virtual machine and can be of almost any complexity.
-    It can visualize any graph, plots, charts etc, ask for it in a free form.
 
     Args:
         expression: The expression to calculate.

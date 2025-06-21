@@ -240,6 +240,7 @@ def markdown_table_to_image_bytes(
     Для автоматического подбора ширины колонок и переноса текста используется
     движок рендеринга WebKit (через wkhtmltoimage), который применяет
     стандартные алгоритмы верстки HTML-таблиц.
+    Если в таблице всего 2 строки то не рисует.
 
     Args:
         markdown_table_string: Строка, содержащая таблицу в формате Markdown.
@@ -256,6 +257,11 @@ def markdown_table_to_image_bytes(
         # Use default styles if none are provided
         if css_style is None:
             css_style = CSS1
+
+        lines = markdown_table_string.strip().split('\n')
+        lines = [x for x in lines if x]
+        if len(lines) < 3:
+            return b''
 
         # Step 1: Convert Markdown to an HTML fragment.
         table_html = markdown.markdown(
@@ -494,114 +500,120 @@ def html_to_image_bytes_playwright(
 
 if __name__ == "__main__":
 
-#     # --- Example Usage ---
-#     markdown_text_with_tables = """
+    # --- Example Usage ---
+    markdown_text_with_tables = """
 
-# blabla
+blabla
 
-# Вот простая таблица в формате Markdown:
-
-# <pre><code class="language-plaintext">| Заголовок 1 | Заголовок 2 | Заголовок 3 |
-# |-------------|-------------|-------------|
-# | Строка 1, Ячейка 1 | Строка 1, Ячейка 2 | Строка 1, Ячейка 3 |
-# | Строка 2, Ячейка 1 | Строка 2, <br> Ячейка 2 | Строка 2, Ячейка 3 |
-# | Строка 3, Ячейка 1 | Строка 3, Ячейка 2 | Строка 3, Ячейка 3 |
-# </code></pre>'
+| Заголовок 1 | Заголовок 2 | Заголовок 3 |
+|-------------|-------------|-------------|
 
 
-# blabla
+Вот простая таблица в формате Markdown:
 
-# | Заголовок 1 | Заголовок 2 | Заголовок 3 |
-# |-------------|-------------|-------------|
-# | Строка 1, Ячейка 1 | Строка 1, Ячейка 2 | Строка 1, Ячейка 3 |
-# | Строка 2, Ячейка 1 | Строка 2, Ячейка 2 | Строка 2, Ячейка 3 |
-# | Строка 3, Ячейка 1 | Строка 3, Ячейка 2 | Строка 3, Ячейка 3 |
-
-# asdasd
-
+<pre><code class="language-plaintext">| Заголовок 1 | Заголовок 2 | Заголовок 3 |
+|-------------|-------------|-------------|
+| Строка 1, Ячейка 1 | Строка 1, Ячейка 2 | Строка 1, Ячейка 3 |
+| Строка 2, Ячейка 1 | Строка 2, <br> Ячейка 2 | Строка 2, Ячейка 3 |
+| Строка 3, Ячейка 1 | Строка 3, Ячейка 2 | Строка 3, Ячейка 3 |
+</code></pre>'
 
 
+blabla
 
-# """
+| Заголовок 1 | Заголовок 2 | Заголовок 3 |
+|-------------|-------------|-------------|
+| Строка 1, Ячейка 1 | Строка 1, Ячейка 2 | Строка 1, Ячейка 3 |
+| Строка 2, Ячейка 1 | Строка 2, Ячейка 2 | Строка 2, Ячейка 3 |
+| Строка 3, Ячейка 1 | Строка 3, Ячейка 2 | Строка 3, Ячейка 3 |
 
-#     found_tables = find_markdown_tables(markdown_text_with_tables)
+asdasd
 
-#     n = 1
-#     for table in reversed(found_tables):
-#         print(table)
 
-#         try:
-#             # Call the function to get the styled image bytes
-#             image_data_bytes = markdown_table_to_image_bytes(table)
 
-#             # Save it directly to a file (for demonstration/testing):
-#             output_filename = f"c:/Users/user/Downloads/{n}.png"
-#             n += 1
-#             with open(output_filename, "wb") as f:
-#                 f.write(image_data_bytes)
-#             print(f"Styled image successfully created and saved to '{output_filename}' from bytes.")
 
-#         except ValueError as e:
-#             print(f"Error processing Markdown table: {e}")
-#         except Exception as e:
-#             print(f"An unexpected error occurred: {e}")
+"""
 
-    example_html = """
-<canvas id="mandelbrotCanvas" width="800" height="700" style="border:1px solid #000;"></canvas>
-<script>
-    const canvas = document.getElementById('mandelbrotCanvas');
-    const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
+    found_tables = find_markdown_tables(markdown_text_with_tables)
 
-    // Mandelbrot parameters
-    const MAX_ITERATIONS = 200; // Увеличено количество итераций для большей детализации
+    n = 1
+    for table in reversed(found_tables):
+        print(table)
 
-    // Определение границ комплексной плоскости для стандартного вида фрактала
-    const minRe = -2.5;
-    const maxRe = 1.0;
-    const minIm = -1.25;
-    const maxIm = 1.25;
+        try:
+            # Call the function to get the styled image bytes
+            image_data_bytes = markdown_table_to_image_bytes(table)
 
-    for (let x = 0; x < width; x++) {
-        for (let y = 0; y < height; y++) {
-            // Преобразование координат пикселей в координаты комплексной плоскости
-            let ca = minRe + (x / width) * (maxRe - minRe);
-            let cb = minIm + (y / height) * (maxIm - minIm);
+            # Save it directly to a file (for demonstration/testing):
+            output_filename = f"c:/Users/user/Downloads/{n}.png"
+            n += 1
+            with open(output_filename, "wb") as f:
+                f.write(image_data_bytes)
+            print(f"Styled image successfully created and saved to '{output_filename}' from bytes.")
 
-            let a = ca;
-            let b = cb;
+        except ValueError as e:
+            print(f"Error processing Markdown table: {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
 
-            let n = 0;
-            while (n < MAX_ITERATIONS) {
-                let aa = a * a - b * b;
-                let bb = 2 * a * b;
-                a = aa + ca;
-                b = bb + cb;
 
-                if (a * a + b * b > 4) { // Проверка, выходит ли точка за границы
-                    break;
-                }
-                n++;
-            }
 
-            let color;
-            if (n === MAX_ITERATIONS) {
-                color = 'black'; // Точка внутри множества
-            } else {
-                // Окрашивание в зависимости от количества итераций
-                let hue = (n * 10) % 360; // Изменение множителя для распределения цветов
-                let saturation = 100;
-                let lightness = 20 + (n / MAX_ITERATIONS) * 50; // Варьирование яркости для градиента
-                color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-            }
-            ctx.fillStyle = color;
-            ctx.fillRect(x, y, 1, 1);
-        }
-    }
-</script>
+#     example_html = """
+# <canvas id="mandelbrotCanvas" width="800" height="700" style="border:1px solid #000;"></canvas>
+# <script>
+#     const canvas = document.getElementById('mandelbrotCanvas');
+#     const ctx = canvas.getContext('2d');
+#     const width = canvas.width;
+#     const height = canvas.height;
 
-    """
-    image_data_bytes = html_to_image_bytes_playwright(example_html)
-    with open("c:/Users/user/Downloads/html 1.png", "wb") as f:
-        f.write(image_data_bytes)
+#     // Mandelbrot parameters
+#     const MAX_ITERATIONS = 200; // Увеличено количество итераций для большей детализации
+
+#     // Определение границ комплексной плоскости для стандартного вида фрактала
+#     const minRe = -2.5;
+#     const maxRe = 1.0;
+#     const minIm = -1.25;
+#     const maxIm = 1.25;
+
+#     for (let x = 0; x < width; x++) {
+#         for (let y = 0; y < height; y++) {
+#             // Преобразование координат пикселей в координаты комплексной плоскости
+#             let ca = minRe + (x / width) * (maxRe - minRe);
+#             let cb = minIm + (y / height) * (maxIm - minIm);
+
+#             let a = ca;
+#             let b = cb;
+
+#             let n = 0;
+#             while (n < MAX_ITERATIONS) {
+#                 let aa = a * a - b * b;
+#                 let bb = 2 * a * b;
+#                 a = aa + ca;
+#                 b = bb + cb;
+
+#                 if (a * a + b * b > 4) { // Проверка, выходит ли точка за границы
+#                     break;
+#                 }
+#                 n++;
+#             }
+
+#             let color;
+#             if (n === MAX_ITERATIONS) {
+#                 color = 'black'; // Точка внутри множества
+#             } else {
+#                 // Окрашивание в зависимости от количества итераций
+#                 let hue = (n * 10) % 360; // Изменение множителя для распределения цветов
+#                 let saturation = 100;
+#                 let lightness = 20 + (n / MAX_ITERATIONS) * 50; // Варьирование яркости для градиента
+#                 color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+#             }
+#             ctx.fillStyle = color;
+#             ctx.fillRect(x, y, 1, 1);
+#         }
+#     }
+# </script>
+
+#     """
+#     image_data_bytes = html_to_image_bytes_playwright(example_html)
+#     with open("c:/Users/user/Downloads/html 1.png", "wb") as f:
+#         f.write(image_data_bytes)

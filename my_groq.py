@@ -13,12 +13,12 @@ from typing import Union
 
 import httpx
 from groq import Groq, PermissionDeniedError
-from groq.types.chat.completion_create_params import ResponseFormat
 from sqlitedict import SqliteDict
 
 import cfg
 import my_db
 import my_log
+import my_skills
 import my_sum
 import utils
 
@@ -202,6 +202,7 @@ def ai(prompt: str = '',
        key_: str = '',
        timeout: int = 180,
        json_output: bool = False,
+       user_id: str = '',
        ) -> str:
     """
     Generates a response using the GROQ AI model.
@@ -215,6 +216,9 @@ def ai(prompt: str = '',
             (llama3-8b-8192, mixtral-8x7b-32768, llama-3.1-405b-reasoning, llama-3.1-70b-versatile, llama-3.1-8b-instant)
         max_tokens_ (int, optional): The maximum number of tokens in the generated response. Defaults to 2000.
         key_ (str, optional): The API key for the GROQ model. Defaults to ''.
+        timeout (int, optional): The timeout for the request in seconds. Defaults to 120.
+        json_output (bool, optional): Whether to return the response as a JSON object. Defaults to False.
+        user_id (str, optional): The user's ID. Defaults to ''.
 
     Returns:
         str: The generated response from the GROQ AI model. Returns an empty string if error.
@@ -307,9 +311,56 @@ def ai(prompt: str = '',
                     continue
                 if 'Rate limit reached for model' in str(error).lower():
                     continue
+                if "'message': 'Request Entity Too Large', 'type': 'invalid_request_error', 'code': 'request_too_large'" in str(error):
+                    return str(error)
                 my_log.log_groq(f'GROQ {error} {key} {model} {str(mem)[:1000]}')
             try:
                 resp = chat_completion.choices[0].message.content.strip()
+
+
+                # проверка есть ли в ответе картинки (их может создавать модель compound-beta)
+                # if 'compound-beta' in model:
+                try:
+                    found_images_count = 0
+                    executed_tools = chat_completion.choices[0].message.executed_tools
+                    if executed_tools is None:
+                        executed_tools = []
+
+                    for tool in executed_tools:
+                        code_results = tool.code_results
+                        if code_results is None:
+                            code_results = []
+
+                        for code_result in code_results:
+                            if hasattr(code_result, 'png') and code_result.png:
+                                try:
+                                    image_data_base64 = code_result.png
+                                    image_bytes = base64.b64decode(image_data_base64)
+
+                                    found_images_count += 1
+
+                                    filename = f'image_{found_images_count}.png'
+
+                                    item = {
+                                        'type': 'image/png file',
+                                        'filename': filename,
+                                        'data': image_bytes,
+                                    }
+
+                                    with my_skills.STORAGE_LOCK:
+                                        if user_id in my_skills.STORAGE:
+                                            if item not in my_skills.STORAGE[user_id]:
+                                                my_skills.STORAGE[user_id].append(item)
+                                        else:
+                                            my_skills.STORAGE[user_id] = [item,]
+
+                                except Exception as e:
+                                    pass
+
+                except (IndexError, AttributeError) as e:
+                    pass
+
+
             except (IndexError, AttributeError):
                 continue
             except UnboundLocalError:
@@ -521,7 +572,8 @@ def calc(query: str, language: str = 'ru', system: str = '', user_id: str = '') 
             q,
             temperature=0.1,
             system = system,
-            model_ = 'compound-beta'
+            model_ = 'compound-beta',
+            user_id = user_id
         )
 
         r = r.strip()
@@ -958,6 +1010,14 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     load_users_keys()
+
+    text, images = get_groq_response_with_image('Построй график функции x=x^3 в диапазоне от -5 до 5')
+    if text and images:
+        n = 1
+        for image in images:
+            with open(r'c:\Users\user\Downloads\test' + str(n) + '.png', 'wb') as f:
+                f.write(image)
+        print(text)
 
     # print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи 3.jpg', prompt = 'Извлеки весь текст, сохрани исходное форматирование', model='meta-llama/llama-4-maverick-17b-128e-instruct'))
 

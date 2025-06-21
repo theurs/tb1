@@ -420,7 +420,7 @@ def chat(
                         my_skills.save_to_docx,
                         my_skills.save_to_pdf,
                         my_skills.save_diagram_to_image,
-                        my_skills.save_pandas_chart_to_image,
+                        my_skills.save_chart_and_graphs_to_image,
                         my_skills.save_html_to_image,
                         my_skills.query_user_file,
                         my_skills.help,

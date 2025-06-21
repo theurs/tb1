@@ -160,7 +160,7 @@ def text_to_image(prompt: str) -> str:
     Generate and send image message from text to user.
     Use it only if asked by user to generate image from text.
     Avoid using text_to_image for precise mathematical expressions, structured diagrams,
-    or data-driven charts; instead, use save_diagram_to_image or save_pandas_chart_to_image
+    or data-driven charts; instead, use save_diagram_to_image or save_chart_and_graphs_to_image
     for those specific tasks. Use save_html_to_image for drawing mostly textual content.
 
     Args:
@@ -344,17 +344,17 @@ def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_h
     return 'FAILED'        
 
 
-def save_pandas_chart_to_image(user_id: str) -> str:
+def save_chart_and_graphs_to_image(user_id: str) -> str:
     '''
-    Send a charts to telegram user.
+    Send a charts to telegram user. Any visual plots.
     Args:
         user_id: str - telegram user id
     Returns:
         str: 
     '''
     user_id = restore_id(user_id)
-    my_log.log_gemini_skills(f'/save_pandas_chart_to_image {user_id}')
-    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use save_html_to_image for drawing charts in html. Keep in mind it should be look like a real chart with axis and legend."
+    my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id}')
+    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use query to calc(it can draw many charts in 1 query!) or use save_html_to_image for drawing charts in html, when drawing with html keep in mind it should be look like a real chart with axis and legend end etc."
 
 
 def save_pandas_chart_to_image_(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:
@@ -945,7 +945,8 @@ def calc(expression: str, strict: bool, user_id: str) -> str:
     '''Calculate expression with python. The expression can be strict or a free-form task;
     strict expressions are calculated on a simple calculator, while free-form expressions
     are executed on a virtual machine and can be of almost any complexity.
-    It can only return text results, do not try to draw images or videos, etc.
+    It can visualize any graph, plots, charts etc, ask for it in a free form.
+
     Args:
         expression: The expression to calculate.
         strict: Whether the expression is strict or not.

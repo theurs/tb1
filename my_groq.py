@@ -881,7 +881,7 @@ TEXT:
     translated_dict = utils.string_to_dict(translated)
     if translated_dict:
         return translated_dict['translation']
-    return text
+    return ''
 
 
 def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_MODEL, role: str = '') -> str:

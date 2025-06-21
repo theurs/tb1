@@ -938,14 +938,14 @@ TEXT:
                 l1 = translated_dict['translation']
             except KeyError as error:
                 my_log.log_gemini(f'my_gemini3:translate: key error {str(translated_dict)}')
-                raise error
+                return ''
         elif isinstance(translated_dict, str):
             return translated_dict
         elif isinstance(translated_dict, list):
             l1 = translated_dict[0]['translation']
         else:
             my_log.log_gemini(f'translate1: unknown type {type(translated_dict)}\n\n{str(translated_dict)}')
-            return text
+            return ''
         # иногда возвращает словарь в словаре вложенный
         if isinstance(l1, dict):
             l2 = l1['translation']
@@ -956,8 +956,8 @@ TEXT:
             text = translated_dict[0]['translation']
         else:
             my_log.log_gemini(f'translate2: unknown type {type(l1)}\n\n{str(l1)}')
-            return text
-    return text
+            return ''
+    return ''
 
 
 def detect_lang(text: str, chat_id_full: str) -> str:

@@ -262,6 +262,9 @@ def markdown_table_to_image_bytes(
         lines = [x for x in lines if x]
         if len(lines) < 3:
             return b''
+        # если одна строка и она короткая то не рисуем
+        if len(lines) == 3 and len(lines[2]) < 50:
+            return b''
 
         # Step 1: Convert Markdown to an HTML fragment.
         table_html = markdown.markdown(

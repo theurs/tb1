@@ -344,7 +344,22 @@ def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_h
     return 'FAILED'        
 
 
-def save_chart_and_graphs_to_image(prompt: str, filename: str, user_id: str) -> str:
+##### charts ###############################################
+
+def save_chart_and_graphs_to_image(user_id: str) -> str:
+    '''
+    Send a charts to telegram user. Any visual plots.
+    Args:
+        user_id: str - telegram user id
+    Returns:
+        str:
+    '''
+    user_id = restore_id(user_id)
+    my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id}')
+    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use use save_html_to_image for drawing charts in html, when drawing with html keep in mind it should be look like a real chart with axis and legend end etc."
+
+
+def save_chart_and_graphs_to_image_(prompt: str, filename: str, user_id: str) -> str:
     '''
     Send a charts to telegram user. Any visual plots.
     Args:
@@ -517,6 +532,8 @@ def save_pandas_chart_to_image_(filename: str, data: dict, chart_type: str, chat
         traceback_error = traceback.format_exc()
         my_log.log_gemini_skills_save_docs(f'save_pandas_chart_to_image: Unexpected error: {error}\n\n{traceback_error}\n\nData: {data}\nChart Type: {chart_type}\nChat ID: {chat_id}')
         return f"FAIL: An unexpected error occurred: {error}"
+
+##### charts ###############################################
 
 
 def save_diagram_to_image(filename: str, text: str, engine: str, chat_id: str) -> str:

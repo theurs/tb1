@@ -382,6 +382,18 @@ class ShowAction(threading.Thread):
         self.stop()
 
 
+def edit_image_detect(text: str) -> bool:
+    '''
+    Пытается определить есть ли в строке маркер EDIT IMAGE
+    '''
+    if "EDIT IMAGE" in text and len(text) < 30:
+        return True
+    elif "EDIT IMAGE" in text and len(text) > 30 and 'edit_image(' in text:
+        return True
+    else:
+        return False
+
+
 def get_uptime() -> str:
     """Calculates and returns the uptime in a human-readable format (English).
 
@@ -785,7 +797,7 @@ def img2txt(
         UNCAPTIONED_IMAGES[chat_id_full] = (time.time(), data)
 
         # если запрос на редактирование
-        if "EDIT IMAGE" in text and len(text) < 30:
+        if edit_image_detect(text):
             if 'gemini' in chat_mode:
                 my_gemini3.undo(chat_id_full)
 
@@ -9239,8 +9251,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
 
-                            # <<EDIT IMAGE>> flag in answer
-                            if 'EDIT IMAGE' in answer and len(answer) < 30:
+                            if edit_image_detect(answer):
                                 if chat_id_full in WHO_ANSWERED:
                                     del WHO_ANSWERED[chat_id_full]
                                 # отменяем ответ

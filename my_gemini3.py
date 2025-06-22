@@ -393,10 +393,8 @@ def chat(
         #     use_skills = False
 
         # not support thinking
-        if THINKING_BUDGET != -1:
-            if 'gemini-2.0-flash' in model:
-                THINKING_BUDGET = -1
-                use_skills = False
+        if 'gemini-2.0-flash' in model:
+            THINKING_BUDGET = -1
 
         if isinstance(query, str):
             query = query[:my_gemini.MAX_SUM_REQUEST]

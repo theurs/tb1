@@ -7059,7 +7059,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'gpt_41': my_github.BIG_GPT_41_MODEL,
             'gpt_41_mini': my_github.DEFAULT_41_MINI_MODEL,
             'deepseek_r1': my_github.DEEPSEEK_R1_MODEL,
-            'deepseek_v3': my_nebius.DEFAULT_MODEL_FALLBACK,
+            'deepseek_v3': my_nebius.DEFAULT_V3_MODEL,
             'cohere': my_cohere.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
             'llama4_maverick': my_openrouter_free.DEFAULT_MODEL,

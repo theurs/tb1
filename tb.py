@@ -3413,7 +3413,7 @@ def gmodel(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
-        current_list = my_gemini3.list_models()  # текущий список моделей (строка с переносами)
+        current_list = my_gemini3.list_models(include_context=True)
         prev_list = KV_STORAGE.get('gemini_models', '')
         KV_STORAGE['gemini_models'] = current_list
 

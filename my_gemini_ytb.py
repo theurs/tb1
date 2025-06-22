@@ -12,8 +12,10 @@ import my_log
 
 
 PROMPT = """Перепиши текстом всё содержание видео целиком стараясь ничего не упустить, уложись до 1500 слов. Ответ напиши на языке """
-MODEL = "gemini-2.5-flash-preview-05-20"
-MODEL_FALLBACK = "gemini-2.5-flash-preview-04-17-thinking"
+# MODEL = "gemini-2.5-flash-preview-05-20"
+# MODEL_FALLBACK = "gemini-2.5-flash-preview-04-17-thinking"
+MODEL = "gemini-2.5-flash-lite-preview-06-17"
+MODEL_FALLBACK = "gemini-2.0-flash-lite-preview"
 TIMEOUT = 180
 
 SAFETY_SETTINGS = [
@@ -34,7 +36,6 @@ SAFETY_SETTINGS = [
         threshold="BLOCK_NONE",
     ),
 ]
-
 
 
 def get_text(url: str, lang: str, user_id: str) -> str:

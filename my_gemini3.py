@@ -15,10 +15,12 @@ from google import genai
 from google.genai.types import (
     Content,
     GenerateContentConfig,
+    GenerateContentResponse,
     HttpOptions,
     ModelContent,
     SafetySetting,
     ThinkingConfig,
+    Tool,
     UserContent
 )
 
@@ -278,6 +280,70 @@ def validate_mem(mem):
             break
 
 
+def parse_content_response(response: GenerateContentResponse) -> tuple[list[dict], str]:
+    """
+    Парсит объект GenerateContentResponse для извлечения текстового содержимого
+    и данных изображений. На случай если в ответе есть картинки.
+
+    Args:
+        response: Объект GenerateContentResponse.
+
+    Returns:
+        Кортеж, содержащий:
+        - Список словарей, где каждый словарь представляет изображение с ключами:
+          'data' (байты), 'mime_type' (строка) и 'filename' (строка).
+        - Единая строка, содержащая все объединенные текстовые части из ответа.
+          Если текст отсутствует, возвращается пустая строка.
+    """
+    try:
+        if not isinstance(response, GenerateContentResponse):
+            return [], ""
+        images = []
+        full_text_parts = []
+        image_counter = 0
+
+        if not response or not hasattr(response, 'candidates') or not response.candidates:
+            return images, ""
+
+        for candidate in response.candidates:
+            if hasattr(candidate, 'content') and candidate.content and \
+            hasattr(candidate.content, 'parts') and candidate.content.parts:
+                for part in candidate.content.parts:
+                    # Извлечение текстовых частей
+                    if hasattr(part, 'text') and part.text is not None:
+                        full_text_parts.append(part.text)
+
+                    # Извлечение данных изображений
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        if hasattr(part.inline_data, 'mime_type') and \
+                        part.inline_data.mime_type.startswith('image/'):
+
+                            image_data = part.inline_data.data
+                            mime_type = part.inline_data.mime_type
+
+                            filename = None
+                            if hasattr(part.inline_data, 'display_name') and \
+                            part.inline_data.display_name:
+                                filename = part.inline_data.display_name
+                            else:
+                                # Генерируем имя файла, если оно не указано
+                                extension = mime_type.split('/')[-1]
+                                filename = f"image_{image_counter}.{extension}"
+                                image_counter += 1
+
+                            images.append({
+                                "data": image_data,
+                                "mime_type": mime_type,
+                                "filename": filename
+                            })
+
+        return images, "".join(full_text_parts)
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini(f'my_gemini3:parse_content_response: Error parsing response: {e}\n\n{traceback_error}')
+        return [], ""
+
+
 def chat(
     query: str,
     chat_id: str = '',
@@ -322,14 +388,15 @@ def chat(
         None: The function catches and logs exceptions internally, returning an empty string on failure.
     """
     try:
-        if 'flash-lite' in model:
-            THINKING_BUDGET = -1
-            use_skills = False
-        
+        # if 'flash-lite' in model:
+        #     THINKING_BUDGET = -1
+        #     use_skills = False
+
         # not support thinking
         if THINKING_BUDGET != -1:
             if 'gemini-2.0-flash' in model:
                 THINKING_BUDGET = -1
+                use_skills = False
 
         if isinstance(query, str):
             query = query[:my_gemini.MAX_SUM_REQUEST]
@@ -371,6 +438,7 @@ def chat(
 
         resp = ''
         key = ''
+        resp_full = None
 
         # current date time string
         now = utils.get_full_time()
@@ -389,6 +457,8 @@ def chat(
         if saved_file_name:
             my_skills.STORAGE_ALLOWED_IDS[chat_id] = chat_id
             system_.insert(1, f'Telegram user have saved file/files and assistant can query it: {saved_file_name} ({saved_file_size} chars)')
+        if 'flash-lite' in model:
+            system_.insert(1, 'You can draw graphs and charts using the code_execution_tool')
 
         for _ in range(3):
             response = None
@@ -400,31 +470,36 @@ def chat(
                     key = my_gemini.get_next_key()
                 client = genai.Client(api_key=key, http_options={'timeout': timeout * 1000})
                 if use_skills:
-                    SKILLS = [
-                        my_skills.calc,
-                        my_skills.search_google_fast,
-                        my_skills.search_google_deep,
-                        my_skills.download_text_from_url,
-                        my_skills.get_time_in_timezone,
-                        my_skills.get_weather,
-                        my_skills.get_currency_rates,
-                        my_skills.tts,
-                        my_skills.speech_to_text,
-                        my_skills.edit_image,
-                        my_skills.translate_text,
-                        my_skills.translate_documents,
-                        # my_skills.compose_creative_text, # its too slow
-                        my_skills.text_to_image,
-                        my_skills.text_to_qrcode,
-                        my_skills.save_to_excel,
-                        my_skills.save_to_docx,
-                        my_skills.save_to_pdf,
-                        my_skills.save_diagram_to_image,
-                        my_skills.save_chart_and_graphs_to_image,
-                        my_skills.save_html_to_image,
-                        my_skills.query_user_file,
-                        my_skills.help,
-                    ]
+                    if 'flash-lite' in model:
+                        code_execution_tool = Tool(code_execution={})
+                        google_search_tool = Tool(google_search={})
+                        SKILLS = [google_search_tool, code_execution_tool,]
+                    else:
+                        SKILLS = [
+                            my_skills.calc,
+                            my_skills.search_google_fast,
+                            my_skills.search_google_deep,
+                            my_skills.download_text_from_url,
+                            my_skills.get_time_in_timezone,
+                            my_skills.get_weather,
+                            my_skills.get_currency_rates,
+                            my_skills.tts,
+                            my_skills.speech_to_text,
+                            my_skills.edit_image,
+                            my_skills.translate_text,
+                            my_skills.translate_documents,
+                            # my_skills.compose_creative_text, # its too slow
+                            my_skills.text_to_image,
+                            my_skills.text_to_qrcode,
+                            my_skills.save_to_excel,
+                            my_skills.save_to_docx,
+                            my_skills.save_to_pdf,
+                            my_skills.save_diagram_to_image,
+                            my_skills.save_chart_and_graphs_to_image,
+                            my_skills.save_html_to_image,
+                            my_skills.query_user_file,
+                            my_skills.help,
+                        ]
                     chat = client.chats.create(
                         model=model,
                         config=get_config(
@@ -485,17 +560,40 @@ def chat(
                 resp = response.text or ''
             else:
                 resp = ''
+
+            resp_full = parse_content_response(response)
+
             if not resp:
                 if "finish_reason=<FinishReason.STOP: 'STOP'>" in str(response): # модель ответила молчанием (по просьбе юзера)
                     # resp = '...'
                     # break
                     return ''
                 time.sleep(2)
+            # модель ответила пустой ответ, но есть картинки (и возможно какой то другой ответ, хотя скорее всего текста нет)
+            elif not resp and resp_full and resp_full[0]:
+                resp = '...'
+                if resp_full[1]:
+                    resp = resp_full[1]
             else:
                 break
 
         if resp:
             resp = resp.strip()
+
+            # если есть картинки то отправляем их через my_skills.STORAGE
+            if resp_full and resp_full[0] and chat_id:
+                for image in resp_full[0]:
+                    item = {
+                        'type': 'image/png file', # image['mime_type'],
+                        'filename': image['filename'],
+                        'data': image['data'],
+                    }
+                    with my_skills.STORAGE_LOCK:
+                        if chat_id in my_skills.STORAGE:
+                            if item not in my_skills.STORAGE[chat_id]:
+                                my_skills.STORAGE[chat_id].append(item)
+                        else:
+                            my_skills.STORAGE[chat_id] = [item,]
 
             # плохие ответы
             ppp = [
@@ -818,7 +916,12 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
     return result_string.strip()
 
 
-def chat_cli(chat_id: str = 'test', model: str = cfg.gemini25_flash_model, THINKING_BUDGET: int = -1):
+def chat_cli(
+    chat_id: str = 'test',
+    model: str = cfg.gemini25_flash_model,
+    THINKING_BUDGET: int = -1,
+    use_skills: bool = False
+    ) -> None:
     while 1:
         q = input('>')
         if q == 'mem':
@@ -846,7 +949,13 @@ def chat_cli(chat_id: str = 'test', model: str = cfg.gemini25_flash_model, THINK
             r = 'ok'
             reset(chat_id)
         else:
-            r = chat(q, chat_id, use_skills=True, model = model, THINKING_BUDGET=THINKING_BUDGET)
+            r = chat(
+                q,
+                chat_id,
+                model = model,
+                THINKING_BUDGET=THINKING_BUDGET,
+                use_skills=use_skills,
+                )
         print(r)
 
 
@@ -1120,8 +1229,9 @@ if __name__ == "__main__":
 
     reset('test')
 
-    # chat_cli(model = 'gemini-2.5-flash-lite-preview-06-17', THINKING_BUDGET=-1)
-    chat_cli(model = 'gemini-2.5-flash', THINKING_BUDGET=0)
+    # chat_cli(model = 'gemini-2.5-flash-lite-preview-06-17', THINKING_BUDGET=10000, use_skills=True)
+    # chat_cli(model = 'gemini-2.5-flash', THINKING_BUDGET=10000, use_skills=True)
+    chat_cli(model = 'gemini-2.0-flash', THINKING_BUDGET=10000, use_skills=True)
 
     # with open(r'c:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_-_znachaschie_tsifryi_106746.txt', 'r', encoding='utf-8') as f:
     #     t = f.read()

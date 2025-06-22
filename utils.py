@@ -687,6 +687,11 @@ def bot_markdown_to_html(text: str) -> str:
 
     text = text.replace('\n</code></pre>\n</code>', '\n</code></pre>')
 
+
+    # Убираем пустоту из пустых строк состоящих только из пробельных символов
+    text = "\n".join("" if line.strip() == "" else line for line in text.splitlines())
+
+
     return text.strip()
 
 

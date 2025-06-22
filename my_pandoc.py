@@ -6,6 +6,7 @@ import io
 import os
 import subprocess
 import tempfile
+import time
 import traceback
 
 import markdown
@@ -32,6 +33,11 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
     ext = ext.lower()
     if ext.startswith('.'):
         ext = ext[1:]
+
+    if ext == 'pages':
+        return convert_pages_to_md(data)
+    elif ext == 'numbers':
+        return convert_numbers_to_csv(data)
 
     input_file = utils.get_tmp_fname() + '.' + ext
 
@@ -67,17 +73,15 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
 
         utils.remove_file(input_file)
         return text
-    elif book_type in ('xlsx', 'ods', 'xls'):
+    elif book_type in ('xlsx', 'ods', 'xls', 'numbers'):
         xls = pd.ExcelFile(io.BytesIO(data))
         result = ''
         for sheet in xls.sheet_names:
             csv = xls.parse(sheet_name=sheet).to_csv(index=False)
             result += f'\n\n{sheet}\n\n{csv}\n\n'
-        # df = pd.DataFrame(pd.read_excel(io.BytesIO(data)))
-        # buffer = io.StringIO()
-        # df.to_csv(buffer)
+
         utils.remove_file(input_file)
-        # return buffer.getvalue()
+
         return result
     elif 'fb2' in book_type:
         proc = subprocess.run([pandoc_cmd, '+RTS', '-M256M', '-RTS', '-f', 'fb2', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
@@ -635,6 +639,214 @@ def convert_html_to_plain(html_data: str) -> str:
     return result
 
 
+def convert_pages_to_md(pages_data: bytes) -> str:
+    """
+    Converts a .pages file (provided as bytes) to Markdown format (string).
+    Uses LibreOffice to convert .pages to .odt, then Pandoc to convert .odt to .md.
+
+    Args:
+        pages_data (bytes): The content of the .pages file as bytes.
+
+    Returns:
+        str: The converted content in Markdown format, or an empty string if conversion fails.
+    """
+    temp_pages_file = None
+    temp_odt_file = None
+    markdown_content = ""
+
+    try:
+        if isinstance(pages_data, str):
+            with open(pages_data, 'rb') as f:
+                pages_data = f.read()
+
+        # 1. Create a temporary .pages file from the input bytes
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pages") as f_pages:
+            temp_pages_file = f_pages.name
+            f_pages.write(pages_data)
+
+        # Determine the expected output .odt file path
+        # LibreOffice will create a file with the same base name as the input, but with .odt extension,
+        # in the directory specified by --outdir.
+        temp_dir = os.path.dirname(temp_pages_file)
+        pages_base_name = os.path.basename(temp_pages_file)
+        # Ensure correct .odt extension, handling cases where suffix might not be exact .pages
+        odt_base_name = os.path.splitext(pages_base_name)[0] + ".odt"
+        temp_odt_file = os.path.join(temp_dir, odt_base_name)
+
+        # 2. Convert .pages to .odt using LibreOffice
+        if 'windows' in utils.platform().lower():
+            exe = 'soffice.exe'
+        else:
+            exe = 'libreoffice'
+
+        libreoffice_cmd = [
+            exe,
+            "--headless",  # Run without GUI
+            "--convert-to", "odt",
+            "--outdir", temp_dir,  # Specify output directory
+            temp_pages_file  # Input file
+        ]
+
+        libreoffice_process = subprocess.run(
+            libreoffice_cmd,
+            capture_output=True,  # Capture stdout and stderr
+            text=True,            # Decode stdout/stderr as text
+            check=False           # Don't raise CalledProcessError automatically
+        )
+
+        if libreoffice_process.returncode != 0:
+            my_log.log2(f"my_pandoc:convert_pages_to_md: LibreOffice conversion to ODT failed with error code {libreoffice_process.returncode}:\n{libreoffice_process.stderr}")
+            return ""
+
+        if 'windows' in utils.platform().lower():
+             time.sleep(5)
+
+        # Check if the .odt file was actually created by LibreOffice
+        if not os.path.exists(temp_odt_file):
+             my_log.log2(f"my_pandoc:convert_pages_to_md: LibreOffice did not create the expected ODT file at {temp_odt_file}. Stderr: {libreoffice_process.stderr}")
+             return ""
+
+        # 3. Convert .odt to Markdown using Pandoc
+        pandoc_cmd = [
+            "pandoc",
+            "+RTS", "-M256M", "-RTS",  # Memory limit for pandoc
+            "-f", "odt",               # Input format: ODT
+            "-t", "gfm",               # Output format: GitHub Flavored Markdown
+            temp_odt_file              # Input file
+        ]
+
+        pandoc_process = subprocess.run(
+            pandoc_cmd,
+            capture_output=True,
+            text=True,
+            check=False
+        )
+
+        if pandoc_process.returncode != 0:
+            my_log.log2(f"my_pandoc:convert_pages_to_md: Pandoc conversion to Markdown failed with error code {pandoc_process.returncode}:\n{pandoc_process.stderr}")
+            return ""
+
+        markdown_content = pandoc_process.stdout
+
+    except FileNotFoundError as e:
+        my_log.log2(f"my_pandoc:convert_pages_to_md: Required tool not found (LibreOffice or Pandoc). Please ensure they are installed and in your system's PATH: {e}")
+        markdown_content = ""
+    except Exception as e:
+        my_log.log2(f"my_pandoc:convert_pages_to_md: An unexpected error occurred during conversion: {e}\n{traceback.format_exc()}")
+        markdown_content = ""
+    finally:
+        # Clean up temporary files
+        if temp_pages_file and os.path.exists(temp_pages_file):
+            utils.remove_file(temp_pages_file)
+        if temp_odt_file and os.path.exists(temp_odt_file):
+            utils.remove_file(temp_odt_file)
+
+    return markdown_content
+
+
+def convert_numbers_to_csv(numbers_data: bytes) -> str:
+    """
+    Converts a .numbers file (provided as bytes) to CSV format (string), handling multiple sheets.
+    Uses LibreOffice to convert .numbers to .ods, then pandas to read all sheets from .ods
+    and convert them to CSV strings.
+
+    Args:
+        numbers_data (bytes): The content of the .numbers file as bytes.
+
+    Returns:
+        str: The concatenated CSV content of all sheets, separated by sheet names,
+             or an empty string if conversion fails.
+    """
+    temp_numbers_file = None
+    temp_ods_file = None # Изменим на .ods
+    csv_content_all_sheets = [] # Для сбора CSV со всех листов
+
+    try:
+        if isinstance(numbers_data, str):
+            # If a string (likely a file path) is passed, read its content
+            with open(numbers_data, 'rb') as f:
+                numbers_data = f.read()
+
+        # 1. Create a temporary .numbers file from the input bytes
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".numbers") as f_numbers:
+            temp_numbers_file = f_numbers.name
+            f_numbers.write(numbers_data)
+
+        # Determine the expected output .ods file path
+        temp_dir = os.path.dirname(temp_numbers_file)
+        numbers_base_name = os.path.basename(temp_numbers_file)
+        # LibreOffice names the output file based on the input file's base name
+        ods_base_name = os.path.splitext(numbers_base_name)[0] + ".ods"
+        temp_ods_file = os.path.join(temp_dir, ods_base_name)
+
+        # Determine the LibreOffice executable name based on the OS
+        if 'windows' in utils.platform().lower():
+            exe = 'soffice.exe'
+        else:
+            exe = 'libreoffice'
+
+        # 2. Convert .numbers to .ods using LibreOffice
+        libreoffice_cmd = [
+            exe,
+            "--headless",           # Run without GUI
+            "--convert-to", "ods",  # Convert to ODS (OpenDocument Spreadsheet)
+            "--outdir", temp_dir,   # Specify output directory
+            temp_numbers_file       # Input file
+        ]
+
+        libreoffice_process = subprocess.run(
+            libreoffice_cmd,
+            capture_output=True,  # Capture stdout and stderr
+            text=True,            # Decode stdout/stderr as text
+            check=False           # Don't raise CalledProcessError automatically
+        )
+
+        if libreoffice_process.returncode != 0:
+            my_log.log2(f"my_pandoc:convert_numbers_to_csv: LibreOffice conversion to ODS failed with error code {libreoffice_process.returncode}:\n{libreoffice_process.stderr}")
+            return ""
+
+        # Add a sleep for Windows, as LibreOffice might be delayed in writing the file
+        if 'windows' in utils.platform().lower():
+             time.sleep(5) # Give it 5 seconds to write the file
+
+        # Check if the .ods file was actually created by LibreOffice
+        if not os.path.exists(temp_ods_file):
+             my_log.log2(f"my_pandoc:convert_numbers_to_csv: LibreOffice did not create the expected ODS file at {temp_ods_file}. Stderr: {libreoffice_process.stderr}")
+             return ""
+
+        # 3. Read the .ods file using pandas and convert each sheet to CSV
+        try:
+            # sheet_name=None reads all sheets into a dictionary of DataFrames
+            all_sheets = pd.read_excel(temp_ods_file, engine='odf', sheet_name=None)
+
+            for sheet_name, df in all_sheets.items():
+                csv_buffer = io.StringIO()
+                df.to_csv(csv_buffer, index=False, encoding='utf-8')
+                # Добавляем заголовок для каждого листа и его содержимое
+                csv_content_all_sheets.append(f"### Sheet: {sheet_name}\n")
+                csv_content_all_sheets.append(csv_buffer.getvalue())
+                csv_content_all_sheets.append("\n\n") # Добавляем разделитель между листами
+
+        except Exception as e:
+            my_log.log2(f"my_pandoc:convert_numbers_to_csv: Error reading ODS with pandas or converting to CSV: {e}\n{traceback.format_exc()}")
+            return ""
+
+    except FileNotFoundError as e:
+        my_log.log2(f"my_pandoc:convert_numbers_to_csv: Required tool (LibreOffice) not found. Please ensure it is installed and in your system's PATH: {e}")
+        csv_content_all_sheets = []
+    except Exception as e:
+        my_log.log2(f"my_pandoc:convert_numbers_to_csv: An unexpected error occurred during conversion: {e}\n{traceback.format_exc()}")
+        csv_content_all_sheets = []
+    finally:
+        # Clean up temporary files
+        if temp_numbers_file and os.path.exists(temp_numbers_file):
+            utils.remove_file(temp_numbers_file)
+        if temp_ods_file and os.path.exists(temp_ods_file):
+            utils.remove_file(temp_ods_file)
+
+    return "".join(csv_content_all_sheets)
+
+
 if __name__ == '__main__':
     pass
     # result = fb2_to_text(open('c:/Users/user/Downloads/1.xlsx', 'rb').read(), '.xlsx')
@@ -652,5 +864,9 @@ if __name__ == '__main__':
     #     with open('c:/Users/user/Downloads/3.docx', 'wb') as f:
     #         f.write(data)
 
-    t = '''Громаш, словно обезумев, начал колотить кулаками по каменной стене, словно он пытался разбить её в щепки, словно он пытался вырваться из этой тюрьмы. &quot;Я найду тебя, Максимус, и я заставлю тебя страдать! - ревел он, и его голос разносился по всему залу, - я отплачу тебе за все мои страдания, и я не успокоюсь, пока не увижу твою смерть! <i>А было это так… Я буду мучить тебя так, как ты мучил моих братьев, я буду терзать тебя до тех пор, пока не вырву твою душу, и я буду наслаждаться твоими страданиями, словно это самый вкусный нектар. Я хочу видеть боль в твоих глазах, я хочу слышать твои крики, и это будет моей местью, это будет моим искуплением, и я не отступлю, пока я не добьюсь своего!</i>&quot; Он посмотрел на своих соплеменников, и его глаза горели адским огнем, словно он был одержим демоном. &quot;Мы покажем всему миру, что такое сила орков, и мы заставим всех бояться нас, и мы будем править этим миром, и все будут подчиняться нам, и все будут преклоняться перед нами!&quot; Орки, слыша его слова, начали вопить и стучать оружием, готовясь к битве, словно стая диких зверей, готовых разорвать свою жертву на куски. Максимус, слушая его крики, повернулся к своим товарищам и сказал: &quot;Мы все пали, но мы не должны сдаваться, мы не должны позволить этой ненависти сломить нас. Мы должны сражаться вместе, чтобы выжить, и мы должны помнить, что мы не одни.&quot; Его голос был тихим, но в нем чувствовалась решимость и готовность бороться до конца, словно он знал, что они смогут справиться со всеми испытаниями. &quot;Я не верю в шансы,&quot; - сказала Лираэль, и ее голос был полон цинизма, - &quot;но я готова сражаться, если это будет нужно для достижения моих целей, я готова убивать, если это поможет мне выжить, но я не верю в то, что у нас есть шанс, я не верю в то, что мы сможем изменить свою судьбу. <i>А было это так… Я всегда сражалась в одиночку, я не доверяла никому, и я всегда полагалась только на себя, но сейчас я чувствую, что что-то меняется, словно я становлюсь частью чего-то большего, и я не понимаю, что это значит. Я вспоминаю свои прошлые победы, как я достигала всего самостоятельно, но сейчас всё по-другому, и я не знаю, что будет дальше.</i>&quot; Она посмотрела на остальных, и в её глазах можно было заметить искорку надежды, словно она хотела верить, что у них есть шанс. Борд, вздохнув, проговорил: &quot;Я создал много мечей, но ни один из них не спас меня от предательства, и я не знаю, почему я должен сражаться, зачем я должен помогать другим, когда никто не помог мне, я просто устал, и я не знаю, что делать дальше. *А было это так… Я вспоминаю свою кузницу, я её так любил, я отдавал ей всю свою жизнь, но судьба забрала у меня всё, и я не знаю, почему это случилось со мной.'''
-    print(convert_html_to_plain(t))
+    # t = '''Громаш, словно обезумев, начал колотить кулаками по каменной стене, словно он пытался разбить её в щепки, словно он пытался вырваться из этой тюрьмы. &quot;Я найду тебя, Максимус, и я заставлю тебя страдать! - ревел он, и его голос разносился по всему залу, - я отплачу тебе за все мои страдания, и я не успокоюсь, пока не увижу твою смерть! <i>А было это так… Я буду мучить тебя так, как ты мучил моих братьев, я буду терзать тебя до тех пор, пока не вырву твою душу, и я буду наслаждаться твоими страданиями, словно это самый вкусный нектар. Я хочу видеть боль в твоих глазах, я хочу слышать твои крики, и это будет моей местью, это будет моим искуплением, и я не отступлю, пока я не добьюсь своего!</i>&quot; Он посмотрел на своих соплеменников, и его глаза горели адским огнем, словно он был одержим демоном. &quot;Мы покажем всему миру, что такое сила орков, и мы заставим всех бояться нас, и мы будем править этим миром, и все будут подчиняться нам, и все будут преклоняться перед нами!&quot; Орки, слыша его слова, начали вопить и стучать оружием, готовясь к битве, словно стая диких зверей, готовых разорвать свою жертву на куски. Максимус, слушая его крики, повернулся к своим товарищам и сказал: &quot;Мы все пали, но мы не должны сдаваться, мы не должны позволить этой ненависти сломить нас. Мы должны сражаться вместе, чтобы выжить, и мы должны помнить, что мы не одни.&quot; Его голос был тихим, но в нем чувствовалась решимость и готовность бороться до конца, словно он знал, что они смогут справиться со всеми испытаниями. &quot;Я не верю в шансы,&quot; - сказала Лираэль, и ее голос был полон цинизма, - &quot;но я готова сражаться, если это будет нужно для достижения моих целей, я готова убивать, если это поможет мне выжить, но я не верю в то, что у нас есть шанс, я не верю в то, что мы сможем изменить свою судьбу. <i>А было это так… Я всегда сражалась в одиночку, я не доверяла никому, и я всегда полагалась только на себя, но сейчас я чувствую, что что-то меняется, словно я становлюсь частью чего-то большего, и я не понимаю, что это значит. Я вспоминаю свои прошлые победы, как я достигала всего самостоятельно, но сейчас всё по-другому, и я не знаю, что будет дальше.</i>&quot; Она посмотрела на остальных, и в её глазах можно было заметить искорку надежды, словно она хотела верить, что у них есть шанс. Борд, вздохнув, проговорил: &quot;Я создал много мечей, но ни один из них не спас меня от предательства, и я не знаю, почему я должен сражаться, зачем я должен помогать другим, когда никто не помог мне, я просто устал, и я не знаю, что делать дальше. *А было это так… Я вспоминаю свою кузницу, я её так любил, я отдавал ей всю свою жизнь, но судьба забрала у меня всё, и я не знаю, почему это случилось со мной.'''
+    # print(convert_html_to_plain(t))
+
+
+    # r = convert_numbers_to_csv(r'c:\users\user\downloads\2.numbers')
+    # print(r)

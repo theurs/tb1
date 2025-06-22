@@ -135,6 +135,10 @@ level 3 - блокировать всё включая логи
    на
    `<policy domain="coder" rights="read|write" pattern="PDF" />`
 
+   Для конвертации apple .pages файлов можно установить
+
+   `sudo apt install libreoffice-writer libreoffice-calc libreoffice-impress libreoffice-common libreoffice-core` 
+
 3. Клонируйте репозиторий с помощью команды:
 
    ```

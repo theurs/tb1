@@ -929,7 +929,7 @@ TEXT:
 {text}
 '''
 
-    translated = chat(query, temperature=0.1, model=model, json_output = True)
+    translated = chat(query, temperature=0.1, model=model, json_output = True, do_not_update_history = True)
 
     translated_dict = utils.string_to_dict(translated)
     if translated_dict:

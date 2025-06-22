@@ -125,6 +125,9 @@ HELP_MSG = {}
 # {hash: search query}
 SEARCH_PICS = {}
 
+# используется в команде /reload
+RELOAD_LOCK = threading.Lock()
+
 # блокировка чата что бы юзер не мог больше 1 запроса делать за раз,
 # только для запросов к гпт*. {chat_id_full(str):threading.Lock()}
 CHAT_LOCKS = {}
@@ -7186,44 +7189,51 @@ def reload_module(message: telebot.types.Message):
 
     try:
         module_name = message.text.split(' ', 1)[1].strip()
+        modules = module_name.split()
+        if len(modules) > 1:
+            for module in modules:
+                message.text = f'/reload {module}'
+                reload_module(message)
+            return
 
-        # Проверяем существование файла и корректируем имя
-        if not os.path.exists(f"{module_name}.py"):
-            if module_name.startswith('my_') and os.path.exists(f"{module_name[3:]}.py"):
-                module_name = module_name[3:]
-            elif not module_name.startswith('my_') and os.path.exists(f"my_{module_name}.py"):
-                module_name = f"my_{module_name}"
-            else:
-                raise Exception(f"Файл для модуля '{module_name}' не найден")
+        with RELOAD_LOCK:
+            # Проверяем существование файла и корректируем имя
+            if not os.path.exists(f"{module_name}.py"):
+                if module_name.startswith('my_') and os.path.exists(f"{module_name[3:]}.py"):
+                    module_name = module_name[3:]
+                elif not module_name.startswith('my_') and os.path.exists(f"my_{module_name}.py"):
+                    module_name = f"my_{module_name}"
+                else:
+                    raise Exception(f"Файл для модуля '{module_name}' не найден")
 
-        module = importlib.import_module(module_name)
-        importlib.reload(module)
+            module = importlib.import_module(module_name)
+            importlib.reload(module)
 
-        # реинициализация модуля
-        if module_name in ('my_gemini', 'my_gemini3'):
-            my_gemini.load_users_keys()
-            my_skills.init()
-        elif module_name == 'my_groq':
-            my_groq.load_users_keys()
-        elif module_name == 'my_mistral':
-            my_mistral.load_users_keys()
-        elif module_name == 'my_github':
-            my_github.load_users_keys()
-        elif module_name == 'my_nebius':
-            my_nebius.load_users_keys()
-        elif module_name == 'my_cohere':
-            my_cohere.load_users_keys()
-        elif module_name == 'my_init':
-            load_msgs()
-        elif module_name == 'my_skills':
-            my_skills.init()
-        elif module_name == 'my_db':
-            db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
-            db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
-            my_db.init(db_backup, db_vacuum)
+            # реинициализация модуля
+            if module_name in ('my_gemini', 'my_gemini3'):
+                my_gemini.load_users_keys()
+                my_skills.init()
+            elif module_name == 'my_groq':
+                my_groq.load_users_keys()
+            elif module_name == 'my_mistral':
+                my_mistral.load_users_keys()
+            elif module_name == 'my_github':
+                my_github.load_users_keys()
+            elif module_name == 'my_nebius':
+                my_nebius.load_users_keys()
+            elif module_name == 'my_cohere':
+                my_cohere.load_users_keys()
+            elif module_name == 'my_init':
+                load_msgs()
+            elif module_name == 'my_skills':
+                my_skills.init()
+            elif module_name == 'my_db':
+                db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
+                db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
+                my_db.init(db_backup, db_vacuum)
 
-        msg = f'{tr("Модуль успешно перезагружен:", lang)} {module_name}'
-        bot_reply(message, msg)
+            msg = f'{tr("Модуль успешно перезагружен:", lang)} {module_name}'
+            bot_reply(message, msg)
     except Exception as e:
         my_log.log2(f"Ошибка при перезагрузке модуля: {e}")
         msg = f'{tr("Ошибка при перезагрузке модуля:", lang)}```ERROR\n{e}```'

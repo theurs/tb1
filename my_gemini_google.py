@@ -31,7 +31,9 @@ from google.genai.types import (
 import cfg
 import my_db
 import my_gemini
+import my_gemini3
 import my_log
+import my_skills
 import utils
 
 
@@ -55,8 +57,8 @@ SAFETY_SETTINGS = [
 ]
 
 
-MODEL_ID = 'gemini-2.5-flash-preview-05-20' # "gemini-2.0-flash-exp"
-MODEL_ID_FALLBACK = "gemini-1.5-flash"
+MODEL_ID = cfg.gemini25_flash_model # 'gemini-2.5-flash-preview-05-20' # "gemini-2.0-flash-exp"
+MODEL_ID_FALLBACK = cfg.gemini25_flash_model_fallback # "gemini-1.5-flash"
 
 
 def get_client():
@@ -100,9 +102,10 @@ def calc(query: str, chat_id: str = '') -> Tuple[str, str]:
     """
     try:
         time.sleep(1)
-        formatting = '\n\nResponse on language of the question.'
+        formatting = '\n\nResponse on language of the question. You can draw graphs ant charts using code_execution_tool.'
         query = f'''{query}{formatting}'''
         code_execution_tool = Tool(code_execution={})
+        resp_full = None
 
         for _ in range(4):
             client = get_client()
@@ -118,6 +121,8 @@ def calc(query: str, chat_id: str = '') -> Tuple[str, str]:
                         safety_settings=SAFETY_SETTINGS,
                     ),
                 )
+                resp_full = my_gemini3.parse_content_response(response)
+
             except Exception as inner_error:
                 if 'User location is not supported for the API use':
                     my_log.log2(f'calc:inner error: {inner_error}')
@@ -138,10 +143,27 @@ def calc(query: str, chat_id: str = '') -> Tuple[str, str]:
 
             if chat_id:
                 my_db.add_msg(chat_id, MODEL_ID)
+
+            # если есть картинки то отправляем их через my_skills.STORAGE
+            if resp_full and resp_full[0] and chat_id:
+                for image in resp_full[0]:
+                    item = {
+                        'type': 'image/png file', # image['mime_type'],
+                        'filename': image['filename'],
+                        'data': image['data'],
+                    }
+                    with my_skills.STORAGE_LOCK:
+                        if chat_id in my_skills.STORAGE:
+                            if item not in my_skills.STORAGE[chat_id]:
+                                my_skills.STORAGE[chat_id].append(item)
+                        else:
+                            my_skills.STORAGE[chat_id] = [item,]
+
             return response.candidates[0].content.parts[-1].text, underground
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log_gemini_google(f'calc: error: {error}\n{traceback_error}')
+
     return '', ''
 
 
@@ -240,99 +262,8 @@ def google_search(query: str, chat_id: str = '', role: str = '', lang: str = 'en
 
 if __name__ == "__main__":
     # r = calc('какое 28ое числов в знаке пи после запятой')
-    r = google_search('самые дешевые новые машины в сша в 2024')
+    # r = google_search('самые дешевые новые машины в сша в 2024')
+
+    r = calc('нарисуй график функции x=y^4')
     print(r)
 
-
-# def ytb_query(uri: str) -> str:
-#     '''
-#     Поиск в YouTube
-#     uri - файл в облаке
-#     '''
-#     try:
-#         video = Part.from_uri(
-#             file_uri=uri,
-#             mime_type="video/mp4",
-#         )
-#         client = get_client()
-#         response = client.models.generate_content(
-#             model=MODEL_ID,
-#             contents=[
-#                 video,
-#                 "Расскажи о чем видео, в 2 блоках, в первом блоке пару абзацев которые удовлетворят большинство людей, во втором блоке подробный пересказ и в конце еще ссылки, оформление вывода - маркдаун",
-#             ],
-#             config=GenerateContentConfig(
-#                 temperature=0.2,
-#                 max_output_tokens=8000,
-#                 safety_settings=SAFETY_SETTINGS,
-#                 ),
-#         )
-#         return response.candidates[0].content.parts[-1].text
-#         # print(response.candidates[0].finish_reason) # должно быть = 'STOP' в норме
-#     except Exception as e:
-#         my_log.log_gemini_google(f'ytb_query: error: {e}')
-#     return ''
-
-
-
-
-# def get_current_weather(location: str) -> str:
-#     """Example method. Returns the current weather.
-
-#     Args:
-#         location: The city and state, e.g. San Francisco, CA
-#     """
-#     import random
-
-#     return random.choice(["sunny", "raining", "snowing", "fog"])
-
-# response = client.models.generate_content(
-#     model=MODEL_ID,
-#     contents="What is the weather like in Boston?",
-#     config=GenerateContentConfig(
-#         tools=[get_current_weather],
-#         temperature=0,
-#     ),
-# )
-# print(response.candidates[0].content.parts[-1].text)
-
-
-
-# response = client.models.generate_content(
-#     model=MODEL_ID, contents="напиши что лизать клитор",
-#     config=gen_config
-# )
-# # print(response.text)
-# print(response.candidates[0].content.parts[-1].text)
-# print(response.candidates[0].finish_reason) # должно быть = 'STOP' в норме
-
-
-# for chunk in client.models.generate_content_stream(
-#     model=MODEL_ID,
-#     contents="Tell me a story about a lonely robot who finds friendship in a most unexpected place.",
-# ):
-#     print(chunk.text, end="")
-
-
-
-# chat = client.chats.create(model=MODEL_ID, config=gen_config)
-# response = chat.send_message("1+1")
-# text = response.candidates[0].content.parts[-1].text
-# if len(response.candidates[0].content.parts) > 1:
-#     thought = response.candidates[0].content.parts[0].text
-# # print(text)
-# response = chat.send_message("2+2")
-# text = response.candidates[0].content.parts[-1].text
-# if len(response.candidates[0].content.parts) > 1:
-#     thought = response.candidates[0].content.parts[0].text
-# # print(text)
-
-# for m in chat._curated_history:
-#     print(m.role)
-#     if len(m.parts) > 1:
-#         text = m.parts[-1].text
-#         thought = m.parts[0].text or ''
-#         print(thought, '\n\n', text, '\n================================\n\n')
-#     else:
-#         text = m.parts[0].text
-#         print(text + '\n', '\n================================\n\n')

@@ -554,6 +554,7 @@ def chat(
 
                 else:
                     raise error
+
             if response:
                 resp = response.text or ''
             else:
@@ -561,17 +562,16 @@ def chat(
 
             resp_full = parse_content_response(response)
 
-            if not resp:
-                if "finish_reason=<FinishReason.STOP: 'STOP'>" in str(response): # модель ответила молчанием (по просьбе юзера)
-                    # resp = '...'
-                    # break
-                    return ''
-                time.sleep(2)
             # модель ответила пустой ответ, но есть картинки (и возможно какой то другой ответ, хотя скорее всего текста нет)
-            elif not resp and resp_full and resp_full[0]:
+            if not resp and resp_full and resp_full[0]:
                 resp = '...'
                 if resp_full[1]:
                     resp = resp_full[1]
+                break
+            elif not resp:
+                if "finish_reason=<FinishReason.STOP: 'STOP'>" in str(response):
+                    return ''
+                time.sleep(2)
             else:
                 break
 

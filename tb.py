@@ -4140,6 +4140,68 @@ def drop_subscription(message: telebot.types.Message):
     bot_reply_tr(message, 'Usage: /drop_subscription id_as_int')
 
 
+def send_all_files_from_storage(message, chat_id_full):
+    '''
+    Отправляет файлы из хранилища для файлов в my_skills.STORAGE если они там есть
+    '''
+    try: # если в ответе есть файлы, то отправляем его
+        # Получаем данные из STORAGE.
+        # Предполагается, что хранимый элемент - это плоский список
+        #  [{type,filename,data},{}]
+        items = my_skills.STORAGE.get(chat_id_full)
+        if items:
+            for item in items:
+                try:
+                    _type, filename, data = item['type'], item['filename'], item['data']
+                    if _type in ('excel file', 'docx file'):
+                        m = send_document(
+                            message=message,
+                            chat_id=message.chat.id,
+                            document=data,
+                            reply_to_message_id = message.message_id,
+                            reply_markup=get_keyboard('hide', message),
+                            caption=filename,
+                            visible_file_name=filename,
+                        )
+                        log_message(m)
+                        continue
+                    elif _type in ('image/png file',):
+                        m = send_photo(
+                            message=message,
+                            chat_id=message.chat.id,
+                            photo=data,
+                            reply_to_message_id = message.message_id,
+                            reply_markup=get_keyboard('hide', message),
+                            caption=filename,
+                        )
+                        log_message(m)
+                        continue
+                    elif _type in ('pdf file',):
+                        m = send_document(
+                            message=message,
+                            chat_id=message.chat.id,
+                            document=data,
+                            reply_to_message_id = message.message_id,
+                            reply_markup=get_keyboard('hide', message),
+                            caption=filename,
+                            visible_file_name=filename,
+                        )
+                except Exception as individual_error:
+                    traceback_error = traceback.format_exc()
+                    # Логируем ошибку для этого конкретного элемента, но продолжаем цикл
+                    my_log.log2(f'tb:send_all_files_from_storage:1: for chat {chat_id_full}, item {i}: {individual_error}\n\n{traceback_error}')
+                    continue
+
+            # После попытки отправки всех потенциальных файлов, удаляем запись из STORAGE
+            my_skills.STORAGE.pop(chat_id_full)
+
+    except Exception as general_error:
+        # Этот блок ловит ошибки, не связанные с отправкой конкретного элемента (например, проблемы с получением данных из STORAGE или неверный формат)
+        my_skills.STORAGE.pop(chat_id_full) # Удаляем запись в случае общей ошибки
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:send_all_files_from_storage:2: for chat {chat_id_full}: {general_error}\n\n{traceback_error}')
+
+
 @bot.message_handler(commands=['calc', 'math'], func=authorized_owner)
 @async_run
 def calc_gemini(message: telebot.types.Message):
@@ -4147,6 +4209,8 @@ def calc_gemini(message: telebot.types.Message):
     Calculate math expression with google gemini code execution tool
     """
     try:
+        message.text = my_log.restore_message_text(message.text, message.entities)
+
         args = message.text.split(maxsplit=1)
         if len(args) == 2:
             arg = args[1]
@@ -4176,6 +4240,9 @@ def calc_gemini(message: telebot.types.Message):
                 bot_reply_tr(message, 'Calculation failed.')
             # add_to_bots_mem(arg, f'{underground}\n\n{answer}', chat_id_full)
             add_to_bots_mem(f'/calc {arg}', f'{answer}', chat_id_full)
+
+            send_all_files_from_storage(message, chat_id_full)
+
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:calc_gemini: {unknown}\n{traceback_error}')
@@ -9334,63 +9401,8 @@ def do_task(message, custom_prompt: str = ''):
                                 my_log.log_echo(message, f'[{gmodel}] {answer}')
 
 
-                            try: # если в ответе есть файлы, то отправляем его
-                                # Получаем данные из STORAGE.
-                                # Предполагается, что хранимый элемент - это плоский список
-                                #  [{type,filename,data},{}]
-                                items = my_skills.STORAGE.get(chat_id_full)
-                                if items:
-                                    for item in items:
-                                        try:
-                                            _type, filename, data = item['type'], item['filename'], item['data']
-                                            if _type in ('excel file', 'docx file'):
-                                                m = send_document(
-                                                    message=message,
-                                                    chat_id=message.chat.id,
-                                                    document=data,
-                                                    reply_to_message_id = message.message_id,
-                                                    reply_markup=get_keyboard('hide', message),
-                                                    caption=filename,
-                                                    visible_file_name=filename,
-                                                )
-                                                log_message(m)
-                                                continue
-                                            elif _type in ('image/png file',):
-                                                m = send_photo(
-                                                    message=message,
-                                                    chat_id=message.chat.id,
-                                                    photo=data,
-                                                    reply_to_message_id = message.message_id,
-                                                    reply_markup=get_keyboard('hide', message),
-                                                    caption=filename,
-                                                )
-                                                log_message(m)
-                                                continue
-                                            elif _type in ('pdf file',):
-                                                m = send_document(
-                                                    message=message,
-                                                    chat_id=message.chat.id,
-                                                    document=data,
-                                                    reply_to_message_id = message.message_id,
-                                                    reply_markup=get_keyboard('hide', message),
-                                                    caption=filename,
-                                                    visible_file_name=filename,
-                                                )
-                                        except Exception as individual_error:
-                                            # Логируем ошибку для этого конкретного элемента, но продолжаем цикл
-                                            my_log.log2(f'tb:do_task:send_file_item_error for chat {chat_id_full}, item {i}: {individual_error}')
-                                            # Опционально: можно здесь сделать что-то еще, например, пропустить этот элемент
-                                            continue # Продолжаем к следующему элементу в списке
-
-                                    # После попытки отправки всех потенциальных аудиосообщений, удаляем запись из STORAGE
-                                    # Удаляем только после того, как прошли по всему списку, независимо от ошибок отдельных отправок
-                                    my_skills.STORAGE.pop(chat_id_full)
-                                    # return
-
-                            except Exception as general_error:
-                                # Этот блок ловит ошибки, не связанные с отправкой конкретного элемента (например, проблемы с получением данных из STORAGE или неверный формат)
-                                my_skills.STORAGE.pop(chat_id_full) # Удаляем запись в случае общей ошибки
-                                my_log.log2(f'tb:do_task:send_voice_general_error for chat {chat_id_full}: {general_error}')
+                            # отправляем файлы если они были сгенерированы в скилах
+                            send_all_files_from_storage(message, chat_id_full)
 
 
                             try:

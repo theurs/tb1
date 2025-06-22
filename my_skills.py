@@ -356,7 +356,8 @@ def save_chart_and_graphs_to_image(user_id: str) -> str:
     '''
     user_id = restore_id(user_id)
     my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id}')
-    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use use save_html_to_image for drawing charts in html, when drawing with html keep in mind it should be look like a real chart with axis and legend end etc."
+    # return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use save_html_to_image for drawing charts in html, when drawing with html keep in mind it should be look like a real chart with axis and legend end etc."
+    return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. When generating an graphs and charts message for the user, your output must be exclusively the /calc command in the format /calc [query], with absolutely no preceding or additional explanatory text, because this exact message is directly processed by the drawing system for delivery to the user. For example: /calc 'draw x=y^2'. Do NOT respond with text like 'Here is your query: /calc draw x=y^2 ' as this will fail."
 
 
 def save_chart_and_graphs_to_image_(prompt: str, filename: str, user_id: str) -> str:

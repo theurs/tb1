@@ -1059,7 +1059,7 @@ def calc(expression: str, strict: bool, user_id: str) -> str:
 
             result = str(simple_eval(expression, functions=allowed_functions))
 
-            my_log.log_gemini_skills(f'Internal calc result: {result}')
+            my_log.log_gemini_skills_calc(f'Internal calc result: {result}')
 
             return result
     except Exception as error:

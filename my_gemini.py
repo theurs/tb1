@@ -894,7 +894,8 @@ def sum_big_text(
     query: str,
     temperature: float = 1,
     role: str = '',
-    model: str = ''
+    model1: str = '',
+    model2: str = '',
     ) -> str:
     """
     Generates a response from an AI model based on a given text,
@@ -905,16 +906,20 @@ def sum_big_text(
         query (str): The query to be used for generating the response.
         temperature (float, optional): The temperature parameter for controlling the randomness of the response. Defaults to 0.1.
         role (str, optional): System prompt. Defaults to ''.
+        model (str, optional): The name of the model to be used for generating the response.
+        model2 (str, optional): The name of the fallback model to be used for generating the response.
 
     Returns:
         str: The generated response from the AI model.
     """
-    if not model:
-        model = cfg.gemini25_flash_model
+    if not model1:
+        model1 = cfg.gemini25_flash_model
+    if not model2:
+        model2 = cfg.gemini25_flash_model_fallback
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    r = ai(query, temperature=temperature, model=model, system=role)
+    r = ai(query, temperature=temperature, model=model1, system=role)
     if not r:
-        r = ai(query, temperature=temperature, model=cfg.gemini25_flash_model_fallback, system=role)
+        r = ai(query, temperature=temperature, model=model2, system=role)
     return r.strip()
 
 
@@ -1085,7 +1090,7 @@ if __name__ == '__main__':
 
     # print(list_models(True))
     # chat_cli(model = 'gemini-2.0-flash')
-    chat_cli(model = 'gemini-2.5-flash-preview-05-20')
+    # chat_cli(model = 'gemini-2.5-flash-preview-05-20')
     # chat_cli()
 
     # with open(r'C:\Users\user\Downloads\samples for ai\большая книга.txt', 'r', encoding='utf-8') as f:
@@ -1097,3 +1102,7 @@ if __name__ == '__main__':
     # my_db.close()
 
     # t = translate('привет', to_lang='en', model=cfg.gemini25_flash_model)
+
+    with open(r'c:\Users\user\Downloads\samples for ai\Алиса в изумрудном городе (большая книга).txt', 'r', encoding='utf-8') as f:
+        text = f.read()
+    print(sum_big_text(text[:20000], 'сделай подробный пересказ по тексту', model1='gemma-3-27b-it', model2 = 'gemini-2.0-flash-exp'))

@@ -10232,6 +10232,11 @@ def main():
 
         time.sleep(1)
 
+
+        # my_gemini3.reset('test')
+        # my_gemini3.chat_cli(model = 'gemma-3-27b-it')
+
+
         bot.infinity_polling(timeout=90, long_polling_timeout=90)
 
         global LOG_GROUP_DAEMON_ENABLED

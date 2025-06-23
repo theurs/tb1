@@ -248,6 +248,7 @@ def chat(query: str,
         if 'gemma-3' in model:
             if temperature:
                 temperature = temperature/2
+            system = ''
 
         if not model:
             model = cfg.gemini25_flash_model
@@ -888,7 +889,13 @@ TEXT:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
-def sum_big_text(text:str, query: str, temperature: float = 1, role: str = '') -> str:
+def sum_big_text(
+    text:str,
+    query: str,
+    temperature: float = 1,
+    role: str = '',
+    model: str = ''
+    ) -> str:
     """
     Generates a response from an AI model based on a given text,
     query, and temperature. Split big text into chunks of 15000 characters.
@@ -902,8 +909,10 @@ def sum_big_text(text:str, query: str, temperature: float = 1, role: str = '') -
     Returns:
         str: The generated response from the AI model.
     """
+    if not model:
+        model = cfg.gemini25_flash_model
     query = f'''{query}\n\n{text[:MAX_SUM_REQUEST]}'''
-    r = ai(query, temperature=temperature, model=cfg.gemini25_flash_model, system=role)
+    r = ai(query, temperature=temperature, model=model, system=role)
     if not r:
         r = ai(query, temperature=temperature, model=cfg.gemini25_flash_model_fallback, system=role)
     return r.strip()

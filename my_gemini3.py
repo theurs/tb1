@@ -392,8 +392,12 @@ def chat(
         #     THINKING_BUDGET = -1
         #     use_skills = False
 
+        if 'gemma-3' in model:
+            if temperature:
+                temperature = temperature/2
+
         # not support thinking
-        if 'gemini-2.0-flash' in model:
+        if 'gemini-2.0-flash' in model or 'gemma-3-27b-it' in model:
             THINKING_BUDGET = -1
 
         if isinstance(query, str):
@@ -458,6 +462,9 @@ def chat(
         if 'flash-lite' in model:
             system_.insert(1, 'You can draw graphs and charts using the code_execution_tool')
 
+        if 'gemma-3-27b-it' in model:
+            system_ = None
+
         for _ in range(3):
             response = None
 
@@ -472,6 +479,8 @@ def chat(
                         code_execution_tool = Tool(code_execution={})
                         google_search_tool = Tool(google_search={})
                         SKILLS = [google_search_tool, code_execution_tool,]
+                    elif 'gemma-3-27b-it' in model:
+                        SKILLS = None
                     else:
                         SKILLS = [
                             my_skills.calc,

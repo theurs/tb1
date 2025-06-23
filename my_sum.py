@@ -686,6 +686,17 @@ Text:
                 qq = query
             r = my_gemini.sum_big_text(text[:my_gemini.MAX_SUM_REQUEST], qq, role=role)
             if r:
+                result = f'{r}\n\n--\nGoogle Gemini [{len(text[:my_gemini.MAX_SUM_REQUEST])}]'
+        except Exception as error:
+            print(f'my_sum:summ_text_worker:gemini: {error}')
+            my_log.log2(f'my_sum:summ_text_worker:gemini: {error}')
+
+    if not result:
+        try:
+            if query:
+                qq = query
+            r = my_gemini.sum_big_text(text[:my_gemini.MAX_SUM_REQUEST], qq, role=role)
+            if r:
                 result = f'{r}\n\n--\nGemini Flash [{len(text[:my_gemini.MAX_SUM_REQUEST])}]'
         except Exception as error:
             print(f'my_sum:summ_text_worker:gemini: {error}')

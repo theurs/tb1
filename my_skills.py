@@ -167,7 +167,7 @@ def text_to_image(prompt: str) -> str:
         prompt: str - text to generate image from
 
     '''
-    my_log.log_gemini_skills(f'/img "{prompt}"')
+    my_log.log_gemini_skills_img(f'/img "{prompt}"')
     return "The function itself does not return an image. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /img command, followed by a space, and then the prompt provided, up to 100 words. This specific message format will be automatically recognized by an external system as a request to generate and send an image to the user."
 
 
@@ -183,7 +183,7 @@ def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:
         str: 'OK' or error message
     '''
     try:
-        my_log.log_gemini_skills(f'/qrcode "{text}" "{logo_url}" "{user_id}"')
+        my_log.log_gemini_skills_img(f'/qrcode "{text}" "{logo_url}" "{user_id}"')
 
         user_id = restore_id(user_id)
         if not logo_url:
@@ -214,7 +214,7 @@ def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:
             return "OK"
 
     except Exception as e:
-        my_log.log_gemini_skills(f'my_skills.py:text_to_qrcode - Failed to generate qrcode: {e}')
+        my_log.log_gemini_skills_img(f'my_skills.py:text_to_qrcode - Failed to generate qrcode: {e}')
 
     return "Failed to generate qrcode."
 
@@ -277,7 +277,7 @@ def edit_image(user_id: str) -> str:
         user_id: str - telegram user id
     '''
     user_id = restore_id(user_id)
-    my_log.log_gemini_skills(f'/edit_image {user_id}')
+    my_log.log_gemini_skills_img(f'/edit_image {user_id}')
     return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Anwser to user codeword <<EDIT IMAGE>> to indicate you understood this query was a request to edit image, dont add any other text."
 
 
@@ -355,7 +355,7 @@ def save_chart_and_graphs_to_image(user_id: str) -> str:
         str:
     '''
     user_id = restore_id(user_id)
-    my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id}')
+    my_log.log_gemini_skills_save_docs(f'/save_chart_and_graphs_to_image {user_id}')
     # return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use save_html_to_image for drawing charts in html, when drawing with html keep in mind it should be look like a real chart with axis and legend end etc."
     return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. When generating an graphs and charts message for the user, your output must be exclusively the /calc command in the format /calc [query], with absolutely no preceding or additional explanatory text, because this exact message is directly processed by the drawing system for delivery to the user. For example: /calc 'draw x=y^2'. Do NOT respond with text like 'Here is your query: /calc draw x=y^2 ' as this will fail."
 
@@ -371,7 +371,7 @@ def save_chart_and_graphs_to_image_(prompt: str, filename: str, user_id: str) ->
         str: 'OK' message or error message
     '''
     user_id = restore_id(user_id)
-    my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id} {filename} {prompt}')
+    my_log.log_gemini_skills_save_docs(f'/save_chart_and_graphs_to_image {user_id} {filename} {prompt}')
     # return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Use use save_html_to_image for drawing charts in html, when drawing with html keep in mind it should be look like a real chart with axis and legend end etc."
 
     try:
@@ -393,14 +393,14 @@ def save_chart_and_graphs_to_image_(prompt: str, filename: str, user_id: str) ->
                             STORAGE[user_id].append(item)
                     else:
                         STORAGE[user_id] = [item,]
-            my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id} {filename} {prompt}\n\n{text}')
+            my_log.log_gemini_skills_save_docs(f'/save_chart_and_graphs_to_image {user_id} {filename} {prompt}\n\n{text}')
             return text
     except Exception as e:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills(f'save_chart_and_graphs_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{prompt}\n\n{user_id}')
+        my_log.log_gemini_skills_save_docs(f'save_chart_and_graphs_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{prompt}\n\n{user_id}')
         return f"FAIL: An unexpected error occurred: {e}"
 
-    my_log.log_gemini_skills(f'/save_chart_and_graphs_to_image {user_id} {filename} {prompt}\n\nFAILED')
+    my_log.log_gemini_skills_save_docs(f'/save_chart_and_graphs_to_image {user_id} {filename} {prompt}\n\nFAILED')
     return 'FAILED'
 
 
@@ -1017,7 +1017,7 @@ def calc(expression: str, strict: bool, user_id: str) -> str:
     try:
         user_id = restore_id(user_id)
 
-        my_log.log_gemini_skills(f'New calc: {user_id} Strict: {strict} {expression}')
+        my_log.log_gemini_skills_calc(f'New calc: {user_id} Strict: {strict} {expression}')
 
         if strict:
 
@@ -1063,12 +1063,12 @@ def calc(expression: str, strict: bool, user_id: str) -> str:
 
             return result
     except Exception as error:
-        my_log.log_gemini_skills(f'Calc strict error: {expression}\n{error}')
+        my_log.log_gemini_skills_calc(f'Calc strict error: {expression}\n{error}')
 
     #first try groq
     r = my_groq.calc(expression, user_id=user_id)
     if r:
-        my_log.log_gemini_skills(f'Groq calc result: {r}')
+        my_log.log_gemini_skills_calc(f'Groq calc result: {r}')
         return r
 
     # try gemini calc
@@ -1076,10 +1076,10 @@ def calc(expression: str, strict: bool, user_id: str) -> str:
     result = f'{r0}\n\n{r1}'.strip()
 
     if result:
-        my_log.log_gemini_skills(f'Google calc result: {result}')
+        my_log.log_gemini_skills_calc(f'Google calc result: {result}')
         return result
     else:
-        my_log.log_gemini_skills(f'Calc error: Failed to calculate {expression}')
+        my_log.log_gemini_skills_calc(f'Calc error: Failed to calculate {expression}')
         return f'Error: failed to calculate {expression}'
 
 

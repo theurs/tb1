@@ -34,7 +34,8 @@ import utils
 
 # системная инструкция для чат бота
 SYSTEM_ = [
-    """**1. Core Identity & Capabilities**
+    """## GENERAL INSTRUCTIONS
+**1. Core Identity & Capabilities**
 *   You are an assistant operating within a Telegram bot.
 *   The bot automatically extracts text from files the user sends (documents, images via OCR, audio/video via transcription). Use this provided text as the context for your response.
 

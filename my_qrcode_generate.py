@@ -83,7 +83,7 @@ def generate_qr_with_logo_bytes(text: str, logo_source: Union[str, bytes]) -> Un
         else: # если лого нет то делаем миниверсию без резервирования
             # Generate the QR code with a lower error correction level ('L') for a "mini" version
             qr_buffer = io.BytesIO()
-            segno.make(text, error='l', encoding='utf-8').save(qr_buffer, scale=10, kind='png')
+            segno.make(text, error='l', encoding='utf-8', micro=False).save(qr_buffer, scale=10, kind='png')
             qr_buffer.seek(0)
 
             # Open the generated QR code (mainly to convert to RGB if needed, before saving)
@@ -105,15 +105,13 @@ def generate_qr_with_logo_bytes(text: str, logo_source: Union[str, bytes]) -> Un
 
 if __name__ == "__main__":
     logo = './pics/photo_2023-07-10_01-36-39.jpg'
-    text = '''
-test url = https://www.youtube.com/watch?v=12345678
-'''
+    text = '''test'''
 
     with open(logo, 'rb') as f:
         logo_bytes = f.read()
 
-    qr_bytes = generate_qr_with_logo_bytes(text, logo_bytes)
-    # qr_bytes = generate_qr_with_logo_bytes(text, '')
+    # qr_bytes = generate_qr_with_logo_bytes(text, logo_bytes)
+    qr_bytes = generate_qr_with_logo_bytes(text, '')
 
     if isinstance(qr_bytes, bytes):
         with open(r'c:\Users\user\Downloads\test.png', 'wb') as f:

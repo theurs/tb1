@@ -186,14 +186,15 @@ def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:
         my_log.log_gemini_skills_img(f'/qrcode "{text}" "{logo_url}" "{user_id}"')
 
         user_id = restore_id(user_id)
-        if not logo_url:
-            logo_url = 'DEFAULT'
-        if logo_url != 'DEFAULT':
+
+        if logo_url != 'DEFAULT' and logo_url:
             logo_data = utils.download_image_as_bytes(logo_url)
             if not logo_data:
                 return "Failed to download logo image."
-        else:
+        elif logo_url == 'DEFAULT':
             logo_data = './pics/photo_2023-07-10_01-36-39.jpg'
+        else:
+            logo_data = ''
 
         png_bytes = my_qrcode_generate.generate_qr_with_logo_bytes(text, logo_data)
         if isinstance(png_bytes, str):

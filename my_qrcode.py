@@ -17,7 +17,7 @@ def get_text(image_bytes: bytes):
         image_bytes: The image as bytes.
 
     Returns:
-        The decoded text from the QR code, or None if no QR code is found.
+        The decoded text from the QR code, or '' if no QR code is found.
     """
     try:
         # Convert bytes to numpy array

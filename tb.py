@@ -632,11 +632,18 @@ def img2txt(
         if 'markdown' not in query.lower() and 'latex' not in query.lower():
             query = query + '\n\n' + my_init.get_img2txt_prompt(tr, lang)
 
-
         text = ''
+        qr_code = my_qrcode.get_text(data)
+        if qr_code:
+            query = f"{query}\n\n{tr('QR Code was automatically detected on the image, it`s text:', lang)} {qr_code}"
 
         try:
             chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
+
+            system_message_gemini = system_message
+            if 'gemini' in chat_mode:
+                system_message_gemini = system_message + '\n\n' + tr("Если ты не можешь ответить на запрос пользователя то ответь словом 'STOP', никаких других слов не должно быть, не отвечай что ты не можешь что то сделать.", lang)
+
 
             # запрос на OCR?
             if query.startswith('OCR\n\n'):
@@ -686,19 +693,19 @@ def img2txt(
                             WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
                 elif chat_mode == 'gemini15':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model
                 elif chat_mode == 'gemini25_flash':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini25_flash_model
                 elif chat_mode == 'gemini-exp':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
                 elif chat_mode == 'gemini-learn':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
                 elif chat_mode == 'gemma3_27b':
@@ -706,11 +713,11 @@ def img2txt(
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemma3_27b_model
                 elif chat_mode == 'gemini-lite':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
                 elif chat_mode == 'gemini':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
 
@@ -725,40 +732,35 @@ def img2txt(
                 if 'gpt' in model:
                     text = my_github.img2txt(data, query, chat_id=chat_id_full, model=model, temperature=temperature, system=system_message, timeout=timeout)
                     if not text:
-                        text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                        text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                 else:
-                    text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                    text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + model
 
 
-            # далее пробуем chatgpt из гитхаба
-            if not text:
-                text = my_github.img2txt(data, query, chat_id=chat_id_full, temperature=temperature, system=system_message, timeout=timeout)
-
-
             # если это была джемини про то пробуем ее фолбек
             if not text and model == cfg.gemini_pro_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model_fallback
 
             # если это была не джемини лайт то пробуем ее
             if not text and model != cfg.gemini_flash_light_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
 
 
             # флеш25 фолбек
             if not text and model == cfg.gemini25_flash_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini25_flash_model_fallback
 
             # флеш фолбек
             if not text and model == cfg.gemini_flash_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model_fallback
 
@@ -766,6 +768,35 @@ def img2txt(
             # передаем эстафету следующему претенденту
             if len(text) > 2000 and my_transcribe.detect_repetitiveness_with_tail(text):
                 text = ''
+
+
+
+            # джемини отказалась отвечать?
+            if 'stop' in text.lower() and len(text) < 10:
+                text = ''
+
+
+
+            # далее пробуем gpt4.1 из гитхаба
+            if not text:
+                text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_41_MODEL, system=system_message, timeout=timeout)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_41_MODEL
+                else:
+                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_41_MINI_MODEL, system=system_message, timeout=timeout)
+                    if text:
+                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_41_MINI_MODEL
+
+
+            # gpt 4o
+            if not text:
+                text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_MODEL, system=system_message, timeout=timeout)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_MODEL
+                else:
+                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL, system=system_message, timeout=timeout)
+                    if text:
+                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
 
             # llama-4-maverick
@@ -790,7 +821,10 @@ def img2txt(
                 add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
 
         if chat_id_full in WHO_ANSWERED:
-            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+            if text:
+                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+            else:
+                del WHO_ANSWERED[chat_id_full]
 
 
         # добавляем в UNCAPTIONED_IMAGES[chat_id_full] эту картинку что бы она стала последней

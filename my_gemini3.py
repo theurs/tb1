@@ -54,7 +54,7 @@ You have access to the following tools. When a user's request matches a tool's t
 
 **4. Formatting Rules**
 *   **Tables:** Do not use line breaks or lists within Markdown table cells. All cell content must be on a single line.
-*   **Math:** For mathematical expressions, use Unicode symbols (e.g., ×, ÷, √, ∑, ≠) instead of LaTeX syntax (e.g., \times, \div, \sqrt, \sum, \neq)."""
+*   **Math:** For mathematical expressions, use Unicode symbols (e.g., ×, ÷, √, ∑, ≠) instead of LaTeX syntax (e.g., \\times, \\div, \\sqrt, \\sum, \\neq)."""
 
 
     # 'Ask again if something is unclear in the request',

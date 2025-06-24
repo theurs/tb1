@@ -10233,8 +10233,8 @@ def main():
         time.sleep(1)
 
 
-        # my_gemini3.reset('test')
-        # my_gemini3.chat_cli(model = 'gemma-3-27b-it')
+        # import my_gemini_voice
+        # my_gemini_voice.test2_read_a_book_()
 
 
         bot.infinity_polling(timeout=90, long_polling_timeout=90)

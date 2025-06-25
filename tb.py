@@ -4220,6 +4220,8 @@ def send_all_files_from_storage(message, chat_id_full):
                             caption=filename,
                             visible_file_name=filename,
                         )
+                        log_message(m)
+                        continue
                 except Exception as individual_error:
                     traceback_error = traceback.format_exc()
                     # Логируем ошибку для этого конкретного элемента, но продолжаем цикл

@@ -192,7 +192,7 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, 
 
     try:
         if not hasattr(cfg, 'KANDINSKI_API') or not cfg.KANDINSKI_API:
-            my_log.log_reprompt_moderation('my_genimg:kandinski:1: KANDINSKI_API not configured in cfg.')
+            # my_log.log_reprompt_moderation('my_genimg:kandinski:1: KANDINSKI_API not configured in cfg.')
             return []
 
         keys = cfg.KANDINSKI_API[:]

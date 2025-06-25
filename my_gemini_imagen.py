@@ -15,7 +15,7 @@ from my_log import log_gemini
 
 def generate_images_as_bytes(
     prompt: str,
-    model: str = 'imagen-3.0-generate-002',
+    model: str = 'imagen-4.0-generate-preview-06-06',
     number_of_images: int = 4,
     aspect_ratio: str = "3:4",
     safety_filter_level: str = "BLOCK_LOW_AND_ABOVE",

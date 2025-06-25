@@ -132,7 +132,7 @@ def convert_markdown_to_document(text: str, output_format: str) -> bytes | str:
         output_format (str): The desired output format ('docx' or 'pdf').
 
     Returns:
-        bytes | str: The content of the generated document file. Or error string.
+        bytes | str: The content of the generated document file.
 
     """
 
@@ -309,14 +309,32 @@ def convert_markdown_to_document(text: str, output_format: str) -> bytes | str:
             command = ['wkhtmltopdf', temp_input_file, output_document_file]
 
         else:
-            return f"Unsupported output format: {output_format}. Choose 'docx' or 'pdf'."
+            return b''
 
         # Выполняем команду конвертации
         result = subprocess.run(command, capture_output=True, text=True, check=False)
 
         if result.returncode != 0:
             error_message = f"Conversion to {output_format} failed with error code {result.returncode}:\n{result.stderr}"
-            return f"Failed to convert text to {output_format}: {error_message}"
+            my_log.log2(f'my_pandoc:convert_markdown_to_document:1: {error_message}')
+            if output_format == 'docx':
+                # Команда для Pandoc: читаем Markdown, выводим в DOCX, используем стиль подсветки
+                command = [
+                    'pandoc', '+RTS', '-M256M', '-RTS',
+                    '-f', 'gfm',
+                    '-t', 'docx',
+                    '--highlight-style=pygments',  # Активируем подсветку Pandoc
+                    '-o', output_document_file,
+                    temp_input_file
+                ]
+                # Выполняем команду конвертации
+                result = subprocess.run(command, capture_output=True, text=True, check=False)
+                if result.returncode != 0:
+                    error_message = f"Conversion to {output_format} failed with error code {result.returncode}:\n{result.stderr}"
+                    my_log.log2(f'my_pandoc:convert_markdown_to_document:2: {error_message}')
+                    return b''
+            else:
+                return b''
 
         # Читаем сгенерированный файл
         with open(output_document_file, 'rb') as f_doc:

@@ -5022,27 +5022,33 @@ def save_history(message: telebot.types.Message):
             prompt = my_cohere.get_mem_as_string(chat_id_full, md = True) or ''
 
         if prompt:
-            m = send_document(
-                message,
-                message.chat.id,
-                document=my_pandoc.convert_markdown_to_document(prompt, 'docx'),
-                message_thread_id=message.message_thread_id,
-                caption='resp.docx',
-                visible_file_name = 'resp.docx',
-                reply_markup=get_keyboard('hide', message)
-            )
-            log_message(m)
+            docx = my_pandoc.convert_markdown_to_document(prompt, 'docx')
+            if docx:
+                m = send_document(
+                    message,
+                    message.chat.id,
+                    document=docx,
+                    message_thread_id=message.message_thread_id,
+                    caption='resp.docx',
+                    visible_file_name = 'resp.docx',
+                    reply_markup=get_keyboard('hide', message)
+                )
+                log_message(m)
 
-            m = send_document(
-                message,
-                message.chat.id,
-                document=prompt.encode('utf-8'),
-                message_thread_id=message.message_thread_id,
-                caption='resp.md',
-                visible_file_name = 'resp.md',
-                reply_markup=get_keyboard('hide', message)
-            )
-            log_message(m)
+            md = prompt.encode('utf-8', errors='ignore')
+            if md:
+                m = send_document(
+                    message,
+                    message.chat.id,
+                    document=md,
+                    message_thread_id=message.message_thread_id,
+                    caption='resp.md',
+                    visible_file_name = 'resp.md',
+                    reply_markup=get_keyboard('hide', message)
+                )
+                log_message(m)
+            if not md and not docx:
+                bot_reply_tr(message, 'Error while saving history.')
         else:
             bot_reply_tr(message, 'Memory is empty, nothing to save.')
     except Exception as unknown:
@@ -10269,6 +10275,8 @@ def main():
 
         # import my_gemini_voice
         # my_gemini_voice.test2_read_a_book_()
+        # import my_gemini_imagen
+        # my_gemini_imagen.test_imagen()
 
 
         bot.infinity_polling(timeout=90, long_polling_timeout=90)

@@ -8044,7 +8044,7 @@ def send_photo(
 
         try:
             x, y = utils.get_image_size(photo)
-            if max(x, y) > 2000 or min(x, y) > 2000:
+            if max(x, y) > 1280 or min(x, y) > 1280:
                 # send as document too
                 send_document(
                     message,

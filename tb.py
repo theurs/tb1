@@ -8046,7 +8046,7 @@ def send_photo(
             x, y = utils.get_image_size(photo)
             if max(x, y) > 1280 or min(x, y) > 1280:
                 # send as document too
-                send_document(
+                m = send_document(
                     message,
                     chat_id=chat_id,
                     document=photo,
@@ -8069,6 +8069,7 @@ def send_photo(
                     visible_file_name="image.png",
                     # thumb=thumbnail_data_or_file_id,
                 )
+                log_message(m)
                 photo = utils.resize_image_to_dimensions(photo, 2000, 2000)
                 
             if not reply:

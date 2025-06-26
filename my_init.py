@@ -29,7 +29,7 @@ PANDOC_SUPPORT_LIST = (
     'application/x-msexcel',
     'application/x-fictionbook+xml',
     'image/vnd.djvu+multipage', # hack
-
+    'application/xml', # .odt?
     'application/vnd.apple.pages',
     'application/vnd.apple.numbers',
 )

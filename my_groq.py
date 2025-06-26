@@ -535,7 +535,7 @@ def search(
         q,
         temperature=0.5,
         system = system,
-        model_ = model, # 'compound-beta',
+        model_ = model,
         timeout = timeout,
         )
 
@@ -543,19 +543,25 @@ def search(
 
     if r:
         if user_id:
-            my_db.add_msg(user_id, 'compound-beta')
+            my_db.add_msg(user_id, model)
         return r
     else:
         return ''
 
 
-def calc(query: str, language: str = 'ru', system: str = '', user_id: str = '') -> str:
+def calc(
+    query: str,
+    language: str = 'ru',
+    system: str = '',
+    user_id: str = ''
+    ) -> str:
     '''
     Делает быстрый запрос в compound-beta
 
     query - запрос на вычисления с помощью tool use и python
     '''
     try:
+        model = 'compound-beta'
         q = (
             "**Задача:** Используй инструмент для выполнения кода что бы дать ответ по запросу пользователя.\n\n"
             "**Инструкции:**\n"
@@ -573,7 +579,7 @@ def calc(query: str, language: str = 'ru', system: str = '', user_id: str = '') 
             q,
             temperature=0.1,
             system = system,
-            model_ = 'compound-beta',
+            model_ = model,
             user_id = user_id
         )
 
@@ -581,7 +587,7 @@ def calc(query: str, language: str = 'ru', system: str = '', user_id: str = '') 
 
         if r:
             if user_id:
-                my_db.add_msg(user_id, 'compound-beta')
+                my_db.add_msg(user_id, model)
             return r
         else:
             return ''

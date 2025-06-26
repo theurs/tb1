@@ -116,8 +116,8 @@ def convert_to_ogg_with_ffmpeg(audio_file: str|bytes) -> str:
                 f.write(audio_file)
         else:
             tmp_in_file = audio_file
-        # subprocess.run(['ffmpeg', '-i', tmp_in_file, '-map', '0:a', '-c:a','libvorbis', tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run(['ffmpeg', '-i', tmp_in_file, '-filter:a', 'atempo=2.0', '-map', '0:a', '-c:a','libvorbis', tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(['ffmpeg', '-i', tmp_in_file, '-map', '0:a', '-c:a','libvorbis', tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # subprocess.run(['ffmpeg', '-i', tmp_in_file, '-filter:a', 'atempo=2.0', '-map', '0:a', '-c:a','libvorbis', tmp_wav_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if os.path.exists(tmp_wav_file):
             return tmp_wav_file
         else:

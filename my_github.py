@@ -5,6 +5,7 @@
 
 
 import base64
+import os
 import time
 import threading
 import traceback
@@ -46,6 +47,9 @@ GROK_MODEL_FALLBACK = 'grok-3-mini'
 
 DEEPSEEK_R1_MODEL = 'DeepSeek-R1'
 DEEPSEEK_R1_MODEL_FALLBACK = 'gpt-4o-mini'
+
+
+TEXT_TO_SPEECH_MS_PHI_4_MODEL = 'microsoft/Phi-4-multimodal-instruct'
 
 
 CURRENT_KEY_SET = []
@@ -568,13 +572,168 @@ def test_key(key: str) -> bool:
     return bool(r)
 
 
+import base64
+import io
+import time
+import traceback
+
+from openai import OpenAI
+
+# Предполагаем, что следующие функции и объекты доступны из вашего контекста:
+# get_next_key, remove_key, my_log, my_db, utils
+
+def transcribe_audio_with_model(
+    audio_data: bytes | str,
+    user_id: str = '',
+    model: str = 'Phi-4-multimodal-instruct',
+    timeout: int = 120,
+    max_tokens: int = 1000,
+    temperature: float = 0.2,
+    ) -> str:
+    """
+    Транскрибирует аудиоданные в текст, используя указанную мультимодальную модель.
+
+    Аргументы:
+        audio_data (bytes | str): Аудиоданные в виде байтов или строка,
+                                  представляющая путь к аудиофайлу (например, '.ogg', '.flac').
+        user_id (str): ID пользователя Telegram, необходимый для управления API-ключами.
+        model (str): Используемая модель. По умолчанию 'Phi-4-multimodal-instruct'.
+        timeout (int): Максимальное время ожидания ответа от API в секундах. По умолчанию 120.
+        max_tokens (int): Максимальное количество токенов для генерации в ответе. По умолчанию 4000.
+        temperature (float): Параметр креативности модели. По умолчанию 0.2.
+
+    Возвращает:
+        str: Транскрибированный текст, или пустая строка в случае ошибки.
+    """
+    text = ''
+    key = ''
+    start_time = time.time()
+
+    audio_bytes = None
+    audio_b64_str = ''
+    audio_type = 'audio/wav'
+
+    try:
+        if isinstance(audio_data, str):
+            with open(audio_data, 'rb') as f:
+                audio_bytes = f.read()
+        elif isinstance(audio_data, bytes):
+            audio_bytes = audio_data
+        else:
+            # Заменяем raise на логирование и возврат пустой строки
+            my_log.log_github(f'transcribe_audio_with_model: Invalid audio_data type for user {user_id}. Must be bytes or a file path string.')
+            return ''
+
+        audio_b64_str = base64.b64encode(audio_bytes).decode('utf-8')
+
+    except FileNotFoundError:
+        my_log.log_github(f'transcribe_audio_with_model: Audio file not found at path {audio_data} for user {user_id}.')
+        return ''
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log_github(f'transcribe_audio_with_model: Audio processing error for user {user_id}: {e}\n{traceback_error}')
+        return ''
+
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "audio_url", "audio_url": {"url": f"data:{audio_type};base64,{audio_b64_str}"}},
+                {"type": "text", "text": "Transcribe the audio clip into text."},
+            ],
+        }
+    ]
+
+    for _ in range(3):
+        if time.time() - start_time > timeout:
+            my_log.log_github(f"transcribe_audio_with_model: Timeout after {timeout} seconds for user {user_id}.")
+            return ''
+
+        try:
+            key = get_next_key()
+            client = OpenAI(
+                api_key = key,
+                base_url = BASE_URL,
+            )
+
+            response = client.chat.completions.create(
+                messages = messages,
+                model = model,
+                max_tokens = max_tokens,
+                temperature = temperature,
+                timeout = timeout,
+            )
+            text = response.choices[0].message.content
+            if text:
+                text = text.strip()
+                break
+            else:
+                time.sleep(2)
+
+        except Exception as error_other:
+            traceback_error = traceback.format_exc()
+            my_log.log_github(f'transcribe_audio_with_model: API Error for user {user_id}: {error_other}\n{traceback_error}\nKey: {key}')
+
+            if 'Bad credentials' in str(error_other) or 'Your account type is not currently supported' in str(error_other):
+                remove_key(key)
+                continue
+
+            if "The response was filtered due to the prompt triggering Azure OpenAI's content management policy." not in str(error_other):
+                my_log.log_github(f'transcribe_audio_with_model: Non-credential error for user {user_id}: {error_other}')
+            return ''
+
+    if text and user_id:
+        my_db.add_msg(user_id, model)
+
+    return text or ''
+
+
+def test_transcribe():
+    # Путь к папке с аудиофайлами
+    audio_dir = r'C:\Users\user\Downloads'
+    test_user_id = 'test_user_audio_transcription'
+
+    if not os.path.isdir(audio_dir):
+        print(f"Ошибка: Директория не найдена: {audio_dir}")
+    else:
+        print(f"Начало обработки аудиофайлов из: {audio_dir}")
+        for filename in os.listdir(audio_dir):
+            file_path = os.path.join(audio_dir, filename)
+            # Проверяем, является ли это файлом и имеет ли он аудиорасширение
+            if os.path.isfile(file_path) and filename.lower().endswith(('.ogg', '.mp3', '.wav', '.flac')):
+                print(f"Обработка файла: {filename}")
+                transcribed_text = transcribe_audio_with_model(
+                    audio_data=file_path,
+                    user_id=test_user_id,
+                    # model='Phi-4-multimodal-instruct' # Указываем модель явно
+                )
+
+                if transcribed_text:
+                    output_filename = os.path.splitext(filename)[0] + '.txt'
+                    output_file_path = os.path.join(audio_dir, output_filename)
+                    with open(output_file_path, 'w', encoding='utf-8') as f:
+                        f.write(transcribed_text)
+                    print(f"Транскрипция сохранена в: {output_file_path}")
+                else:
+                    print(f"Не удалось транскрибировать файл: {filename}")
+            else:
+                print(f"Пропущен файл (не аудио или не файл): {filename}")
+
+        print("Обработка всех аудиофайлов завершена.")
+
+    # Пример использования chat_cli, если он нужен для других тестов
+    # chat_cli(model = GROK_MODEL)
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     load_users_keys()
 
-    t = 'напиши стих о родине слонов с хорошей рифмой'
-    print(ai(t, model=GROK_MODEL))
+    test_transcribe()
+
+    # t = 'напиши стих о родине слонов с хорошей рифмой'
+    # print(ai(t, model=GROK_MODEL))
 
     # test_key('')
 

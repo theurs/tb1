@@ -3311,9 +3311,14 @@ def handle_document(message: telebot.types.Message):
                             my_db.set_user_property(chat_id_full, 'saved_file_name', message.document.file_name if hasattr(message, 'document') else 'noname.txt')
                             my_db.set_user_property(chat_id_full, 'saved_file', text)
                             summary_html = utils.bot_markdown_to_html(summary)
-                            bot_reply(message, summary_html, parse_mode='HTML',
-                                                disable_web_page_preview = True,
-                                                reply_markup=get_keyboard('translate', message))
+                            if summary_html.strip():
+                                bot_reply(
+                                    message,
+                                    summary_html,
+                                    parse_mode='HTML',
+                                    disable_web_page_preview = True,
+                                    reply_markup=get_keyboard('translate', message)
+                                )
                             bot_reply_tr(message, 'Use /ask command to query or delete this file. Example:\n/ask generate a short version of part 1.\n? How many persons was invited.')
 
                             caption_ = tr("юзер попросил ответить по содержанию файла", lang)

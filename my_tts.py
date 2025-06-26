@@ -256,6 +256,9 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     if '_' in voice:
         voice = voice.split('_')[0]
 
+    if voice.endswith('1'):
+        voice = voice[:-1]
+
     lang = voice
 
     def change_speed(data: bytes, rate: str) -> bytes:

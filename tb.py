@@ -5443,10 +5443,10 @@ def tts(message: telebot.types.Message, caption = None):
 /tts en +50% Hello at a speed of 1.5x - {tr('force english and speed', lang)}
 /tts en12 Tell me your name. - {tr('12th english voice - "en-KE-Chilemba" or "en-KE-Asilia"', lang)}
 
-{tr('''en, en2, de and fr voices are multilingual, you can use them to change voice for any language
+{tr('''en, en2, de, it(male), ko(male), pt(female) and fr voices are multilingual, you can use them to change voice for any language
 (/tts ru привет) and (/tts fr привет) will say hello in russian with 2 different voices''', lang)}
 
-{tr('Supported languages:', lang)} https://telegra.ph/Golosa-dlya-TTS-06-29
+{tr('Supported languages:', lang)} https://telegra.ph/Edge-TTS-voices-06-26
 
 {tr('Для OpenAI голосов можно передать инструкцию как говорить, для этого в начале текста укажите инструкцию между знаками <>\n/tts <говори капризным голосом как у маленького ребенка> привет как дела', lang)}
 

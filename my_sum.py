@@ -494,6 +494,8 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
         except:
             return ''
 
+        url = f'https://www.youtube.com/watch?v={video_id}'
+
         reloadcfg()
 
         t = [] # Initialize t as an empty list

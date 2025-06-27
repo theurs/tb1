@@ -127,7 +127,7 @@ level 3 - блокировать всё включая логи
 Для установки проекта выполните следующие шаги:
 
 1. Установите Python 3.12+.
-2. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin ffmpeg fonts-noto-core fonts-noto-color-emoji imagemagick npm pandoc python3-venv sox texlive-latex-base texlive-latex-recommended wkhtmltopdf`
+2. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk catdoc djvulibre-bin ffmpeg fonts-noto-core fonts-noto-color-emoji imagemagick npm pandoc python3-pip python3-venv sox texlive-latex-base texlive-latex-recommended wkhtmltopdf`
    https://wkhtmltopdf.org/downloads.html это надо установить отдельно вручную для рисования таблиц
    yt-dlp надо установить отдельно, т.к. в репах нет актуальной свежей версии, а она нужна для скачивания тиктоков и музыки с ютуба.
    в файле `/etc/ImageMagick-6/policy.xml` надо найти и изменить
@@ -144,26 +144,24 @@ level 3 - блокировать всё включая логи
    ```
    git clone https://github.com/theurs/tb1.git
    
-   python -m venv .tb1
-   source ~/.tb1/bin/activate
+   pip install pipx
+   pipx ensurepath
+   pipx install uv
+
+   cd tb1
+   uv venv .venv
+
+   source .venv/bin/activate
+   uv pip install -r requirements.txt
 
    sudo npm install -g @mermaid-js/mermaid-cli
    npx puppeteer browsers install chrome-headless-shell
 
-
-   ```
-   
-4. Перейдите в директорию проекта:
-
-   ```
-   cd tb1
-
-   pip install -r requirements.txt
-
    playwright install chromium
+
    ```
    
-5. Создайте файл cfg.py и добавьте в него строку
+4. Создайте файл cfg.py и добавьте в него строку
 ```
 
 # SKIP_PENDING = False
@@ -457,7 +455,7 @@ http://172.28.1.24:123/bing
 
 
 
-7. Запустить ./tb.py
+5. Запустить ./tb.py
 
 
 

@@ -39,7 +39,7 @@ imgkit
 
 gTTS
 langdetect
-langcodes[data]
+langcodes
 lxml[html_clean]
 markdown
 markdown-del-ins

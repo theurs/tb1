@@ -616,6 +616,55 @@ def save_diagram_to_image(filename: str, text: str, engine: str, chat_id: str) -
         return f"FAIL: An unexpected error occurred: {error}"
 
 
+def save_to_txt(filename: str, text: str, chat_id: str) -> str:
+    '''
+    Send a plain text file to the user, you can use it to send markdown etc as a plaintext too.
+    Args:
+        filename: str - The desired file name for the text file (e.g., 'notes').
+        text: str - The plain text content to save.
+        chat_id: str - The Telegram user chat ID where the file should be sent.
+    Returns:
+        str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+    '''
+    try:
+        my_log.log_gemini_skills_save_docs(f'save_to_txt {chat_id}\n\n{filename}\n{text}')
+
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        # Ensure filename has .txt extension and is safe
+        if not filename.lower().endswith('.txt'):
+            filename += '.txt'
+        filename = utils.safe_fname(filename)
+
+        # Encode the text to bytes
+        text_bytes = text.encode('utf-8')
+
+        # If bytes were successfully generated, prepare the item for storage
+        if text_bytes:
+            item = {
+                'type': 'text file',
+                'filename': filename,
+                'data': text_bytes,
+            }
+            with STORAGE_LOCK:
+                if chat_id in STORAGE:
+                    if item not in STORAGE[chat_id]:
+                        STORAGE[chat_id].append(item)
+                else:
+                    STORAGE[chat_id] = [item,]
+            return "OK"
+        else:
+            my_log.log_gemini_skills_save_docs(f'save_to_txt: No text data could be generated for chat {chat_id}\n\nText length: {len(text)}')
+            return "FAIL: No text data could be generated."
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills_save_docs(f'save_to_txt: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {error}"
+
+
 def save_to_docx(filename: str, text: str, chat_id: str) -> str:
     '''
     Send DOCX file to user, converted from markdown text(~~ for strikethrough).

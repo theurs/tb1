@@ -4212,7 +4212,7 @@ def send_all_files_from_storage(message, chat_id_full):
             for item in items:
                 try:
                     _type, filename, data = item['type'], item['filename'], item['data']
-                    if _type in ('excel file', 'docx file'):
+                    if _type in ('excel file', 'docx file', 'text file'):
                         m = send_document(
                             message=message,
                             chat_id=message.chat.id,

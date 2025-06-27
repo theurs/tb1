@@ -646,35 +646,14 @@ def img2txt(
 
 
             # запрос на OCR?
-            if query.startswith('OCR\n\n'):
+            if query__ == 'OCR':
                 if not text:
                     text = my_mistral.ocr_image(data, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_mistral_ocr'
-
-            # попробовать с помощью openrouter
-            # если модель не указана явно то определяем по режиму чата
-            if not model and not text:
-                if chat_mode == 'openrouter':
-                    text = my_openrouter.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter'
-
-                if chat_mode == 'llama4_maverick':
-                    text = my_openrouter_free.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'llama4_maverick'
-
-                elif chat_mode == 'gpt-4o':
-                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_MODEL, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_MODEL
-                    else:
-                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL, system=system_message, timeout=timeout)
-                        if text:
-                            WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
-
-                elif chat_mode == 'gpt_41':
+            # если запрос - gpt то сначала пробуем через gpt
+            if query__ == 'gpt':
+                if not text:
                     text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_41_MODEL, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_41_MODEL
@@ -683,7 +662,48 @@ def img2txt(
                         if text:
                             WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_41_MINI_MODEL
 
-                elif chat_mode == 'gpt_41_mini':
+                if not text:
+                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_MODEL, system=system_message, timeout=timeout)
+                    if text:
+                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_MODEL
+                    else:
+                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL, system=system_message, timeout=timeout)
+                        if text:
+                            WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
+
+
+            # попробовать с помощью openrouter
+            # если модель не указана явно то определяем по режиму чата
+            if not model and not text:
+                if not text and chat_mode == 'openrouter':
+                    text = my_openrouter.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                    if text:
+                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter'
+
+                if not text and chat_mode == 'llama4_maverick':
+                    text = my_openrouter_free.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                    if text:
+                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'llama4_maverick'
+
+                elif not text and chat_mode == 'gpt-4o':
+                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_MODEL, system=system_message, timeout=timeout)
+                    if text:
+                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_MODEL
+                    else:
+                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL, system=system_message, timeout=timeout)
+                        if text:
+                            WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
+
+                elif not text and chat_mode == 'gpt_41':
+                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_41_MODEL, system=system_message, timeout=timeout)
+                    if text:
+                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_41_MODEL
+                    else:
+                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_41_MINI_MODEL, system=system_message, timeout=timeout)
+                        if text:
+                            WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_41_MINI_MODEL
+
+                elif not text and chat_mode == 'gpt_41_mini':
                     text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_41_MINI_MODEL, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_41_MINI_MODEL
@@ -692,31 +712,31 @@ def img2txt(
                         if text:
                             WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
-                elif chat_mode == 'gemini15':
+                elif not text and chat_mode == 'gemini15':
                     text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model
-                elif chat_mode == 'gemini25_flash':
+                elif not text and chat_mode == 'gemini25_flash':
                     text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini25_flash_model
-                elif chat_mode == 'gemini-exp':
+                elif not text and chat_mode == 'gemini-exp':
                     text = my_gemini3.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
-                elif chat_mode == 'gemini-learn':
+                elif not text and chat_mode == 'gemini-learn':
                     text = my_gemini3.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
-                elif chat_mode == 'gemma3_27b':
+                elif not text and chat_mode == 'gemma3_27b':
                     text = my_gemini3.img2txt(data, query, model=cfg.gemma3_27b_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemma3_27b_model
-                elif chat_mode == 'gemini-lite':
+                elif not text and chat_mode == 'gemini-lite':
                     text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
-                elif chat_mode == 'gemini':
+                elif not text and chat_mode == 'gemini':
                     text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model

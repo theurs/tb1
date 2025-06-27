@@ -625,19 +625,17 @@ def chat(
                         else:
                             my_skills.STORAGE[chat_id] = [item,]
 
+
             # плохие ответы
             ppp = [
                 '```python\nprint(default_api.',
                 '```tool_code\nprint(default_api.',
                 '```json\n{\n  "tool_code":',
                 '```python\nprint(telegram_bot_api.',
-                # 'edit_image',
-                # 'ask_image'
+                '```\nprint(default_api.',
             ]
-            if any(resp.startswith(p) for p in ppp) and len(resp) < 500:
+            if any(resp.startswith(p) for p in ppp):
                 my_log.log_gemini(f'chat:bad resp: {resp}')
-                # if 'ask_image' in resp or 'edit_image' in resp:
-                #     my_log.log_gemini(f'{query}\n\n{str(mem)}')
                 return ''
 
 

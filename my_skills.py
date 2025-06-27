@@ -634,7 +634,7 @@ def save_to_txt(filename: str, text: str, chat_id: str) -> str:
             return "FAIL, unknown chat id"
 
         # Ensure filename has .txt extension and is safe
-        if not filename.lower().endswith('.txt'):
+        if '.' not in filename:
             filename += '.txt'
         filename = utils.safe_fname(filename)
 

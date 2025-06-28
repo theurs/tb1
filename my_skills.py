@@ -891,6 +891,38 @@ def get_coords(loc: str):
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
+def get_location_name(latitude: str, longitude: str, language: str) -> str:
+    """
+    Retrieves the human-readable name of a location based on its coordinates.
+
+    Args:
+        latitude (str): The latitude of the location as a string.
+        longitude (str): The longitude of the location as a string.
+        language (str): The language code for the returned location name (e.g., 'en', 'ru').
+
+    Returns:
+        str: A string representing the location's name, 'Not found' if no location
+            is found for the given coordinates, or an error message if an exception occurs.
+    """
+    try:
+        geolocator = Nominatim(user_agent="kun4sun_bot")
+        location = geolocator.reverse(
+            latitude + "," + longitude,
+            language=language,
+            addressdetails=True,
+            namedetails=True
+        )
+    except Exception as e:
+        my_log.log_gemini_skills(f'get_location_name:Error: {e}')
+        return f'Error: {e}'
+
+    if location:
+        return str(location)
+    else:
+        return 'Not found'
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
 def get_weather(location: str) -> str:
     '''Get weather data from OpenMeteo API 7 days forth and back
     Example: get_weather("Vladivostok")

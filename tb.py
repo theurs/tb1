@@ -2884,6 +2884,50 @@ def handle_voice(message: telebot.types.Message):
         my_log.log2(f'tb:handle_voice: {unknown}\n{traceback_error}')
 
 
+@bot.message_handler(content_types = ['location',], func=authorized)
+@async_run
+def handle_location(message: telebot.types.Message):
+    """Если юзер прислал геолокацию"""
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        COMMAND_MODE[chat_id_full] = ''
+
+        # проверка на подписку
+        if not check_donate(message, chat_id_full, lang):
+            return
+
+        message.text = f'{tr("User sent a location to your telegram bot:", lang)} {str(message.location)}'
+        handle_photo_and_text(message)
+
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:handle_location: {unknown}\n{traceback_error}')
+
+
+@bot.message_handler(content_types = ['contact',], func=authorized)
+@async_run
+def handle_contact(message: telebot.types.Message):
+    """Если юзер прислал контакст"""
+    try:
+        chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
+
+        COMMAND_MODE[chat_id_full] = ''
+
+        # проверка на подписку
+        if not check_donate(message, chat_id_full, lang):
+            return
+
+        message.text = f'{tr("User sent a contact to your telegram bot:", lang)} {str(message.contact)}'
+        handle_photo_and_text(message)
+
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:handle_contact: {unknown}\n{traceback_error}')
+
+
 def image_info(image_bytes: bytes, lang: str = "ru") -> str:
     """Extracts information from an image and formats it as a string.
 

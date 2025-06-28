@@ -528,6 +528,7 @@ def chat(
                             my_skills.save_chart_and_graphs_to_image,
                             my_skills.save_html_to_image,
                             my_skills.query_user_file,
+                            my_skills.get_location_name,
                             my_skills.help,
                         ]
                     chat = client.chats.create(

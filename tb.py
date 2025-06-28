@@ -5453,7 +5453,7 @@ def tts(message: telebot.types.Message, caption = None):
                     ('https://vimeo.com/' in url) or \
                     ('vk.com' in url and '/video-' in url) or \
                     ('//my.mail.ru/v/' in url and '/video/' in url):
-                    text = my_sum.get_text_from_youtube(url, lang = lang)
+                    text = my_sum.get_text_from_youtube(url, language = lang)
                     text = my_gemini3.rebuild_subtitles(text, lang, chat_id_full)
                     if text:
                         text = utils.bot_markdown_to_html(text)

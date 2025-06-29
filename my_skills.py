@@ -668,10 +668,16 @@ def save_to_txt(filename: str, text: str, chat_id: str) -> str:
 def save_to_docx(filename: str, text: str, chat_id: str) -> str:
     '''
     Send DOCX file to user, converted from markdown text(~~ for strikethrough).
+
     Args:
         filename: str - The desired file name for the DOCX file (e.g., 'document').
         text: str - The markdown formatted text to convert to DOCX.
+                    To include mathematical equations, use LaTeX syntax enclosed in dollar signs:
+                    - For inline formulas, use $...$ (e.g., `$a^2 + b^2 = c^2$`).
+                    - For display formulas on a new line, use $$...$$ 
+                      (e.g., `$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$`).
         chat_id: str - The Telegram user chat ID where the file should be sent.
+
     Returns:
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
     '''

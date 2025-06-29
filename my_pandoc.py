@@ -296,12 +296,32 @@ def convert_markdown_to_document(text: str, output_format: str) -> bytes | str:
             """
 
             raw_html_body = markdown.markdown(text, extensions=['smarty', 'toc', 'extra', 'codehilite', 'sane_lists', 'markdown_del_ins'])
+
+            # ДОБАВЛЯЕМ MATHJAX
+            mathjax_script = """
+            <script>
+            window.MathJax = {
+              tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+              },
+              svg: {
+                fontCache: 'global'
+              }
+            };
+            </script>
+            <script type="text/javascript" id="MathJax-script" async
+              src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+            </script>
+            """
+
             html_content = f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <title>Документ из Markdown</title>
     {STYLE}
+    {mathjax_script}
 </head>
 <body>
 {raw_html_body}

@@ -211,8 +211,8 @@ gemini25_flash_model_fallback = 'gemini-2.5-flash-preview-04-17-thinking'
 gemini_flash_light_model = 'gemini-2.5-flash-lite-preview-06-17'
 gemini_flash_light_model_fallback = 'gemini-2.0-flash-lite-preview-02-05'
 
-gemini_pro_model = 'gemini-2.5-pro-exp-03-25'
-gemini_pro_model_fallback = 'gemini-2.0-pro-exp-02-05'
+gemini_pro_model = 'gemini-2.5-pro'
+gemini_pro_model_fallback = 'gemini-2.5-flash'
 
 gemma3_27b_model = 'gemma-3-27b-it'
 gemma3_27b_model_fallback = 'gemini-2.5-flash-lite-preview-06-17'

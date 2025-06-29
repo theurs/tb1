@@ -10,6 +10,7 @@ import time
 import traceback
 
 import markdown
+import my_mistral
 import PyPDF2
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -70,6 +71,13 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
         text = ''
         for page in pdf_reader.pages:
             text += page.extract_text()
+
+        if not text or len(text) < 100:
+            with open(input_file, 'rb') as f:
+                data = f.read()
+            text_ = my_mistral.ocr_pdf(data, timeout=300)
+            if text_ and len(text_) > len(text):
+                text = text_
 
         utils.remove_file(input_file)
         return text

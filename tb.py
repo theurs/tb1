@@ -3161,7 +3161,7 @@ AllowedIPs = {AllowedIPs}
         return False
 
 
-@bot.message_handler(content_types = ['document'], func=authorized)
+@bot.message_handler(content_types = ['document',], func=authorized)
 @async_run
 def handle_document(message: telebot.types.Message):
     """Обработчик документов"""
@@ -3218,7 +3218,7 @@ def handle_document(message: telebot.types.Message):
                     handle_voice(message)
                     return
 
-                if message.document and message.document.mime_type.startswith('image/') and message.document.mime_type != 'image/svg+xml':
+                if message.document and message.document.mime_type.startswith('image/') and message.document.mime_type not in ('image/svg+xml', 'image/vnd.djvu+multipage',):
                     handle_photo(message)
                     return
 

@@ -448,6 +448,18 @@ def trim_mem(mem: list, max_chat_mem_chars: int, clear: bool = False):
         mem[:] = mem[keep_from_index:]
 
 
+def trim_all():
+    '''
+    Проходит по всем юзерам и зачищает ими историю от нетекстовых вставок
+    '''
+    all_users = my_db.get_all_users_ids()
+    for user in all_users:
+        mem = my_db.blob_to_obj(my_db.get_user_property(user, 'dialog_gemini3')) or []
+        if mem:
+            mem = clear_non_text_parts(mem)
+            my_db.set_user_property(user, 'dialog_gemini3', my_db.obj_to_blob(mem))
+
+
 def chat(
     query: str,
     chat_id: str = '',

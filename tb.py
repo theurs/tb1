@@ -10366,6 +10366,7 @@ def main():
         # my_gemini_imagen.test_imagen()
         # print(my_gemini3.chat('привет ты как', model = 'gemini-live-2.5-flash-preview', chat_id='test', system='отвечай всегда по-русски'))
 
+        # my_gemini3.trim_all()
 
         bot.infinity_polling(timeout=90, long_polling_timeout=90)
 

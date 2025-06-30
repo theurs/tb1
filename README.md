@@ -202,6 +202,9 @@ chat_mode_default = 'gemini'
 img2_txt_model = 'gemini-2.5-flash-preview-05-20'
 img2_txt_model_solve = 'gemini-2.5-flash-preview-05-20'
 
+gemini_flash_live_model = 'gemini-live-2.5-flash-preview'
+gemini_flash_live_model_fallback = 'gemini-2.0-flash-live-001'
+
 gemini_flash_model = 'gemini-2.0-flash'
 gemini_flash_model_fallback = 'gemini-2.0-flash-exp'
 

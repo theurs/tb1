@@ -9420,10 +9420,25 @@ def do_task(message, custom_prompt: str = ''):
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
 
+                            # если обычное джемини не ответили (перегруз?) то попробовать лайв версию
+                            if not answer:
+                                gmodel = cfg.gemini_flash_live_model
+                                answer = my_gemini3.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temp,
+                                    model = gmodel,
+                                    system = hidden_text,
+                                    use_skills=True
+                                )
+                                WHO_ANSWERED[chat_id_full] = gmodel
+
+
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
                             # передаем эстафету следующему претенденту (ламе)
                             if len(answer) > 2000 and my_transcribe.detect_repetitiveness_with_tail(answer):
                                 answer = ''
+
 
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = gmodel

@@ -386,7 +386,7 @@ def trim_mem(mem: list, max_chat_mem_chars: int):
         pair_chars = 0
         # Считаем символы в паре сообщений
         for message in mem[i:i+2]:
-            if hasattr(message, 'parts'):
+            if hasattr(message, 'parts') and message.parts:
                 for part in message.parts:
                     if hasattr(part, 'text') and part.text:
                         pair_chars += len(part.text)

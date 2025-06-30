@@ -10349,6 +10349,7 @@ def main():
         # my_gemini_voice.test2_read_a_book_()
         # import my_gemini_imagen
         # my_gemini_imagen.test_imagen()
+        # print(my_gemini3.chat('привет ты как', model = 'gemini-live-2.5-flash-preview', chat_id='test', system='отвечай всегда по-русски'))
 
 
         bot.infinity_polling(timeout=90, long_polling_timeout=90)

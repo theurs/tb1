@@ -27,6 +27,7 @@ from google.genai.types import (
 import cfg
 import my_db
 import my_gemini
+import my_gemini_live_text
 import my_log
 import my_skills
 import utils
@@ -366,6 +367,46 @@ def parse_content_response(response: GenerateContentResponse) -> tuple[list[dict
         return [], ""
 
 
+def trim_mem(mem: list, max_chat_mem_chars: int):
+    """
+    Обрезает историю диалога, если её объём превышает max_chat_mem_chars.
+    Реализовано через поиск индекса, с которого нужно сохранить историю, 
+    и последующую обрезку списка.
+    """
+    total_chars = 0
+    # Индекс, с которого мы будем сохранять историю.
+    # Если вся история помещается в лимит, он останется равен 0.
+    keep_from_index = 0
+
+    # Идём с конца списка парами (user, model), чтобы найти точку отсечения.
+    # `(len(mem) & ~1)` округляет длину списка до ближайшего чётного снизу,
+    # чтобы безопасно брать пары.
+    start_iter = (len(mem) & ~1) - 2
+    for i in range(start_iter, -1, -2):
+        pair_chars = 0
+        # Считаем символы в паре сообщений
+        for message in mem[i:i+2]:
+            if hasattr(message, 'parts'):
+                for part in message.parts:
+                    if hasattr(part, 'text') and part.text:
+                        pair_chars += len(part.text)
+
+        # Если накопленный размер + размер текущей пары превышает лимит...
+        if total_chars + pair_chars > max_chat_mem_chars:
+            # ...то эта пара уже не влезает. Значит, сохранять нужно
+            # всё, что было *после* неё. Индекс начала следующей пары — i + 2.
+            keep_from_index = i + 2
+            break  # Точку отсечения нашли, выходим из цикла.
+
+        # Если пара помещается, добавляем её размер к общему и продолжаем.
+        total_chars += pair_chars
+
+    # Если был найден индекс для обрезки (он будет больше 0),
+    # то модифицируем список "на месте", оставляя только нужную часть.
+    if keep_from_index > 0:
+        mem[:] = mem[keep_from_index:]
+
+
 def chat(
     query: str,
     chat_id: str = '',
@@ -410,6 +451,33 @@ def chat(
         None: The function catches and logs exceptions internally, returning an empty string on failure.
     """
     try:
+        # лайв модель по другому работает но с той же памятью
+        if model in (my_gemini_live_text.DEFAULT_MODEL, my_gemini_live_text.FALLBACK_MODEL):
+            if chat_id:
+                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
+                # Удаляем старые картинки, остается только последняя если она не была дольше чем 5 запросов назад
+                remove_old_pics(mem)
+                trim_mem(mem, max_chat_mem_chars)
+                # если на границе памяти находится вызов функции а не запрос юзера
+                # то надо подрезать. начинаться должно с запроса юзера
+                if mem and mem[0].role == 'user' and hasattr(mem[0].parts[0], 'text') and not mem[0].parts[0].text:
+                    mem = mem[2:]
+                validate_mem(mem)
+            else:
+                mem = []
+            if mem:
+                my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(mem))
+            my_gemini_live_text.SYSTEM_ = SYSTEM_
+            return my_gemini_live_text.get_resp(
+                query,
+                chat_id=chat_id,
+                system=system,
+                model=model,
+                temperature=temperature,
+                n_try=3,
+                max_chat_lines=max_chat_lines
+            )
+
         # if 'flash-lite' in model:
         #     THINKING_BUDGET = -1
         #     use_skills = False
@@ -452,7 +520,7 @@ def chat(
 
         # Удаляем старые картинки, остается только последняя если она не была дольше чем 5 запросов назад
         remove_old_pics(mem)
-
+        trim_mem(mem, max_chat_mem_chars)
         # если на границе памяти находится вызов функции а не запрос юзера
         # то надо подрезать. начинаться должно с запроса юзера
         if mem and mem[0].role == 'user' and hasattr(mem[0].parts[0], 'text') and not mem[0].parts[0].text:
@@ -474,7 +542,7 @@ def chat(
         saved_file_size = len(saved_file)
         system_ = [
             f'Current date and time: {now}\n',
-            f'Use this telegram chat id for API function calls: {chat_id}',
+            f'Use this telegram chat id (user id) for API function calls: {chat_id}',
             *SYSTEM_,
             system,
         ]

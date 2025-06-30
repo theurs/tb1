@@ -409,7 +409,7 @@ def convert_markdown_to_document(text: str, output_format: str) -> bytes | str:
             temp_output_file = utils.get_tmp_fname() + '.docx'
             command = [
                 'pandoc', '+RTS', '-M256M', '-RTS',
-                '-f', 'markdown', '-t', 'docx',
+                '-f', 'markdown+hard_line_breaks', '-t', 'docx',
                 '--highlight-style=pygments',
                 '-o', temp_output_file, temp_input_md_file
             ]
@@ -423,7 +423,7 @@ def convert_markdown_to_document(text: str, output_format: str) -> bytes | str:
             temp_intermediate_docx_file = utils.get_tmp_fname() + '.docx'
             pandoc_command = [
                 'pandoc', '+RTS', '-M256M', '-RTS',
-                '-f', 'markdown', '-t', 'docx',
+                '-f', 'markdown+hard_line_breaks', '-t', 'docx',
                 '--highlight-style=pygments',
                 '-o', temp_intermediate_docx_file, temp_input_md_file
             ]

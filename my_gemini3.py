@@ -367,12 +367,52 @@ def parse_content_response(response: GenerateContentResponse) -> tuple[list[dict
         return [], ""
 
 
-def trim_mem(mem: list, max_chat_mem_chars: int):
+def clear_non_text_parts(mem: list) -> list:
+    """
+    Проходит по истории сообщений и заменяет все нетекстовые parts 
+    (FunctionCall, FunctionResponse) на их строковое представление,
+    объединяя все parts в один текстовый part для каждого сообщения.
+    Это делает историю "безопасной" для моделей, не поддерживающих функции.
+    """
+    # Мы не можем изменять список, по которому итерируемся, без побочных эффектов.
+    # Поэтому проходим по копии индексов.
+    for i in range(len(mem)):
+        message = mem[i]
+
+        if not hasattr(message, 'parts') or not message.parts:
+            continue
+
+        # Собираем текстовое представление для КАЖДОГО part'а
+        all_texts = []
+        for part in message.parts:
+            # Если в part'е есть текст, берем его.
+            # Если нет (это FunctionCall и т.п.), то преобразуем ВЕСЬ part в строку.
+            if hasattr(part, 'text') and part.text:
+                all_texts.append(part.text)
+            else:
+                all_texts.append(str(part))
+
+        # Склеиваем все полученные строки в одну
+        combined_text = "\n".join(all_texts)
+
+        # Заменяем старый список parts одним-единственным текстовым part'ом
+        # Важно взять класс Part из существующего элемента, чтобы создать новый
+        PartClass = type(message.parts[0])
+        message.parts = [PartClass(text=combined_text)]
+
+    return mem
+
+
+def trim_mem(mem: list, max_chat_mem_chars: int, clear: bool = False):
     """
     Обрезает историю диалога, если её объём превышает max_chat_mem_chars.
     Реализовано через поиск индекса, с которого нужно сохранить историю, 
     и последующую обрезку списка.
+    clear = True - удалить сначала все Parts в которых не текст а вызов функций итп
     """
+    if clear:
+        mem = clear_non_text_parts(mem)
+            
     total_chars = 0
     # Индекс, с которого мы будем сохранять историю.
     # Если вся история помещается в лимит, он останется равен 0.
@@ -457,7 +497,7 @@ def chat(
                 mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
                 # Удаляем старые картинки, остается только последняя если она не была дольше чем 5 запросов назад
                 remove_old_pics(mem)
-                trim_mem(mem, max_chat_mem_chars)
+                trim_mem(mem, max_chat_mem_chars, clear = True)
                 # если на границе памяти находится вызов функции а не запрос юзера
                 # то надо подрезать. начинаться должно с запроса юзера
                 if mem and mem[0].role == 'user' and hasattr(mem[0].parts[0], 'text') and not mem[0].parts[0].text:

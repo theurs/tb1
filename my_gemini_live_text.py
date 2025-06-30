@@ -71,7 +71,7 @@ async def query_text_(
     """
     try:
         if n_try < 1:
-            my_log.log2('my_gemini_live_text:query_text_: n_try < 1')
+            my_log.log2('my_gemini_live_text:query_text_:1: n_try < 1')
             return ''
 
         client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'api_version': 'v1alpha'})
@@ -126,11 +126,11 @@ async def query_text_(
         config = types.LiveConnectConfig(
             temperature=temperature,
             response_modalities=["TEXT"],
-            speech_config=types.SpeechConfig(
-                voice_config=types.VoiceConfig(
-                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name='Leda')
-                )
-            ),
+            # speech_config=types.SpeechConfig(
+            #     voice_config=types.VoiceConfig(
+            #         prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name='Leda')
+            #     )
+            # ),
             system_instruction=system_,
             # tools=SKILLS # не работают автоматически?
         )
@@ -154,7 +154,10 @@ async def query_text_(
                                 resp += part.text
 
         except Exception as e:
-            my_log.log2('my_gemini_live_text:query_text_: ' + str(e))
+            if 'invalid frame payload data' in str(e):
+                my_log.log2('my_gemini_live_text:query_text_:2: ' + str(e) + '\n\n' + str(mem))
+            else:
+                my_log.log2('my_gemini_live_text:query_text_:3: ' + str(e))
             return ''
 
         resp = resp.strip()
@@ -167,7 +170,7 @@ async def query_text_(
 
         return resp
     except Exception as e:
-        my_log.log2('my_gemini_live_text:query_text_:unexpected: ' + str(e))
+        my_log.log2('my_gemini_live_text:query_text_:4:unexpected: ' + str(e))
         return ''
 
 

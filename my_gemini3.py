@@ -369,37 +369,38 @@ def parse_content_response(response: GenerateContentResponse) -> tuple[list[dict
 
 def clear_non_text_parts(mem: list) -> list:
     """
-    Проходит по истории сообщений и заменяет все нетекстовые parts 
-    (FunctionCall, FunctionResponse) на их строковое представление,
-    объединяя все parts в один текстовый part для каждого сообщения.
-    Это делает историю "безопасной" для моделей, не поддерживающих функции.
+    Проходит по истории сообщений и отфильтровывает все нетекстовые parts.
+    Если сообщение после фильтрации не содержит текстовых parts, то оно удаляется
+    из истории. Оставшиеся текстовые parts объединяются в один.
     """
-    # Мы не можем изменять список, по которому итерируемся, без побочных эффектов.
-    # Поэтому проходим по копии индексов.
-    for i in range(len(mem)):
-        message = mem[i]
-
+    new_mem = []
+    for message in mem:
+        # Пропускаем сообщения, у которых нет parts или они пустые
         if not hasattr(message, 'parts') or not message.parts:
             continue
 
-        # Собираем текстовое представление для КАЖДОГО part'а
-        all_texts = []
-        for part in message.parts:
-            # Если в part'е есть текст, берем его.
-            # Если нет (это FunctionCall и т.п.), то преобразуем ВЕСЬ part в строку.
-            if hasattr(part, 'text') and part.text:
-                all_texts.append(part.text)
-            else:
-                all_texts.append(str(part))
-
-        # Склеиваем все полученные строки в одну
-        combined_text = "\n".join(all_texts)
-
-        # Заменяем старый список parts одним-единственным текстовым part'ом
-        # Важно взять класс Part из существующего элемента, чтобы создать новый
+        text_parts_content = []
+        # Класс Part берем из первого элемента, так как мы знаем, что parts не пуст
         PartClass = type(message.parts[0])
-        message.parts = [PartClass(text=combined_text)]
 
+        for part in message.parts:
+            # Если в part'е есть текст и он не пустой, добавляем его
+            if hasattr(part, 'text') and part.text:
+                text_parts_content.append(part.text)
+
+        # Если после фильтрации текстовых parts не осталось, пропускаем это сообщение
+        if not text_parts_content:
+            continue
+
+        # Объединяем все найденные текстовые части
+        combined_text = "\n".join(text_parts_content)
+
+        # Заменяем старый список parts одним новым текстовым part'ом
+        message.parts = [PartClass(text=combined_text)]
+        new_mem.append(message)
+
+    # Обновляем исходный список mem, чтобы изменения были "на месте"
+    mem[:] = new_mem
     return mem
 
 

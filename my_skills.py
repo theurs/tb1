@@ -231,7 +231,7 @@ def tts(user_id: str) -> str:
     '''
     user_id = restore_id(user_id)
     my_log.log_gemini_skills(f'/tts {user_id}')
-    return "When generating an audio message for the user, your output must be exclusively the /tts command in the format /tts [lang ru en etc] [speed +-100%] [text], with absolutely no preceding or additional explanatory text, because this exact message is directly processed by the external audio generation system for delivery to the user. For example: /tts en +50% Hello, how are you? Do NOT respond with text like 'Here is your audio: /tts en +50% Hello, how are you?' as this will fail."
+    return "When generating an audio message for the user, your output must be exclusively the /tts command in the format /tts [lang ru en etc] [speed +-100%] [text], with absolutely no preceding or additional explanatory text, because this exact message is directly processed by the external audio generation system for delivery to the user. For example: /tts en +50% Hello, how are you? Do NOT respond with text like 'Here is your audio: /tts en +50% Hello, how are you?' as this will fail. User can change voices with `/config` command."
 
 
 def speech_to_text(user_id: str) -> str:
@@ -723,90 +723,6 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
         traceback_error = traceback.format_exc()
         my_log.log_gemini_skills_save_docs(f'save_to_docx: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
         return f"FAIL: An unexpected error occurred: {error}"
-
-
-# def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
-#     '''
-#     Send excel file to user. This updated function supports multiple sheets within a single Excel file.
-#     Args:
-#         filename: str - The desired file name for the Excel file (e.g., 'report').
-#         data: dict - A dictionary where keys are sheet names (str) and values are dictionaries
-#                      that can be converted to pandas DataFrames. Each inner dictionary represents
-#                      the data for a single sheet.
-#                      Example:
-#                      {
-#                          'Sheet1': {'Name':['John', 'Anna'], 'Age':[28,24]},
-#                          'Sheet2': {'Product':['Laptop', 'Mouse'], 'Price':[1200, 25]}
-#                      }
-#                      If 'data' is an empty dictionary, a single empty sheet named "Sheet1" will be created.
-#         chat_id: str - The Telegram user chat ID where the file should be sent.
-#     Returns:
-#         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
-#     '''
-#     try:
-#         my_log.log_gemini_skills_save_docs(f'save_to_excel {chat_id}\n\n {data}')
-
-#         chat_id = restore_id(chat_id)
-#         if chat_id == '[unknown]':
-#             return "FAIL, unknown chat id"
-
-#         # Ensure filename has .xlsx extension and is safe
-#         if not filename.lower().endswith('.xlsx'):
-#             filename += '.xlsx'
-#         filename = utils.safe_fname(filename)
-
-#         excel_buffer = io.BytesIO()
-
-#         # Use pandas.ExcelWriter to write multiple sheets to the same Excel file
-#         with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-#             # If the provided data dictionary is empty, create a single empty sheet
-#             if not data:
-#                 pd.DataFrame({}).to_excel(writer, sheet_name="Sheet1", index=False)
-#             else:
-#                 # Iterate through each sheet's data provided in the 'data' dictionary
-#                 for sheet_name, sheet_data in data.items():
-#                     # Validate that sheet_data is a dictionary, as expected for DataFrame creation
-#                     if not isinstance(sheet_data, dict):
-#                         # Log error for invalid data structure (assuming my_log exists)
-#                         my_log.log_gemini_skills_save_docs(f'save_to_excel: Invalid sheet data type for sheet "{sheet_name}". Expected dict, got {type(sheet_data)}')
-#                         return f"FAIL: Invalid data for sheet '{sheet_name}'. Expected a dictionary for sheet content."
-
-#                     try:
-#                         # Convert the sheet's data dictionary into a pandas DataFrame
-#                         df = pd.DataFrame(sheet_data)
-#                         # Write the DataFrame to the Excel writer as a new sheet
-#                         df.to_excel(writer, sheet_name=sheet_name, index=False)
-#                     except Exception as sheet_write_error:
-#                         # Log error for specific sheet write failure (assuming my_log and traceback exist)
-#                         my_log.log_gemini_skills_save_docs(f'save_to_excel: Error writing sheet "{sheet_name}": {sheet_write_error}\n\n{traceback.format_exc()}')
-#                         return f"FAIL: Error writing data to sheet '{sheet_name}': {sheet_write_error}"
-
-#         # After all sheets are written, get the bytes from the buffer
-#         excel_bytes = excel_buffer.getvalue()
-
-#         # If bytes were successfully generated, prepare the item for storage
-#         if excel_bytes:
-#             item = {
-#                 'type': 'excel file',
-#                 'filename': filename,
-#                 'data': excel_bytes,
-#             }
-#             with STORAGE_LOCK:
-#                 if chat_id in STORAGE:
-#                     if item not in STORAGE[chat_id]:
-#                         STORAGE[chat_id].append(item)
-#                 else:
-#                     STORAGE[chat_id] = [item,]
-#             return "OK"
-#         else:
-#             # This case indicates that no Excel data was generated, even after attempting to write.
-#             my_log.log_gemini_skills_save_docs(f'save_to_excel: No Excel data could be generated for chat {chat_id}\n\n{data}')
-#             return "FAIL: No Excel data could be generated."
-
-#     except Exception as error:
-#         traceback_error = traceback.format_exc()
-#         my_log.log_gemini_skills_save_docs(f'save_to_excel: Unexpected error: {error}\n\n{traceback_error}\n\n{data}\n\n{chat_id}')
-#         return f"FAIL: An unexpected error occurred: {error}"
 
 
 def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
@@ -1560,7 +1476,7 @@ def help(user_id: str) -> str:
         /bing - будет рисовать только с помощью Bing image creator
         /flux - будет рисовать только с помощью Flux
         /gem - будет рисовать только с помощью Gemini
-/tts <text to say> - сделать запрос к внешним сервисам на голосовое сообщение
+/tts <text to say> - сделать запрос к внешним сервисам на голосовое сообщение. Юзер может поменять голос в настройках `/command`
 
 Если юзер отправляет боту картинку с подписью то подпись анализируется и либо это воспринимается на запрос на редактирование картинки либо как на ответ по картинке, то есть бот может редактировать картинки, для форсирования этой функции надо в начале подписи использовать восклицательный знак.
 

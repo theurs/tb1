@@ -1,3 +1,4 @@
+# https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/multimodal-live-api/intro_multimodal_live_api_genai_sdk.ipynb
 # Похоже что гугл оставил тут вагон халявы, эта модель отвечает
 # на запросы размером миллион токенов на бесплатном аккаунте
 
@@ -27,7 +28,8 @@ def get_resp(
     model: str = DEFAULT_MODEL,
     temperature: float = 1,
     n_try: int = 3,
-    max_chat_lines: int = 20
+    max_chat_lines: int = 20,
+    timeout: int = 180,
     ) -> str:
     '''
     Синхронный запрос к асинхронной функции query_text_
@@ -40,7 +42,8 @@ def get_resp(
             model=model,
             temperature=temperature,
             n_try=n_try,
-            max_chat_lines=max_chat_lines
+            max_chat_lines=max_chat_lines,
+            timeout=timeout,
         )
     )
 
@@ -53,6 +56,7 @@ async def query_text_(
     temperature: float = 1,
     n_try: int = 3,
     max_chat_lines: int = 20,
+    timeout: int = 180,
     ) -> str:
     """
     Генерирует текстовый ответ на основе предоставленного запроса.
@@ -126,6 +130,10 @@ async def query_text_(
         config = types.LiveConnectConfig(
             temperature=temperature,
             response_modalities=["TEXT"],
+            generation_config=types.GenerationConfig(
+                http_options=types.HttpOptions(timeout=timeout*1000),
+                safety_settings=SAFETY_SETTINGS,
+            ),
             # speech_config=types.SpeechConfig(
             #     voice_config=types.VoiceConfig(
             #         prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name='Leda')
@@ -155,7 +163,10 @@ async def query_text_(
 
         except Exception as e:
             if 'invalid frame payload data' in str(e):
-                my_log.log2('my_gemini_live_text:query_text_:2: ' + str(e) + '\n\n' + str(mem))
+                if 'Unsafe prompt' in str(e):
+                    my_log.log2(f'my_gemini_live_text:query_text_:2: {e} {chat_id}')
+                else:
+                    my_log.log2('my_gemini_live_text:query_text_:2: ' + str(e) + '\n\n' + str(mem))
             else:
                 my_log.log2('my_gemini_live_text:query_text_:3: ' + str(e))
             return ''

@@ -235,17 +235,18 @@ ADMIN_HELP = '''
 
 /sdonate - add or remove stars for a user, it will only be visible in the log that they are virtual
 
-/reset <id>|<id thread> - reset mem for user /reset 123 /reset 12123 123
-/purge <id>|<id thread> - purge dato for user /reset 123 /reset 12123 123
+/addkeys - add gemini API keys for a user for them
 /alang - set language for specific user
 /atemp - <user_id as int> [new temperature]
-/set_stt_mode - mandatory switch user from one stt engine to another
-/set_chat_mode - mandatory switch user from one chatbot to another
-/addkeys - add gemini API keys for a user for them
-/style2 - change style for specific chat
 /drop_subscription - drop user subscription
-/memo_admin - manage user`s memos
 /keys - add keys for specific user
+/load - load mem for specific user
+/memo_admin - manage user`s memos
+/purge <id>|<id thread> - purge dato for user /reset 123 /reset 12123 123
+/reset <id>|<id thread> - reset mem for user /reset 123 /reset 12123 123
+/set_chat_mode - mandatory switch user from one chatbot to another
+/set_stt_mode - mandatory switch user from one stt engine to another
+/style2 - change style for specific chat
 
 Usage: /<command> <user_id>
 

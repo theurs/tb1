@@ -3243,7 +3243,7 @@ def handle_document(message: telebot.types.Message):
                         reset_(message, say = False)
                         for k, v in mem_dict.items():
                             add_to_bots_mem(k, v, chat_id_full)
-                        bot_reply_tr(message, 'Память загруженна из файла.')
+                        bot_reply_tr(message, 'Память загружена из файла.')
                         return
 
                     # если подпись к документу начинается на !tr то это запрос на перевод
@@ -5184,6 +5184,103 @@ def send_debug_history(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:mem: {unknown}\n{traceback_error}')
+
+
+@bot.message_handler(commands=['load'], func=authorized_admin)
+@async_run
+def load_memory_handler(message: telebot.types.Message):
+    """
+    Загружает "память" (историю чата) другого пользователя в текущий чат.
+    Команда доступна только для администраторов.
+
+    Использование: /load_memory <user_id>
+    <user_id> может быть в одном из следующих форматов:
+    - Одно целое число (ID пользователя), например: '12345'. Будет преобразовано в '[12345] [0]'.
+    - Два целых числа, разделенных пробелом (ID пользователя и ID темы), например: '12345 67890'. Будет преобразовано в '[12345] [67890]'.
+    - Строка в формате '[num1] [num2]', например: '[12345] [0]'.
+    """
+    try:
+        current_chat_id_full = get_topic_id(message)
+        lang = get_lang(current_chat_id_full, message)
+
+        arg = message.text.split(maxsplit=1)[1:]
+
+        if not arg:
+            bot_reply_tr(message, 'Использование: /load_memory <user_id>. Укажите ID пользователя, память которого нужно загрузить.', lang)
+            return
+
+        user_id_raw = arg[0].strip()
+        target_user_id_str = ''
+
+        # Проверяем, соответствует ли строка уже формату '[num1] [num2]'
+        match = re.match(r'^\[(\d+)\] \[(\d+)\]$', user_id_raw)
+        if match:
+            target_user_id_str = user_id_raw
+        else:
+            # Попытка разобрать как одно или два числа
+            parts = user_id_raw.split()
+            if len(parts) == 1 and parts[0].isdigit():
+                # Одно число: преобразуем в формат '[num] [0]'
+                target_user_id_str = f'[{parts[0]}] [0]'
+            elif len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+                # Два числа: преобразуем в формат '[num1] [num2]'
+                target_user_id_str = f'[{parts[0]}] [{parts[1]}]'
+            else:
+                # Неверный формат ID пользователя
+                bot_reply_tr(message, 'Неверный формат ID пользователя. Используйте одно число (например, "12345"), два числа (например, "12345 67890") или формат "[num1] [num2]".', lang)
+                return
+
+        # Получаем chat_mode целевого пользователя
+        target_chat_mode = my_db.get_user_property(target_user_id_str, 'chat_mode')
+
+        if not target_chat_mode:
+            bot_reply_tr(message, f'Не удалось определить режим чата для пользователя с ID: {target_user_id_str}. Память не может быть загружена.', lang)
+            return
+
+        # Получаем строковое представление памяти целевого пользователя
+        target_mem_string = ''
+        if 'gemini' in target_chat_mode or 'gemma' in target_chat_mode:
+            # Предполагается, что my_gemini3.get_mem_as_string возвращает строковое представление памяти
+            target_mem_string = my_gemini3.get_mem_as_string(target_user_id_str, model=target_chat_mode)
+        elif target_chat_mode == 'openrouter':
+            target_mem_string = my_openrouter.get_mem_as_string(target_user_id_str)
+        elif target_chat_mode == 'llama4_maverick':
+            target_mem_string = my_openrouter_free.get_mem_as_string(target_user_id_str)
+        elif target_chat_mode == 'mistral' or target_chat_mode == 'magistral':
+            target_mem_string = my_mistral.get_mem_as_string(target_user_id_str)
+        elif target_chat_mode.startswith('gpt-4') or target_chat_mode.startswith('deepseek'):
+            target_mem_string = my_github.get_mem_as_string(target_user_id_str)
+        elif target_chat_mode == 'cohere':
+            target_mem_string = my_cohere.get_mem_as_string(target_user_id_str)
+        else:
+            bot_reply_tr(message, f'Неизвестный режим чата ({target_chat_mode}) для пользователя с ID: {target_user_id_str}. Невозможно загрузить память.', lang)
+            return
+
+        if not target_mem_string:
+            bot_reply_tr(message, f'У пользователя с ID: {target_user_id_str} нет сохраненной памяти для текущего режима чата.', lang)
+            return
+
+        # Конвертируем строковое представление памяти в mem_dict
+        # Предполагается, что utils_llm.text_to_mem_dict может обработать этот формат
+        # и что он доступен в текущем контексте (как показано в примере "load").
+        mem_dict = utils_llm.text_to_mem_dict(target_mem_string)
+
+        # Очищаем текущую память чата
+        # Предполагается, что reset_() сбрасывает текущую активную память бота
+        reset_(message, say=False) # 'say=False' чтобы не отправлять сообщение о сбросе
+
+        # Загружаем полученную память в текущий чат
+        # Предполагается, что add_to_bots_mem добавляет элементы в текущую память бота
+        for k, v in mem_dict.items():
+            add_to_bots_mem(k, v, current_chat_id_full)
+
+        bot_reply_tr(message, f'Память успешно загружена из пользователя с ID: {target_user_id_str}.', lang)
+
+    except Exception as unknown:
+        # В случае ошибки, выводим её. В реальном приложении здесь может быть логирование.
+        traceback_error = traceback.format_exc() # Если доступны, можно использовать для подробного лога
+        my_log.log2(f'tb:load_memory_handler: {unknown}\n{traceback_error}')
+        bot_reply_tr(message, f'Произошла ошибка при загрузке памяти: {unknown}', lang)
 
 
 @bot.message_handler(commands=['restart', 'reboot'], func=authorized_admin)

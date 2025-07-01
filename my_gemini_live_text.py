@@ -130,10 +130,6 @@ async def query_text_(
         config = types.LiveConnectConfig(
             temperature=temperature,
             response_modalities=["TEXT"],
-            generation_config=types.GenerationConfig(
-                http_options=types.HttpOptions(timeout=timeout*1000),
-                safety_settings=SAFETY_SETTINGS,
-            ),
             # speech_config=types.SpeechConfig(
             #     voice_config=types.VoiceConfig(
             #         prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name='Leda')

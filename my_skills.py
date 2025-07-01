@@ -224,6 +224,7 @@ def tts(user_id: str) -> str:
     '''
     Generate and send audio message from text to user.
     Use it only if asked by user to generate audio from text.
+    To change voice user can use `/config` command
     Args:
         text: str - text to say (up to 8000 symbols)
         lang: str - language code, default is 'ru'

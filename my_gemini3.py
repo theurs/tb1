@@ -504,32 +504,32 @@ def chat(
         None: The function catches and logs exceptions internally, returning an empty string on failure.
     """
     try:
-        # # лайв модель по другому работает но с той же памятью
-        # if model in (my_gemini_live_text.DEFAULT_MODEL, my_gemini_live_text.FALLBACK_MODEL):
-        #     if chat_id:
-        #         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
-        #         # Удаляем старые картинки, остается только последняя если она не была дольше чем 5 запросов назад
-        #         remove_old_pics(mem)
-        #         trim_mem(mem, max_chat_mem_chars, clear = True)
-        #         # если на границе памяти находится вызов функции а не запрос юзера
-        #         # то надо подрезать. начинаться должно с запроса юзера
-        #         if mem and mem[0].role == 'user' and hasattr(mem[0].parts[0], 'text') and not mem[0].parts[0].text:
-        #             mem = mem[2:]
-        #         validate_mem(mem)
-        #     else:
-        #         mem = []
-        #     if mem:
-        #         my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(mem))
-        #     my_gemini_live_text.SYSTEM_ = SYSTEM_
-        #     return my_gemini_live_text.get_resp(
-        #         query,
-        #         chat_id=chat_id,
-        #         system=system,
-        #         model=model,
-        #         temperature=temperature,
-        #         n_try=3,
-        #         max_chat_lines=max_chat_lines
-        #     )
+        # лайв модель по другому работает но с той же памятью
+        if model in (my_gemini_live_text.DEFAULT_MODEL, my_gemini_live_text.FALLBACK_MODEL):
+            if chat_id:
+                mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
+                # Удаляем старые картинки, остается только последняя если она не была дольше чем 5 запросов назад
+                remove_old_pics(mem)
+                trim_mem(mem, max_chat_mem_chars, clear = True)
+                # если на границе памяти находится вызов функции а не запрос юзера
+                # то надо подрезать. начинаться должно с запроса юзера
+                if mem and mem[0].role == 'user' and hasattr(mem[0].parts[0], 'text') and not mem[0].parts[0].text:
+                    mem = mem[2:]
+                validate_mem(mem)
+            else:
+                mem = []
+            if mem:
+                my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(mem))
+            my_gemini_live_text.SYSTEM_ = SYSTEM_
+            return my_gemini_live_text.get_resp(
+                query,
+                chat_id=chat_id,
+                system=system,
+                model=model,
+                temperature=temperature,
+                n_try=3,
+                max_chat_lines=max_chat_lines
+            )
 
 
         # if 'flash-lite' in model:

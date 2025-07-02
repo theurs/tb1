@@ -168,7 +168,18 @@ def text_to_image(prompt: str) -> str:
 
     '''
     my_log.log_gemini_skills_img(f'/img "{prompt}"')
-    return "The function itself does not return an image. It returns a string containing instructions for the assistant. The assistant must send a new message, starting with the /img command, followed by a space, and then the prompt provided, up to 100 words. This specific message format will be automatically recognized by an external system as a request to generate and send an image to the user."
+    return (
+        "The function itself does not return an image. It returns a string containing "
+        "instructions for the assistant. The assistant must send a new message, starting "
+        "with the /img command, followed by a space, and then the prompt provided, up to "
+        "100 words. This specific message format will be automatically recognized by an "
+        "external system as a request to generate and send an image to the user. "
+        "You can also use the commands /flux <prompt> and /gem <1-4> <prompt> and /bing <prompt> for image generation. "
+        "Flux draws one picture using the flux-dev model, gem draws several pictures using the Gemini model, "
+        "bing draws 1-4 pictures using the DALL·E 3 model. /img draws 4 pictures with Bing + 2 with Gemini, "
+        "and if none could be drawn, it tries to draw one with Flux. Gemini is the only one that "
+        "can properly draw text and celebrities, Flux is the most uninhibited and accurate. Bing is the best but most restricted."
+    )
 
 
 def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:

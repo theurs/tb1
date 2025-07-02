@@ -682,10 +682,10 @@ def img2txt(
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter'
 
-                if not text and chat_mode == 'llama4_maverick':
-                    text = my_openrouter_free.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'llama4_maverick'
+                # if not text and chat_mode == 'llama4_maverick':
+                #     text = my_openrouter_free.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                #     if text:
+                #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'llama4_maverick'
 
                 elif not text and chat_mode == 'gpt-4o':
                     text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_MODEL, system=system_message, timeout=timeout)
@@ -821,11 +821,11 @@ def img2txt(
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
 
-            # llama-4-maverick
-            if not text:
-                text = my_openrouter_free.img2txt(data, query, model = 'meta-llama/llama-4-maverick:free', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'meta-llama/llama-4-maverick:free'
+            # # llama-4-maverick
+            # if not text:
+            #     text = my_openrouter_free.img2txt(data, query, model = 'meta-llama/llama-4-maverick:free', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+            #     if text:
+            #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'meta-llama/llama-4-maverick:free'
 
             # llama-4-maverick at groq
             if not text:

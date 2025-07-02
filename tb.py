@@ -2608,7 +2608,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                                 text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
         if call.data.startswith('select_'):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+                                text = MSG_CONFIG, disable_web_page_preview = True, reply_markup=get_keyboard('config', message))
     except Exception as unexpected_error:
         if 'Bad Request: message is not modified' in str(unexpected_error) or \
            'Bad Request: message to be replied not found' in str(unexpected_error) or \
@@ -9517,18 +9517,18 @@ def do_task(message, custom_prompt: str = ''):
                                 WHO_ANSWERED[chat_id_full] = gmodel
 
 
-                            # если обычное джемини не ответили (перегруз?) то попробовать лайв версию
-                            if not answer:
-                                gmodel = cfg.gemini_flash_live_model
-                                answer = my_gemini3.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temp,
-                                    model = gmodel,
-                                    system = hidden_text,
-                                    use_skills=True
-                                )
-                                WHO_ANSWERED[chat_id_full] = gmodel
+                            # # если обычное джемини не ответили (перегруз?) то попробовать лайв версию
+                            # if not answer:
+                            #     gmodel = cfg.gemini_flash_live_model
+                            #     answer = my_gemini3.chat(
+                            #         message.text,
+                            #         chat_id_full,
+                            #         temp,
+                            #         model = gmodel,
+                            #         system = hidden_text,
+                            #         use_skills=True
+                            #     )
+                            #     WHO_ANSWERED[chat_id_full] = gmodel
 
 
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ

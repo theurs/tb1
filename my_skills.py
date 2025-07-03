@@ -373,6 +373,7 @@ def save_chart_and_graphs_to_image(user_id: str) -> str:
     return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. When generating an graphs and charts message for the user, your output must be exclusively the /calc command in the format /calc [query], with absolutely no preceding or additional explanatory text, because this exact message is directly processed by the drawing system for delivery to the user. For example: /calc 'draw x=y^2'. Do NOT respond with text like 'Here is your query: /calc draw x=y^2 ' as this will fail."
 
 
+# не используется но возможно потребуются когда groq перестанет работать
 def save_chart_and_graphs_to_image_(prompt: str, filename: str, user_id: str) -> str:
     '''
     Send a charts to telegram user. Any visual plots.
@@ -417,6 +418,7 @@ def save_chart_and_graphs_to_image_(prompt: str, filename: str, user_id: str) ->
     return 'FAILED'
 
 
+# не используется но возможно потребуются когда groq перестанет работать
 def save_pandas_chart_to_image_(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:
     '''
     Send a chart generated from Pandas data as an image file to the user.

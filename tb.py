@@ -57,6 +57,7 @@ import my_plantweb
 import my_skills
 import my_stat
 import my_stt
+import my_svg
 import my_sum
 import my_tavily
 import my_qrcode
@@ -68,13 +69,6 @@ import my_zip
 import utils
 import utils_llm
 from utils import async_run
-
-try:
-    import cairosvg
-except Exception as error:
-    # no library called "cairo" was found
-    # cannot load library 'C:\Program Files\Tesseract-OCR\libcairo-2.dll': error 0x7f
-    my_log.log2(f'Error importing cairosvg: {error}')
 
 
 START_TIME = time.time()
@@ -3315,7 +3309,7 @@ def handle_document(message: telebot.types.Message):
                             if message.document.file_name.lower().endswith('.psd'):
                                 image = my_psd.convert_psd_to_jpg(file_bytes.read())
                             elif message.document.mime_type == 'image/svg+xml':
-                                image = cairosvg.svg2png(file_bytes.read(), output_width=2048)
+                                image = my_svg.convert_svg_to_png_bytes(file_bytes.read())
                             else:
                                 bot_reply_tr(message, f'Unknown image type {message.document.mime_type}')
                                 return

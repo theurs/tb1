@@ -1,5 +1,4 @@
 # pip install svglib pycairo
-# sudo apt-get install libcairo2 libcairo2-dev
 
 
 import io

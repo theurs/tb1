@@ -188,7 +188,7 @@ def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:
 
     Args:
         text: str - text to generate qrcode from
-        logo_url: str - url to logo image, use 'DEFAULT' or empty string for default logo.
+        logo_url: str - url to logo image, use 'DEFAULT' or empty string for default logo, any image including svg is supported.
         user_id: str - user id
     Returns:
         str: 'OK' or error message

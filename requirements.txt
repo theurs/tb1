@@ -84,6 +84,7 @@ python-pptx
 re_edge_gpt
 
 requests[socks]
+reportlab[renderPM]
 
 segno
 sqlitedict

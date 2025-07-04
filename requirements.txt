@@ -66,6 +66,7 @@ playwright
 prettytable
 psd-tools
 pyarrow
+pycairo
 Pygments
 pydub
 pylatexenc
@@ -88,6 +89,7 @@ segno
 sqlitedict
 SpeechRecognition
 simpleeval
+svglib
 
 tavily-python
 trafilatura

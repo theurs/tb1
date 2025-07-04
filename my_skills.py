@@ -46,8 +46,8 @@ import my_mermaid
 import my_mistral
 import my_pandoc
 import my_plantweb
-# import my_tts
 import my_sum
+import my_svg
 import my_qrcode_generate
 import utils
 
@@ -200,6 +200,8 @@ def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:
 
         if logo_url != 'DEFAULT' and logo_url:
             logo_data = utils.download_image_as_bytes(logo_url)
+            if logo_url.lower().endswith('.svg'):
+                logo_data = my_svg.convert_svg_to_png_bytes(logo_data)
             if not logo_data:
                 return "Failed to download logo image."
         elif logo_url == 'DEFAULT':

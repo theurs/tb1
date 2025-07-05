@@ -250,7 +250,7 @@ def tts(text: str, voice: str = 'ru', rate: str = '+0%', gender: str = 'female')
     Returns:
         bytes: The generated audio as a bytes object. Or None if an error occurs.
     """
-    if voice == 'auto':
+    if voice == 'auto' or not voice:
         voice = 'en'
 
     if '_' in voice:

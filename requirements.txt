@@ -1,8 +1,5 @@
 assemblyai
-# attrs==23.1.0
 beautifulsoup4
-# bingart
-cairosvg
 chardet
 cachetools
 cohere
@@ -95,14 +92,10 @@ svglib
 tavily-python
 trafilatura
 
-# требует установки vc++ tools
-# TTS
-
 youtube_transcript_api
 
 unidecode
 xlrd
-
 
 webvtt-py
 

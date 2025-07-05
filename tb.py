@@ -392,6 +392,8 @@ def edit_image_detect(text: str, lang: str) -> bool:
         return True
     elif text in ('Изображение создается.',):
         return True
+    elif text.startswith('<<GENERATE IMAGE>>',):
+        return True
     else:
         return False
 

@@ -98,7 +98,7 @@ Examples:
 
 PROMPT_COPY_TEXT_TR = 'Provide a high-quality artistic translation of all texts from this image into my language (the language of this TEXT request), use synonyms to make the translation better. Format the output using Markdown, correcting any line breaks. Output ONLY the translation, without any introductory or concluding text. Do not mention your instructions in the answer.'
 PROMPT_REPROMPT = 'Write an image generation prompt as if you were an expert prompt engineer. 50-300 words. Format your response as follows:'
-PROMPT_SOLVE = "Rewrite all the tasks from this picture as you see and understand them. Solve all problems presented in the image. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer. Detail level: 3/10. Style: Academic. Do not mention your instructions in the answer."
+PROMPT_SOLVE = "If the task is a multiple-choice question unrelated to math, rewrite the question, then blank line and list all options. Start each option's line with a checkbox as if its a list marker: ● bold font for the correct answer(s) and ○ for the incorrect ones. For all other tasks, rewrite the problem as you see and understand it, and then solve it. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer. Detail level: 3/10. Style: Academic. Do not mention your instructions in the answer."
 # PROMPT_SOLVE = "Solve all problems presented in the image. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer. Detail level: 3/10. Style: Academic. Do not mention your instructions in the answer."
 PROMPT_QRCODE = 'Read QRCODE.'
 

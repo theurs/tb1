@@ -41,6 +41,7 @@ from textwrap import wrap
 
 import cfg
 import my_log
+import my_svg
 
 
 register_heif_opener()
@@ -1612,30 +1613,35 @@ def get_filename_from_url(url: str) -> str:
     return os.path.basename(url)
 
 
-def download_image_as_bytes(url_or_urls: str) -> bytes:
-    """Загружает изображение(я) по URL-адресу(ам) и возвращает его(их) в виде байтов.
-
-    Args:
-        url_or_urls: URL-адрес изображения или список URL-адресов изображений.
-
-    Returns:
-        Изображение в виде байтов или список изображений в виде байтов.
+def download_image_as_bytes(url_or_urls: str | list[str]) -> bytes | list[bytes]:
     """
+    Загружает изображение(я) по URL и возвращает в виде байтов.
 
-    if isinstance(url_or_urls, str):
-        try:
-            response = requests.get(url_or_urls, timeout=15)
-        except Exception as error:
-            return b''
-        return response.content
-
-    elif isinstance(url_or_urls, list):
+    Принимает один URL (str) или список URL (list).
+    При обработке списка возвращает только успешно загруженные изображения.
+    """
+    if isinstance(url_or_urls, list):
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = list(executor.map(lambda url: requests.get(url, timeout=30).content if requests.get(url, timeout=30).status_code == 200 else None, url_or_urls))
-        return results
+            results = list(executor.map(download_image_as_bytes, url_or_urls))
+        # Возвращаем список, отфильтровав из него пустые байты (b'')
+        return [result for result in results if result]
+    elif isinstance(url_or_urls, str):
+        url = url_or_urls
+        try:
+            response = requests.get(url, timeout=15)
+            response.raise_for_status()
+            content = response.content
+            if url.lower().endswith('.svg'):
+                content = my_svg.convert_svg_to_png_bytes(content)
+            return content
+        except requests.exceptions.RequestException:
+            # В случае ошибки сети или HTTP-статуса просто возвращаем пустышку
+            return b''
+        except Exception:
+            # На случай других ошибок, например, в SVG конвертере
+            return b''
 
-    else:
-        return b''
+    return b''
 
 
 def download_image_for_thumb(url: str) -> bytes:

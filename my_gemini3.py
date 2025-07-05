@@ -26,7 +26,7 @@ from google.genai.types import (
 
 import cfg
 import my_db
-import my_gemini
+import my_gemini_general
 import my_gemini_live_text
 import my_log
 import my_skills
@@ -97,7 +97,7 @@ def get_config(
     temperature: float = 1,
     tools: list = None,
     THINKING_BUDGET: int = -1,
-    timeout: int = my_gemini.TIMEOUT,
+    timeout: int = my_gemini_general.TIMEOUT,
     json_output: bool = False,
     ):
     # google_search_tool = Tool(google_search=GoogleSearch())
@@ -147,7 +147,7 @@ def img2txt(
     chat_id: str = '',
     use_skills: str = False,
     system: str = '',
-    timeout: int = my_gemini.TIMEOUT,
+    timeout: int = my_gemini_general.TIMEOUT,
     ) -> str:
     '''
     Convert image to text.
@@ -469,9 +469,9 @@ def chat(
     model: str = '',
     system: str = '',
     max_tokens: int = 8000,
-    max_chat_lines: int = my_gemini.MAX_CHAT_LINES,
-    max_chat_mem_chars: int = my_gemini.MAX_CHAT_MEM_CHARS,
-    timeout: int = my_gemini.TIMEOUT,
+    max_chat_lines: int = my_gemini_general.MAX_CHAT_LINES,
+    max_chat_mem_chars: int = my_gemini_general.MAX_CHAT_MEM_CHARS,
+    timeout: int = my_gemini_general.TIMEOUT,
     use_skills: bool = False,
     THINKING_BUDGET: int = -1,
     json_output: bool = False,
@@ -547,9 +547,9 @@ def chat(
             THINKING_BUDGET = -1
 
         if isinstance(query, str):
-            query = query[:my_gemini.MAX_SUM_REQUEST]
+            query = query[:my_gemini_general.MAX_SUM_REQUEST]
         if isinstance(query, list):
-            query[0] = query[0][:my_gemini.MAX_SUM_REQUEST]
+            query[0] = query[0][:my_gemini_general.MAX_SUM_REQUEST]
 
         if temperature < 0:
             temperature = 0
@@ -618,7 +618,7 @@ def chat(
                 if key__:
                     key = key__
                 else:
-                    key = my_gemini.get_next_key()
+                    key = my_gemini_general.get_next_key()
                 client = genai.Client(api_key=key, http_options={'timeout': timeout * 1000})
                 if use_skills:
                     if 'flash-lite' in model:
@@ -682,7 +682,7 @@ def chat(
                     my_log.log_gemini(f'my_gemini3:chat:2: {str(error)} {model} {key}')
                     return ''
                 elif 'API key expired. Please renew the API key.' in str(error) or '429 Quota exceeded for quota metric' in str(error):
-                    my_gemini.remove_key(key)
+                    my_gemini_general.remove_key(key)
                 elif 'timeout' in str(error).lower():
                     my_log.log_gemini(f'my_gemini3:chat:timeout: {str(error)} {model} {key}')
                     return ''
@@ -743,7 +743,7 @@ def chat(
                         'filename': image['filename'],
                         'data': image['data'],
                     }
-                    with my_skills.STORAGE_LOCK:
+                    with my_skills_storage.STORAGE_LOCK:
                         if chat_id in my_skills_storage.STORAGE:
                             if item not in my_skills_storage.STORAGE[chat_id]:
                                 my_skills_storage.STORAGE[chat_id].append(item)
@@ -833,8 +833,8 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
     mem.append(u)
     mem.append(c)
 
-    mem = mem[-my_gemini.MAX_CHAT_LINES*2:]
-    while count_chars(mem) > my_gemini.MAX_CHAT_MEM_CHARS:
+    mem = mem[-my_gemini_general.MAX_CHAT_LINES*2:]
+    while count_chars(mem) > my_gemini_general.MAX_CHAT_MEM_CHARS:
         mem = mem[2:]
 
     if chat_id:
@@ -845,11 +845,11 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
 def force(chat_id: str, text: str, model: str = ''):
     '''update last bot answer with given text'''
     try:
-        if chat_id in my_gemini.LOCKS:
-            lock = my_gemini.LOCKS[chat_id]
+        if chat_id in my_gemini_general.LOCKS:
+            lock = my_gemini_general.LOCKS[chat_id]
         else:
             lock = threading.Lock()
-            my_gemini.LOCKS[chat_id] = lock
+            my_gemini_general.LOCKS[chat_id] = lock
         with lock:
             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
             # remove last bot answer and append new
@@ -877,11 +877,11 @@ def undo(chat_id: str, model: str = ''):
         None
     """
     try:
-        if chat_id in my_gemini.LOCKS:
-            lock = my_gemini.LOCKS[chat_id]
+        if chat_id in my_gemini_general.LOCKS:
+            lock = my_gemini_general.LOCKS[chat_id]
         else:
             lock = threading.Lock()
-            my_gemini.LOCKS[chat_id] = lock
+            my_gemini_general.LOCKS[chat_id] = lock
         with lock:
             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
             # remove 2 last lines from mem
@@ -1118,7 +1118,7 @@ def convert_mem(chat_id: str):
     Берет из базы память в формате для лламы, реконструирует для dialog_gemini3 и сохраняет
     '''
     try:
-        mem = my_gemini.get_mem_for_llama(chat_id, lines_amount=10)
+        mem = my_gemini_general.get_mem_for_llama(chat_id, lines_amount=10)
         new_mem = []
 
         # проходим по памяти берем по 2 элемента - запрос и ответ
@@ -1309,7 +1309,7 @@ def list_models(include_context: bool = False):
     '''
     Lists all available models.
     '''
-    client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'timeout': 20 * 1000})
+    client = genai.Client(api_key=my_gemini_general.get_next_key(), http_options={'timeout': 20 * 1000})
 
     result = []
     for model in client._models.list():
@@ -1337,7 +1337,7 @@ def test_new_key(key: str, chat_id_full: str) -> bool:
         bool: True if the key is valid, False otherwise.
     """
     try:
-        if key in my_gemini.REMOVED_KEYS:
+        if key in my_gemini_general.REMOVED_KEYS:
             return False
 
         result = chat(
@@ -1374,7 +1374,7 @@ def converts_all_mems():
 
 if __name__ == "__main__":
     my_db.init(backup=False)
-    my_gemini.load_users_keys()
+    my_gemini_general.load_users_keys()
 
     # один раз запустить надо
     # converts_all_mems()

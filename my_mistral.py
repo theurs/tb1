@@ -16,6 +16,7 @@ from sqlitedict import SqliteDict
 import cfg
 import my_db
 import my_log
+import my_skills_general
 import utils
 
 
@@ -53,9 +54,9 @@ MAX_SUM_REQUEST = 100000
 
 
 DEFAULT_MODEL = 'mistral-large-latest'
+FALLBACK_MODEL = 'mistral-medium-latest'
 CODE_MODEL = 'codestral-latest'
 CODE_MODEL_FALLBACK = 'codestral-2405'
-FALLBACK_MODEL = 'mistral-small-latest'
 VISION_MODEL = 'pixtral-large-latest'
 SMALL_MODEL = 'mistral-small-latest'
 MEDIUM_MODEL = 'mistral-medium-latest'
@@ -101,6 +102,15 @@ def calculator(expression: str):
 available_tools = {
     "get_weather": get_weather,
     "calculator": calculator,
+
+    "help": my_skills_general.help,
+    "text_to_image": my_skills_general.text_to_image,
+    "text_to_qrcode": my_skills_general.text_to_qrcode,
+    "tts": my_skills_general.tts,
+    "speech_to_text": my_skills_general.speech_to_text,
+    "translate_text": my_skills_general.translate_text,
+    "translate_documents": my_skills_general.translate_documents,
+    "edit_image": my_skills_general.edit_image,
 }
 
 
@@ -191,7 +201,7 @@ def ai(
         model = DEFAULT_MODEL
 
     messages = list(mem) if mem is not None else []
-    
+
     # Системные промпты (без изменений)
     now = utils.get_full_time()
     systems = (
@@ -212,20 +222,20 @@ def ai(
     text = ''
     key = ''
     start_time = time.time()
-    
+
     # Внешний цикл для повторных попыток при ошибках сети
     for _ in range(3):
         time_left = timeout - (time.time() - start_time)
         if time_left <= 0:
             my_log.log_mistral(f'ai:0: timeout | {key} | {user_id}\n\n{model}\n\n{prompt}')
             break
-        
+
         try:
             key = get_next_key() if not key_ else key_
             client = openai.OpenAI(api_key=key, base_url=BASE_URL)
-            
+
             # --- Начало новой логики с циклом для многошаговых вызовов ---
-            
+
             MAX_TOOL_CALL_STEPS = 5 # Предохранитель от бесконечных циклов
             for _ in range(MAX_TOOL_CALL_STEPS):
                 
@@ -252,12 +262,12 @@ def ai(
                     time.sleep(1)
                     # Добавляем ответ ассистента (с намерением вызвать инструменты) в историю
                     messages.append(response_message)
-                    
+
                     # Выполняем все запрошенные инструменты
                     for tool_call in tool_calls:
                         function_name = tool_call.function.name
                         function_to_call = available_tools.get(function_name)
-                        
+
                         if function_to_call:
                             try:
                                 function_args = json.loads(tool_call.function.arguments)
@@ -285,19 +295,19 @@ def ai(
                             })
                     # Продолжаем цикл для следующего шага
                     continue
-                
+
                 # Если вызовов инструментов нет - это финальный ответ
                 else:
                     text = response_message.content.strip() if response_message.content else ''
                     break # Выходим из цикла многошаговых вызовов
-            
+
             # --- Конец новой логики ---
 
             if text:
                 if user_id:
                     my_db.add_msg(user_id, model)
                 break  # Выходим из внешнего цикла повторных попыток
-            
+
             # Если вышли из цикла по лимиту шагов, а текста нет
             if not text:
                  my_log.log_mistral(f'ai: Exceeded max tool steps ({MAX_TOOL_CALL_STEPS}) | {key} | {user_id}')
@@ -314,7 +324,7 @@ def ai(
                 my_log.log_mistral(f'ai:2: {error2} | {key} | {user_id}')
             my_log.log_mistral(f'ai:3: {error2} | {key} | {user_id}\n\n{model}\n\n{prompt}')
             time.sleep(2)
-    
+
     # Вызов резервной модели, если основная не справилась
     if not text and model == DEFAULT_MODEL:
         # Убедимся, что не передаем историю с вызовами инструментов в резервную модель
@@ -574,7 +584,8 @@ def chat(
     system: str = '',
     model: str = '',
     do_not_update_history: bool = False,
-    timeout: int = 120
+    timeout: int = 120,
+    use_skills: bool = False
     ) -> str:
     global LOCKS
     if chat_id in LOCKS:
@@ -586,7 +597,7 @@ def chat(
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
 
         mem_ = mem[:]
-        text = ai(query, mem_, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
+        text = ai(query, mem_, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout, use_skills=use_skills)
 
         if text and not do_not_update_history:
             mem += [{'role': 'user', 'content': query}]
@@ -604,7 +615,7 @@ def chat_cli(model: str = ''):
         if q == 'mem':
             print(get_mem_as_string('test'))
             continue
-        r = chat(q, 'test', model = model, system='отвечай всегда по-русски')
+        r = chat(q, 'test', model = model, system='отвечай всегда по-русски', use_skills = True)
         print(r)
 
 

@@ -11,7 +11,7 @@ from google.genai import types
 import my_db
 import my_log
 
-import my_gemini
+import my_gemini_general
 import my_skills
 import my_skills_storage
 import utils
@@ -79,7 +79,7 @@ async def query_text_(
             my_log.log2('my_gemini_live_text:query_text_:1: n_try < 1')
             return ''
 
-        client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'api_version': 'v1alpha'})
+        client = genai.Client(api_key=my_gemini_general.get_next_key(), http_options={'api_version': 'v1alpha'})
 
         SKILLS = [
             my_skills.calc,

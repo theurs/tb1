@@ -20,6 +20,7 @@ from typing import List, Tuple, Union
 import cfg
 import my_log
 import my_gemini
+import my_gemini_general
 from utils import async_run_with_limit, get_codepage, platform, get_tmp_fname, remove_file, remove_dir
 
 
@@ -205,7 +206,7 @@ def test_count_pages_in_pdf():
 
 
 if __name__ == "__main__":
-    my_gemini.load_users_keys()
+    my_gemini_general.load_users_keys()
     # with open(r"C:\Users\user\Downloads\samples for ai\скан документа.pdf", "rb") as f:
     #     data = f.read()
     #     print(get_text(data))

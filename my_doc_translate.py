@@ -8,6 +8,7 @@ import my_pandoc
 
 import cfg
 import my_db
+import my_gemini_general
 import my_gemini3
 import my_groq
 from utils import async_run_with_limit
@@ -221,7 +222,7 @@ def translate_file_in_dialog(data: bytes, src: str, dst: str, fname: str, chat_i
 if __name__ == '__main__':
     pass
     my_groq.load_users_keys()
-    my_gemini3.my_gemini.load_users_keys()
+    my_gemini_general.load_users_keys()
     my_db.init(backup=False)
 
     with open(r'C:\Users\user\Downloads\samples for ai\короткий текст с богатым форматированием.docx', 'rb') as f:

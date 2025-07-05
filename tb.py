@@ -39,6 +39,7 @@ import my_doc_translate
 import my_github
 import my_google
 import my_gemini
+import my_gemini_general
 import my_gemini3
 import my_gemini_tts
 import my_gemini_genimg
@@ -2504,7 +2505,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # SECONDS_IN_MONTH = 60 * 60 * 24 * 30
             # last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
             # donater = time.time() - last_donate_time < SECONDS_IN_MONTH
-            # if (chat_id_full in my_gemini.USER_KEYS and my_gemini.USER_KEYS[chat_id_full]) or donater:
+            # if (chat_id_full in my_gemini_general.USER_KEYS and my_gemini_general.USER_KEYS[chat_id_full]) or donater:
             #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
             # else:
             #     bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать PRO модель. Команда /keys')
@@ -4013,12 +4014,12 @@ def users_keys_for_gemini(message: telebot.types.Message):
 
             # gemini keys
             keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
-            already_exists = any(key in my_gemini.ALL_KEYS for key in keys)
+            already_exists = any(key in my_gemini_general.ALL_KEYS for key in keys)
             if already_exists:
                 msg = f'{tr("This key has already been added by someone earlier.", lang)} {keys}'
                 keys = []
                 bot_reply(message, msg)
-            keys = [x for x in keys if x not in my_gemini.ALL_KEYS and x.startswith('AIza')]
+            keys = [x for x in keys if x not in my_gemini_general.ALL_KEYS and x.startswith('AIza')]
 
             # mistral keys len = 32 and passed test
             keys_mistral = [x.strip() for x in args[1].split() if len(x.strip()) == 32 and my_mistral.test_key(x)]
@@ -4082,13 +4083,13 @@ def users_keys_for_gemini(message: telebot.types.Message):
 
             if keys:
                 added_flag = False
-                with my_gemini.USER_KEYS_LOCK:
-                    # my_gemini.USER_KEYS[chat_id_full] = keys
+                with my_gemini_general.USER_KEYS_LOCK:
+                    # my_gemini_general.USER_KEYS[chat_id_full] = keys
                     new_keys = []
                     for key in keys:
-                        if key not in my_gemini.ALL_KEYS and key not in cfg.gemini_keys:
+                        if key not in my_gemini_general.ALL_KEYS and key not in cfg.gemini_keys:
                             if my_gemini3.test_new_key(key, chat_id_full):
-                                my_gemini.ALL_KEYS.append(key)
+                                my_gemini_general.ALL_KEYS.append(key)
                                 new_keys.append(key)
                                 added_flag = True
                                 my_log.log_keys(f'Added new api key for Gemini: {chat_id_full} {key}')
@@ -4100,7 +4101,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
                                 msg = tr('Failed to add new API key for Gemini:', lang) + f' {key}'
                                 bot_reply(message, msg)
                 if added_flag:
-                    my_gemini.USER_KEYS[chat_id_full] = new_keys
+                    my_gemini_general.USER_KEYS[chat_id_full] = new_keys
                     bot_reply_tr(message, 'Added keys successfully!')
                     return
 
@@ -4117,7 +4118,7 @@ def users_keys_for_gemini(message: telebot.types.Message):
 
         # показать юзеру его ключи
         if is_private:
-            gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
+            gemini_keys = my_gemini_general.USER_KEYS[chat_id_full] if chat_id_full in my_gemini_general.USER_KEYS else []
             mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
             cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
             github_keys = [my_github.USER_KEYS[chat_id_full],] if chat_id_full in my_github.USER_KEYS else []
@@ -4165,16 +4166,16 @@ def addkeys(message: telebot.types.Message):
         uid = f'[{uid}] [0]'
         key = args[2].strip()
         bot_reply(message, f'{uid} {key}')
-        if key not in my_gemini.ALL_KEYS:
-            my_gemini.ALL_KEYS.append(key)
-            my_gemini.USER_KEYS[uid] = [key,]
+        if key not in my_gemini_general.ALL_KEYS:
+            my_gemini_general.ALL_KEYS.append(key)
+            my_gemini_general.USER_KEYS[uid] = [key,]
             bot_reply_tr(message, 'Added keys successfully!')
         else:
-            for uid_ in [x for x in my_gemini.USER_KEYS.keys()]:
-                if uid_ in my_gemini.USER_KEYS:
-                    if my_gemini.USER_KEYS[uid_] == [key,]:
-                        del my_gemini.USER_KEYS[uid_]
-            my_gemini.USER_KEYS[uid] = [key,]
+            for uid_ in [x for x in my_gemini_general.USER_KEYS.keys()]:
+                if uid_ in my_gemini_general.USER_KEYS:
+                    if my_gemini_general.USER_KEYS[uid_] == [key,]:
+                        del my_gemini_general.USER_KEYS[uid_]
+            my_gemini_general.USER_KEYS[uid] = [key,]
             bot_reply_tr(message, 'Added keys successfully!')
     except Exception as error:
         bot_reply_tr(message, 'Usage: /addkeys <user_id as int> <key>')
@@ -5779,7 +5780,7 @@ def check_vip_user(chat_id_full: str) -> bool:
     '''проверяет есть ли у юзера ключи или звезды'''
     try:
         user_id = utils.extract_user_id(chat_id_full)
-        have_keys = chat_id_full in my_gemini.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
+        have_keys = chat_id_full in my_gemini_general.USER_KEYS or chat_id_full in my_groq.USER_KEYS or \
                 user_id in cfg.admins or \
                 (my_db.get_user_property(chat_id_full, 'telegram_stars') or 0) >= 100
         return have_keys
@@ -5793,7 +5794,7 @@ def check_vip_user_gemini(chat_id_full: str) -> bool:
     '''проверяет есть ли у юзера ключи от gemini'''
     try:
         user_id = utils.extract_user_id(chat_id_full)
-        have_keys = chat_id_full in my_gemini.USER_KEYS or user_id in cfg.admins
+        have_keys = chat_id_full in my_gemini_general.USER_KEYS or user_id in cfg.admins
         return have_keys
     except Exception as error:
         my_log.log2(f'tb:check_vip_user_gemini: {error}\n{chat_id_full}')
@@ -6201,7 +6202,7 @@ def image_gen(message: telebot.types.Message):
         if message.chat.id < 0:
             chat_id_full_from = f'[{message.from_user.id}] [0]'
             user_id = message.from_user.id
-            have_keys = (chat_id_full_from in my_gemini.USER_KEYS and chat_id_full_from in my_groq.USER_KEYS) or \
+            have_keys = (chat_id_full_from in my_gemini_general.USER_KEYS and chat_id_full_from in my_groq.USER_KEYS) or \
                     user_id in cfg.admins or \
                     (my_db.get_user_property(chat_id_full_from, 'telegram_stars') or 0) >= 50
             if not have_keys:
@@ -6454,7 +6455,7 @@ def stats(message: telebot.types.Message):
             msg += f'\nNew users in 7 day: {my_db.count_new_user_in_days(7)}'
             msg += f'\nNew users in 30 day: {my_db.count_new_user_in_days(30)}'
 
-            msg += f'\n\nGemini keys: {len(my_gemini.ALL_KEYS)+len(cfg.gemini_keys)}'
+            msg += f'\n\nGemini keys: {len(my_gemini_general.ALL_KEYS)+len(cfg.gemini_keys)}'
             msg += f'\nGroq keys: {len(my_groq.ALL_KEYS)}'
             msg += f'\nMistral keys: {len(my_mistral.ALL_KEYS)}'
             msg += f'\nCohere keys: {len(my_cohere.ALL_KEYS)}'
@@ -6787,9 +6788,9 @@ def ask_file(message: telebot.types.Message):
 {tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}
 '''
                 temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1
-                result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini25_flash_model, system=role)
+                result = my_gemini.ai(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini25_flash_model, system=role)
                 if not result:
-                    result = my_gemini.ai(q[:my_gemini.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
+                    result = my_gemini.ai(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
                 if not result:
                     result = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST], system=role)
                 if not result:
@@ -7402,7 +7403,7 @@ def id_cmd_handler(message: telebot.types.Message):
         else:
             msg += f'\n\n⭐️ {tstarsmsg} {telegram_stars} /stars'
 
-        gemini_keys = my_gemini.USER_KEYS[chat_id_full] if chat_id_full in my_gemini.USER_KEYS else []
+        gemini_keys = my_gemini_general.USER_KEYS[chat_id_full] if chat_id_full in my_gemini_general.USER_KEYS else []
         groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
         mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
         cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
@@ -7503,7 +7504,7 @@ def reload_module(message: telebot.types.Message):
 
             # реинициализация модуля
             if module_name in ('my_gemini', 'my_gemini3'):
-                my_gemini.load_users_keys()
+                my_gemini_general.load_users_keys()
                 my_skills.init()
             elif module_name == 'my_groq':
                 my_groq.load_users_keys()
@@ -7542,7 +7543,7 @@ def enable_chat(message: telebot.types.Message):
             bot_reply_tr(message, "Use this command to activate bot in public chat.")
             return
         user_full_id = f'[{message.from_user.id}] [0]'
-        admin_have_keys = (user_full_id in my_gemini.USER_KEYS and user_full_id in my_groq.USER_KEYS) or message.from_user.id in cfg.admins
+        admin_have_keys = (user_full_id in my_gemini_general.USER_KEYS and user_full_id in my_groq.USER_KEYS) or message.from_user.id in cfg.admins
 
         if admin_have_keys:
             chat_full_id = get_topic_id(message)
@@ -8567,7 +8568,7 @@ def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -
                 # юзеры у которых есть 2 ключа не требуют подписки,
                 # но если есть звезды то их надо снимать чтоб не копились
                 have_keys = 0
-                if chat_id_full in my_gemini.USER_KEYS:
+                if chat_id_full in my_gemini_general.USER_KEYS:
                     have_keys += 1
                 if chat_id_full in my_groq.USER_KEYS:
                     have_keys += 1
@@ -9726,10 +9727,26 @@ def do_task(message, custom_prompt: str = ''):
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=hidden_text,
                                 model = my_mistral.DEFAULT_MODEL,
+                                use_skills=False,
                             )
 
-                            WHO_ANSWERED[chat_id_full] = 'Mistral Large'
+                            WHO_ANSWERED[chat_id_full] = my_mistral.DEFAULT_MODEL
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if not answer:
+                                answer = my_mistral.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_mistral.FALLBACK_MODEL,
+                                    use_skills=False,
+                                )
+                                WHO_ANSWERED[chat_id_full] = my_mistral.FALLBACK_MODEL
+                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            # отправляем файлы если они были сгенерированы в скилах
+                            send_all_files_from_storage(message, chat_id_full)
 
                             if answer.startswith('The bot successfully generated images on the external services'):
                                 undo_cmd(message, show_message=False)
@@ -10443,7 +10460,7 @@ def main():
 
         load_msgs()
 
-        my_gemini.load_users_keys()
+        my_gemini_general.load_users_keys()
         my_groq.load_users_keys()
         my_mistral.load_users_keys()
         my_cohere.load_users_keys()
@@ -10467,7 +10484,6 @@ def main():
         # import my_gemini_imagen
         # my_gemini_imagen.test_imagen()
         # print(my_gemini3.chat('привет ты как', model = 'gemini-live-2.5-flash-preview', chat_id='test', system='отвечай всегда по-русски'))
-
         # my_gemini3.trim_all()
 
         bot.infinity_polling(timeout=90, long_polling_timeout=90)

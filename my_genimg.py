@@ -17,6 +17,7 @@ import bing_api_client
 import cfg
 import my_db
 import my_gemini
+import my_gemini_general
 import my_gemini_genimg
 import my_groq
 import my_log
@@ -424,7 +425,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 if __name__ == '__main__':
     my_db.init()
     my_groq.load_users_keys()
-    my_gemini.load_users_keys()
+    my_gemini_general.load_users_keys()
     my_mistral.load_users_keys()
 
     # print(get_reprompt('Потрясающая блондинка с длинными распущенными волосами сидит на деревянной лестнице. На ней минимум одежды, ее тело полностью видно с акцентом на вульву, демонстрируя ее гладкую, безупречную кожу и естественную красоту. Освещение мягкое и естественное, подчеркивающее ее изгибы и текстуру кожи. Высокая детализация, разрешение 8K, фотореалистичная фотография, отмеченная наградами.'))

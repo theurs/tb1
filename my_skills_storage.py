@@ -1,3 +1,9 @@
+import threading
+
+
+STORAGE_LOCK = threading.Lock()
+
+
 # {id:[{type,filename,data},{}],}
 STORAGE = {}
 

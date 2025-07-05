@@ -10,7 +10,7 @@ from google import genai
 from google.genai import types
 
 import my_db
-import my_gemini
+import my_gemini_general
 import my_log
 import utils
 
@@ -95,7 +95,7 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
     """
     try:
         if not api_key:
-            api_key = my_gemini.get_next_key()
+            api_key = my_gemini_general.get_next_key()
 
         client = genai.Client(api_key=api_key)
 
@@ -190,7 +190,7 @@ def regenerate_image(
     with lock:
         try:
             if not api_key:
-                api_key = my_gemini.get_next_key()
+                api_key = my_gemini_general.get_next_key()
 
             client = genai.Client(api_key=api_key)
 
@@ -374,7 +374,7 @@ def test_regenerate_image2():
 
 if __name__ == "__main__":
     my_db.init(backup=False)
-    my_gemini.load_users_keys()
+    my_gemini_general.load_users_keys()
 
     # test_generate_image()
     # test_regenerate_image()

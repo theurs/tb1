@@ -13,7 +13,7 @@ from google.genai.types import (
 )
 from pydub import AudioSegment
 
-import my_gemini
+import my_gemini_general
 import my_log
 import utils
 
@@ -54,7 +54,7 @@ async def generate_audio_bytes(
         my_log.log_gemini(text=f"generate_audio_bytes: voice {voice} not in {ALL_VOICES}, reset ro default {DEFAULT_VOICE}")
         voice = DEFAULT_VOICE
 
-    client = genai.Client(api_key=my_gemini.get_next_key(), http_options={'api_version': 'v1alpha'})
+    client = genai.Client(api_key=my_gemini_general.get_next_key(), http_options={'api_version': 'v1alpha'})
 
     config = types.LiveConnectConfig(
         # generation_config=types.GenerationConfig(temperature=0), # Температура 0 для точности - это гуд
@@ -454,7 +454,7 @@ def test2_read_a_book_():
 
 
 if __name__ == "__main__":
-    my_gemini.load_users_keys()
+    my_gemini_general.load_users_keys()
 
     test1()
     # test2_read_a_book_()

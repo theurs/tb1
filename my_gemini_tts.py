@@ -13,6 +13,7 @@ from google.genai.types import (
 from pydub import AudioSegment
 
 import my_gemini
+import my_gemini_general
 import my_log
 import utils
 
@@ -91,7 +92,7 @@ def generate_tts_wav_bytes(
 
     # Цикл для повторных попыток вызова API
     for _ in range(3):
-        key = my_gemini.get_next_key()
+        key = my_gemini_general.get_next_key()
         if not key:
             my_log.log_gemini("my_gemini_tts:generate_tts_wav_bytes:1: API ключ Gemini не найден")
             return None
@@ -478,7 +479,7 @@ def process_chunks_for_tts(json_file_path: str, base_output_dir: str, book_name:
 if __name__ == "__main__":
     # Инициализация для запуска примера
     my_gemini.my_db.init(backup=False)
-    my_gemini.load_users_keys()
+    my_gemini_general.load_users_keys()
 
     json_input_path = r"C:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_processed_by_sections_accents.json"
     base_download_directory = r"C:\Users\user\Downloads"

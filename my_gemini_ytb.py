@@ -7,7 +7,7 @@ from google import genai
 from google.genai import types
 
 import my_db
-import my_gemini
+import my_gemini_general
 import my_log
 
 
@@ -55,7 +55,7 @@ def get_text(url: str, lang: str, user_id: str) -> str:
         if time.time() - start_time > TIMEOUT:
             break
         try:
-            key = my_gemini.get_next_key()
+            key = my_gemini_general.get_next_key()
             client = genai.Client(api_key=key, http_options=types.HttpOptions(timeout=TIMEOUT*1000))
 
             contents = [
@@ -114,6 +114,6 @@ def get_text(url: str, lang: str, user_id: str) -> str:
 
 if __name__ == "__main__":
     my_db.init(backup=False)
-    my_gemini.load_users_keys()
+    my_gemini_general.load_users_keys()
 
     print(get_text('https://www.youtube.com/shorts/CqnJNdrz5DY', 'ru', ''))

@@ -349,7 +349,7 @@ def ai(prompt: str = '',
                                         'data': image_bytes,
                                     }
 
-                                    with my_skills.STORAGE_LOCK:
+                                    with my_skills_storage.STORAGE_LOCK:
                                         if user_id in my_skills_storage.STORAGE:
                                             if item not in my_skills_storage.STORAGE[user_id]:
                                                 my_skills_storage.STORAGE[user_id].append(item)

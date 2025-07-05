@@ -7,6 +7,7 @@ from typing import List, Callable
 
 import cfg
 import my_gemini3
+import my_gemini_general
 import my_groq
 import my_db
 import my_ddg
@@ -513,7 +514,7 @@ if __name__ == '__main__':
     pass
     my_db.init(backup=False)
     my_groq.load_users_keys()
-    my_gemini3.my_gemini.load_users_keys()
+    my_gemini_general.load_users_keys()
 
     # with open(help_msg_file, 'rb') as f:
     #     d = pickle.load(f)

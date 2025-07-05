@@ -30,10 +30,9 @@ from google.genai.types import (
 
 import cfg
 import my_db
-import my_gemini
+import my_gemini_general
 import my_gemini3
 import my_log
-import my_skills
 import my_skills_storage
 import utils
 
@@ -63,7 +62,7 @@ MODEL_ID_FALLBACK = cfg.gemini25_flash_model_fallback # "gemini-1.5-flash"
 
 
 def get_client():
-    api_key = random.choice(cfg.gemini_keys[:] + my_gemini.ALL_KEYS[:])
+    api_key = random.choice(cfg.gemini_keys[:] + my_gemini_general.ALL_KEYS[:])
     return genai.Client(api_key=api_key)
 
 
@@ -153,7 +152,7 @@ def calc(query: str, chat_id: str = '') -> Tuple[str, str]:
                         'filename': image['filename'],
                         'data': image['data'],
                     }
-                    with my_skills.STORAGE_LOCK:
+                    with my_skills_storage.STORAGE_LOCK:
                         if chat_id in my_skills_storage.STORAGE:
                             if item not in my_skills_storage.STORAGE[chat_id]:
                                 my_skills_storage.STORAGE[chat_id].append(item)

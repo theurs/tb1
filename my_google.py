@@ -9,6 +9,7 @@ import googlesearch
 import my_log
 import my_cohere
 import my_gemini
+import my_gemini_general
 import my_gemini_google
 import my_ddg
 import my_groq
@@ -115,7 +116,7 @@ def search_v3(query: str,
             error_traceback = traceback.format_exc()
             my_log.log2(f'my_google:search_v3: {error}\n\n{error_traceback}')
 
-        text = my_sum.download_text(urls, my_gemini.MAX_SUM_REQUEST)
+        text = my_sum.download_text(urls, my_gemini_general.MAX_SUM_REQUEST)
 
     if download_only:
         return text
@@ -141,12 +142,12 @@ Current date: {utils.get_full_time()}
 
 Search results:
 
-{text[:my_gemini.MAX_SUM_REQUEST]}
+{text[:my_gemini_general.MAX_SUM_REQUEST]}
 '''
     r = ''
 
     if not r:
-        r =  my_gemini.sum_big_text(q[:my_gemini.MAX_SUM_REQUEST], query, role=role)
+        r =  my_gemini.sum_big_text(q[:my_gemini_general.MAX_SUM_REQUEST], query, role=role)
         if r:
             r += '\n\n--\n[Gemini Flash]'
 

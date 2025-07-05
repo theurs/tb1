@@ -26,6 +26,7 @@ from pydub.silence import split_on_silence
 
 import cfg
 import my_gemini
+import my_gemini_general
 import my_groq
 import my_log
 import my_ytb
@@ -197,7 +198,7 @@ def genai_clear(_key: str = ''):
 
     try:
         if not _key:
-            key = my_gemini.get_next_key()
+            key = my_gemini_general.get_next_key()
         else:
             key = _key
 
@@ -237,7 +238,7 @@ def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') ->
         return result
 
     try:
-        key = my_gemini.get_next_key()
+        key = my_gemini_general.get_next_key()
 
         your_file = None
         if not prompt:
@@ -522,7 +523,7 @@ def download_youtube_clip_v2(video_url: str, language: str):
 
 
 def gemini_tokens_count(text: str) -> int:
-    genai.configure(api_key=my_gemini.get_next_key())
+    genai.configure(api_key=my_gemini_general.get_next_key())
     # print([(x.name, x.input_token_limit, x.output_token_limit, x.supported_generation_methods) for x in genai.list_models()])
     response = genai.count_message_tokens(prompt=text)
     return response['token_count']
@@ -853,7 +854,7 @@ def transcribe_audio_file_web(url: str) -> str:
 if __name__ == '__main__':
     pass
     my_groq.load_users_keys()
-    my_gemini.load_users_keys()
+    my_gemini_general.load_users_keys()
 
     # urls = [
     #     'https://www.youtube.com/shorts/4cFxuSQ4yro',

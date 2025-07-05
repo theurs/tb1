@@ -45,10 +45,6 @@ def restore_id(chat_id: str) -> str:
     return chat_id
 
 
-
-
-
-
 def tts(user_id: str) -> str:
     '''
     Generate and send audio message from text to user.

@@ -9765,7 +9765,7 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 answer = f'{autor} ' + tr('did not answered, try to /reset and start again.', lang)
 
-                            my_log.log_echo(message, f'[autor] {answer}')
+                            my_log.log_echo(message, f'[{autor}] {answer}')
 
                             try:
                                 if command_in_answer(answer, message):

@@ -55,6 +55,7 @@ import my_openrouter_free
 import my_pandoc
 import my_plantweb
 import my_skills
+import my_skills_storage
 import my_stat
 import my_stt
 import my_svg
@@ -4249,13 +4250,13 @@ def drop_subscription(message: telebot.types.Message):
 
 def send_all_files_from_storage(message, chat_id_full):
     '''
-    Отправляет файлы из хранилища для файлов в my_skills.STORAGE если они там есть
+    Отправляет файлы из хранилища для файлов в my_skills_storage.STORAGE если они там есть
     '''
     try: # если в ответе есть файлы, то отправляем его
         # Получаем данные из STORAGE.
         # Предполагается, что хранимый элемент - это плоский список
         #  [{type,filename,data},{}]
-        items = my_skills.STORAGE.get(chat_id_full)
+        items = my_skills_storage.STORAGE.get(chat_id_full)
         if items:
             for item in items:
                 try:
@@ -4302,11 +4303,11 @@ def send_all_files_from_storage(message, chat_id_full):
                     continue
 
             # После попытки отправки всех потенциальных файлов, удаляем запись из STORAGE
-            my_skills.STORAGE.pop(chat_id_full)
+            my_skills_storage.STORAGE.pop(chat_id_full)
 
     except Exception as general_error:
         # Этот блок ловит ошибки, не связанные с отправкой конкретного элемента (например, проблемы с получением данных из STORAGE или неверный формат)
-        my_skills.STORAGE.pop(chat_id_full) # Удаляем запись в случае общей ошибки
+        my_skills_storage.STORAGE.pop(chat_id_full) # Удаляем запись в случае общей ошибки
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:send_all_files_from_storage:2: for chat {chat_id_full}: {general_error}\n\n{traceback_error}')
 
@@ -7229,7 +7230,7 @@ def purge_cmd_handler(message: telebot.types.Message):
             if my_doc_translate.TRANSLATE_CACHE:
                 my_doc_translate.TRANSLATE_CACHE.remove_by_owner(chat_id_full)
 
-            my_skills.STORAGE.pop(chat_id_full, None)
+            my_skills_storage.STORAGE.pop(chat_id_full, None)
 
             # Delete User Properties
             my_db.delete_user_property(chat_id_full, 'role')

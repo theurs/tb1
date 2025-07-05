@@ -36,7 +36,7 @@ import cfg
 import my_db
 import my_log
 import utils_llm
-import my_skills
+# import my_skills
 import utils
 
 
@@ -299,41 +299,49 @@ def chat(query: str,
                     max_output_tokens = max_tokens,
                 )
 
-            # перестали работать? принудительно отключено иначе Stop reason: OTHER
-            use_skills = False
+            # # перестали работать? принудительно отключено иначе Stop reason: OTHER
+            # use_skills = False
+            # calc_tool = my_skills.calc
+            # if use_skills and '-8b' not in model and 'gemma-3' not in model:
+            #     # id в системный промпт надо добавлять что бы бот мог юзать его в скилах
+            #     # в каких скилах?
+            #     # system = f'user_id: {chat_id}\n\n{str(system)}'
+            #     SKILLS = [
+            #         my_skills.search_google,
+            #         my_skills.download_text_from_url,
+            #         calc_tool,
+            #         my_skills.get_time_in_timezone,
+            #         my_skills.get_weather,
+            #         my_skills.get_currency_rates,
+            #     ]
 
-            calc_tool = my_skills.calc
+            #     model_ = genai.GenerativeModel(
+            #         model,
+            #         tools = SKILLS,
+            #         generation_config = GENERATION_CONFIG,
+            #         safety_settings=SAFETY_SETTINGS,
+            #         system_instruction = system,
+            #     )
+            # else:
+            #     if 'gemma-3' in model:
+            #         system = None
+            #     model_ = genai.GenerativeModel(
+            #         model,
+            #         # tools="code_execution",
+            #         generation_config = GENERATION_CONFIG,
+            #         safety_settings=SAFETY_SETTINGS,
+            #         system_instruction = system,
+            #     )
+            if 'gemma-3' in model:
+                system = None
+            model_ = genai.GenerativeModel(
+                model,
+                # tools="code_execution",
+                generation_config = GENERATION_CONFIG,
+                safety_settings=SAFETY_SETTINGS,
+                system_instruction = system,
+            )
 
-            if use_skills and '-8b' not in model and 'gemma-3' not in model:
-                # id в системный промпт надо добавлять что бы бот мог юзать его в скилах
-                # в каких скилах?
-                # system = f'user_id: {chat_id}\n\n{str(system)}'
-                SKILLS = [
-                    my_skills.search_google,
-                    my_skills.download_text_from_url,
-                    calc_tool,
-                    my_skills.get_time_in_timezone,
-                    my_skills.get_weather,
-                    my_skills.get_currency_rates,
-                ]
-
-                model_ = genai.GenerativeModel(
-                    model,
-                    tools = SKILLS,
-                    generation_config = GENERATION_CONFIG,
-                    safety_settings=SAFETY_SETTINGS,
-                    system_instruction = system,
-                )
-            else:
-                if 'gemma-3' in model:
-                    system = None
-                model_ = genai.GenerativeModel(
-                    model,
-                    # tools="code_execution",
-                    generation_config = GENERATION_CONFIG,
-                    safety_settings=SAFETY_SETTINGS,
-                    system_instruction = system,
-                )
 
             # request_options = RequestOptions(retry=retry.Retry(initial=10, multiplier=2, maximum=60, timeout=timeout))
             request_options = RequestOptions(timeout=timeout)

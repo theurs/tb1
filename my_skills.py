@@ -46,6 +46,7 @@ import my_mermaid
 import my_mistral
 import my_pandoc
 import my_plantweb
+import my_skills_storage
 import my_sum
 import my_svg
 import my_qrcode_generate
@@ -55,14 +56,7 @@ import utils
 MAX_REQUEST = 25000
 
 
-# {id:[{type,filename,data},{}],}
-STORAGE = {}
 STORAGE_LOCK = threading.Lock()
-
-# какому юзеру можно запрашивать какие ид в функции запроса файла
-# это должно защитить от взлома промпта и запросов к чужим файлам
-# {user_id(str):user_id(str),}
-STORAGE_ALLOWED_IDS = {}
 
 
 def restore_id(chat_id: str) -> str:
@@ -114,7 +108,7 @@ def query_user_file(query: str, user_id: str) -> str:
         str
     '''
     user_id = restore_id(user_id)
-    if user_id not in STORAGE_ALLOWED_IDS or STORAGE_ALLOWED_IDS[user_id] != user_id:
+    if user_id not in my_skills_storage.STORAGE_ALLOWED_IDS or my_skills_storage.STORAGE_ALLOWED_IDS[user_id] != user_id:
         my_log.log_gemini_skills_query_file(f'/query_last_file "{query}" "{user_id}" - Unauthorized access detected.')
         return 'Unauthorized access detected.'
 
@@ -220,11 +214,11 @@ def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:
                 'data': png_bytes,
             }
             with STORAGE_LOCK:
-                if user_id in STORAGE:
-                    if item not in STORAGE[user_id]:
-                        STORAGE[user_id].append(item)
+                if user_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[user_id]:
+                        my_skills_storage.STORAGE[user_id].append(item)
                 else:
-                    STORAGE[user_id] = [item,]
+                    my_skills_storage.STORAGE[user_id] = [item,]
             return "OK"
 
     except Exception as e:
@@ -345,11 +339,11 @@ def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_h
                 'data': png_bytes,
             }
             with STORAGE_LOCK:
-                if chat_id in STORAGE:
-                    if item not in STORAGE[chat_id]:
-                        STORAGE[chat_id].append(item)
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
                 else:
-                    STORAGE[chat_id] = [item,]
+                    my_skills_storage.STORAGE[chat_id] = [item,]
             return "OK"
     except Exception as e:
         traceback_error = traceback.format_exc()
@@ -404,11 +398,11 @@ def save_chart_and_graphs_to_image_(prompt: str, filename: str, user_id: str) ->
                     'data': image,
                 }
                 with STORAGE_LOCK:
-                    if user_id in STORAGE:
-                        if item not in STORAGE[user_id]:
-                            STORAGE[user_id].append(item)
+                    if user_id in my_skills_storage.STORAGE:
+                        if item not in my_skills_storage.STORAGE[user_id]:
+                            my_skills_storage.STORAGE[user_id].append(item)
                     else:
-                        STORAGE[user_id] = [item,]
+                        my_skills_storage.STORAGE[user_id] = [item,]
             my_log.log_gemini_skills_save_docs(f'/save_chart_and_graphs_to_image {user_id} {filename} {prompt}\n\n{text}')
             return text
     except Exception as e:
@@ -535,11 +529,11 @@ def save_pandas_chart_to_image_(filename: str, data: dict, chart_type: str, chat
                 'data': png_bytes,
             }
             with STORAGE_LOCK:
-                if chat_id in STORAGE:
-                    if item not in STORAGE[chat_id]:
-                        STORAGE[chat_id].append(item)
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
                 else:
-                    STORAGE[chat_id] = [item,]
+                    my_skills_storage.STORAGE[chat_id] = [item,]
             return "OK"
         else:
             # This case indicates that no image data was generated.
@@ -609,11 +603,11 @@ def save_diagram_to_image(filename: str, text: str, engine: str, chat_id: str) -
                 'data': png_output,
             }
             with STORAGE_LOCK:
-                if chat_id in STORAGE:
-                    if item not in STORAGE[chat_id]:
-                        STORAGE[chat_id].append(item)
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
                 else:
-                    STORAGE[chat_id] = [item,]
+                    my_skills_storage.STORAGE[chat_id] = [item,]
 
             return "OK"
 
@@ -665,11 +659,11 @@ def save_to_txt(filename: str, text: str, chat_id: str) -> str:
                 'data': text_bytes,
             }
             with STORAGE_LOCK:
-                if chat_id in STORAGE:
-                    if item not in STORAGE[chat_id]:
-                        STORAGE[chat_id].append(item)
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
                 else:
-                    STORAGE[chat_id] = [item,]
+                    my_skills_storage.STORAGE[chat_id] = [item,]
             return "OK"
         else:
             my_log.log_gemini_skills_save_docs(f'save_to_txt: No text data could be generated for chat {chat_id}\n\nText length: {len(text)}')
@@ -724,11 +718,11 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
                 'data': docx_bytes,
             }
             with STORAGE_LOCK:
-                if chat_id in STORAGE:
-                    if item not in STORAGE[chat_id]:
-                        STORAGE[chat_id].append(item)
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
                 else:
-                    STORAGE[chat_id] = [item,]
+                    my_skills_storage.STORAGE[chat_id] = [item,]
             return "OK"
         else:
             # This case indicates that no DOCX data was generated.
@@ -847,11 +841,11 @@ def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
         if excel_bytes:
             item = {'type': 'excel file', 'filename': filename, 'data': excel_bytes}
             with STORAGE_LOCK:
-                if chat_id in STORAGE:
-                    if item not in STORAGE[chat_id]:
-                        STORAGE[chat_id].append(item)
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
                 else:
-                    STORAGE[chat_id] = [item,]
+                    my_skills_storage.STORAGE[chat_id] = [item,]
             return "OK"
         else:
             my_log.log_gemini_skills_save_docs(f'save_to_excel: No Excel data could be generated for chat {chat_id}\n\n{data}')
@@ -908,11 +902,11 @@ def save_to_pdf(filename: str, text: str, chat_id: str) -> str:
             }
             # Use a global storage mechanism with a lock to ensure thread safety
             with STORAGE_LOCK:
-                if chat_id in STORAGE:
-                    if item not in STORAGE[chat_id]: # Avoid duplicate entries if necessary
-                        STORAGE[chat_id].append(item)
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]: # Avoid duplicate entries if necessary
+                        my_skills_storage.STORAGE[chat_id].append(item)
                 else:
-                    STORAGE[chat_id] = [item,]
+                    my_skills_storage.STORAGE[chat_id] = [item,]
             return "OK"
         else:
             # This case indicates that no PDF data was generated, even after attempting conversion.
@@ -928,12 +922,12 @@ def save_to_pdf(filename: str, text: str, chat_id: str) -> str:
 
 def init():
     """
-    Iterate over STORAGE dict and remove expired entries
+    Iterate over my_skills_storage.STORAGE dict and remove expired entries
     Assuming value is a tuple (data1, data2, ..., timestamp)
     where timestamp is the last element.
     """
     with STORAGE_LOCK:
-        STORAGE.clear()
+        my_skills_storage.STORAGE.clear()
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)

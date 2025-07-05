@@ -34,6 +34,7 @@ import my_gemini
 import my_gemini3
 import my_log
 import my_skills
+import my_skills_storage
 import utils
 
 
@@ -144,7 +145,7 @@ def calc(query: str, chat_id: str = '') -> Tuple[str, str]:
             if chat_id:
                 my_db.add_msg(chat_id, MODEL_ID)
 
-            # если есть картинки то отправляем их через my_skills.STORAGE
+            # если есть картинки то отправляем их через my_skills_storage.STORAGE
             if resp_full and resp_full[0] and chat_id:
                 for image in resp_full[0]:
                     item = {
@@ -153,11 +154,11 @@ def calc(query: str, chat_id: str = '') -> Tuple[str, str]:
                         'data': image['data'],
                     }
                     with my_skills.STORAGE_LOCK:
-                        if chat_id in my_skills.STORAGE:
-                            if item not in my_skills.STORAGE[chat_id]:
-                                my_skills.STORAGE[chat_id].append(item)
+                        if chat_id in my_skills_storage.STORAGE:
+                            if item not in my_skills_storage.STORAGE[chat_id]:
+                                my_skills_storage.STORAGE[chat_id].append(item)
                         else:
-                            my_skills.STORAGE[chat_id] = [item,]
+                            my_skills_storage.STORAGE[chat_id] = [item,]
 
             return response.candidates[0].content.parts[-1].text, underground
     except Exception as error:

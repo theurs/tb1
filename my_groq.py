@@ -20,6 +20,7 @@ import cfg
 import my_db
 import my_log
 import my_skills
+import my_skills_storage
 import my_sum
 import utils
 
@@ -349,11 +350,11 @@ def ai(prompt: str = '',
                                     }
 
                                     with my_skills.STORAGE_LOCK:
-                                        if user_id in my_skills.STORAGE:
-                                            if item not in my_skills.STORAGE[user_id]:
-                                                my_skills.STORAGE[user_id].append(item)
+                                        if user_id in my_skills_storage.STORAGE:
+                                            if item not in my_skills_storage.STORAGE[user_id]:
+                                                my_skills_storage.STORAGE[user_id].append(item)
                                         else:
-                                            my_skills.STORAGE[user_id] = [item,]
+                                            my_skills_storage.STORAGE[user_id] = [item,]
 
                                 except Exception as e:
                                     pass

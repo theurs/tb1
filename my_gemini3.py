@@ -30,6 +30,7 @@ import my_gemini
 import my_gemini_live_text
 import my_log
 import my_skills
+import my_skills_storage
 import utils
 
 
@@ -602,7 +603,7 @@ def chat(
             system,
         ]
         if saved_file_name:
-            my_skills.STORAGE_ALLOWED_IDS[chat_id] = chat_id
+            my_skills_storage.STORAGE_ALLOWED_IDS[chat_id] = chat_id
             system_.insert(1, f'Telegram user have saved file/files and assistant can query it: {saved_file_name} ({saved_file_size} chars)')
         if 'flash-lite' in model:
             system_.insert(1, 'You can draw graphs and charts using the code_execution_tool')
@@ -734,7 +735,7 @@ def chat(
         if resp:
             resp = resp.strip()
 
-            # если есть картинки то отправляем их через my_skills.STORAGE
+            # если есть картинки то отправляем их через my_skills_storage.STORAGE
             if resp_full and resp_full[0] and chat_id:
                 for image in resp_full[0]:
                     item = {
@@ -743,11 +744,11 @@ def chat(
                         'data': image['data'],
                     }
                     with my_skills.STORAGE_LOCK:
-                        if chat_id in my_skills.STORAGE:
-                            if item not in my_skills.STORAGE[chat_id]:
-                                my_skills.STORAGE[chat_id].append(item)
+                        if chat_id in my_skills_storage.STORAGE:
+                            if item not in my_skills_storage.STORAGE[chat_id]:
+                                my_skills_storage.STORAGE[chat_id].append(item)
                         else:
-                            my_skills.STORAGE[chat_id] = [item,]
+                            my_skills_storage.STORAGE[chat_id] = [item,]
 
 
             # плохие ответы
@@ -794,8 +795,8 @@ def chat(
             my_log.log_gemini(f'my_gemini3:chat:unknown_error:2: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}')
         return ''
     finally:
-        if chat_id in my_skills.STORAGE_ALLOWED_IDS:
-            del my_skills.STORAGE_ALLOWED_IDS[chat_id]
+        if chat_id in my_skills_storage.STORAGE_ALLOWED_IDS:
+            del my_skills_storage.STORAGE_ALLOWED_IDS[chat_id]
 
 
 def count_chars(mem) -> int:

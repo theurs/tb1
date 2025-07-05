@@ -13,6 +13,7 @@ import my_log
 
 import my_gemini
 import my_skills
+import my_skills_storage
 import utils
 
 
@@ -123,7 +124,7 @@ async def query_text_(
             system,
         ]
         if saved_file_name:
-            my_skills.STORAGE_ALLOWED_IDS[chat_id] = chat_id
+            my_skills_storage.STORAGE_ALLOWED_IDS[chat_id] = chat_id
             system_.insert(1, f'Telegram user have saved file/files and assistant can query it: {saved_file_name} ({saved_file_size} chars)')
 
 

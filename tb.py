@@ -9731,6 +9731,7 @@ def do_task(message, custom_prompt: str = ''):
                             )
 
                             WHO_ANSWERED[chat_id_full] = my_mistral.DEFAULT_MODEL
+                            autor = WHO_ANSWERED[chat_id_full]
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not answer:
@@ -9743,6 +9744,7 @@ def do_task(message, custom_prompt: str = ''):
                                     use_skills=False,
                                 )
                                 WHO_ANSWERED[chat_id_full] = my_mistral.FALLBACK_MODEL
+                                autor = WHO_ANSWERED[chat_id_full]
                                 WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             # отправляем файлы если они были сгенерированы в скилах
@@ -9761,9 +9763,9 @@ def do_task(message, custom_prompt: str = ''):
 
                             answer = answer.strip()
                             if not answer:
-                                answer = 'Mistral Large ' + tr('did not answered, try to /reset and start again.', lang)
+                                answer = f'{autor} ' + tr('did not answered, try to /reset and start again.', lang)
 
-                            my_log.log_echo(message, f'[Mistral Large] {answer}')
+                            my_log.log_echo(message, f'[autor] {answer}')
 
                             try:
                                 if command_in_answer(answer, message):

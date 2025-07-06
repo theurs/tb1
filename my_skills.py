@@ -12,9 +12,7 @@ import numbers
 import numpy
 import numpy as np
 import os
-import pytz
 import random
-import re
 import requests
 import subprocess
 import traceback
@@ -27,8 +25,6 @@ from typing import Callable, List, Optional, Tuple, Union
 # it will import word random and broke code
 # from random import *
 #from random import betavariate, choice, choices, expovariate, gammavariate, gauss, getrandbits, getstate, lognormvariate, normalvariate, paretovariate, randbytes, randint, randrange, sample, seed, setstate, shuffle, triangular, uniform, vonmisesvariate, weibullvariate
-
-from geopy.geocoders import Nominatim
 
 import cfg
 import my_cohere
@@ -62,6 +58,7 @@ speech_to_text = my_skills_general.speech_to_text
 translate_text = my_skills_general.translate_text
 translate_documents = my_skills_general.translate_documents
 edit_image = my_skills_general.edit_image
+get_weather = my_skills_general.get_weather
 
 
 def query_user_file(query: str, user_id: str) -> str:
@@ -758,77 +755,6 @@ def init():
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
-def get_coords(loc: str):
-    '''Get coordinates from Nominatim API
-    Example: get_coords("Vladivostok")
-    Return tuple (latitude, longitude)
-    '''
-    geolocator = Nominatim(user_agent="kun4sun_bot")
-    location = geolocator.geocode(loc)
-    if location:
-        return round(location.latitude, 2), round(location.longitude, 2)
-    else:
-        return None, None
-
-
-@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
-def get_location_name(latitude: str, longitude: str, language: str) -> str:
-    """
-    Retrieves the human-readable name of a location based on its coordinates.
-
-    Args:
-        latitude (str): The latitude of the location as a string.
-        longitude (str): The longitude of the location as a string.
-        language (str): The language code for the returned location name (e.g., 'en', 'ru').
-
-    Returns:
-        str: A string representing the location's name, 'Not found' if no location
-            is found for the given coordinates, or an error message if an exception occurs.
-    """
-    try:
-        geolocator = Nominatim(user_agent="kun4sun_bot")
-        location = geolocator.reverse(
-            latitude + "," + longitude,
-            language=language,
-            addressdetails=True,
-            namedetails=True
-        )
-    except Exception as e:
-        my_log.log_gemini_skills(f'get_location_name:Error: {e}')
-        return f'Error: {e}'
-
-    if location:
-        return str(location)
-    else:
-        return 'Not found'
-
-
-@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
-def get_weather(location: str) -> str:
-    '''Get weather data from OpenMeteo API 7 days forth and back
-    Example: get_weather("Vladivostok")
-    Return json string
-    '''
-    try:
-        location = decode_string(location)
-        my_log.log_gemini_skills(f'Weather: {location}')
-        lat, lon = get_coords(location)
-        if not any([lat, lon]):
-            return 'error getting data'
-        my_log.log_gemini_skills(f'Weather: {lat} {lon}')
-        # Make sure all required weather variables are listed here
-        # The order of variables in hourly or daily is important to assign them correctly below
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&past_days=7"
-        responses = requests.get(url, timeout = 20)
-        my_log.log_gemini_skills(f'Weather: {responses.text[:100]}')
-        return responses.text
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills(f'get_weather:Error: {error}\n\n{traceback_error}')
-        return f'ERROR {error}'
-
-
-@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
 def get_currency_rates(date: str = '') -> str:
     '''Return json all currencies rates from https://openexchangerates.org
     date in YYYY-MM-DD format, if absent than latest'''
@@ -870,7 +796,7 @@ def search_google_fast(query: str, lang: str, user_id: str) -> str:
     """
     try:
         user_id = my_skills_general.restore_id(user_id)
-        query = decode_string(query)
+        query = my_skills_general.decode_string(query)
         my_log.log_gemini_skills_search(f'Fast Google search: [{lang}] {user_id} {query}')
 
         r = my_google.search_v3(
@@ -905,7 +831,7 @@ def search_google_deep(query: str, lang: str, user_id: str) -> str:
     """
     try:
         user_id = my_skills_general.restore_id(user_id)
-        query = decode_string(query)
+        query = my_skills_general.decode_string(query)
         my_log.log_gemini_skills_search(f'Deep Google search: [{lang}] {user_id} {query}')
 
         r = my_google.search_v3(
@@ -937,19 +863,6 @@ def download_text_from_url(url: str) -> str:
         traceback_error = traceback.format_exc()
         my_log.log_gemini_skills(f'download_text_from_url:Error: {error}\n\n{traceback_error}')
         return f'ERROR {error}'
-
-
-def decode_string(s: str) -> str:
-    if isinstance(s, str) and s.count('\\') > 2:
-        try:
-            s = s.replace('\\\\', '\\')
-            s = str(bytes(s, "utf-8").decode("unicode_escape").encode("latin1").decode("utf-8"))
-            return s
-        except Exception as error:
-            my_log.log_gemini_skills(f'Error: {error}')
-            return s
-    else:
-        return s
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
@@ -1118,27 +1031,6 @@ def test_calc(func: Callable = calc) -> None:
     print("Тесты завершены.")
 
 
-def get_time_in_timezone(timezone_str: str) -> str:
-    """
-    Returns the current time in the specified timezone.
-
-    Args:
-        timezone_str: A string representing the timezone (e.g., "Europe/Moscow", "America/New_York").
-
-    Returns:
-        A string with the current time in "YYYY-MM-DD HH:MM:SS" format, or an error message if the timezone is invalid.
-    """
-    try:
-        timezone = pytz.timezone(timezone_str)
-        now = datetime.datetime.now(timezone)
-        time_str = now.strftime("%Y-%m-%d %H:%M:%S")
-        my_log.log_gemini_skills(f'get_time_in_timezone: timezone_str={timezone_str} time={time_str}')
-        return now.strftime("%Y-%m-%d %H:%M:%S")
-    except Exception as error:
-        my_log.log_gemini_skills(f'get_time_in_timezone: Invalid timezone {timezone_str}\n{error}')
-        return f"Error: Invalid timezone '{timezone_str}'"
-
-
 def run_script(filename: str, body: str) -> str:
     """
     Saves and runs a script in the shell, returning its output. This script has full access to files and network, there are no sandboxes.
@@ -1187,7 +1079,7 @@ ls -l
     - Double quotes inside the script body are NOT escaped anymore.
     - Use triple quotes (''') to pass multiline strings with quotes to avoid manual escaping.
     """
-    body = decode_string(body)
+    body = my_skills_general.decode_string(body)
     filename = 'run_script_' + filename
     ext = utils.get_file_ext(filename)
     if ext.startswith('.'):
@@ -1270,8 +1162,6 @@ if __name__ == '__main__':
     init()
     my_db.init(backup=False)
     my_groq.load_users_keys()
-    # moscow_time = get_time_in_timezone("Europe/Moscow")
-    # print(f"Time in Moscow: {moscow_time}")
 
     # test_calc()
     r = calc(

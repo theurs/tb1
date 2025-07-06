@@ -30,6 +30,7 @@ import my_gemini_general
 import my_gemini_live_text
 import my_log
 import my_skills
+import my_skills_general
 import my_skills_storage
 import utils
 
@@ -633,7 +634,7 @@ def chat(
                             my_skills.search_google_fast,
                             my_skills.search_google_deep,
                             my_skills.download_text_from_url,
-                            my_skills.get_time_in_timezone,
+                            my_skills_general.get_time_in_timezone,
                             my_skills.get_weather,
                             my_skills.get_currency_rates,
                             my_skills.tts,
@@ -652,7 +653,7 @@ def chat(
                             my_skills.save_chart_and_graphs_to_image,
                             my_skills.save_html_to_image,
                             my_skills.query_user_file,
-                            my_skills.get_location_name,
+                            my_skills_general.get_location_name,
                             my_skills.help,
                         ]
                     chat = client.chats.create(

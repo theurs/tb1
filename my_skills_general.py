@@ -1,4 +1,11 @@
+import cachetools.func
+import datetime
+import pytz
 import re
+import requests
+import traceback
+
+from geopy.geocoders import Nominatim
 
 import cfg
 import my_qrcode_generate
@@ -43,6 +50,111 @@ def restore_id(chat_id: str) -> str:
     if not chat_id:
         chat_id = '[unknown]'
     return chat_id
+
+
+def decode_string(s: str) -> str:
+    if isinstance(s, str) and s.count('\\') > 2:
+        try:
+            s = s.replace('\\\\', '\\')
+            s = str(bytes(s, "utf-8").decode("unicode_escape").encode("latin1").decode("utf-8"))
+            return s
+        except Exception as error:
+            my_log.log_gemini_skills(f'Error: {error}')
+            return s
+    else:
+        return s
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
+def get_weather(location: str) -> str:
+    '''Get weather data from OpenMeteo API 7 days forth and back
+    Example: get_weather("Vladivostok")
+    Return json string
+    '''
+    try:
+        location = decode_string(location)
+        my_log.log_gemini_skills(f'Weather: {location}')
+        lat, lon = get_coords(location)
+        if not any([lat, lon]):
+            return 'error getting data'
+        my_log.log_gemini_skills(f'Weather: {lat} {lon}')
+        # Make sure all required weather variables are listed here
+        # The order of variables in hourly or daily is important to assign them correctly below
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&past_days=7"
+        responses = requests.get(url, timeout = 20)
+        my_log.log_gemini_skills(f'Weather: {responses.text[:100]}')
+        return responses.text
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills(f'get_weather:Error: {error}\n\n{traceback_error}')
+        return f'ERROR {error}'
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
+def get_coords(loc: str):
+    '''Get coordinates from Nominatim API
+    Example: get_coords("Vladivostok")
+    Return tuple (latitude, longitude)
+    '''
+    geolocator = Nominatim(user_agent="kun4sun_bot")
+    location = geolocator.geocode(loc)
+    if location:
+        return round(location.latitude, 2), round(location.longitude, 2)
+    else:
+        return None, None
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
+def get_location_name(latitude: str, longitude: str, language: str) -> str:
+    """
+    Retrieves the human-readable name of a location based on its coordinates.
+
+    Args:
+        latitude (str): The latitude of the location as a string.
+        longitude (str): The longitude of the location as a string.
+        language (str): The language code for the returned location name (e.g., 'en', 'ru').
+
+    Returns:
+        str: A string representing the location's name, 'Not found' if no location
+            is found for the given coordinates, or an error message if an exception occurs.
+    """
+    try:
+        geolocator = Nominatim(user_agent="kun4sun_bot")
+        location = geolocator.reverse(
+            latitude + "," + longitude,
+            language=language,
+            addressdetails=True,
+            namedetails=True
+        )
+    except Exception as e:
+        my_log.log_gemini_skills(f'get_location_name:Error: {e}')
+        return f'Error: {e}'
+
+    if location:
+        return str(location)
+    else:
+        return 'Not found'
+
+
+def get_time_in_timezone(timezone_str: str) -> str:
+    """
+    Returns the current time in the specified timezone.
+
+    Args:
+        timezone_str: A string representing the timezone (e.g., "Europe/Moscow", "America/New_York").
+
+    Returns:
+        A string with the current time in "YYYY-MM-DD HH:MM:SS" format, or an error message if the timezone is invalid.
+    """
+    try:
+        timezone = pytz.timezone(timezone_str)
+        now = datetime.datetime.now(timezone)
+        time_str = now.strftime("%Y-%m-%d %H:%M:%S")
+        my_log.log_gemini_skills(f'get_time_in_timezone: timezone_str={timezone_str} time={time_str}')
+        return now.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception as error:
+        my_log.log_gemini_skills(f'get_time_in_timezone: Invalid timezone {timezone_str}\n{error}')
+        return f"Error: Invalid timezone '{timezone_str}'"
 
 
 def tts(user_id: str) -> str:
@@ -314,3 +426,7 @@ def help(user_id: str) -> str:
 '''
 
     return help_msg
+
+
+if __name__ == '__main__':
+    pass

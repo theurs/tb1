@@ -269,7 +269,7 @@ def chat(query: str,
             #         my_skills.search_google,
             #         my_skills.download_text_from_url,
             #         calc_tool,
-            #         my_skills.get_time_in_timezone,
+            #         my_skills_general.get_time_in_timezone,
             #         my_skills.get_weather,
             #         my_skills.get_currency_rates,
             #     ]

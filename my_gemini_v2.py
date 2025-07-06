@@ -41,6 +41,7 @@ import cfg
 import my_db
 import my_log
 import my_skills
+import my_skills_general
 import utils_llm
 
 
@@ -176,7 +177,7 @@ def chat2(
             my_skills.search_google,
             my_skills.download_text_from_url,
             my_skills.calc,
-            my_skills.get_time_in_timezone,
+            my_skills_general.get_time_in_timezone,
             my_skills.get_weather,
             my_skills.get_currency_rates,
             ]

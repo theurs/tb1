@@ -1,15 +1,20 @@
 import cachetools.func
 import datetime
+import io
 import pytz
 import re
 import requests
 import traceback
 
+import pandas as pd
 from geopy.geocoders import Nominatim
 
 import cfg
 import my_qrcode_generate
 import my_log
+import my_mermaid
+import my_pandoc
+import my_plantweb
 import my_skills_storage
 import my_svg
 import utils
@@ -63,6 +68,378 @@ def decode_string(s: str) -> str:
             return s
     else:
         return s
+
+
+def save_diagram_to_image(filename: str, text: str, engine: str, chat_id: str) -> str:
+    '''
+    Send a diagram as an image file to the user, rendered from various text formats.
+    Args:
+        filename: str - The desired file name for the image file (e.g., 'diagram').
+        text: str - The diagram definition text in Mermaid, PlantUML, Graphviz (DOT), or Ditaa format.
+                     **Important considerations for 'text' parameter:**
+                     - The input must strictly adhere to the syntax of the specified 'engine'.
+                     - For PlantUML, syntax like `class` or `activity` is expected.
+                     - For Graphviz, DOT language syntax is required.
+                     - For Ditaa, ASCII art syntax with specific tags is used.
+                     - `skinparam` or similar engine-specific options within the text
+                       directly control the visual style and rendering of the diagram.
+        engine: str - The diagram rendering engine to use: 'mermaid', 'plantuml', 'graphviz', or 'ditaa'.
+        chat_id: str - The Telegram user chat ID where the file should be sent.
+    Returns:
+        str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+    '''
+
+    try:
+        my_log.log_gemini_skills_save_docs(f'save_diagram_to_image {chat_id}\n\n{filename}\n{text}\nEngine: {engine}')
+
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        # Ensure filename has .png extension and is safe
+        if not filename.lower().endswith('.png'):
+            filename += '.png'
+        filename = utils.safe_fname(filename)
+
+        # Validate the 'engine' parameter to prevent unsupported values from reaching text_to_image
+        supported_engines = {'plantuml', 'graphviz', 'ditaa', 'mermaid'}
+        if engine not in supported_engines:
+            return f"FAIL: Unsupported diagram engine '{engine}'. Supported engines are: {', '.join(supported_engines)}."
+
+        # Convert the diagram text to image bytes using the text_to_image function
+        try:
+            if engine == 'mermaid':
+                png_output = my_mermaid.generate_mermaid_png_bytes(text)
+            else:
+                png_output = my_plantweb.text_to_png(text, engine=engine, format='png')
+        except Exception as rendering_error:
+            my_log.log_gemini_skills_save_docs(f'save_diagram_to_image: Error rendering diagram: {rendering_error}\n\n{traceback.format_exc()}')
+            return f"FAIL: Error during diagram rendering: {rendering_error}"
+
+        # Check the type of png_output to determine success or failure
+        if isinstance(png_output, bytes):
+            # If bytes were successfully generated, prepare the item for storage
+            item = {
+                'type': 'image/png file',
+                'filename': filename,
+                'data': png_output,
+            }
+            with my_skills_storage.STORAGE_LOCK:
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
+                else:
+                    my_skills_storage.STORAGE[chat_id] = [item,]
+
+            return "OK"
+
+        elif isinstance(png_output, str):
+            # If a string is returned, it indicates an error message from text_to_image
+            my_log.log_gemini_skills_save_docs(f'save_diagram_to_image: No image data could be generated for chat {chat_id} - {png_output}\n\nText length: {len(text)}')
+            return f"FAIL: No image data could be generated: {png_output}"
+        else:
+            # Unexpected return type
+            my_log.log_gemini_skills_save_docs(f'save_diagram_to_image: Unexpected return type from text_to_image for chat {chat_id}\n\nText length: {len(text)}')
+            return "FAIL: An unexpected error occurred during image generation."
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills_save_docs(f'save_diagram_to_image: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {error}"
+
+
+def save_to_txt(filename: str, text: str, chat_id: str) -> str:
+    '''
+    Send a plain text file to the user, you can use it to send markdown etc as a plaintext too.
+    Args:
+        filename: str - The desired file name for the text file (e.g., 'notes').
+        text: str - The plain text content to save.
+        chat_id: str - The Telegram user chat ID where the file should be sent.
+    Returns:
+        str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+    '''
+    try:
+        my_log.log_gemini_skills_save_docs(f'save_to_txt {chat_id}\n\n{filename}\n{text}')
+
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        # Ensure filename has .txt extension and is safe
+        if '.' not in filename:
+            filename += '.txt'
+        filename = utils.safe_fname(filename)
+
+        # Encode the text to bytes
+        text_bytes = text.encode('utf-8')
+
+        # If bytes were successfully generated, prepare the item for storage
+        if text_bytes:
+            item = {
+                'type': 'text file',
+                'filename': filename,
+                'data': text_bytes,
+            }
+            with my_skills_storage.STORAGE_LOCK:
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
+                else:
+                    my_skills_storage.STORAGE[chat_id] = [item,]
+            return "OK"
+        else:
+            my_log.log_gemini_skills_save_docs(f'save_to_txt: No text data could be generated for chat {chat_id}\n\nText length: {len(text)}')
+            return "FAIL: No text data could be generated."
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills_save_docs(f'save_to_txt: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {error}"
+
+
+def save_to_docx(filename: str, text: str, chat_id: str) -> str:
+    r'''
+    Send DOCX file to user, converted from markdown text(~~ for strikethrough).
+
+    Args:
+        filename: str - The desired file name for the DOCX file (e.g., 'document').
+        text: str - The markdown formatted text to convert to DOCX.
+                    To include mathematical equations, use LaTeX syntax enclosed in dollar signs:
+                    - For inline formulas, use $...$ (e.g., `$a^2 + b^2 = c^2$`).
+                    - For display formulas on a new line, use $$...$$ 
+                      (e.g., `$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$`).
+        chat_id: str - The Telegram user chat ID where the file should be sent.
+
+    Returns:
+        str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+    '''
+    try:
+        my_log.log_gemini_skills_save_docs(f'save_to_docx {chat_id}\n\n{filename}\n{text}')
+
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        # Ensure filename has .docx extension and is safe
+        if not filename.lower().endswith('.docx'):
+            filename += '.docx'
+        filename = utils.safe_fname(filename)
+
+        # Convert the markdown text to DOCX bytes using the provided function
+        docx_bytes = my_pandoc.convert_markdown_to_document(text, 'docx')
+        if isinstance(docx_bytes, str):
+            # If a string is returned, it indicates an error message from convert_markdown_to_document
+            my_log.log_gemini_skills_save_docs(f'save_to_docx: No DOCX data could be generated for chat {chat_id} - {docx_bytes}')
+            return f"FAIL: No DOCX data could be generated: {docx_bytes}"
+
+        # If bytes were successfully generated, prepare the item for storage
+        if docx_bytes:
+            item = {
+                'type': 'docx file',
+                'filename': filename,
+                'data': docx_bytes,
+            }
+            with my_skills_storage.STORAGE_LOCK:
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
+                else:
+                    my_skills_storage.STORAGE[chat_id] = [item,]
+            return "OK"
+        else:
+            # This case indicates that no DOCX data was generated.
+            my_log.log_gemini_skills_save_docs(f'save_to_docx: No DOCX data could be generated for chat {chat_id}\n\nText length: {len(text)}')
+            return "FAIL: No DOCX data could be generated."
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills_save_docs(f'save_to_docx: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {error}"
+
+
+def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
+    '''
+    Send excel file to user. Supports multiple sheets, auto-adjusting column widths, and formulas.
+
+    Args:
+        filename (str): The desired file name for the Excel file (e.g., 'report').
+
+        data (dict): A dictionary where keys are sheet names (str) and values are dictionaries
+                     defining the content of each sheet.
+
+                     To specify formulas, each sheet's dictionary should contain two keys:
+                     - 'data': A dictionary that can be converted to a pandas DataFrame.
+                     - 'formulas': A list of dictionaries, where each item specifies a formula.
+                       - 'cell' (str): The cell to place the formula in (e.g., 'C2').
+                       - 'formula' (str): The Excel formula string (e.g., '=A2*B2').
+
+                     Example with formulas:
+                     {
+                         'Sales': {
+                             'data': {
+                                 'Product': ['Laptop', 'Mouse'],
+                                 'Quantity': [10, 50],
+                                 'Price': [1200, 25],
+                                 'Total': [0, 0]  # Placeholder for formula results
+                             },
+                             'formulas': [
+                                 {'cell': 'D2', 'formula': '=B2*C2'},
+                                 {'cell': 'D3', 'formula': '=B3*C3'},
+                                 {'cell': 'B5', 'formula': "='Total Quantity:'"},
+                                 {'cell': 'C5', 'formula': '=SUM(B2:B3)'}
+                             ]
+                         },
+                         'Sheet2': { # Example of a sheet without formulas (old format)
+                            'Product':['Keyboard', 'Monitor'], 'Price':[50, 300]
+                         }
+                     }
+
+        chat_id (str): The Telegram user chat ID where the file should be sent.
+
+    Returns:
+        str: 'OK' if the file was successfully prepared, or a 'FAIL' message otherwise.
+    '''
+    try:
+        my_log.log_gemini_skills_save_docs(f'save_to_excel {chat_id}\n\n {data}')
+
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        if not filename.lower().endswith('.xlsx'):
+            filename += '.xlsx'
+        filename = utils.safe_fname(filename)
+
+        excel_buffer = io.BytesIO()
+
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+            if not data:
+                pd.DataFrame({}).to_excel(writer, sheet_name="Sheet1", index=False)
+            else:
+                for sheet_name, sheet_content in data.items():
+                    # --- Определяем данные и формулы ---
+                    # Проверяем, используется ли новый формат с ключами 'data' и 'formulas'
+                    if isinstance(sheet_content, dict) and 'data' in sheet_content:
+                        sheet_data_dict = sheet_content['data']
+                        formulas_to_apply = sheet_content.get('formulas', [])
+                    else:
+                        # Обратная совместимость: если формат старый, формул нет
+                        sheet_data_dict = sheet_content
+                        formulas_to_apply = []
+
+                    if not isinstance(sheet_data_dict, dict):
+                        return f"FAIL: Invalid data for sheet '{sheet_name}'. Expected a dictionary for sheet content."
+
+                    try:
+                        # 1. Заливаем основные данные через pandas
+                        df = pd.DataFrame(sheet_data_dict)
+                        df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+                        # 2. Настраиваем ширину столбцов
+                        worksheet = writer.sheets[sheet_name]
+                        for idx, col in enumerate(df):
+                            series = df[col]
+                            max_len = max(
+                                series.astype(str).map(len).max(),
+                                len(str(series.name))
+                            ) + 1
+                            worksheet.set_column(idx, idx, max_len)
+
+                        # 3. Вставляем формулы, если они есть
+                        if formulas_to_apply:
+                            for item in formulas_to_apply:
+                                if isinstance(item, dict) and 'cell' in item and 'formula' in item:
+                                    worksheet.write_formula(item['cell'], item['formula'])
+                                else:
+                                    # Можно логировать ошибку, если формат формулы неверный
+                                    my_log.log_gemini_skills_save_docs(f'save_to_excel: Invalid formula item for sheet "{sheet_name}": {item}')
+
+                    except Exception as sheet_write_error:
+                        my_log.log_gemini_skills_save_docs(f'save_to_excel: Error writing sheet "{sheet_name}": {sheet_write_error}\n\n{traceback.format_exc()}')
+                        return f"FAIL: Error writing data to sheet '{sheet_name}': {sheet_write_error}"
+
+        excel_bytes = excel_buffer.getvalue()
+
+        if excel_bytes:
+            item = {'type': 'excel file', 'filename': filename, 'data': excel_bytes}
+            with my_skills_storage.STORAGE_LOCK:
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
+                else:
+                    my_skills_storage.STORAGE[chat_id] = [item,]
+            return "OK"
+        else:
+            my_log.log_gemini_skills_save_docs(f'save_to_excel: No Excel data could be generated for chat {chat_id}\n\n{data}')
+            return "FAIL: No Excel data could be generated."
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills_save_docs(f'save_to_excel: Unexpected error: {error}\n\n{traceback_error}\n\n{data}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {error}"
+
+
+def save_to_pdf(filename: str, text: str, chat_id: str) -> str:
+    """
+    Send PDF file to user, converted from markdown text(~~ for strikethrough).
+
+    Args:
+        filename: str - The desired file name for the PDF file (e.g., 'document').
+        text: str - The markdown formatted text to convert to PDF.
+        chat_id: str - The Telegram user chat ID where the file should be sent.
+
+    Returns:
+        str: 'OK' if the file was successfully sent, or a detailed 'FAIL' message otherwise.
+    """
+    try:
+        # Log the function call for debugging/monitoring purposes
+        my_log.log_gemini_skills_save_docs(f'save_to_pdf {chat_id}\n\n{filename}\n{text}')
+
+        # Restore the actual chat ID
+        chat_id = restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        # Ensure filename has .pdf extension and is safe for file system operations
+        if not filename.lower().endswith('.pdf'):
+            filename += '.pdf'
+        filename = utils.safe_fname(filename)
+
+        # Convert the markdown text to PDF bytes using the underlying utility
+        pdf_bytes = None
+
+        data = my_pandoc.convert_markdown_to_document(text, 'pdf')
+        if isinstance(data, str):
+            my_log.log_gemini_skills_save_docs(f'save_to_pdf: Error converting text to PDF: {data}')
+            return data
+
+        pdf_bytes = io.BytesIO(data).getvalue()
+
+        # If PDF bytes were successfully generated, prepare the item for storage
+        if pdf_bytes:
+            item = {
+                'type': 'pdf file', # Define the type for the stored item
+                'filename': filename,
+                'data': pdf_bytes,
+            }
+            # Use a global storage mechanism with a lock to ensure thread safety
+            with my_skills_storage.STORAGE_LOCK:
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]: # Avoid duplicate entries if necessary
+                        my_skills_storage.STORAGE[chat_id].append(item)
+                else:
+                    my_skills_storage.STORAGE[chat_id] = [item,]
+            return "OK"
+        else:
+            # This case indicates that no PDF data was generated, even after attempting conversion.
+            my_log.log_gemini_skills_save_docs(f'save_to_pdf: No PDF data could be generated for chat {chat_id}\n\nText length: {len(text)}')
+            return "FAIL: No PDF data could be generated."
+
+    except Exception as error:
+        # Catch any unexpected errors that occur during the function's execution
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills_save_docs(f'save_to_pdf: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+        return f"FAIL: An unexpected error occurred: {error}"
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)

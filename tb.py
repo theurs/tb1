@@ -2468,6 +2468,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot_reply_tr(message, 'Saved text deleted.')
             else:
                 bot_reply_tr(message, 'No text was saved.')
+            COMMAND_MODE[chat_id_full] = ''
 
         elif call.data == 'select_mistral':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'mistral')

@@ -481,8 +481,6 @@ def get_text_from_youtube(url: str, transcribe: bool = True, language: str = '')
             return get_subs_from_rutube(url)
         if 'pornhub.com/view_video.php?viewkey=' in url:
             return get_subs_from_rutube(url)
-        if 'https://tv.rbc.ru/archive/' in url:
-            return get_subs_from_rutube(url)
         if 'tiktok.com' in url and 'video' in url:
             return get_subs_from_rutube(url)
         if 'vk.com' in url and '/video-' in url or 'vkvideo.ru' in url:
@@ -815,7 +813,6 @@ def summ_url(
        ('tiktok.com' in url and 'video' in url) or \
        ('vk.com' in url and '/video-' in url) or \
        ('vkvideo.ru' in url and '/video-' in url) or \
-       ('https://tv.rbc.ru/archive/' in url) or \
        ('https://vimeo.com/' in url) or \
        ('//my.mail.ru/v/' in url and '/video/' in url):
         text = get_text_from_youtube(url, language=lang)

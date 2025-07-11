@@ -18,7 +18,7 @@ import my_skills_storage
 import utils
 
 
-DEFAULT_MODEL = 'gemini-live-2.5-flash-preview'
+DEFAULT_MODEL = 'gemini-2.5-flash-live-preview'
 FALLBACK_MODEL = 'gemini-2.0-flash-live-001'
 SYSTEM_ = []
 

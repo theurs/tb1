@@ -19,7 +19,7 @@ import utils
 
 
 # DEFAULT_MODEL = "gemini-2.0-flash-live-001"
-DEFAULT_MODEL = 'gemini-live-2.5-flash-preview'
+DEFAULT_MODEL = 'gemini-2.5-flash-live-preview'
 DEFAULT_VOICE = "Leda"
 ALL_VOICES = ["Aoede", "Charon", "Fenrir", "Kore", "Leda", "Orus", "Puck", "Zephyr"]
 

@@ -684,6 +684,10 @@ def chat(
                     return ''
                 elif 'API key expired. Please renew the API key.' in str(error) or '429 Quota exceeded for quota metric' in str(error):
                     my_gemini_general.remove_key(key)
+                    continue
+                if 'API Key not found. Please pass a valid API key.' in str(error):
+                    my_gemini_general.remove_key(key)
+                    continue
                 elif 'timeout' in str(error).lower():
                     my_log.log_gemini(f'my_gemini3:chat:timeout: {str(error)} {model} {key}')
                     return ''
@@ -709,7 +713,6 @@ def chat(
 
                     # my_log.log_gemini(f'my_gemini:chat2:2:3__: mem: {mem}\n\nnew_mem: {new_mem}')
                     mem = new_mem # Переприсваиваем
-
                 else:
                     raise error
 
@@ -794,8 +797,8 @@ def chat(
             my_log.log_gemini(f'my_gemini3:chat:unknown_error:1: {error} {model}')
         else:
             if 'API Key not found. Please pass a valid API key.' in str(error):
-                my_log.log_gemini(f'my_gemini3:chat:unknown_error:2: {error}\nKey: [{key}]')
-                # my_gemini_general.remove_key(key)
+                # my_log.log_gemini(f'my_gemini3:chat:unknown_error:2: {error}\nKey: [{key}]')
+                my_gemini_general.remove_key(key)
             else:
                 my_log.log_gemini(f'my_gemini3:chat:unknown_error:3: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}')
         return ''

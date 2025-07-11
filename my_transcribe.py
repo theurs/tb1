@@ -60,9 +60,9 @@ def detect_repetitiveness(text: str) -> bool:
     text_encoded = text.encode()
     compressed_data = zlib.compress(text_encoded)
     ratio = len(text_encoded) / len(compressed_data)
-    if ratio > 5:
+    if ratio > 6:
         my_log.log_entropy_detector(f'{len(text_encoded)} {len(compressed_data)} {ratio}\n\n{text}')
-    return ratio > 5
+    return ratio > 6
 
 
 def detect_repetitiveness_with_tail(text: str) -> bool:
@@ -78,9 +78,9 @@ def detect_repetitiveness_with_tail(text: str) -> bool:
     compressed_data2 = zlib.compress(text_encoded[-int(len(text_encoded)/2):])
     ratio = len(text_encoded) / len(compressed_data)
     ratio2 = len(text_encoded[-int(len(text_encoded)/2):]) / len(compressed_data2)
-    if ratio > 5 and ratio2 > 100:
+    if ratio > 6 and ratio2 > 100:
         my_log.log_entropy_detector(f'{len(text_encoded)} {len(compressed_data)} {ratio}\n\n{text}')
-    return ratio > 5 and ratio2 > 100
+    return ratio > 6 and ratio2 > 100
 
 
 def recognize_chunk(audio_chunk: AudioSegment,

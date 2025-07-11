@@ -793,7 +793,11 @@ def chat(
            or """503 UNAVAILABLE. {'error': {'code': 503, 'message': 'The service is currently unavailable.', 'status': 'UNAVAILABLE'}}""" in str(error):
             my_log.log_gemini(f'my_gemini3:chat:unknown_error:1: {error} {model}')
         else:
-            my_log.log_gemini(f'my_gemini3:chat:unknown_error:2: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}')
+            if 'API Key not found. Please pass a valid API key.' in str(error):
+                my_log.log_gemini(f'my_gemini3:chat:unknown_error:2: {error}\nKey: [{key}]')
+                # my_gemini_general.remove_key(key)
+            else:
+                my_log.log_gemini(f'my_gemini3:chat:unknown_error:3: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}')
         return ''
     finally:
         if chat_id in my_skills_storage.STORAGE_ALLOWED_IDS:

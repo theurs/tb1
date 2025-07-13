@@ -3231,7 +3231,7 @@ def handle_document(message: telebot.types.Message):
                     handle_voice(message)
                     return
 
-                if message.document and message.document.mime_type.startswith('image/') and message.document.mime_type not in ('image/svg+xml', 'image/vnd.djvu+multipage',):
+                if message.document and message.document.mime_type.startswith(('image/','animation/gif')) and message.document.mime_type not in ('image/svg+xml', 'image/vnd.djvu+multipage',):
                     handle_photo(message)
                     return
 

@@ -357,7 +357,7 @@ def stt_genai(audio_file: str, language: str = 'ru') -> str:
 
     for part in parts:
         n += 1
-        t = threading.Thread(target=stt_genai_worker, args=(audio_file, part, n, output_name))
+        t = threading.Thread(target=stt_genai_worker, args=(audio_file, part, n, output_name, language))
         threads.append(t)
         t.start()
 

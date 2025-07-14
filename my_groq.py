@@ -308,7 +308,7 @@ def ai(prompt: str = '',
                 my_log.log_groq(f'GROQ PermissionDeniedError: {key}')
                 continue
             except Exception as error:
-                if 'invalid api key' in str(error).lower():
+                if 'invalid api key' in str(error).lower() or 'Organization has been restricted' in str(error):
                     remove_key(key)
                     continue
                 if 'Rate limit reached for model' in str(error).lower():

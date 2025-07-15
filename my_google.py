@@ -159,7 +159,7 @@ Search results:
     if not r:
         r = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], max_tokens_ = 4000, system=role)
         if r:
-            r += '\n\n--\n[Llama 3.2 90b]'
+            r += f'\n\n--\n[{my_groq.DEFAULT_MODEL}]'
     if not r:
         r = my_groq.ai(q[:32000], max_tokens_ = 4000, model_ = 'mixtral-8x7b-32768', system=role)
         if r:

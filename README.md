@@ -195,7 +195,7 @@ default_bot_name = 'бот'
 # какой бот отвечает по умолчанию
 # 'gemini', 'gemini25_flash', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15',
 # 'openrouter', 'mistral', 'magistral', 'cohere', 'gpt-4o', 'deepseek_r1',
-# 'deepseek_v3', 'llama4_maverick', 'gpt_41', 'gpt_41_mini'
+# 'deepseek_v3', 'qwen3', 'gpt_41', 'gpt_41_mini'
 
 chat_mode_default = 'gemini'
 

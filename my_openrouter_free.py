@@ -25,8 +25,8 @@ LOCKS = {}
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 50000
 
-DEFAULT_MODEL = 'meta-llama/llama-4-maverick:free'
-DEFAULT_MODEL_FALLBACK = 'meta-llama/llama-4-scout:free'
+DEFAULT_MODEL = 'qwen/qwen3-235b-a22b:free'
+DEFAULT_MODEL_FALLBACK = 'qwen/qwen3-32b:free'
 
 def clear_mem(mem, user_id: str):
     while 1:

@@ -532,7 +532,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_gemini3.update_mem(query, resp, chat_id_full, model=mode)
         elif 'openrouter' in mode:
             my_openrouter.update_mem(query, resp, chat_id_full)
-        elif 'llama4_maverick' in mode:
+        elif 'qwen3' in mode:
             my_openrouter_free.update_mem(query, resp, chat_id_full)
         elif mode in ('mistral', 'magistral'):
             my_mistral.update_mem(query, resp, chat_id_full)
@@ -692,10 +692,10 @@ def img2txt(
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter'
 
-                # if not text and chat_mode == 'llama4_maverick':
+                # if not text and chat_mode == 'qwen3':
                 #     text = my_openrouter_free.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                 #     if text:
-                #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'llama4_maverick'
+                #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'qwen3'
 
                 elif not text and chat_mode == 'gpt-4o':
                     text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_MODEL, system=system_message, timeout=timeout)
@@ -830,12 +830,6 @@ def img2txt(
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
-
-            # # llama-4-maverick
-            # if not text:
-            #     text = my_openrouter_free.img2txt(data, query, model = 'meta-llama/llama-4-maverick:free', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-            #     if text:
-            #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'meta-llama/llama-4-maverick:free'
 
             # llama-4-maverick at groq
             if not text:
@@ -2042,18 +2036,18 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'OpenRouter'
             button_openrouter = telebot.types.InlineKeyboardButton(msg, callback_data='select_openrouter')
 
-            if chat_mode == 'llama4_maverick':
-                msg = '✅ Llama 4'
+            if chat_mode == 'qwen3':
+                msg = '✅ Qwen 3'
             else:
-                msg = 'Llama 4'
-            button_llama4_maverick = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama4_maverick')
+                msg = 'Qwen 3'
+            button_qwen3 = telebot.types.InlineKeyboardButton(msg, callback_data='select_qwen3')
 
 
             msg = '==='
             button_filler1 = telebot.types.InlineKeyboardButton(msg, callback_data='switch_do_nothing')
 
             markup.row(button_gemini_flash25, button_mistral)
-            markup.row(button_llama4_maverick, button_cohere)
+            markup.row(button_qwen3, button_cohere)
             markup.row(button_gpt_4o, button_gpt_41)
             markup.row(button_gemini_pro, button_gemini_flash20)
             markup.row(button_deepseek_v3, button_openrouter)
@@ -2522,8 +2516,8 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
             else:
                 bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать openrouter. Команда /openrouter')
-        elif call.data == 'select_llama4_maverick':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'llama4_maverick')
+        elif call.data == 'select_qwen3':
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen3')
 
         elif call.data == 'general_reset':
             reset_(message, say = True, chat_id_full = chat_id_full)
@@ -4902,7 +4896,7 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_gemini3.force(chat_id_full, text, model = mode)
         elif mode == 'openrouter':
             my_openrouter.force(chat_id_full, text)
-        elif mode == 'llama4_maverick':
+        elif mode == 'qwen3':
             my_openrouter_free.force(chat_id_full, text)
         elif mode in ('mistral', 'magistral'):
             my_mistral.force(chat_id_full, text)
@@ -4955,7 +4949,7 @@ def undo_cmd(message: telebot.types.Message, show_message: bool = True):
             my_gemini3.undo(chat_id_full, model = mode)
         elif mode == 'openrouter':
             my_openrouter.undo(chat_id_full)
-        elif mode == 'llama4_maverick':
+        elif mode == 'qwen3':
             my_openrouter_free.undo(chat_id_full)
         elif mode in ('mistral', 'magistral'):
             my_mistral.undo(chat_id_full)
@@ -4993,7 +4987,7 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
                 my_gemini3.reset(chat_id_full, mode)
             elif mode == 'openrouter':
                 my_openrouter.reset(chat_id_full)
-            elif mode == 'llama4_maverick':
+            elif mode == 'qwen3':
                 my_openrouter_free.reset(chat_id_full)
             elif mode in ('mistral', 'magistral'):
                 my_mistral.reset(chat_id_full)
@@ -5096,7 +5090,7 @@ def save_history(message: telebot.types.Message):
             prompt = my_gemini3.get_mem_as_string(chat_id_full, md = True, model = mode) or ''
         if mode == 'openrouter':
             prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
-        if mode == 'llama4_maverick':
+        if mode == 'qwen3':
             prompt = my_openrouter_free.get_mem_as_string(chat_id_full, md = True) or ''
         if mode in ('mistral', 'magistral'):
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
@@ -5163,8 +5157,8 @@ def send_debug_history(message: telebot.types.Message):
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             prompt = 'Openrouter\n\n'
             prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4_maverick':
-            prompt = 'Llama4 Maverick\n\n'
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen3':
+            prompt = 'Qwen 3 235b a22b\n\n'
             prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
             prompt = 'Mistral Large\n\n'
@@ -5257,7 +5251,7 @@ def load_memory_handler(message: telebot.types.Message):
             target_mem_string = my_gemini3.get_mem_as_string(target_user_id_str, model=target_chat_mode)
         elif target_chat_mode == 'openrouter':
             target_mem_string = my_openrouter.get_mem_as_string(target_user_id_str)
-        elif target_chat_mode == 'llama4_maverick':
+        elif target_chat_mode == 'qwen3':
             target_mem_string = my_openrouter_free.get_mem_as_string(target_user_id_str)
         elif target_chat_mode == 'mistral' or target_chat_mode == 'magistral':
             target_mem_string = my_mistral.get_mem_as_string(target_user_id_str)
@@ -7350,7 +7344,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'deepseek_v3': my_nebius.DEFAULT_V3_MODEL,
             'cohere': my_cohere.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
-            'llama4_maverick': my_openrouter_free.DEFAULT_MODEL,
+            'qwen3': my_openrouter_free.DEFAULT_MODEL,
             'bothub': 'bothub.chat',
         }
         if user_model == 'openrouter':
@@ -9852,10 +9846,10 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log2(f'tb:do_task:magistral {error3}\n{error_traceback}')
 
 
-                # если активирован режим общения с Llama4 Maverick
-                elif chat_mode_ == 'llama4_maverick':
+                # если активирован режим общения с Qwen 3 235b a22b
+                elif chat_mode_ == 'qwen3':
                     if len(msg) > my_openrouter_free.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Llama4 Maverick, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter_free.MAX_REQUEST}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Qwen 3 235b a22b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter_free.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
@@ -9868,8 +9862,11 @@ def do_task(message, custom_prompt: str = ''):
                                 model = my_openrouter_free.DEFAULT_MODEL,
                             )
 
-                            WHO_ANSWERED[chat_id_full] = 'Llama4 Maverick'
+                            WHO_ANSWERED[chat_id_full] = 'Qwen 3 235b a22b'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            thoughts, answer = utils_llm.split_thoughts(answer)
+                            thoughts = utils.bot_markdown_to_html(thoughts)
 
                             if answer.startswith('The bot successfully generated images on the external services'):
                                 undo_cmd(message, show_message=False)
@@ -9884,9 +9881,9 @@ def do_task(message, custom_prompt: str = ''):
 
                             answer = answer.strip()
                             if not answer:
-                                answer = 'Llama4 Maverick ' + tr('did not answered, try to /reset and start again.', lang)
+                                answer = 'Qwen 3 235b a22b ' + tr('did not answered, try to /reset and start again.', lang)
 
-                            my_log.log_echo(message, f'[Llama4 Maverick] {answer}')
+                            my_log.log_echo(message, f'[Qwen 3 235b a22b] {answer}')
 
                             try:
                                 if command_in_answer(answer, message):
@@ -9900,7 +9897,7 @@ def do_task(message, custom_prompt: str = ''):
                                                         reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
-                            my_log.log2(f'tb:do_task:llama4_maverick {error3}\n{error_traceback}')
+                            my_log.log2(f'tb:do_task:qwen3 {error3}\n{error_traceback}')
 
 
                 # если активирован режим общения с gpt-4o

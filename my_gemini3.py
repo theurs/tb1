@@ -1390,9 +1390,9 @@ if __name__ == "__main__":
 
     reset('test')
 
-    # chat_cli(model = 'gemini-2.5-flash-lite-preview-06-17', THINKING_BUDGET=10000, use_skills=True)
+    chat_cli(model = 'gemini-2.5-flash')
     # chat_cli(model = 'gemini-2.5-flash', THINKING_BUDGET=10000, use_skills=True)
-    chat_cli(model = 'gemini-2.0-flash', THINKING_BUDGET=10000, use_skills=True)
+    # chat_cli(model = 'gemini-2.0-flash', THINKING_BUDGET=10000, use_skills=True)
 
     # with open(r'c:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_-_znachaschie_tsifryi_106746.txt', 'r', encoding='utf-8') as f:
     #     t = f.read()

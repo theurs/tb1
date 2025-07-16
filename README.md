@@ -209,7 +209,7 @@ gemini_flash_model = 'gemini-2.0-flash'
 gemini_flash_model_fallback = 'gemini-2.0-flash-exp'
 
 gemini25_flash_model = 'gemini-2.5-flash-preview-05-20'
-gemini25_flash_model_fallback = 'gemini-2.5-flash-preview-04-17-thinking'
+gemini25_flash_model_fallback = 'gemini-2.5-flash'
 
 gemini_flash_light_model = 'gemini-2.5-flash-lite-preview-06-17'
 gemini_flash_light_model_fallback = 'gemini-2.0-flash-lite-preview-02-05'

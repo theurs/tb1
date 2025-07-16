@@ -10489,7 +10489,7 @@ def main():
         # my_gemini_voice.test2_read_a_book_()
         # import my_gemini_imagen
         # my_gemini_imagen.test_imagen()
-        # print(my_gemini3.chat('привет ты как', model = 'gemini-2.5-flash-live-preview', chat_id='test', system='отвечай всегда по-русски'))
+        print(my_gemini3.chat('привет ты как', model = 'gemini-2.5-flash', chat_id='test', system='отвечай всегда по-русски'))
         # my_gemini3.trim_all()
         # my_gemini_live_text.chat_cli()
 

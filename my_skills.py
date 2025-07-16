@@ -37,10 +37,7 @@ import my_github
 import my_groq
 import my_log
 import my_md_tables_to_png
-import my_mermaid
 import my_mistral
-import my_pandoc
-import my_plantweb
 import my_skills_storage
 import my_skills_general
 import my_sum
@@ -63,7 +60,7 @@ get_weather = my_skills_general.get_weather
 
 def query_user_file(query: str, user_id: str) -> str:
     '''
-    Query saved user file
+    Query saved user file (do not ask for full text, just answer the question)
 
     Args:
         query: str - user query

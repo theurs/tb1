@@ -4521,55 +4521,77 @@ def memo_admin_handler(message: telebot.types.Message):
     """
     try:
         chat_id_full = get_topic_id(message)
-
         COMMAND_MODE[chat_id_full] = ''
 
-        args = message.text.split('\n')
+        # Получаем только первую строку сообщения, чтобы извлечь команду и ID пользователя
+        first_line = message.text.split('\n', 1)[0]
 
-        if len(args) == 1: # Handle cases where only /memo_admin is provided or /memo_admin user_id
-            args = args[0].split()
-            if len(args) == 1:
-                bot_reply_tr(message, "Usage:\n/memo_admin <user_id> [<memo_1>\n<memo_2>\n...<memo_10>]\n/memo_admin <user_id> - View existing memos", parse_mode='')
-                return
-            else:
-                user_id_str = f'[{args[1].strip()}] [0]'
-                memos = my_db.blob_to_obj(my_db.get_user_property(user_id_str, 'memos')) or []
-                if memos:
-                    msg = ''
-                    n = 1
-                    for memo in memos:
-                        msg += f'\n\n[{n}] {memo}'
-                        n += 1
-                    bot_reply(message, msg)
-                return
+        # Регулярное выражение для извлечения ID пользователя.
+        # Оно ищет '/memo_admin' затем один или более пробелов,
+        # а затем захватывает либо:
+        # 1. Строку вида '[цифры] [цифры]' (например, '[12345] [0]')
+        # 2. Либо просто последовательность цифр (например, '12345')
+        # (?:...) создает незахватывающую группу для условия ИЛИ.
+        # Внешние скобки (...) создают захватывающую группу для самого ID.
+        user_id_pattern = re.compile(r'^/memo_admin\s+((?:\[\d+\] \[\d+\])|\d+)')
+        match = user_id_pattern.match(first_line)
 
-        user_id_str = args[0].split()[1].strip()
-        try:
-            user_id = int(user_id_str)
-        except ValueError:
-            bot_reply_tr(message, "Invalid user ID. Must be an integer.")
+        if not match:
+            # Если совпадения нет, значит ID не был предоставлен или формат неверный
+            bot_reply_tr(message, "Usage: /memo_admin <user_id>\n\n[<memo_1>\n\n<memo_2>\n\n...<memo_10>]\n\n/memo_admin <user_id> - View existing memos", parse_mode='')
             return
 
-        user_chat_id_full = f'[{user_id}] [0]'
+        # Извлеченный ID пользователя (строка, например '12345' или '[12345] [0]')
+        user_id_extracted = match.group(1)
 
-        args.pop(0) # remove command
-        new_memos = [line.strip() for line in args if line.strip()]
+        # Определяем полный формат ID чата для работы с базой данных
+        user_chat_id_full = ""
+        # Если извлеченный ID состоит только из цифр, форматируем его как '[цифры] [0]'
+        if user_id_extracted.isdigit():
+            user_chat_id_full = f'[{user_id_extracted}] [0]'
+        else:
+            # В противном случае, он уже должен быть в формате '[число] [число]'
+            # Регулярка уже проверила его формат, так что дополнительная проверка не нужна.
+            user_chat_id_full = user_id_extracted
 
-        if new_memos: # Only set/add memos if new_memos were provided
-            # existing_memos = my_db.blob_to_obj(my_db.get_user_property(user_chat_id_full, 'memos')) or []
-            # combined_memos = existing_memos + new_memos
+        # Теперь обрабатываем заметки: просмотр или сохранение
+        all_lines = message.text.split('\n')
+        # Если в сообщении только одна строка (команда + ID)
+        # или две строки, но вторая пустая, то это запрос на просмотр заметок
+        if len(all_lines) == 1 or (len(all_lines) == 2 and not all_lines[1].strip()):
+            memos = my_db.blob_to_obj(my_db.get_user_property(user_chat_id_full, 'memos')) or []
+            if memos:
+                msg = ''
+                n = 1
+                for memo in memos:
+                    msg += f'\n\n[{n}] {memo}'
+                    n += 1
+                bot_reply(message, msg)
+            else:
+                bot_reply_tr(message, f"No memos found for user {user_id_extracted}.")
+            return
+
+        # Если есть дополнительные строки, то пользователь передал новые заметки для сохранения
+        new_memos_raw = all_lines[1:] # Заметки начинаются со второй строки
+        new_memos = [line.strip() for line in new_memos_raw if line.strip()] # Отфильтровываем пустые строки
+
+        if new_memos:
+            # Согласно логике исходного кода, новые заметки заменяют старые.
             combined_memos = new_memos
             if len(combined_memos) > 10:
-                combined_memos = combined_memos[-10:]
+                combined_memos = combined_memos[-10:] # Оставляем только последние 10
                 bot_reply_tr(message, "Too many memos. Only the last 10 will be saved.")
 
             my_db.set_user_property(user_chat_id_full, 'memos', my_db.obj_to_blob(combined_memos))
-            bot_reply_tr(message, f"Memos saved for user {user_id}.")
+            bot_reply_tr(message, f"Memos saved for user {user_id_extracted}.")
+        else:
+            # Обработка случаев, когда после команды с ID идут только пустые строки
+            bot_reply_tr(message, "No valid memos provided to save. To view memos, use /memo_admin <user_id> without any additional lines.")
 
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:memo_admin_handler: {unknown}\n{traceback_error}')
-        bot_reply_tr(message, "Usage:\n/memo_admin <user_id> [<memo_1>\n<memo_2>\n...<memo_10>]\n/memo_admin <user_id> - View existing memos", parse_mode='')
+        bot_reply_tr(message, "An unexpected error occurred. Please check the format and try again.\nUsage:\n/memo_admin <user_id> [<memo_1>\n<memo_2>\n...<memo_10>]\n/memo_admin <user_id> - View existing memos", parse_mode='')
 
 
 # вариант с такой лямбдой вызывает проблемы в функции is_for_me, туда почему то приходит команда без имени бота

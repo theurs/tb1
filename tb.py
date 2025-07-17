@@ -4593,7 +4593,6 @@ def memo_admin_handler(message: telebot.types.Message):
 
 # вариант с такой лямбдой вызывает проблемы в функции is_for_me, туда почему то приходит команда без имени бота
 # @bot.message_handler(func=lambda message: authorized_owner(message) and message.text.split()[0].lower() in ['/style', '/role'])
-
 @bot.message_handler(commands=['style', 'role'], func=authorized_owner)
 @async_run
 def change_mode(message: telebot.types.Message):

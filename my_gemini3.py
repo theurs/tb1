@@ -1364,6 +1364,62 @@ def test_new_key(key: str, chat_id_full: str) -> bool:
     return False
 
 
+@cachetools.func.ttl_cache(maxsize=100, ttl=15*60)
+def rewrite_text_for_tts(text: str, user_id: str) -> str:
+    '''
+    Rewrites the given text for text-to-speech (TTS).
+
+    This function takes a text string and reformulates it to make it easier to read aloud
+    by TTS systems. It removes elements that are difficult to pronounce without adding
+    any new words or translating the text. The function tries to ensure that the output
+    text retains the same meaning as the input.
+
+    Args:
+        text (str): The text to be rewritten for TTS.
+        user_id (str): The user ID associated with the request.
+
+    Returns:
+        str: The rewritten text suitable for TTS.
+    '''
+
+    try:
+        query = f'''Rewrite this TEXT for TTS voiceover, remove from it what is difficult to read aloud,
+do not add your own words to the result, your text response should only contain the new text.
+Translating the text to another language is not allowed.
+Example text: 2-3 weeks, maximum 5.
+Example answer: two to three weeks, five at the most.
+TEXT to rewrite:
+
+{text}
+'''
+        result = chat(
+            query=query,
+            chat_id=user_id,
+            temperature=0.1,
+            model=cfg.gemini_flash_light_model,
+            do_not_update_history=True
+        )
+
+        if not result:
+            result = chat(
+                query=query,
+                chat_id=user_id,
+                temperature=0.1,
+                model=cfg.gemini_flash_light_model_fallback,
+                do_not_update_history=True
+            )
+
+        if not result:
+            return text
+
+        return result
+
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'my_gemini3:rewrite_text_for_tts: {error}\n\n{error_traceback}')
+        return text
+
+
 # одноразовая функция, удалить?
 def converts_all_mems():
     '''

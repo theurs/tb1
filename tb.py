@@ -2361,7 +2361,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 if not detected_lang:
                     detected_lang = lang or "de"
 
-                rewrited_text = text
+                rewrited_text = my_gemini3.rewrite_text_for_tts(text, chat_id_full)
                 message.text = f'/tts {detected_lang} {rewrited_text}'
                 tts(message)
         elif call.data.startswith('select_lang-'):

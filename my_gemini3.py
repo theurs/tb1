@@ -28,6 +28,7 @@ import cfg
 import my_db
 import my_gemini_general
 import my_gemini_live_text
+import my_github
 import my_log
 import my_skills
 import my_skills_general
@@ -1441,12 +1442,19 @@ def compose_creative_text(prompt: str, user_id: str) -> str:
 
         query = f'''{{"request_type": "creative_text_generation", "user_prompt": "{prompt}", "output_format_instruction": "The output must contain only the requested creative text (song, poem, rhymed verse) without any introductory phrases, conversational remarks, or concluding comments."}}'''
 
-        result = chat(
-            query=query,
-            chat_id=user_id,
-            temperature=1.5,
-            model=cfg.gemini_pro_model,
-            do_not_update_history=True,
+        # result = chat(
+        #     query=query,
+        #     chat_id=user_id,
+        #     temperature=1.5,
+        #     model=cfg.gemini_pro_model,
+        #     do_not_update_history=True,
+        # )
+
+        result = my_github.ai(
+            prompt=query,
+            user_id=user_id,
+            temperature=1,
+            model=my_github.BIG_GPT_MODEL,
         )
 
         if result:

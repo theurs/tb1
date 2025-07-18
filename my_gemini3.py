@@ -642,7 +642,7 @@ def chat(
                             my_skills.edit_image,
                             my_skills.translate_text,
                             my_skills.translate_documents,
-                            # my_skills.compose_creative_text, # its too slow
+                            compose_creative_text,
                             my_skills.text_to_image,
                             my_skills.text_to_qrcode,
                             my_skills_general.save_to_txt,
@@ -1418,6 +1418,47 @@ TEXT to rewrite:
         error_traceback = traceback.format_exc()
         my_log.log2(f'my_gemini3:rewrite_text_for_tts: {error}\n\n{error_traceback}')
         return text
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl = 2*60)
+def compose_creative_text(prompt: str, user_id: str) -> str:
+    '''
+    Composes creative content such as songs, poems, and rhymed verses.
+    Only use it if user ask for generating song, poem, or rhymed text.
+    The output will be the generated text *only*, without any additional commentary.
+
+    Args:
+        prompt: The user's full request for creative text generation, including any topic, style, length, or specific rhyming schemes.
+        user_id: The Telegram user ID.
+
+    Returns:
+        The generated song, poem, or rhymed text.
+    '''
+    try:
+        user_id = my_skills_general.restore_id(user_id)
+
+        my_log.log_gemini_skills(f'compose_creative_text: {user_id} {prompt}')
+
+        query = f'''{{"request_type": "creative_text_generation", "user_prompt": "{prompt}", "output_format_instruction": "The output must contain only the requested creative text (song, poem, rhymed verse) without any introductory phrases, conversational remarks, or concluding comments."}}'''
+
+        result = chat(
+            query=query,
+            chat_id=user_id,
+            temperature=1.5,
+            model=cfg.gemini_pro_model,
+            do_not_update_history=True,
+        )
+
+        if result:
+            my_log.log_gemini_skills(f'compose_creative_text: {user_id} {prompt}\n\n{result}')
+            return result
+
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_gemini_skills(f'compose_creative_text: {error}\n\n{error_traceback}\n\n{prompt}')
+
+    my_log.log_gemini_skills(f'compose_creative_text: {user_id} {prompt}\n\nThe muse did not answer, come up with something yourself without the help of tools.')
+    return 'The muse did not answer, come up with something yourself without the help of tools.'
 
 
 # одноразовая функция, удалить?

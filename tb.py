@@ -6773,7 +6773,7 @@ def ask_file(message: telebot.types.Message):
                     reply_markup=get_keyboard('download_saved_text', message)
                     )
                 COMMAND_MODE[chat_id_full] = 'ask'
-                return
+            return
 
         if my_db.get_user_property(chat_id_full, 'saved_file_name'):
             with ShowAction(message, 'typing'):
@@ -10507,7 +10507,7 @@ def main():
         # my_gemini_voice.test2_read_a_book_()
         # import my_gemini_imagen
         # my_gemini_imagen.test_imagen()
-        print(my_gemini3.chat('привет ты как', model = 'gemini-2.5-flash', chat_id='test', system='отвечай всегда по-русски'))
+        # print(my_gemini3.chat('привет ты как', model = 'gemini-2.5-flash', chat_id='test', system='отвечай всегда по-русски'))
         # my_gemini3.trim_all()
         # my_gemini_live_text.chat_cli()
 

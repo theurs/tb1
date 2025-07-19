@@ -2192,9 +2192,13 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 button5 = telebot.types.InlineKeyboardButton('🎤Deepgram', callback_data='switch_do_nothing')
             else:
                 button5 = telebot.types.InlineKeyboardButton('Deepgram', callback_data='switch_speech_to_text_deepgram_nova3')
+            if speech_to_text_engine == 'voxtral':
+                button6 = telebot.types.InlineKeyboardButton('🎤Voxtral', callback_data='switch_do_nothing')
+            else:
+                button6 = telebot.types.InlineKeyboardButton('Voxtral', callback_data='switch_speech_to_text_voxtral')
             markup.row(button0, button1, button2)
-            markup.row(button3, button4, button5)
-
+            markup.row(button6, button3, button4)
+            markup.row(button5)
 
             is_private = message.chat.type == 'private'
             is_admin_of_group = False
@@ -10510,6 +10514,7 @@ def main():
         # print(my_gemini3.chat('привет ты как', model = 'gemini-2.5-flash', chat_id='test', system='отвечай всегда по-русски'))
         # my_gemini3.trim_all()
         # my_gemini_live_text.chat_cli()
+        # print(my_mistral.transcribe_audio(r'C:\Users\user\Downloads\samples for ai\аудио\короткий диалог 3 голоса.m4a', language='en', get_timestamps=False))
 
         bot.infinity_polling(timeout=90, long_polling_timeout=90)
 

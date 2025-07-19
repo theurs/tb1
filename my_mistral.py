@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
+# pip install -U mistralai pysrt
 
 
 import cachetools.func
 import inspect
 import json
 import base64
+import requests
 import time
 import threading
 import traceback
+from typing import Union
 
 import openai
+import pysrt
 from mistralai import Mistral
 from sqlitedict import SqliteDict
 
@@ -540,6 +544,148 @@ def ocr_pdf(
         return ''
 
 
+def format_to_srt(transcription_result: dict) -> str:
+    """
+    Преобразует результат транскрибации от API Mistral в формат субтитров SRT,
+    используя библиотеку pysrt.
+
+    Args:
+        transcription_result: Словарь (dict), полученный от функции transcribe_audio 
+                              с параметром get_timestamps=True.
+
+    Returns:
+        Строку с содержимым в формате .srt или пустую строку, если входные данные неверны.
+    """
+    if not isinstance(transcription_result, dict) or 'segments' not in transcription_result:
+        my_log.log_mistral('format_to_srt: Invalid input, expected a dict with a "segments" key.')
+        return ""
+
+    subs = pysrt.SubRipFile()
+
+    for i, segment in enumerate(transcription_result['segments'], start=1):
+        sub = pysrt.SubRipItem(
+            index=i,  # Явно зададим индекс для надежности
+            start=pysrt.SubRipTime(seconds=segment['start']),
+            end=pysrt.SubRipTime(seconds=segment['end']),
+            text=segment['text'].strip()
+        )
+        subs.append(sub)
+
+    srt_content = "\n\n".join(str(item) for item in subs)
+
+    # Добавим финальный перенос строки для соответствия стандарту
+    if srt_content:
+        srt_content += "\n"
+
+    return srt_content
+
+
+# ~15 минут но обещают скоро сделать больше,
+# и может библиотеку обновят что бы не юзать реквесты
+MAX_TRANSCRIBE_SECONDS = 14*60
+def transcribe_audio(
+    audio_data: bytes|str,
+    language: str | None = None,
+    get_timestamps: bool = False,
+    timeout: int = 300
+) -> Union[str, dict]:
+    """
+    Транскрибирует аудиозапись с использованием API Mistral через прямой HTTP-запрос.
+    Добавлена логика повторных попыток для временных ошибок.
+
+    Args:
+        audio_data: Аудиоданные в виде байтов или пути к файлу (str).
+        language: Язык аудио (код ISO 639-1). Если не указан (None), язык будет определен автоматически.
+        get_timestamps: Если True, запросит и вернет субтитры с временными метками.
+        timeout: Таймаут для API запроса в секундах.
+
+    Returns:
+        - Если get_timestamps=False (по умолчанию): Распознанный текст (str).
+        - Если get_timestamps=True: Полный JSON-ответ от API в виде словаря (dict), 
+          содержащий текст, сегменты с метками времени и другую информацию.
+        - В случае ошибки возвращает пустую строку.
+    """
+    if not len(ALL_KEYS):
+        my_log.log_mistral('transcribe_audio: No keys available.')
+        return ''
+
+    MAX_RETRIES = 3
+    RETRY_DELAY = 5  # seconds
+
+    try:
+        if isinstance(audio_data, str):
+            with open(audio_data, 'rb') as f:
+                audio_data = f.read()
+    except Exception as e:
+        my_log.log_mistral(f'transcribe_audio (file read error): {e}')
+        return ''
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            api_key = get_next_key()
+
+            headers = {
+                'Authorization': f'Bearer {api_key}'
+            }
+
+            data = {'model': 'voxtral-mini-latest'}
+            if language:
+                data['language'] = language
+            if get_timestamps:
+                data['timestamp_granularities'] = 'segment'
+
+            files = {'file': ('audio.dat', audio_data)}
+
+            response = requests.post(
+                'https://api.mistral.ai/v1/audio/transcriptions',
+                headers=headers,
+                data=data,
+                files=files,
+                timeout=timeout
+            )
+
+            if response.status_code == 401:
+                # remove_key(api_key) # Ключ недействителен, нет смысла повторять с ним
+                my_log.log_mistral(f'transcribe_audio: Unauthorized key {api_key}')
+                # Попробуем со следующим ключом в следующей итерации цикла
+                continue
+
+            # Проверяем на другие ошибки HTTP
+            response.raise_for_status()
+
+            # Если код дошел сюда, запрос успешен
+            result = response.json()
+            if get_timestamps:
+                return format_to_srt(result)
+            else:
+                return result.get('text', '').strip()
+
+        except requests.exceptions.HTTPError as http_err:
+            # Повторяем только при ошибках сервера (5xx), которые могут быть временными
+            if http_err.response.status_code >= 500:
+                my_log.log_mistral(f'transcribe_audio (HTTP error {http_err.response.status_code}): Retrying ({attempt + 1}/{MAX_RETRIES})...')
+            else:
+                # Ошибки клиента (4xx) обычно не временные, прекращаем попытки
+                my_log.log_mistral(f'transcribe_audio (HTTP client error): {http_err} - {response.text}')
+                return ''
+
+        except requests.exceptions.RequestException as e:
+            # Ошибки сети (таймаут, DNS) - хороший кандидат для повтора
+            my_log.log_mistral(f'transcribe_audio (request error): {e}. Retrying ({attempt + 1}/{MAX_RETRIES})...')
+
+        except Exception as error:
+            # Любая другая неожиданная ошибка, прекращаем попытки
+            my_log.log_mistral(f'transcribe_audio (general error): {error}')
+            return ''
+
+        # Если это была не последняя попытка, делаем паузу
+        if attempt < MAX_RETRIES - 1:
+            time.sleep(RETRY_DELAY)
+
+    my_log.log_mistral(f'transcribe_audio: Failed after {MAX_RETRIES} retries.')
+    return ''
+
+
 def clear_mem(mem, user_id: str):
     while 1:
         sizeofmem = count_tokens(mem)
@@ -854,6 +1000,8 @@ if __name__ == '__main__':
     #     text = f.read()
 
     # print(sum_big_text(text, 'сделай подробный пересказ по тексту'))
+
+    # print(transcribe_audio(r'C:\Users\user\Downloads\samples for ai\аудио\запись речи шульман.ogg'))
 
     chat_cli(model = MEDIUM_MODEL)
     # print(get_reprompt_for_image(''))

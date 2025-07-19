@@ -20,6 +20,7 @@ import cfg
 import my_db
 import my_deepgram
 import my_groq
+import my_mistral
 import my_transcribe
 import my_log
 import utils
@@ -222,6 +223,11 @@ def stt(input_file: str|bytes, lang: str = 'ru', chat_id: str = '_', prompt: str
                         if text and not done_flag:
                             done_flag = True
                             my_db.add_msg(chat_id, 'STT assembly.ai')
+                    elif speech_to_text_engine == 'voxtral' and dur < my_mistral.MAX_TRANSCRIBE_SECONDS:
+                        text = my_mistral.transcribe_audio(input_file2, language=lang, get_timestamps=False)
+                        if text and not done_flag:
+                            done_flag = True
+                            my_db.add_msg(chat_id, 'STT voxtral')
 
                 if not text and dur < 60:
                     text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo')
@@ -269,6 +275,12 @@ def stt(input_file: str|bytes, lang: str = 'ru', chat_id: str = '_', prompt: str
                     if text and not done_flag:
                         done_flag = True
                         my_db.add_msg(chat_id, 'STT whisper-large-v3')
+
+                if not text and dur < my_mistral.MAX_TRANSCRIBE_SECONDS:
+                    text = my_mistral.transcribe_audio(input_file2, language=lang, get_timestamps=False)
+                    if text and not done_flag:
+                        done_flag = True
+                        my_db.add_msg(chat_id, 'STT voxtral')
 
                 if not text:
                     text = my_deepgram.stt(input_file2, lang, prompt)

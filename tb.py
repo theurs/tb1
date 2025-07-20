@@ -7884,13 +7884,14 @@ def _send_message(
             _send_message(message, chunk, '', preview, reply_markup, send_message, resp, retry_times)
 
 
-def reply_to_long_message(message: telebot.types.Message,
-                          resp: str,
-                          parse_mode: str = None,
-                          disable_web_page_preview: bool = None,
-                          reply_markup: telebot.types.InlineKeyboardMarkup = None,
-                          send_message: bool = False,
-                          allow_voice: bool = False):
+def reply_to_long_message(
+    message: telebot.types.Message,
+    resp: str,
+    parse_mode: str = None,
+    disable_web_page_preview: bool = None,
+    reply_markup: telebot.types.InlineKeyboardMarkup = None,
+    send_message: bool = False,
+    allow_voice: bool = False):
     """
     Sends a message, splitting it into two parts if it's too long, or sending it as a text file.
 

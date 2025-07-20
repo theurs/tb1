@@ -6221,15 +6221,15 @@ def image_gen(message: telebot.types.Message):
                 del IMG_MODE_FLAG[chat_id_full]
 
 
-        # в группе рисовать можно только тем у кого есть все ключи или подписка или админы
-        if message.chat.id < 0:
-            chat_id_full_from = f'[{message.from_user.id}] [0]'
-            user_id = message.from_user.id
-            have_keys = (chat_id_full_from in my_gemini_general.USER_KEYS and chat_id_full_from in my_groq.USER_KEYS) or \
-                    user_id in cfg.admins or \
-                    (my_db.get_user_property(chat_id_full_from, 'telegram_stars') or 0) >= 50
-            if not have_keys:
-                return
+        # # в группе рисовать можно только тем у кого есть все ключи или подписка или админы
+        # if message.chat.id < 0:
+        #     chat_id_full_from = f'[{message.from_user.id}] [0]'
+        #     user_id = message.from_user.id
+        #     have_keys = (chat_id_full_from in my_gemini_general.USER_KEYS and chat_id_full_from in my_groq.USER_KEYS) or \
+        #             user_id in cfg.admins or \
+        #             (my_db.get_user_property(chat_id_full_from, 'telegram_stars') or 0) >= 50
+        #     if not have_keys:
+        #         return
 
 
         # не использовать бинг для рисования запрещенки, он за это банит

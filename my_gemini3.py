@@ -624,9 +624,10 @@ def chat(
                 client = genai.Client(api_key=key, http_options={'timeout': timeout * 1000})
                 if use_skills:
                     if 'flash-lite' in model:
-                        code_execution_tool = Tool(code_execution={})
-                        google_search_tool = Tool(google_search={})
-                        SKILLS = [google_search_tool, code_execution_tool,]
+                        # code_execution_tool = Tool(code_execution={})
+                        # google_search_tool = Tool(google_search={})
+                        # SKILLS = [google_search_tool, code_execution_tool,]
+                        SKILLS = None
                     elif 'gemma-3-27b-it' in model:
                         SKILLS = None
                     else:

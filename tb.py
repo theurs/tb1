@@ -2051,6 +2051,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.row(button_gpt_4o, button_gpt_41)
             markup.row(button_gemini_pro, button_gemini_flash20)
             markup.row(button_deepseek_v3, button_openrouter)
+            # markup.row(button_gemini_lite)
 
             if voice_title in ('OpenAI', 'Gemini'):
                 markup.row(button_filler1)
@@ -9449,7 +9450,7 @@ def do_task(message, custom_prompt: str = ''):
                             # у флеш 2.5 лайт мысли отключены по умолчанию, их надо вручную включать
                             THINKING_BUDGET = -1
                             if gmodel == cfg.gemini_flash_light_model:
-                                THINKING_BUDGET = 10000
+                                THINKING_BUDGET = 20000
 
                             answer = my_gemini3.chat(
                                 message.text,

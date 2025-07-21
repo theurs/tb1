@@ -236,7 +236,10 @@ def ai(
                 break
             time.sleep(2)
 
-    return text.strip()
+    if text:
+        return text.strip()
+
+    return ''
 
 
 def remove_key(key: str):

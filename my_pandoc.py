@@ -81,7 +81,7 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
 
         utils.remove_file(input_file)
         return text
-    elif book_type in ('xlsx', 'ods', 'xls', 'numbers'):
+    elif book_type in ('xlsx', 'ods', 'xls', 'numbers', 'xltx', 'xltm'):
         xls = pd.ExcelFile(io.BytesIO(data))
         result = ''
         for sheet in xls.sheet_names:

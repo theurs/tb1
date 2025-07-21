@@ -21,6 +21,8 @@ PANDOC_SUPPORT_LIST = (
     'application/vnd.oasis.opendocument.spreadsheet',
     'application/vnd.oasis.opendocument.text',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.template', # .xltx?
+    'application/vnd.ms-excel.template.macroenabled.12', # .xltm?
     'application/octet-stream',
     'application/epub+zip',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

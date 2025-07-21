@@ -24,6 +24,7 @@ PANDOC_SUPPORT_LIST = (
     'application/octet-stream',
     'application/epub+zip',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.template', # .dotx?
     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     'application/rtf',
     'application/msword',

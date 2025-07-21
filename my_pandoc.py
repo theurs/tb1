@@ -53,7 +53,7 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
         text = read_pptx(input_file)
         utils.remove_file(input_file)
         return text
-    elif 'docx' in book_type:
+    elif 'docx' in book_type or 'dotx' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'docx', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'html' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'html', '-t', 'gfm', input_file], stdout=subprocess.PIPE)

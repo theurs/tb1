@@ -128,12 +128,15 @@ def ai(
                 if 'invalid api token' in str(error).lower():
                     remove_key(key)
                     continue
+                elif 'invalid request: message must be at least 1 token long or tool results must be specified.' in str(error).lower():
+                    my_log.log_cohere(f'ai:0: {error}')
+                    return ''
                 my_log.log_cohere(f'ai:1: {error}\n\nprompt: {prompt}\n\nsystem: {system}\n\nmem: {mem_}\ntemp: {temperature}\nmodel: {model_}\nmax_token: {max_tokens_}\nkey_: {key_}\nkey: {key}')
                 continue
             try:
                 resp = response.message.content[0].text.strip()
             except Exception as error2:
-                my_log.log_cohere(f'ai:1: {error2}\n\nprompt: {prompt}\n\nsystem: {system}\n\nmem: {mem_}\ntemp: {temperature}\nmodel: {model_}\nmax_token: {max_tokens_}\nkey_: {key_}\nkey: {key}')
+                my_log.log_cohere(f'ai:2: {error2}\n\nprompt: {prompt}\n\nsystem: {system}\n\nmem: {mem_}\ntemp: {temperature}\nmodel: {model_}\nmax_token: {max_tokens_}\nkey_: {key_}\nkey: {key}')
                 resp = ''
             if resp:
                 if user_id:

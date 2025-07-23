@@ -264,7 +264,7 @@ def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
     Args:
         filename (str): The desired file name for the Excel file (e.g., 'report').
 
-        data (dict): A dictionary where keys are sheet names (str) and values are dictionaries
+        data (dict): A ordered dictionary where keys are sheet names (str) and values are dictionaries
                      defining the content of each sheet.
 
                      To specify formulas, each sheet's dictionary should contain two keys:

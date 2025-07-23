@@ -1507,7 +1507,7 @@ if __name__ == "__main__":
     # with open(r'c:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_-_znachaschie_tsifryi_106746.txt', 'r', encoding='utf-8') as f:
     #     t = f.read()
     # q = f'Составь оглавление книги из текста:\n\n\n{t}'
-    # print(chat(q, 'test', model = 'gemini-2.5-flash-lite-preview-06-17', system='отвечай всегда по-русски'))
+    # print(chat(q, 'test', model = 'gemini-2.5-flash-lite', system='отвечай всегда по-русски'))
     # print(len(q))
     # print(chat(q, 'test', model = 'gemini-2.5-flash-preview-05-20', system='отвечай всегда по-русски'))
 

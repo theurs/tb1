@@ -211,14 +211,14 @@ gemini_flash_model_fallback = 'gemini-2.0-flash-exp'
 gemini25_flash_model = 'gemini-2.5-flash-preview-05-20'
 gemini25_flash_model_fallback = 'gemini-2.5-flash'
 
-gemini_flash_light_model = 'gemini-2.5-flash-lite-preview-06-17'
-gemini_flash_light_model_fallback = 'gemini-2.0-flash-lite-preview-02-05'
+gemini_flash_light_model = 'gemini-2.5-flash-lite'
+gemini_flash_light_model_fallback = 'gemini-2.5-flash-lite-preview-06-17'
 
 gemini_pro_model = 'gemini-2.5-pro'
 gemini_pro_model_fallback = 'gemini-2.5-flash'
 
 gemma3_27b_model = 'gemma-3-27b-it'
-gemma3_27b_model_fallback = 'gemini-2.5-flash-lite-preview-06-17'
+gemma3_27b_model_fallback = 'gemini-2.5-flash-lite'
 
 gemini_exp_model = 'gemini-exp-1206'
 gemini_exp_model_fallback = 'gemini-2.0-pro-exp-02-05'

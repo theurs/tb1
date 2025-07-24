@@ -349,7 +349,10 @@ def get_subs_from_rutube(url: str, proxy: bool = True) -> str:
         output = output.decode('utf-8', errors='replace')
 
         search = tmpname+'*'
-        new_tmp_fname = glob.glob(search)[0]
+        try:
+            new_tmp_fname = glob.glob(search)[0]
+        except IndexError:
+            return ''
         if not os.path.isfile(new_tmp_fname):
             return ''
         result = my_stt.stt(new_tmp_fname)

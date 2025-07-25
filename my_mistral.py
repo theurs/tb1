@@ -423,6 +423,10 @@ def img2txt(
     return result
 
 
+def _clear_ocred_text(text: str) -> str:
+    return text.strip().replace('\\#', '#')
+
+
 @cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
 def ocr_image(
     image_data: bytes,
@@ -465,7 +469,8 @@ def ocr_image(
         for page in ocr_response.pages:
             resp += page.markdown.strip()
             resp += '\n'
-        return resp.strip()
+
+        return _clear_ocred_text(resp)
 
     except Exception as error:
         my_log.log_mistral(f'ocr_image: {error}')
@@ -533,7 +538,8 @@ def ocr_pdf(
         for page in ocr_response.pages:
             resp += page.markdown.strip()
             resp += '\n'
-        return resp.strip()
+
+        return _clear_ocred_text(resp)
 
     except Exception as error:
         if tmp_fname:

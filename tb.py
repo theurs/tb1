@@ -10518,6 +10518,7 @@ def main():
         # my_gemini_live_text.chat_cli()
         # print(my_mistral.transcribe_audio(r'C:\Users\user\Downloads\samples for ai\аудио\короткий диалог 3 голоса.m4a', language='en', get_timestamps=False))
 
+
         bot.infinity_polling(timeout=90, long_polling_timeout=90)
 
         global LOG_GROUP_DAEMON_ENABLED

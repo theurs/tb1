@@ -176,7 +176,7 @@ MESSAGE_QUEUE_IMG = {}
 # так же ловим пачки картинок(медиагруппы)+текст, после пересылки картинки с инструкцией от юзера
 # они разделяются на 2 части, отдельно подпись от юзера и отдельно картинки
 MESSAGE_QUEUE_GRP = {}
-
+MESSAGE_QUEUE_AUDIO_GROUP = {}
 
 GEMIMI_TEMP_DEFAULT = 1
 
@@ -2762,138 +2762,345 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
         bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
 
 
-@bot.message_handler(content_types = ['voice', 'video', 'video_note', 'audio'], func=authorized)
+
+
+
+
+
+
+
+
+
+@bot.message_handler(content_types=['voice', 'video', 'video_note', 'audio'], func=authorized)
 @async_run
 def handle_voice(message: telebot.types.Message):
-    """Автоматическое распознавание текст из голосовых сообщений и аудио файлов"""
-    try:
-        is_private = message.chat.type == 'private'
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
+    """
+    Обрабатывает одиночные и сгруппированные аудио/видео сообщения.
+    - Если активен режим /transcribe, обрабатывает файл немедленно.
+    - В ином случае, собирает все приходящие файлы в группу, транскрибирует
+      и отправляет в ЛЛМ в едином XML-подобном формате.
+    """
+    chat_id_full = get_topic_id(message)
+    lang = get_lang(chat_id_full, message)
 
-        # рано
-        # COMMAND_MODE[chat_id_full] = ''
+    # Проверка на подписку/донат
+    if not check_donate(message, chat_id_full, lang):
+        return
 
-        # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
-            return
-
-        supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
-        if supch == 1:
-            is_private = True
-
-        message.caption = my_log.restore_message_text(message.caption, message.caption_entities)
-
-        # if check_blocks(get_topic_id(message)) and not is_private:
-        #     return
-        # определяем какое имя у бота в этом чате, на какое слово он отзывается
-        bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
-        if not is_private:
-            if not message.caption or not message.caption.startswith('?') or \
-                not message.caption.startswith(f'@{_bot_name}') or \
-                    not message.caption.startswith(bot_name):
-                return
-
-        if chat_id_full in VOICE_LOCKS:
-            lock = VOICE_LOCKS[chat_id_full]
-        else:
-            lock = threading.Lock()
-            VOICE_LOCKS[chat_id_full] = lock
-
-        with lock:
-            # Скачиваем аудиофайл во временный файл
-            file_name = 'unknown'
-            try:
-                file_info = None
-                if message.voice:
-                    file_info = bot.get_file(message.voice.file_id)
-                    file_name = 'telegram voice message'
-                elif message.audio:
-                    file_info = bot.get_file(message.audio.file_id)
-                    file_name = message.audio.file_name
-                elif message.video:
-                    file_info = bot.get_file(message.video.file_id)
-                    file_name = message.video.file_name
-                elif message.video_note:
-                    file_info = bot.get_file(message.video_note.file_id)
-                elif message.document:
-                    file_info = bot.get_file(message.document.file_id)
-                    file_name = message.document.file_name
-                else:
-                    bot_reply_tr(message, 'Unknown message type')
-            except telebot.apihelper.ApiTelegramException as error:
-                if 'file is too big' in str(error):
-                    bot_reply_tr(message, 'Too big file. Try /transcribe command. (Button - [Too big file])')
-                    return
-                else:
-                    raise error
-
-            # Создание временного файла
-            with tempfile.NamedTemporaryFile(delete=True) as temp_file:
-                file_path = temp_file.name + (utils.get_file_ext(file_info.file_path) or 'unknown')
-
-            downloaded_file = bot.download_file(file_info.file_path)
-
-
-            ## /transcribe ###################################################################################
-            # если отправили аудио файл для транскрибации в субтитры
-            if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
+    # --- ПРИОРИТЕТНАЯ ОБРАБОТКА ДЛЯ /transcribe ---
+    if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
+        try:
+            file_info, file_name = (None, 'unknown')
+            if message.voice:
+                file_info = bot.get_file(message.voice.file_id)
+                file_name = 'telegram voice message'
+            elif message.audio:
+                file_info = bot.get_file(message.audio.file_id)
+                file_name = message.audio.file_name
+            elif message.video:
+                file_info = bot.get_file(message.video.file_id)
+                file_name = message.video.file_name
+            elif message.video_note:
+                file_info = bot.get_file(message.video_note.file_id)
+            elif message.document:
+                file_info = bot.get_file(message.document.file_id)
+                file_name = message.document.file_name
+            
+            if file_info:
+                downloaded_file = bot.download_file(file_info.file_path)
                 transcribe_file(downloaded_file, file_name, message)
-                return
-            ## /transcribe ###################################################################################
-
-
-            COMMAND_MODE[chat_id_full] = ''
-
-
-            with open(file_path, 'wb') as new_file:
-                new_file.write(downloaded_file)
-
-            # Распознаем текст из аудио
-            if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                action = 'record_audio'
             else:
-                action = 'typing'
-            with ShowAction(message, action):
+                 bot_reply_tr(message, 'Could not get file info for transcription.')
+        except telebot.apihelper.ApiTelegramException as e:
+            if 'file is too big' in str(e):
+                bot_reply_tr(message, 'Too big file. Try /transcribe command. (Button - [Too big file])')
+        except Exception as e:
+            my_log.log2(f'tb:handle_voice:transcribe_mode_error: {e}')
+            bot_reply_tr(message, 'Error during transcription.')
+        finally:
+            COMMAND_MODE[chat_id_full] = ''
+        return
+
+
+    # --- Механизм сбора группы сообщений ---
+    if chat_id_full not in MESSAGE_QUEUE_AUDIO_GROUP:
+        MESSAGE_QUEUE_AUDIO_GROUP[chat_id_full] = [message]
+        last_state = MESSAGE_QUEUE_AUDIO_GROUP[chat_id_full]
+        n = 10
+        while n > 0:
+            n -= 1
+            time.sleep(0.1)
+            new_state = MESSAGE_QUEUE_AUDIO_GROUP.get(chat_id_full, [])
+            if len(last_state) != len(new_state):
+                last_state = new_state
+                n = 10
+    else:
+        MESSAGE_QUEUE_AUDIO_GROUP[chat_id_full].append(message)
+        return
+
+    messages_to_process = MESSAGE_QUEUE_AUDIO_GROUP.pop(chat_id_full, [])
+    if not messages_to_process:
+        return
+
+    try:
+        COMMAND_MODE[chat_id_full] = ''
+        # --- ЕДИНАЯ ЛОГИКА ОБРАБОТКИ ДЛЯ ВСЕХ СЛУЧАЕВ ---
+
+        # Если это одиночный файл без подписи в режиме "только транскрипция"
+        is_transcribe_only = (
+            my_db.get_user_property(chat_id_full, 'transcribe_only') and
+            len(messages_to_process) == 1 and
+            not messages_to_process[0].caption
+        )
+        is_voice_only_mode = my_db.get_user_property(chat_id_full, 'voice_only_mode') or 0
+
+        with ShowAction(messages_to_process[0], 'typing'):
+            # Вспомогательная функция для параллельной транскрипции
+            def transcribe_in_parallel(msg_to_transcribe):
                 try:
-                    # prompt = tr('Распознай аудиозапись и исправь ошибки.', lang)
-                    prompt = ''
-                    text = my_stt.stt(file_path, lang, chat_id_full, prompt)
-                except Exception as error_stt:
-                    my_log.log2(f'tb:handle_voice: {error_stt}')
-                    text = ''
+                    file_info, file_name = (None, 'unknown.ogg')
+                    if msg_to_transcribe.voice:
+                        file_info = bot.get_file(msg_to_transcribe.voice.file_id)
+                        file_name = f'voice_message_{msg_to_transcribe.message_id}.ogg'
+                    elif msg_to_transcribe.audio:
+                        file_info = bot.get_file(msg_to_transcribe.audio.file_id)
+                        file_name = msg_to_transcribe.audio.file_name or f'audio_{msg_to_transcribe.message_id}.mp3'
+                    elif msg_to_transcribe.video:
+                        file_info = bot.get_file(msg_to_transcribe.video.file_id)
+                        file_name = msg_to_transcribe.video.file_name or f'video_{msg_to_transcribe.message_id}.mp4'
+                    elif msg_to_transcribe.video_note:
+                        file_info = bot.get_file(msg_to_transcribe.video_note.file_id)
+                        file_name = f'video_note_{msg_to_transcribe.message_id}.mp4'
+                    elif msg_to_transcribe.document:
+                        file_info = bot.get_file(msg_to_transcribe.document.file_id)
+                        file_name = msg_to_transcribe.document.file_name
+                    if file_info:
+                        downloaded_file = bot.download_file(file_info.file_path)
+                        transcription = my_stt.stt(downloaded_file, lang, chat_id_full)
+                        return {'filename': file_name, 'transcription': transcription or '[ERROR: Transcription failed]'}
+                except Exception as e:
+                    my_log.log2(f'tb:handle_voice:transcribe_in_parallel_error: {e}')
+                return {'filename': 'error_file', 'transcription': '[ERROR: Processing failed]'}
 
-                utils.remove_file(file_path)
+            # Запускаем транскрипцию в потоках
+            transcribed_data = []
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                futures = [executor.submit(transcribe_in_parallel, msg) for msg in messages_to_process]
+                for future in concurrent.futures.as_completed(futures):
+                    transcribed_data.append(future.result())
 
-                text = text.strip()
-                # Отправляем распознанный текст
-                if text:
-                    if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                        # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
-                        pass
-                    else:
-                        bot_reply(message, utils.bot_markdown_to_html(text),
-                                parse_mode='HTML',
-                                reply_markup=get_keyboard('translate', message))
+
+            # Показываем транскрипцию пользователю ---
+            # Собираем весь распознанный текст в одно сообщение
+            full_transcription_text = ""
+            for item in transcribed_data:
+                # Добавляем имя файла, если файлов больше одного
+                if len(transcribed_data) > 1:
+                    full_transcription_text += f"<b>{utils.html.escape(item['filename'])}:</b>\n"
+                full_transcription_text += f"{utils.html.escape(item.get('transcription', ''))}\n\n"
+
+            full_transcription_text = full_transcription_text.strip()
+
+            # Отправляем, если есть что отправлять, и если это не режим "только голос"
+            if full_transcription_text and not is_voice_only_mode:
+                bot_reply(messages_to_process[0], full_transcription_text,
+                          parse_mode='HTML',
+                          reply_markup=get_keyboard('translate', messages_to_process[0]))
+
+            # Если это был режим transcribe_only, на этом все
+            if is_transcribe_only:
+                return
+
+
+            # Если это был режим transcribe_only, просто отправляем текст и выходим
+            if is_transcribe_only:
+                transcription = transcribed_data[0].get('transcription', '')
+                if transcription and not transcription.startswith('[ERROR'):
+                    bot_reply(messages_to_process[0], utils.bot_markdown_to_html(transcription),
+                              parse_mode='HTML',
+                              reply_markup=get_keyboard('translate', messages_to_process[0]))
                 else:
-                    if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                        message.text = f'/tts {lang or "de"} ' + tr('Не удалось распознать текст', lang)
-                        tts(message)
-                    else:
-                        bot_reply_tr(message, 'Не удалось распознать текст')
+                    bot_reply_tr(messages_to_process[0], 'Не удалось распознать текст')
+                return
 
-                # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
-                if text:
-                    if not my_db.get_user_property(chat_id_full, 'transcribe_only'):
-                        # message.text = f'voice message: {text}'
-                        if message.caption:
-                            message.text = f'{message.caption}\n\n{tr("Audio message transcribed:", lang)}\n\n{text}'
-                        else:
-                            message.text = text
-                        echo_all(message)
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:handle_voice: {unknown}\n{traceback_error}')
+            # Собираем все подписи из группы
+            combined_caption = "\n".join(
+                [my_log.restore_message_text(msg.caption, msg.caption_entities) for msg in messages_to_process if msg.caption]
+            ).strip()
+
+            # Формируем XML-подобный промпт
+            xml_prompt = "<audio_batch_analysis_request>\n"
+            if combined_caption:
+                xml_prompt += f"    <user_instruction>\n        {utils.html.escape(combined_caption)}\n    </user_instruction>\n"
+            else:
+                # Если подписей не было, но файл всего один, считаем, что пользователь просто хочет транскрипцию и ответ от ЛЛМ
+                if len(messages_to_process) == 1:
+                     xml_prompt += f"    <user_instruction>\n        {tr('User sent an audio file.', lang)}\n    </user_instruction>\n"
+                else: # Если файлов много без подписи
+                     xml_prompt += f"    <user_instruction>\n        {tr('User sent a batch of audio files.', lang)}\n    </user_instruction>\n"
+
+            xml_prompt += "    <audio_files>\n"
+            for item in transcribed_data:
+                xml_prompt += "        <file>\n"
+                xml_prompt += f"            <filename>{utils.html.escape(item['filename'])}</filename>\n"
+                xml_prompt += f"            <transcription>\n                {utils.html.escape(item.get('transcription', ''))}\n            </transcription>\n"
+                xml_prompt += "        </file>\n"
+            xml_prompt += "    </audio_files>\n"
+            xml_prompt += "</audio_batch_analysis_request>"
+
+            # Создаем "фейковое" сообщение и передаем собранный запрос в основной обработчик
+            fake_message = messages_to_process[0]
+            fake_message.text = xml_prompt
+            fake_message.entities = []
+
+            echo_all(fake_message)
+
+    except Exception as e:
+        error_traceback = traceback.format_exc()
+        my_log.log2(f'tb:handle_voice_main_logic: {e}\n{error_traceback}')
+        # Гарантированно очищаем очередь, если что-то пошло не так
+        if chat_id_full in MESSAGE_QUEUE_AUDIO_GROUP:
+            del MESSAGE_QUEUE_AUDIO_GROUP[chat_id_full]
+
+
+
+
+
+
+
+
+# @bot.message_handler(content_types = ['voice', 'video', 'video_note', 'audio'], func=authorized)
+# @async_run
+# def handle_voice(message: telebot.types.Message):
+#     """Автоматическое распознавание текст из голосовых сообщений и аудио файлов"""
+#     try:
+#         is_private = message.chat.type == 'private'
+#         chat_id_full = get_topic_id(message)
+#         lang = get_lang(chat_id_full, message)
+
+#         # рано
+#         # COMMAND_MODE[chat_id_full] = ''
+
+#         # проверка на подписку
+#         if not check_donate(message, chat_id_full, lang):
+#             return
+
+#         supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+#         if supch == 1:
+#             is_private = True
+
+#         message.caption = my_log.restore_message_text(message.caption, message.caption_entities)
+
+#         # if check_blocks(get_topic_id(message)) and not is_private:
+#         #     return
+#         # определяем какое имя у бота в этом чате, на какое слово он отзывается
+#         bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
+#         if not is_private:
+#             if not message.caption or not message.caption.startswith('?') or \
+#                 not message.caption.startswith(f'@{_bot_name}') or \
+#                     not message.caption.startswith(bot_name):
+#                 return
+
+#         if chat_id_full in VOICE_LOCKS:
+#             lock = VOICE_LOCKS[chat_id_full]
+#         else:
+#             lock = threading.Lock()
+#             VOICE_LOCKS[chat_id_full] = lock
+
+#         with lock:
+#             # Скачиваем аудиофайл во временный файл
+#             file_name = 'unknown'
+#             try:
+#                 file_info = None
+#                 if message.voice:
+#                     file_info = bot.get_file(message.voice.file_id)
+#                     file_name = 'telegram voice message'
+#                 elif message.audio:
+#                     file_info = bot.get_file(message.audio.file_id)
+#                     file_name = message.audio.file_name
+#                 elif message.video:
+#                     file_info = bot.get_file(message.video.file_id)
+#                     file_name = message.video.file_name
+#                 elif message.video_note:
+#                     file_info = bot.get_file(message.video_note.file_id)
+#                 elif message.document:
+#                     file_info = bot.get_file(message.document.file_id)
+#                     file_name = message.document.file_name
+#                 else:
+#                     bot_reply_tr(message, 'Unknown message type')
+#             except telebot.apihelper.ApiTelegramException as error:
+#                 if 'file is too big' in str(error):
+#                     bot_reply_tr(message, 'Too big file. Try /transcribe command. (Button - [Too big file])')
+#                     return
+#                 else:
+#                     raise error
+
+#             # Создание временного файла
+#             with tempfile.NamedTemporaryFile(delete=True) as temp_file:
+#                 file_path = temp_file.name + (utils.get_file_ext(file_info.file_path) or 'unknown')
+
+#             downloaded_file = bot.download_file(file_info.file_path)
+
+
+            # ## /transcribe ###################################################################################
+            # # если отправили аудио файл для транскрибации в субтитры
+            # if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
+            #     transcribe_file(downloaded_file, file_name, message)
+            #     return
+            # ## /transcribe ###################################################################################
+
+
+#             COMMAND_MODE[chat_id_full] = ''
+
+
+#             with open(file_path, 'wb') as new_file:
+#                 new_file.write(downloaded_file)
+
+#             # Распознаем текст из аудио
+#             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+#                 action = 'record_audio'
+#             else:
+#                 action = 'typing'
+#             with ShowAction(message, action):
+#                 try:
+#                     # prompt = tr('Распознай аудиозапись и исправь ошибки.', lang)
+#                     prompt = ''
+#                     text = my_stt.stt(file_path, lang, chat_id_full, prompt)
+#                 except Exception as error_stt:
+#                     my_log.log2(f'tb:handle_voice: {error_stt}')
+#                     text = ''
+
+#                 utils.remove_file(file_path)
+
+#                 text = text.strip()
+#                 # Отправляем распознанный текст
+#                 if text:
+#                     if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+#                         # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
+#                         pass
+#                     else:
+#                         bot_reply(message, utils.bot_markdown_to_html(text),
+#                                 parse_mode='HTML',
+#                                 reply_markup=get_keyboard('translate', message))
+#                 else:
+#                     if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+#                         message.text = f'/tts {lang or "de"} ' + tr('Не удалось распознать текст', lang)
+#                         tts(message)
+#                     else:
+#                         bot_reply_tr(message, 'Не удалось распознать текст')
+
+#                 # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
+#                 if text:
+#                     if not my_db.get_user_property(chat_id_full, 'transcribe_only'):
+#                         # message.text = f'voice message: {text}'
+#                         if message.caption:
+#                             message.text = f'{message.caption}\n\n{tr("Audio message transcribed:", lang)}\n\n{text}'
+#                         else:
+#                             message.text = text
+#                         echo_all(message)
+#     except Exception as unknown:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'tb:handle_voice: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(content_types = ['location',], func=authorized)

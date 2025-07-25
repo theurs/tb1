@@ -769,6 +769,11 @@ def chat(
                 my_log.log_gemini(f'chat:bad resp: {resp}')
                 return ''
 
+            to_cut = '''```json
+{"tool_code": "print(OCR(photo_id=1))"}
+```'''
+            if resp.startswith(to_cut):
+                resp = resp[len(to_cut):].strip()
 
             # флеш (и не только) иногда такие тексты в которых очень много повторов выдает,
             # куча пробелов, и возможно другие тоже. укорачиваем

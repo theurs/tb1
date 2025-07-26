@@ -5197,6 +5197,11 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
         if chat_id_full in UNCAPTIONED_IMAGES:
             del UNCAPTIONED_IMAGES[chat_id_full]
 
+        # удалить сохраненный текст
+        if my_db.get_user_property(chat_id_full, 'saved_file_name'):
+            my_db.delete_user_property(chat_id_full, 'saved_file_name')
+            my_db.delete_user_property(chat_id_full, 'saved_file')
+
         if mode:
             if 'gemini' in mode or 'gemma' in mode or 'gemma' in mode or 'gemma' in mode:
                 my_gemini3.reset(chat_id_full, mode)

@@ -23,7 +23,7 @@ from sqlitedict import SqliteDict
 import cfg
 import my_db
 import my_log
-import my_skills_general
+# import my_skills_general
 import my_split_audio
 import utils
 
@@ -110,19 +110,19 @@ def calculator(expression: str):
 
 
 # Словарь для сопоставления имен инструментов с реальными функциями
-available_tools = {
-    # "get_weather": get_weather,
-    "calculator": calculator,
+# available_tools = {
+#     # "get_weather": get_weather,
+#     "calculator": calculator,
 
-    "help": my_skills_general.help,
-    "text_to_image": my_skills_general.text_to_image,
-    "text_to_qrcode": my_skills_general.text_to_qrcode,
-    "tts": my_skills_general.tts,
-    "speech_to_text": my_skills_general.speech_to_text,
-    "translate_text": my_skills_general.translate_text,
-    "translate_documents": my_skills_general.translate_documents,
-    "edit_image": my_skills_general.edit_image,
-}
+#     "help": my_skills_general.help,
+#     "text_to_image": my_skills_general.text_to_image,
+#     "text_to_qrcode": my_skills_general.text_to_qrcode,
+#     "tts": my_skills_general.tts,
+#     "speech_to_text": my_skills_general.speech_to_text,
+#     "translate_text": my_skills_general.translate_text,
+#     "translate_documents": my_skills_general.translate_documents,
+#     "edit_image": my_skills_general.edit_image,
+# }
 
 def generate_tools_from_signature(functions_list: list) -> list:
     """
@@ -187,7 +187,7 @@ def generate_tools_from_signature(functions_list: list) -> list:
     return tools
 
 
-tools = generate_tools_from_signature(list(available_tools.values()))
+# tools = generate_tools_from_signature(list(available_tools.values()))
 
 
 def ai(
@@ -592,309 +592,315 @@ def format_to_srt(transcription_result: dict) -> str:
     return srt_content
 
 
-MAX_TRANSCRIBE_SECONDS=14*60
-def transcribe_audio(
-    audio_data: bytes|str,
-    language: str | None = None,
-    get_timestamps: bool = False,
-    timeout: int = 300
-) -> Union[str, dict]:
-    """
-    Транскрибирует аудиозапись с использованием API Mistral через прямой HTTP-запрос.
-
-    Args:
-        audio_data: Аудиоданные в виде байтов или пути к файлу (str).
-        language: Язык аудио (код ISO 639-1). Если не указан (None), язык будет определен автоматически.
-        get_timestamps: Если True, запросит и вернет субтитры с временными метками.
-        timeout: Таймаут для API запроса в секундах.
-
-    Returns:
-        - Если get_timestamps=False (по умолчанию): Распознанный текст (str).
-        - Если get_timestamps=True: Полный JSON-ответ от API в виде словаря (dict), 
-          содержащий текст, сегменты с метками времени и другую информацию.
-        - В случае ошибки возвращает пустую строку.
-    """
-    if not len(ALL_KEYS):
-        my_log.log_mistral('transcribe_audio: No keys available.')
-        return ''
-
-    MAX_RETRIES = 3
-    RETRY_DELAY = 5  # seconds
-
-    try:
-        if isinstance(audio_data, str):
-            with open(audio_data, 'rb') as f:
-                audio_data = f.read()
-    except Exception as e:
-        my_log.log_mistral(f'transcribe_audio (file read error): {e}')
-        return ''
-
-    for attempt in range(MAX_RETRIES):
-        try:
-            api_key = get_next_key()
-
-            headers = {
-                'Authorization': f'Bearer {api_key}'
-            }
-
-            data = {'model': 'voxtral-mini-latest'}
-            if language:
-                data['language'] = language
-            if get_timestamps:
-                data['timestamp_granularities'] = 'segment'
-
-            files = {'file': ('audio.dat', audio_data)}
-
-            response = requests.post(
-                'https://api.mistral.ai/v1/audio/transcriptions',
-                headers=headers,
-                data=data,
-                files=files,
-                timeout=timeout
-            )
-
-            if response.status_code == 401:
-                # remove_key(api_key) # Ключ недействителен, нет смысла повторять с ним
-                my_log.log_mistral(f'transcribe_audio: Unauthorized key {api_key}')
-                # Попробуем со следующим ключом в следующей итерации цикла
-                continue
-
-            # Проверяем на другие ошибки HTTP
-            response.raise_for_status()
-
-            # Если код дошел сюда, запрос успешен
-            result = response.json()
-            if get_timestamps:
-                return format_to_srt(result)
-            else:
-                return result.get('text', '').strip()
-
-        except requests.exceptions.HTTPError as http_err:
-            # Повторяем только при ошибках сервера (5xx), которые могут быть временными
-            if http_err.response.status_code >= 500:
-                my_log.log_mistral(f'transcribe_audio (HTTP error {http_err.response.status_code}): Retrying ({attempt + 1}/{MAX_RETRIES})...')
-            else:
-                # Ошибки клиента (4xx) обычно не временные, прекращаем попытки
-                my_log.log_mistral(f'transcribe_audio (HTTP client error): {http_err} - {response.text}')
-                return ''
-
-        except requests.exceptions.RequestException as e:
-            # Ошибки сети (таймаут, DNS) - хороший кандидат для повтора
-            my_log.log_mistral(f'transcribe_audio (request error): {e}. Retrying ({attempt + 1}/{MAX_RETRIES})...')
-
-        except Exception as error:
-            # Любая другая неожиданная ошибка, прекращаем попытки
-            my_log.log_mistral(f'transcribe_audio (general error): {error}')
-            return ''
-
-        # Если это была не последняя попытка, делаем паузу
-        if attempt < MAX_RETRIES - 1:
-            time.sleep(RETRY_DELAY)
-
-    my_log.log_mistral(f'transcribe_audio: Failed after {MAX_RETRIES} retries.')
-    return ''
-
-
-# def _call_mistral_api(
-#     audio_bytes: bytes,
-#     language: str | None,
-#     get_timestamps: bool,
-#     timeout: int
-# ) -> Union[dict, None]:
-#     """
-#     Вызывает Mistral API. Возвращает полный JSON-ответ (dict) при успехе
-#     или None в случае ошибки.
-#     """
-#     with SPEECH_TO_TEXT_LOCK:
-#         if not len(ALL_KEYS):
-#             my_log.log_mistral('transcribe_audio: No keys available.')
-#             return None
-
-#         MAX_RETRIES = 3
-#         RETRY_DELAY = 5
-#         RETRY_DELAY_500 = 60
-
-#         for attempt in range(MAX_RETRIES):
-#             try:
-#                 api_key = get_next_key()
-#                 headers = {'Authorization': f'Bearer {api_key}'}
-#                 data = {'model': 'voxtral-mini-latest'}
-#                 if language:
-#                     data['language'] = language
-#                 if get_timestamps:
-#                     data['timestamp_granularities'] = 'segment'
-
-#                 files = {'file': ('audio.dat', audio_bytes)}
-
-#                 response = requests.post(
-#                     'https://api.mistral.ai/v1/audio/transcriptions',
-#                     headers=headers, data=data, files=files, timeout=timeout
-#                 )
-#                 response.raise_for_status()
-#                 return response.json() # Всегда возвращаем JSON
-
-#             except requests.exceptions.HTTPError as e:
-#                 if e.response.status_code == 401:
-#                     my_log.log_mistral(f'_call_mistral_api: Unauthorized key {api_key}')
-#                     continue
-#                 elif e.response.status_code == 500:
-#                     my_log.log_mistral(f'_call_mistral_api: HTTP error ({e.response.status_code}): Retrying after {RETRY_DELAY_500} seconds...')
-#                     time.sleep(RETRY_DELAY_500)
-#                     continue
-#                 my_log.log_mistral(f'_call_mistral_api: HTTP error ({e.response.status_code}): {e.response.text}')
-#                 if e.response.status_code < 500: return None # Не повторяем клиентские ошибки
-#             except requests.exceptions.RequestException as e:
-#                 my_log.log_mistral(f'_call_mistral_api: Request failed: {e}. Retrying...')
-#             except Exception as e:
-#                 my_log.log_mistral(f'_call_mistral_api: Unexpected error: {e}')
-#                 return None
-
-#             if attempt < MAX_RETRIES - 1:
-#                 time.sleep(RETRY_DELAY)
-
-#         my_log.log_mistral(f'_call_mistral_api: Failed after {MAX_RETRIES} retries.')
-#         return None
-
-
-# def _get_audio_duration(file_path: str) -> float | None:
-#     """Получает длительность аудио в секундах с помощью ffprobe."""
-#     command = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file_path]
-#     try:
-#         result = subprocess.run(command, capture_output=True, text=True, check=True)
-#         return float(result.stdout.strip())
-#     except Exception as e:
-#         my_log.log_mistral(f"_get_audio_duration: Failed for '{file_path}': {e}")
-#         return None
-
-# MAX_TRANSCRIBE_SECONDS = 4 * 60 * 60
+# MAX_TRANSCRIBE_SECONDS=10*60
 # def transcribe_audio(
 #     audio_data: bytes|str,
 #     language: str | None = None,
 #     get_timestamps: bool = False,
 #     timeout: int = 300
-# ) -> str:
+# ) -> Union[str, dict]:
 #     """
-#     Транскрибирует аудиофайл. Если файл больше 14 минут, он нарезается на части.
+#     Транскрибирует аудиозапись с использованием API Mistral через прямой HTTP-запрос.
 
 #     Args:
-#         audio_data (bytes|str): Аудиофайл в байтовом или строковом формате.
-#         language (str, optional): Язык, на котором требуется транскрибировать. Defaults to None.
-#         get_timestamps (bool, optional): Флаг, указывающий, нужно ли возвращать субтитры. Defaults to False.
+#         audio_data: Аудиоданные в виде байтов или пути к файлу (str).
+#         language: Язык аудио (код ISO 639-1). Если не указан (None), язык будет определен автоматически.
+#         get_timestamps: Если True, запросит и вернет субтитры с временными метками.
+#         timeout: Таймаут для API запроса в секундах.
 
 #     Returns:
-#         - Если get_timestamps=False: Распознанный текст (str).
-#         - Если get_timestamps=True: Субтитры в формате SRT (str). # субтитры глючат, поэтому отключаем
+#         - Если get_timestamps=False (по умолчанию): Распознанный текст (str).
+#         - Если get_timestamps=True: Полный JSON-ответ от API в виде словаря (dict), 
+#           содержащий текст, сегменты с метками времени и другую информацию.
 #         - В случае ошибки возвращает пустую строку.
 #     """
-#     # субтитры глючат, поэтому отключаем
-#     get_timestamps = False
+#     if not len(ALL_KEYS):
+#         my_log.log_mistral('transcribe_audio: No keys available.')
+#         return ''
 
-
-#     MAX_DURATION_SECONDS = 14 * 60
-
-#     temp_file_path = None
-#     chunks_dir = None
+#     MAX_RETRIES = 3
+#     RETRY_DELAY = 5  # seconds
 
 #     try:
-#         if isinstance(audio_data, bytes):
-#             with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as fp:
-#                 fp.write(audio_data)
-#                 temp_file_path = fp.name
-#             input_file_path = temp_file_path
-#         else:
-#             input_file_path = audio_data
-
-#         if not os.path.exists(input_file_path):
-#             my_log.log_mistral(f'transcribe_audio: Input file not found: {input_file_path}')
-#             return ""
-
-#         duration = _get_audio_duration(input_file_path)
-#         if duration is None:
-#             return ""
-
-#         # --- ПУТЬ A: Файл большой, требует нарезки и сборки ---
-#         if duration > MAX_DURATION_SECONDS:
-#             # my_log.log_mistral(f"Audio duration ({duration}s) > {MAX_DURATION_SECONDS}s. Splitting.")
-
-#             chunk_paths = my_split_audio.split_audio_by_silence(
-#                 input_audio_file=input_file_path,
-#                 target_duration_seconds=MAX_DURATION_SECONDS
-#             )
-#             if not chunk_paths:
-#                 my_log.log_mistral("Failed to split audio. Aborting.")
-#                 return ""
-
-#             chunks_dir = os.path.dirname(chunk_paths[0])
-#             all_transcriptions = []
-#             cumulative_offset = 0.0  # Суммарная длительность предыдущих чанков
-
-#             # Контейнер для всех субтитров из всех чанков
-#             final_srt = pysrt.SubRipFile()
-
-#             for i, chunk_path in enumerate(chunk_paths):
-#                 with open(chunk_path, 'rb') as f:
-#                     chunk_bytes = f.read()
-
-#                 transcription_result = _call_mistral_api(chunk_bytes, language, get_timestamps, timeout)
-
-#                 if transcription_result is None or 'segments' not in transcription_result:
-#                     my_log.log_mistral(f"Failed to transcribe chunk {chunk_path}. Aborting.")
-#                     return ""
-
-#                 # Если нужен только текст, просто добавляем его в список
-#                 if not get_timestamps:
-#                     all_transcriptions.append(transcription_result.get('text', '').strip())
-#                 # Если нужны субтитры, обрабатываем сегменты со смещением
-#                 else:
-#                     for segment in transcription_result['segments']:
-#                         sub = pysrt.SubRipItem(
-#                             start=pysrt.SubRipTime(seconds=(cumulative_offset + segment['start'])),
-#                             end=pysrt.SubRipTime(seconds=(cumulative_offset + segment['end'])),
-#                             text=segment['text'].strip()
-#                         )
-#                         final_srt.append(sub)
-
-#                 # Обновляем смещение, добавляя длительность ТЕКУЩЕГО чанка
-#                 chunk_duration = _get_audio_duration(chunk_path)
-#                 if chunk_duration:
-#                     cumulative_offset += chunk_duration
-#                 else:
-#                     my_log.log_mistral(f"Could not get duration for chunk {chunk_path}. Timestamps will be incorrect.")
-
-#             # Возвращаем результат в зависимости от get_timestamps
-#             if not get_timestamps:
-#                 return "\n\n".join(all_transcriptions)
-#             else:
-#                 final_srt.clean_indexes() # Перенумеровываем индексы (1, 2, 3...)
-#                 return str(final_srt)
-
-#         # --- ПУТЬ B: Файл маленький, обрабатываем напрямую ---
-#         else:
-#             # my_log.log_mistral(f"Audio duration ({duration}s) is within limit. Direct transcription.")
-#             with open(input_file_path, 'rb') as f:
-#                 file_bytes = f.read()
-
-#             result = _call_mistral_api(file_bytes, language, get_timestamps, timeout)
-
-#             if result is None:
-#                 return ""
-
-#             if not get_timestamps:
-#                 return result.get('text', '').strip()
-#             else:
-#                 # Используем вашу существующую функцию для простого случая
-#                 return format_to_srt(result)
-
+#         if isinstance(audio_data, str):
+#             with open(audio_data, 'rb') as f:
+#                 audio_data = f.read()
 #     except Exception as e:
-#         my_log.log_mistral(f"transcribe_audio: Unexpected error in main block: {e}")
-#         return ""
+#         my_log.log_mistral(f'transcribe_audio (file read error): {e}')
+#         return ''
 
-#     finally:
-#         # Гарантированная очистка временных файлов
-#         if temp_file_path and os.path.exists(temp_file_path):
-#             utils.remove_file(temp_file_path)
-#         if chunks_dir and os.path.exists(chunks_dir):
-#             utils.remove_dir(chunks_dir)
+#     for attempt in range(MAX_RETRIES):
+#         try:
+#             api_key = get_next_key()
+
+#             headers = {
+#                 'Authorization': f'Bearer {api_key}'
+#             }
+
+#             data = {'model': 'voxtral-mini-latest'}
+#             if language:
+#                 data['language'] = language
+#             if get_timestamps:
+#                 data['timestamp_granularities'] = 'segment'
+
+#             files = {'file': ('audio.dat', audio_data)}
+
+#             response = requests.post(
+#                 'https://api.mistral.ai/v1/audio/transcriptions',
+#                 headers=headers,
+#                 data=data,
+#                 files=files,
+#                 timeout=timeout
+#             )
+
+#             if response.status_code == 401:
+#                 # remove_key(api_key) # Ключ недействителен, нет смысла повторять с ним
+#                 my_log.log_mistral(f'transcribe_audio: Unauthorized key {api_key}')
+#                 # Попробуем со следующим ключом в следующей итерации цикла
+#                 continue
+
+#             # Проверяем на другие ошибки HTTP
+#             response.raise_for_status()
+
+#             # Если код дошел сюда, запрос успешен
+#             result = response.json()
+#             if get_timestamps:
+#                 return format_to_srt(result)
+#             else:
+#                 return result.get('text', '').strip()
+
+#         except requests.exceptions.HTTPError as http_err:
+#             # Повторяем только при ошибках сервера (5xx), которые могут быть временными
+#             if http_err.response.status_code >= 500:
+#                 my_log.log_mistral(f'transcribe_audio (HTTP error {http_err.response.status_code}): Retrying ({attempt + 1}/{MAX_RETRIES})...')
+#             else:
+#                 # Ошибки клиента (4xx) обычно не временные, прекращаем попытки
+#                 my_log.log_mistral(f'transcribe_audio (HTTP client error): {http_err} - {response.text}')
+#                 return ''
+
+#         except requests.exceptions.RequestException as e:
+#             # Ошибки сети (таймаут, DNS) - хороший кандидат для повтора
+#             my_log.log_mistral(f'transcribe_audio (request error): {e}. Retrying ({attempt + 1}/{MAX_RETRIES})...')
+
+#         except Exception as error:
+#             # Любая другая неожиданная ошибка, прекращаем попытки
+#             my_log.log_mistral(f'transcribe_audio (general error): {error}')
+#             return ''
+
+#         # Если это была не последняя попытка, делаем паузу
+#         if attempt < MAX_RETRIES - 1:
+#             time.sleep(RETRY_DELAY)
+
+#     my_log.log_mistral(f'transcribe_audio: Failed after {MAX_RETRIES} retries.')
+#     return ''
+
+
+def _call_mistral_api(
+    audio_bytes: bytes,
+    language: str | None,
+    get_timestamps: bool,
+    timeout: int
+) -> Union[dict, None]:
+    """
+    Вызывает Mistral API. Возвращает полный JSON-ответ (dict) при успехе
+    или None в случае ошибки.
+    """
+    with SPEECH_TO_TEXT_LOCK:
+        if not len(ALL_KEYS):
+            my_log.log_mistral('transcribe_audio: No keys available.')
+            return None
+
+        MAX_RETRIES = 3
+        RETRY_DELAY = 5
+        RETRY_DELAY_500 = 60
+
+        for attempt in range(MAX_RETRIES):
+            try:
+                api_key = get_next_key()
+                headers = {'Authorization': f'Bearer {api_key}'}
+                data = {'model': 'voxtral-mini-latest'}
+                if language:
+                    data['language'] = language
+                if get_timestamps:
+                    data['timestamp_granularities'] = 'segment'
+
+                files = {'file': ('audio.dat', audio_bytes)}
+
+                response = requests.post(
+                    'https://api.mistral.ai/v1/audio/transcriptions',
+                    headers=headers, data=data, files=files, timeout=timeout
+                )
+                response.raise_for_status()
+                return response.json() # Всегда возвращаем JSON
+
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 401:
+                    my_log.log_mistral(f'_call_mistral_api: Unauthorized key {api_key}')
+                    continue
+                elif e.response.status_code == 500:
+                    my_log.log_mistral(f'_call_mistral_api: HTTP error ({e.response.status_code}): Retrying after {RETRY_DELAY_500} seconds...')
+                    time.sleep(RETRY_DELAY_500)
+                    continue
+                my_log.log_mistral(f'_call_mistral_api: HTTP error ({e.response.status_code}): {e.response.text}')
+                if e.response.status_code < 500: return None # Не повторяем клиентские ошибки
+            except requests.exceptions.RequestException as e:
+                my_log.log_mistral(f'_call_mistral_api: Request failed: {e}. Retrying...')
+            except Exception as e:
+                my_log.log_mistral(f'_call_mistral_api: Unexpected error: {e}')
+                return None
+
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+
+        my_log.log_mistral(f'_call_mistral_api: Failed after {MAX_RETRIES} retries.')
+        return None
+
+
+def _get_audio_duration(file_path: str) -> float | None:
+    """Получает длительность аудио в секундах с помощью ffprobe."""
+    command = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file_path]
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        return float(result.stdout.strip())
+    except Exception as e:
+        my_log.log_mistral(f"_get_audio_duration: Failed for '{file_path}': {e}")
+        return None
+
+
+MAX_TRANSCRIBE_SECONDS = 4 * 60 * 60
+def transcribe_audio(
+    audio_data: bytes|str,
+    language: str | None = None,
+    get_timestamps: bool = False,
+    timeout: int = 300
+) -> str:
+    """
+    Транскрибирует аудиофайл. Если файл больше 10 минут, он нарезается на части.
+
+    Args:
+        audio_data (bytes|str): Аудиофайл в байтовом или строковом формате.
+        language (str, optional): Язык, на котором требуется транскрибировать. Defaults to None.
+        get_timestamps (bool, optional): Флаг, указывающий, нужно ли возвращать субтитры. Defaults to False.
+
+    Returns:
+        - Если get_timestamps=False: Распознанный текст (str).
+        - Если get_timestamps=True: Субтитры в формате SRT (str). !!Нормально не работает, по-этому принудительно отключается пока
+        - В случае ошибки возвращает пустую строку.
+    """
+    # !!Нормально не работает, по-этому принудительно отключается пока
+    get_timestamps = False
+
+
+    MAX_DURATION_SECONDS = 10 * 60
+
+    temp_file_path = None
+    chunks_dir = None
+
+    try:
+        if isinstance(audio_data, bytes):
+            with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as fp:
+                fp.write(audio_data)
+                temp_file_path = fp.name
+            input_file_path = temp_file_path
+        else:
+            input_file_path = audio_data
+
+        if not os.path.exists(input_file_path):
+            my_log.log_mistral(f'transcribe_audio: Input file not found: {input_file_path}')
+            return ""
+
+        duration = _get_audio_duration(input_file_path)
+        if duration is None:
+            return ""
+
+        # --- ПУТЬ A: Файл большой, требует нарезки и сборки ---
+        if duration > MAX_DURATION_SECONDS:
+            # my_log.log_mistral(f"Audio duration ({duration}s) > {MAX_DURATION_SECONDS}s. Splitting.")
+
+            chunk_paths = my_split_audio.split_audio_by_silence(
+                input_audio_file=input_file_path,
+                target_duration_seconds=MAX_DURATION_SECONDS
+            )
+            if not chunk_paths:
+                my_log.log_mistral("Failed to split audio. Aborting.")
+                return ""
+
+            chunks_dir = os.path.dirname(chunk_paths[0])
+            all_transcriptions = []
+            cumulative_offset = 0.0  # Суммарная длительность предыдущих чанков
+
+            # Контейнер для всех субтитров из всех чанков
+            final_srt = pysrt.SubRipFile()
+
+            for i, chunk_path in enumerate(chunk_paths):
+                with open(chunk_path, 'rb') as f:
+                    chunk_bytes = f.read()
+
+                transcription_result = _call_mistral_api(chunk_bytes, language, get_timestamps, timeout)
+
+                if transcription_result is None or 'segments' not in transcription_result:
+                    my_log.log_mistral(f"Failed to transcribe chunk {chunk_path}. Aborting.")
+                    return ""
+
+                # Если нужен только текст, просто добавляем его в список
+                if not get_timestamps:
+                    all_transcriptions.append(transcription_result.get('text', '').strip())
+                # Если нужны субтитры, обрабатываем сегменты со смещением
+                else:
+                    for segment in transcription_result['segments']:
+                        sub = pysrt.SubRipItem(
+                            start=pysrt.SubRipTime(seconds=(cumulative_offset + segment['start'])),
+                            end=pysrt.SubRipTime(seconds=(cumulative_offset + segment['end'])),
+                            text=segment['text'].strip()
+                        )
+                        final_srt.append(sub)
+
+                # Обновляем смещение, добавляя длительность ТЕКУЩЕГО чанка
+                chunk_duration = _get_audio_duration(chunk_path)
+                if chunk_duration:
+                    cumulative_offset += chunk_duration
+                else:
+                    my_log.log_mistral(f"Could not get duration for chunk {chunk_path}. Timestamps will be incorrect.")
+
+            # Возвращаем результат в зависимости от get_timestamps
+            if not get_timestamps:
+                return "\n\n".join(all_transcriptions)
+            else:
+                final_srt.clean_indexes() # Перенумеровываем индексы (1, 2, 3...)
+                # Правильное формирование строки SRT из объектов SubRipItem
+                srt_content = "\n\n".join(str(item) for item in final_srt)
+                if srt_content:
+                    srt_content += "\n" # Добавляем финальный перенос строки, как в формате SRT
+                return srt_content
+
+
+        # --- ПУТЬ B: Файл маленький, обрабатываем напрямую ---
+        else:
+            # my_log.log_mistral(f"Audio duration ({duration}s) is within limit. Direct transcription.")
+            with open(input_file_path, 'rb') as f:
+                file_bytes = f.read()
+
+            result = _call_mistral_api(file_bytes, language, get_timestamps, timeout)
+
+            if result is None:
+                return ""
+
+            if not get_timestamps:
+                return result.get('text', '').strip()
+            else:
+                # Используем вашу существующую функцию для простого случая
+                return format_to_srt(result)
+
+    except Exception as e:
+        my_log.log_mistral(f"transcribe_audio: Unexpected error in main block: {e}")
+        return ""
+
+    finally:
+        # Гарантированная очистка временных файлов
+        if temp_file_path and os.path.exists(temp_file_path):
+            utils.remove_file(temp_file_path)
+        if chunks_dir and os.path.exists(chunks_dir):
+            utils.remove_dir(chunks_dir)
 
 
 def clear_mem(mem, user_id: str):
@@ -1213,15 +1219,16 @@ if __name__ == '__main__':
     # print(sum_big_text(text, 'сделай подробный пересказ по тексту'))
 
 
-    # # trgt=r'C:\Users\user\AppData\Local\Temp\tmpjekvkdii\1_part_01.ogg'
-    # trgt=r'C:\Users\user\Downloads\1.ogg'
-    # print(transcribe_audio(
-    #     trgt,
-    #     language='ru',
-    #     get_timestamps=False,
-    #     timeout=300
-    #     )
-    # )
+    # trgt=r'C:\Users\user\AppData\Local\Temp\tmpjekvkdii\1_part_01.ogg'
+    trgt=r'C:\Users\user\Downloads\1.ogg'
+    r=transcribe_audio(
+        trgt,
+        language='ru',
+        get_timestamps=True,
+        timeout=300
+    )
+    with open('C:/Users/user/Downloads/1.txt', 'w', encoding='utf-8') as f:
+        f.write(r)
 
 
     chat_cli(model = MEDIUM_MODEL)

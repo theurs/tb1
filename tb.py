@@ -2762,15 +2762,6 @@ def transcribe_file(data: bytes, file_name: str, message: telebot.types.Message)
         bot_reply_tr(message, 'Error, try again or cancel.', reply_markup=get_keyboard('command_mode',message))
 
 
-
-
-
-
-
-
-
-
-
 @bot.message_handler(content_types=['voice', 'video', 'video_note', 'audio'], func=authorized)
 @async_run
 def handle_voice(message: telebot.types.Message):
@@ -2961,12 +2952,6 @@ def handle_voice(message: telebot.types.Message):
         # Гарантированно очищаем очередь, если что-то пошло не так
         if chat_id_full in MESSAGE_QUEUE_AUDIO_GROUP:
             del MESSAGE_QUEUE_AUDIO_GROUP[chat_id_full]
-
-
-
-
-
-
 
 
 # @bot.message_handler(content_types = ['voice', 'video', 'video_note', 'audio'], func=authorized)

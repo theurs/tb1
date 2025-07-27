@@ -258,7 +258,7 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
                         my_skills_storage.STORAGE[chat_id].append(item)
                 else:
                     my_skills_storage.STORAGE[chat_id] = [item,]
-            return f"OK. Информация для трактовки изображения карты (ассистент должен рассказать юзеру что на карте используя эти данные): {get_textual_astrological_report(subject)}"
+            return f"OK. Информация для трактовки изображения карты (ассистент, как профессиональный астролог с большим опытом, должен рассказать юзеру что на карте используя эти данные): {get_textual_astrological_report(subject)}"
         else:
             return "FAIL: Image bytes were not generated."
 

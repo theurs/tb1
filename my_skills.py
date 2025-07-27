@@ -77,7 +77,7 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
         language (str): The two-letter language code (e.g., "ru" for Russian, "en" for English).
         chat_id (str): The Telegram user chat ID where the file should be sent.
 
-        Assistant should guess nation and language itself. And ask for other parameters in human manner.
+        Assistant should guess nation and language itself. And ask for other parameters in human manner (no mention technical details, formats etc).
 
     Returns:
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
@@ -204,7 +204,7 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
 
     try:
         # Log the request
-        my_log.log_gemini_skills_html(f'Generating natal chart for "{name}, {date} {time}, {place}, {nation}, {language}" for chat_id: {chat_id}')
+        my_log.log_gemini_skills(f'Generating natal chart for "{name}, {date} {time}, {place}, {nation}, {language}" for chat_id: {chat_id}')
 
         # Restore and validate chat_id
         chat_id = my_skills_general.restore_id(chat_id)
@@ -245,7 +245,7 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
             png_bytes = my_md_tables_to_png.html_to_image_bytes_playwright(svg_string, width=1920, height=1080)
         except Exception as e:
             msg = f'FAIL: Error converting SVG to PNG: {str(e)}'
-            my_log.log_gemini_skills_html(msg)
+            my_log.log_gemini_skills(msg)
             return msg
 
         if png_bytes and isinstance(png_bytes, bytes):
@@ -266,7 +266,7 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
 
     except Exception as e:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills_html(f'save_natal_chart_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{name}, {date}, {time}, {place}, {nation}, {chat_id}')
+        my_log.log_gemini_skills(f'save_natal_chart_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{name}, {date}, {time}, {place}, {nation}, {chat_id}')
         return f"FAIL: An unexpected error occurred: {e}"
 
 

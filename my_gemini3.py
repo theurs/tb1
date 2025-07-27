@@ -644,7 +644,6 @@ def chat(
                             my_skills.edit_image,
                             my_skills.translate_text,
                             my_skills.translate_documents,
-                            compose_creative_text,
                             my_skills.text_to_image,
                             my_skills.text_to_qrcode,
                             my_skills_general.save_to_txt,
@@ -659,6 +658,9 @@ def chat(
                             my_skills_general.get_location_name,
                             my_skills.help,
                         ]
+                        # прошка и сама может сихи написать
+                        if model != cfg.gemini_pro_model:
+                            SKILLS.append(compose_creative_text)
                     chat = client.chats.create(
                         model=model,
                         config=get_config(

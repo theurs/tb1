@@ -2870,12 +2870,15 @@ def handle_voice(message: telebot.types.Message):
                         transcription = my_stt.stt(downloaded_file, lang, chat_id_full)
                         return {'filename': file_name, 'transcription': transcription or '[ERROR: Transcription failed]'}
                 except Exception as e:
-                    my_log.log2(f'tb:handle_voice:transcribe_in_parallel_error: {e}')
+                    if 'file is too big' in str(e):
+                        bot_reply_tr(message, 'Too big file. Try /transcribe command. (Button - [Too big file])')
+                    else:
+                        my_log.log2(f'tb:handle_voice:transcribe_in_parallel_error: {e}')
                 return {'filename': 'error_file', 'transcription': '[ERROR: Processing failed]'}
 
             # Запускаем транскрипцию в потоках
             transcribed_data = []
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
                 futures = [executor.submit(transcribe_in_parallel, msg) for msg in messages_to_process]
                 for future in concurrent.futures.as_completed(futures):
                     transcribed_data.append(future.result())

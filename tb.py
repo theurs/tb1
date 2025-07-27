@@ -3722,6 +3722,7 @@ def gmodel(message: telebot.types.Message):
     """Показывает модели доступные в gemini"""
     try:
         chat_id_full = get_topic_id(message)
+        lang = get_lang(chat_id_full, message)
         COMMAND_MODE[chat_id_full] = ''
         current_list = my_gemini3.list_models(include_context=True)
         prev_list = KV_STORAGE.get('gemini_models', '')
@@ -3730,20 +3731,40 @@ def gmodel(message: telebot.types.Message):
         # Если предыдущий список отличается от текущего:
         if prev_list != current_list:
             # Преобразуем списки в наборы строк (каждая строка – модель)
-            prev_models = set(prev_list.splitlines())
-            current_models = current_list.splitlines()
+            prev_models_set = set(prev_list.splitlines())
+            current_models_list = current_list.splitlines()
+            current_models_set = set(current_models_list) # Добавляем набор для удобства сравнения
 
             # Вычисляем новые модели
-            new_models = {model for model in current_models if model not in prev_models}
+            new_models = {model for model in current_models_set if model not in prev_models_set}
+
+            # Вычисляем удаленные модели (были в прошлом, но нет в текущем)
+            removed_models = {model for model in prev_models_set if model not in current_models_set}
+
+            msg_lines = []
 
             # Формируем итоговое сообщение, выделяя новые модели тегом <b>
-            msg_lines = []
-            for model in current_models:
+            if new_models: # Добавляем заголовок, если есть новые модели
+                msg_updated = tr("<b>Обновленный список моделей:</b>", lang)
+                msg_lines.append(msg_updated)
+                msg_lines.append('')
+            for model in current_models_list:
                 if model in new_models:
                     msg_lines.append(f"<b>{model}</b>")
                 else:
                     msg_lines.append(model)
+
+            # Если есть удаленные модели, добавляем их в тот же список
+            if removed_models:
+                msg_lines.append('\u200c') # Невидимый символ Zero Width Non-Joiner
+                msg_removed = tr("<b>Удалённые модели (больше недоступны):</b>", lang)
+                msg_lines.append(msg_removed)
+                msg_lines.append('')
+                for model in sorted(list(removed_models)): # Сортируем для читаемости
+                    msg_lines.append(model)
+
             msg = "\n".join(msg_lines)
+
         else:
             # Если изменений нет, просто возвращаем текущий список
             msg = current_list

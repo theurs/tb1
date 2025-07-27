@@ -77,7 +77,7 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
         language (str): The two-letter language code (e.g., "ru" for Russian, "en" for English).
         chat_id (str): The Telegram user chat ID where the file should be sent.
 
-        Assistant should guess nation and language itself.
+        Assistant should guess nation and language itself. And ask for other parameters in human manner.
 
     Returns:
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.

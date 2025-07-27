@@ -77,6 +77,8 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
         language (str): The two-letter language code (e.g., "ru" for Russian, "en" for English).
         chat_id (str): The Telegram user chat ID where the file should be sent.
 
+        Assistant should guess nation and language itself.
+
     Returns:
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
     """
@@ -202,7 +204,7 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
 
     try:
         # Log the request
-        my_log.log_gemini_skills_html(f'Generating natal chart for "{name}, {date} {time}, {place}, {nation}" for chat_id: {chat_id}')
+        my_log.log_gemini_skills_html(f'Generating natal chart for "{name}, {date} {time}, {place}, {nation}, {language}" for chat_id: {chat_id}')
 
         # Restore and validate chat_id
         chat_id = my_skills_general.restore_id(chat_id)

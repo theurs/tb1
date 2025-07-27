@@ -35,6 +35,7 @@ groq
 imgkit
 
 gTTS
+kerykeion
 langdetect
 langcodes
 lxml[html_clean]
@@ -88,6 +89,7 @@ sqlitedict
 SpeechRecognition
 simpleeval
 svglib
+swisseph
 
 tavily-python
 trafilatura

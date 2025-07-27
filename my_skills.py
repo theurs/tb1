@@ -19,6 +19,11 @@ import traceback
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import swisseph as swe
+from kerykeion import AstrologicalSubject, NatalAspects, KerykeionChartSVG
+from kerykeion.charts.charts_utils import convert_latitude_coordinate_to_string, convert_longitude_coordinate_to_string
+from kerykeion.utilities import get_houses_list
+from datetime import datetime
 from simpleeval import simple_eval
 from typing import Callable, List, Optional, Tuple, Union
 
@@ -33,7 +38,6 @@ import my_google
 import my_gemini
 import my_gemini_general
 import my_gemini_google
-import my_github
 import my_groq
 import my_log
 import my_md_tables_to_png
@@ -56,6 +60,212 @@ translate_text = my_skills_general.translate_text
 translate_documents = my_skills_general.translate_documents
 edit_image = my_skills_general.edit_image
 get_weather = my_skills_general.get_weather
+
+
+def save_natal_chart_to_image(name: str, date: str, time: str, place: str, nation: str, language: str, chat_id: str) -> str:
+    """Generates a natal chart in PNG format based on the provided astrological subject data and sends it to the user.
+
+    This function uses the Kerykeion library to create an astrological natal chart.
+
+    Args:
+        name (str): The name of the astrological subject (e.g., "Alexandra Ivanova").
+        date (str): The birth date in 'YYYY-MM-DD' format (e.g., "1994-10-17").
+        time (str): The birth time in 'HH:MM' format (e.g., "06:42").
+        place (str): The city of birth. It is important that the city name is specified in English,
+                     as the library expects English city names (e.g., "St. Petersburg" instead of "Санкт-Петербург").
+        nation (str): The two-letter country code (e.g., "RU" for Russia, "US" for USA).
+        language (str): The two-letter language code (e.g., "ru" for Russian, "en" for English).
+        chat_id (str): The Telegram user chat ID where the file should be sent.
+
+    Returns:
+        str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+    """
+
+    def get_textual_astrological_report(subject: AstrologicalSubject) -> str:
+        """
+        Генерирует текстовый отчет по натальной карте, используя объекты Kerykeion.
+        
+        Args:
+            subject: Объект AstrologicalSubject.
+            
+        Returns:
+            Отформатированная строка с астрологической информацией.
+        """
+        try:
+            PLANET_NAMES = [
+                "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus",
+                "Neptune", "Pluto", "Mean_Node", "Chiron", "Ascendant", "Medium_Coeli",
+                "Mean_Lilith", "Mean_South_Node"
+            ]
+
+            # --- 1. Основная информация ---
+            dt_local = datetime.fromisoformat(subject.iso_formatted_local_datetime)
+            tz_offset_str = dt_local.strftime('%z')
+            formatted_tz = f"[{tz_offset_str[:-2]}:{tz_offset_str[-2:]}]"
+            datetime_str = f"{dt_local.strftime('%Y-%m-%d %H:%M')} {formatted_tz}"
+
+            lat_str = convert_latitude_coordinate_to_string(subject.lat, "Север", "Юг")
+            lng_str = convert_longitude_coordinate_to_string(subject.lng, "Восток", "Запад")
+
+            info_lines = [
+                f"{subject.name}",
+                f"Дата и время: {datetime_str}",
+                f"Место: {subject.city}, {subject.nation}",
+                f"Широта: {lat_str}",
+                f"Долгота: {lng_str}",
+                f"Система домов: {subject.houses_system_name}",
+                f"Зодиак: {subject.zodiac_type}"
+            ]
+
+            # --- 2. Лунная фаза ---
+            lunar_phase_info = [
+                f"Лунная фаза (день): {subject.lunar_phase['moon_phase']}",
+                f"Лунная фаза (название): {subject.lunar_phase['moon_phase_name']}",
+            ]
+
+            # --- 3. Положения планет ---
+            planets_lines = []
+            for planet_name in PLANET_NAMES:
+                if hasattr(subject, planet_name):
+                    planet = getattr(subject, planet_name)
+                    retrograde_str = " (R)" if planet.retrograde else ""
+                    
+                    _sign_index, deg, minute, second, _frac = swe.split_deg(planet.abs_pos, swe.SPLIT_DEG_ZODIACAL)
+                    position_str = f"{deg}°{minute}'{int(second)}\""
+                    
+                    planets_lines.append(
+                        f"{planet.name}: {position_str} в знаке {planet.sign}{retrograde_str}"
+                    )
+
+            # --- 4. Положения домов (куспиды) ---
+            houses_lines = []
+            house_list = get_houses_list(subject)
+            for house in house_list:
+                _sign_index, deg, minute, second, _frac = swe.split_deg(house.abs_pos, swe.SPLIT_DEG_ZODIACAL)
+                position_str = f"{deg}°{minute}'{int(second)}\""
+
+                houses_lines.append(
+                    f"Дом {house.name.title()}: {position_str} в знаке {house.sign}"
+                )
+
+            # --- 5. Аспекты ---
+            aspect_calculator = NatalAspects(subject)
+            aspects_lines = []
+            sorted_aspects = sorted(aspect_calculator.relevant_aspects, key=lambda x: (x.p1, x.p2))
+            for aspect in sorted_aspects:
+                # ИСПРАВЛЕНО ЗДЕСЬ: Используем aspect.diff вместо aspect['orb']
+                aspects_lines.append(
+                    f"{aspect.p1} - {aspect.p2}: {aspect.aspect} (орб: {aspect.diff:.2f}°)"
+                )
+
+            # --- 6. Стихии ---
+            elements_count = {'fire': 0, 'earth': 0, 'air': 0, 'water': 0}
+            planets_for_elements = PLANET_NAMES[:10]
+
+            for planet_name in planets_for_elements:
+                if hasattr(subject, planet_name):
+                    planet = getattr(subject, planet_name)
+                    elements_count[planet.element] += 1
+
+            total_points = len(planets_for_elements)
+            if total_points > 0:
+                elements_lines = [
+                    f"Огонь: {elements_count['fire']/total_points:.0%}",
+                    f"Земля: {elements_count['earth']/total_points:.0%}",
+                    f"Воздух: {elements_count['air']/total_points:.0%}",
+                    f"Вода: {elements_count['water']/total_points:.0%}",
+                ]
+            else:
+                elements_lines = ["Нет планет для расчета стихий."]
+
+            # --- Сборка отчета ---
+            report_parts = {
+                "--- ОСНОВНАЯ ИНФОРМАЦИЯ ---": info_lines,
+                "--- ЛУННАЯ ФАЗА ---": lunar_phase_info,
+                "--- ПЛАНЕТЫ ---": planets_lines,
+                "--- ДОМА (КУСПИДЫ) ---": houses_lines,
+                "--- СТИХИИ ---": elements_lines,
+                "--- АСПЕКТЫ ---": aspects_lines,
+            }
+
+            output_str = ""
+            for title, lines in report_parts.items():
+                output_str += title + "\n"
+                output_str += "\n".join(lines)
+                output_str += "\n\n"
+
+            return output_str.strip()
+        except Exception as error:
+            traceback_str = traceback.format_exc()
+            my_log.log2(f'tb:gemini_natal_chart: {error}\n\n{traceback_str}')
+            return f"FAIL: An error occurred while generating the report. Error: {error}"
+
+    try:
+        # Log the request
+        my_log.log_gemini_skills_html(f'Generating natal chart for "{name}, {date} {time}, {place}, {nation}" for chat_id: {chat_id}')
+
+        # Restore and validate chat_id
+        chat_id = my_skills_general.restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        # Parse date and time strings into integers
+        try:
+            year, month, day = map(int, date.split('-'))
+            hour, minute = map(int, time.split(':'))
+        except ValueError as e:
+            return f"FAIL: Invalid date or time format. Use 'YYYY-MM-DD' and 'HH:MM'. Error: {e}"
+
+        # Create an AstrologicalSubject instance
+        subject = AstrologicalSubject(
+            name=name,
+            year=year,
+            month=month,
+            day=day,
+            hour=hour,
+            minute=minute,
+            city=place,
+            nation=nation
+        )
+
+        # Generate the chart in SVG format
+        # тут надо язык а не нацию
+        chart = KerykeionChartSVG(subject, chart_language=language.upper())
+        svg_string = chart.makeTemplate()
+
+        # Define filename
+        filename = f"natal_chart_{name.replace(' ', '_')}_{date}.png"
+        filename = utils.safe_fname(filename) # Ensure filename is safe
+
+        # Convert the SVG string to PNG bytes
+        try:
+            # Assuming a default viewport size is suitable for natal charts, or can be made configurable
+            png_bytes = my_md_tables_to_png.html_to_image_bytes_playwright(svg_string, width=1920, height=1080)
+        except Exception as e:
+            msg = f'FAIL: Error converting SVG to PNG: {str(e)}'
+            my_log.log_gemini_skills_html(msg)
+            return msg
+
+        if png_bytes and isinstance(png_bytes, bytes):
+            item = {
+                'type': 'image/png file',
+                'filename': filename,
+                'data': png_bytes,
+            }
+            with my_skills_storage.STORAGE_LOCK:
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
+                else:
+                    my_skills_storage.STORAGE[chat_id] = [item,]
+            return f"OK. Информация для трактовки изображения карты (ассистент должен рассказать юзеру что на карте используя эти данные): {get_textual_astrological_report(subject)}"
+        else:
+            return "FAIL: Image bytes were not generated."
+
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills_html(f'save_natal_chart_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{name}, {date}, {time}, {place}, {nation}, {chat_id}')
+        return f"FAIL: An unexpected error occurred: {e}"
 
 
 def query_user_file(query: str, user_id: str) -> str:
@@ -171,7 +381,7 @@ def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_h
         my_log.log_gemini_skills_html(f'save_html_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{html}\n\n{filename} {viewport_width}x{viewport_height}\n\n{chat_id}')
         return f"FAIL: An unexpected error occurred: {e}"
 
-    return 'FAILED'        
+    return 'FAILED'
 
 
 ##### charts ###############################################

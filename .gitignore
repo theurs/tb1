@@ -1,4 +1,5 @@
 .venv/*
+cache/*
 cfg.py
 -cfg.py
 cfg_bing.py

@@ -2779,6 +2779,7 @@ def handle_voice(message: telebot.types.Message):
         return
 
 
+    is_private = message.chat.type == 'private'
     supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
     if supch == 1:
         is_private = True

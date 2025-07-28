@@ -2,22 +2,25 @@
 # pip install -U mistralai pysrt
 
 
-import cachetools.func
+import base64
 import inspect
 import json
-import base64
+import io
 import os
-import requests
 import subprocess
 import time
 import threading
 import tempfile
 import traceback
-from typing import Union
+from typing import Union, List, Optional
 
+import cachetools.func
 import openai
 import pysrt
 from mistralai import Mistral
+from mistralai.models import SDKError, TimestampGranularity
+from mistralai.extra.exceptions import MistralClientException
+from mistralai.types import UNSET
 from sqlitedict import SqliteDict
 
 import cfg
@@ -695,6 +698,67 @@ def format_to_srt(transcription_result: dict) -> str:
 #     return ''
 
 
+# def _call_mistral_api(
+#     audio_bytes: bytes,
+#     language: str | None,
+#     get_timestamps: bool,
+#     timeout: int
+# ) -> Union[dict, None]:
+#     """
+#     Вызывает Mistral API. Возвращает полный JSON-ответ (dict) при успехе
+#     или None в случае ошибки.
+#     """
+#     with SPEECH_TO_TEXT_LOCK:
+#         if not len(ALL_KEYS):
+#             my_log.log_mistral('transcribe_audio: No keys available.')
+#             return None
+
+#         MAX_RETRIES = 3
+#         RETRY_DELAY = 5
+#         RETRY_DELAY_500 = 60
+
+#         for attempt in range(MAX_RETRIES):
+#             try:
+#                 api_key = get_next_key()
+#                 headers = {'Authorization': f'Bearer {api_key}'}
+#                 data = {'model': 'voxtral-mini-latest'}
+#                 if language:
+#                     data['language'] = language
+#                 if get_timestamps:
+#                     data['timestamp_granularities'] = 'segment'
+
+#                 files = {'file': ('audio.dat', audio_bytes)}
+
+#                 response = requests.post(
+#                     'https://api.mistral.ai/v1/audio/transcriptions',
+#                     headers=headers, data=data, files=files, timeout=timeout
+#                 )
+#                 response.raise_for_status()
+#                 return response.json() # Всегда возвращаем JSON
+
+#             except requests.exceptions.HTTPError as e:
+#                 if e.response.status_code == 401:
+#                     my_log.log_mistral(f'_call_mistral_api: Unauthorized key {api_key}')
+#                     continue
+#                 elif e.response.status_code == 500:
+#                     my_log.log_mistral(f'_call_mistral_api: HTTP error ({e.response.status_code}): Retrying after {RETRY_DELAY_500} seconds...')
+#                     time.sleep(RETRY_DELAY_500)
+#                     continue
+#                 my_log.log_mistral(f'_call_mistral_api: HTTP error ({e.response.status_code}): {e.response.text}')
+#                 if e.response.status_code < 500: return None # Не повторяем клиентские ошибки
+#             except requests.exceptions.RequestException as e:
+#                 my_log.log_mistral(f'_call_mistral_api: Request failed: {e}. Retrying...')
+#             except Exception as e:
+#                 my_log.log_mistral(f'_call_mistral_api: Unexpected error: {e}')
+#                 return None
+
+#             if attempt < MAX_RETRIES - 1:
+#                 time.sleep(RETRY_DELAY)
+
+#         my_log.log_mistral(f'_call_mistral_api: Failed after {MAX_RETRIES} retries.')
+#         return None
+
+
 def _call_mistral_api(
     audio_bytes: bytes,
     language: str | None,
@@ -706,7 +770,7 @@ def _call_mistral_api(
     или None в случае ошибки.
     """
     with SPEECH_TO_TEXT_LOCK:
-        if not len(ALL_KEYS):
+        if not ALL_KEYS:
             my_log.log_mistral('transcribe_audio: No keys available.')
             return None
 
@@ -715,36 +779,47 @@ def _call_mistral_api(
         RETRY_DELAY_500 = 60
 
         for attempt in range(MAX_RETRIES):
+            api_key = get_next_key()
+            if not api_key:
+                my_log.log_mistral('transcribe_audio: No API key retrieved from get_next_key().')
+                return None
+
             try:
-                api_key = get_next_key()
-                headers = {'Authorization': f'Bearer {api_key}'}
-                data = {'model': 'voxtral-mini-latest'}
-                if language:
-                    data['language'] = language
-                if get_timestamps:
-                    data['timestamp_granularities'] = 'segment'
+                client = Mistral(api_key=api_key)
 
-                files = {'file': ('audio.dat', audio_bytes)}
+                file_data = {
+                    "content": audio_bytes,
+                    "file_name": "audio.wav",
+                }
 
-                response = requests.post(
-                    'https://api.mistral.ai/v1/audio/transcriptions',
-                    headers=headers, data=data, files=files, timeout=timeout
+                timestamp_granularities_param: Optional[List[TimestampGranularity]] = \
+                    [TimestampGranularity.SEGMENT] if get_timestamps else None
+
+                timeout_ms_param = timeout * 1000
+
+                transcription_response = client.audio.transcriptions.complete(
+                    model="voxtral-mini-latest",
+                    file=file_data,
+                    language=language if language is not None else UNSET,
+                    timestamp_granularities=timestamp_granularities_param,
+                    timeout_ms=timeout_ms_param
                 )
-                response.raise_for_status()
-                return response.json() # Всегда возвращаем JSON
 
-            except requests.exceptions.HTTPError as e:
-                if e.response.status_code == 401:
+                return transcription_response.model_dump()
+
+            except SDKError as e:
+                if e.status_code == 401:
                     my_log.log_mistral(f'_call_mistral_api: Unauthorized key {api_key}')
-                    continue
-                elif e.response.status_code == 500:
-                    my_log.log_mistral(f'_call_mistral_api: HTTP error ({e.response.status_code}): Retrying after {RETRY_DELAY_500} seconds...')
+                    continue # Try with next API key if unauthorized
+                elif e.status_code == 500:
+                    my_log.log_mistral(f'_call_mistral_api: HTTP error ({e.status_code}): Retrying after {RETRY_DELAY_500} seconds...')
                     time.sleep(RETRY_DELAY_500)
-                    continue
-                my_log.log_mistral(f'_call_mistral_api: HTTP error ({e.response.status_code}): {e.response.text}')
-                if e.response.status_code < 500: return None # Не повторяем клиентские ошибки
-            except requests.exceptions.RequestException as e:
-                my_log.log_mistral(f'_call_mistral_api: Request failed: {e}. Retrying...')
+                    continue # Retry after a longer delay for server errors
+                my_log.log_mistral(f'_call_mistral_api: Mistral API HTTP error ({e.status_code}): {e.message} - {e.body}')
+                if e.status_code < 500: # For other client errors (e.g., 400 Bad Request), do not retry
+                    return None
+            except MistralClientException as e:
+                my_log.log_mistral(f'_call_mistral_api: Mistral client error: {e}. Retrying...')
             except Exception as e:
                 my_log.log_mistral(f'_call_mistral_api: Unexpected error: {e}')
                 return None
@@ -789,7 +864,6 @@ def transcribe_audio(
     """
     # !!Нормально не работает, по-этому принудительно отключается пока
     get_timestamps = False
-
 
     MAX_DURATION_SECONDS = 10 * 60
 
@@ -1220,7 +1294,7 @@ if __name__ == '__main__':
 
 
     # trgt=r'C:\Users\user\AppData\Local\Temp\tmpjekvkdii\1_part_01.ogg'
-    trgt=r'C:\Users\user\Downloads\1.ogg'
+    trgt=r'C:\Users\user\Downloads\samples for ai\аудио\кусок радио-т подкаста несколько голосов.mp3'
     r=transcribe_audio(
         trgt,
         language='ru',

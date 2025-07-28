@@ -2778,6 +2778,21 @@ def handle_voice(message: telebot.types.Message):
     if not check_donate(message, chat_id_full, lang):
         return
 
+
+    supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
+    if supch == 1:
+        is_private = True
+
+
+    # определяем какое имя у бота в этом чате, на какое слово он отзывается
+    bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
+    if not is_private:
+        if not message.caption or not message.caption.startswith('?') or \
+            not message.caption.startswith(f'@{_bot_name}') or \
+                not message.caption.startswith(bot_name):
+            return
+
+
     # --- ПРИОРИТЕТНАЯ ОБРАБОТКА ДЛЯ /transcribe ---
     if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
         try:

@@ -24,6 +24,7 @@ from kerykeion import AstrologicalSubject, NatalAspects, KerykeionChartSVG
 from kerykeion.charts.charts_utils import convert_latitude_coordinate_to_string, convert_longitude_coordinate_to_string
 from kerykeion.utilities import get_houses_list
 from datetime import datetime
+from PIL import Image
 from simpleeval import simple_eval
 from typing import Callable, List, Optional, Tuple, Union
 
@@ -45,6 +46,7 @@ import my_mistral
 import my_skills_storage
 import my_skills_general
 import my_sum
+import my_tarot
 import utils
 
 
@@ -60,6 +62,119 @@ translate_text = my_skills_general.translate_text
 translate_documents = my_skills_general.translate_documents
 edit_image = my_skills_general.edit_image
 get_weather = my_skills_general.get_weather
+
+
+def send_tarot_cards(chat_id: str, num_cards: int) -> str:
+    """Sends one or three random tarot cards to the user.
+
+    This function retrieves either one random tarot card or three unique tarot
+    cards (including their binary image data) from the `my_tarot` module
+    and prepares them for sending to the specified Telegram user.
+    If three cards are requested, they are combined into a single collage
+    image, arranged from left to right, without gaps, before sending.
+
+    Args:
+        chat_id (str): The Telegram user chat ID where the card(s) should be sent.
+                       The ID will be restored and validated internally.
+        num_cards (int): The number of cards to send. Valid values are 1 or 3.
+
+    Returns:
+        str: 'OK' followed by a confirmation message if the card(s) were
+             successfully prepared for sending. Returns 'FAIL' followed by an
+             error description if an issue occurred, such as an invalid
+             `num_cards` value, an unknown chat ID, or an error during card
+             retrieval or storage.
+    """
+    try:
+        # Log the request for auditing/debugging purposes.
+        my_log.log_gemini_skills(f'Sending {num_cards} tarot card(s) for chat_id: {chat_id}')
+
+        # Restore and validate the chat_id.
+        restored_chat_id: str = my_skills_general.restore_id(chat_id)
+        if restored_chat_id == '[unknown]':
+            return "FAIL: Unknown chat ID."
+
+        final_item_data: bytes
+        final_item_filename: str
+        card_names_for_message: List[str] = []
+
+        # Determine how many cards to retrieve based on num_cards.
+        if num_cards == 1:
+            # Retrieve a single random card.
+            card_data, card_name = my_tarot.get_single_tarot_card_data()
+            final_item_data = card_data
+            final_item_filename = card_name.replace('.png', '_card.png') # Ensure unique filename or descriptive for single card
+            card_names_for_message.append(card_name)
+
+        elif num_cards == 3:
+            # Retrieve three unique cards.
+            three_cards_data: List[Tuple[bytes, str]] = my_tarot.get_three_unique_tarot_card_data()
+
+            if len(three_cards_data) != 3:
+                return "FAIL: Could not retrieve three unique tarot cards."
+
+            images: List[Image.Image] = []
+            total_width: int = 0
+            max_height: int = 0
+
+            # Open each image and prepare for collage
+            for card_bytes, card_name in three_cards_data:
+                image: Image.Image = Image.open(io.BytesIO(card_bytes))
+                images.append(image)
+                total_width += image.width
+                max_height = max(max_height, image.height)
+                card_names_for_message.append(card_name)
+
+            # Create a new blank image with transparent background
+            collage_image = Image.new('RGBA', (total_width, max_height))
+
+            # Paste images onto the collage
+            x_offset: int = 0
+            for img in images:
+                collage_image.paste(img, (x_offset, 0))
+                x_offset += img.width
+
+            # Save the collage to bytes
+            byte_arr = io.BytesIO()
+            collage_image.save(byte_arr, format='PNG')
+            final_item_data = byte_arr.getvalue()
+            final_item_filename = f"tarot_spread_{'_'.join(name.replace('.png', '') for name in card_names_for_message)}.png"
+
+        else:
+            # Handle invalid num_cards input.
+            return "FAIL: Invalid number of cards specified. Please choose 1 or 3."
+
+        # Check if final item data was generated.
+        if not final_item_data:
+            return "FAIL: No tarot card image data was generated."
+
+        # Acquire a lock before modifying the shared storage to prevent race conditions.
+        with my_skills_storage.STORAGE_LOCK:
+            # Ensure the chat_id exists in storage, if not, initialize it.
+            if restored_chat_id not in my_skills_storage.STORAGE:
+                my_skills_storage.STORAGE[restored_chat_id] = []
+
+            # Define the item structure for storing the image data.
+            item = {
+                'type': 'image/png file',
+                'filename': final_item_filename,
+                'data': final_item_data,
+            }
+            # Append the prepared item to the user's storage.
+            my_skills_storage.STORAGE[restored_chat_id].append(item)
+
+        # Return a success message.
+        msg_cards = ", ".join(card_name.replace('.png', '') for card_name in card_names_for_message)
+        return f"OK. {num_cards} tarot card(s) prepared for sending. Assistant, as a professional tarologist, must write to the user what such a spread means, the cards chosen are: " + msg_cards
+
+    except Exception as e:
+        # Capture full traceback for detailed logging in case of an unexpected error.
+        traceback_error: str = traceback.format_exc()
+        my_log.log_gemini_skills(
+            f'send_tarot_cards: Unexpected error: {e}\n\n{traceback_error}\n\nchat_id: {chat_id}, num_cards: {num_cards}'
+        )
+        # Return a failure message with the encountered error.
+        return f"FAIL: An unexpected error occurred while preparing tarot cards: {e}"
 
 
 def save_natal_chart_to_image(name: str, date: str, time: str, place: str, nation: str, language: str, chat_id: str) -> str:
@@ -86,10 +201,10 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
     def get_textual_astrological_report(subject: AstrologicalSubject) -> str:
         """
         Генерирует текстовый отчет по натальной карте, используя объекты Kerykeion.
-        
+
         Args:
             subject: Объект AstrologicalSubject.
-            
+
         Returns:
             Отформатированная строка с астрологической информацией.
         """
@@ -131,10 +246,10 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
                 if hasattr(subject, planet_name):
                     planet = getattr(subject, planet_name)
                     retrograde_str = " (R)" if planet.retrograde else ""
-                    
+
                     _sign_index, deg, minute, second, _frac = swe.split_deg(planet.abs_pos, swe.SPLIT_DEG_ZODIACAL)
                     position_str = f"{deg}°{minute}'{int(second)}\""
-                    
+
                     planets_lines.append(
                         f"{planet.name}: {position_str} в знаке {planet.sign}{retrograde_str}"
                     )

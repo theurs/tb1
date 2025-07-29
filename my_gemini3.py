@@ -654,6 +654,7 @@ def chat(
                             my_skills.save_chart_and_graphs_to_image,
                             my_skills.save_html_to_image,
                             my_skills.save_natal_chart_to_image,
+                            my_skills.send_tarot_cards,
                             my_skills.query_user_file,
                             my_skills_general.get_location_name,
                             my_skills.help,

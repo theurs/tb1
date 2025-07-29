@@ -7,52 +7,52 @@ import my_log
 
 tarots_files = [
     # --- Старшие Арканы (Major Arcana), отсортированные по номеру ---
-    '_00_fool.png',               # Шут (0)
-    '_01_magician.png',         # Маг (I)
-    '_02_highpriestess.png',    # Верховная Жрица (II)
-    '_03_empress.png',          # Императрица (III)
-    '_04_emperor.png',          # Император (IV)
-    '_05_hierophant.png',       # Иерофант (V)
-    '_06_lovers.png',           # Влюбленные (VI)
-    '_07_chariot.png',           # Колесница (VII)
-    '_11_strength.png',         # Сила (VIII, в некоторых колодах XI) - предполагаю VIII по традиц. RW
-    '_09_hermit.png',           # Отшельник (IX)
-    '_10_wheel_of_fortune.png', # Колесо Фортуны (X)
-    '_11_justice.png',          # Справедливость (XI, в некоторых колодах VIII) - предполагаю XI по традиц. RW
-    '_12_hanged_man.png',       # Повешенный (XII)
-    '_13_death.png',            # Смерть (XIII)
-    '_14_temperance.png',       # Умеренность (XIV)
-    '_15_devil.png',            # Дьявол (XV)
-    '_16_tower.png',            # Башня (XVI)
-    '_17_star.png',             # Звезда (XVII)
-    '_18_moon.png',             # Луна (XVIII)
-    '_19_sun.png',              # Солнце (XIX)
-    '_20_judgement.png',        # Суд (XX)
-    '_21_world.png',            # Мир (XXI)
+    '_00_fool.webp',               # Шут (0)
+    '_01_magician.webp',         # Маг (I)
+    '_02_highpriestess.webp',    # Верховная Жрица (II)
+    '_03_empress.webp',          # Императрица (III)
+    '_04_emperor.webp',          # Император (IV)
+    '_05_hierophant.webp',       # Иерофант (V)
+    '_06_lovers.webp',           # Влюбленные (VI)
+    '_07_chariot.webp',           # Колесница (VII)
+    '_11_strength.webp',         # Сила (VIII, в некоторых колодах XI) - предполагаю VIII по традиц. RW
+    '_09_hermit.webp',           # Отшельник (IX)
+    '_10_wheel_of_fortune.webp', # Колесо Фортуны (X)
+    '_11_justice.webp',          # Справедливость (XI, в некоторых колодах VIII) - предполагаю XI по традиц. RW
+    '_12_hanged_man.webp',       # Повешенный (XII)
+    '_13_death.webp',            # Смерть (XIII)
+    '_14_temperance.webp',       # Умеренность (XIV)
+    '_15_devil.webp',            # Дьявол (XV)
+    '_16_tower.webp',            # Башня (XVI)
+    '_17_star.webp',             # Звезда (XVII)
+    '_18_moon.webp',             # Луна (XVIII)
+    '_19_sun.webp',              # Солнце (XIX)
+    '_20_judgement.webp',        # Суд (XX)
+    '_21_world.webp',            # Мир (XXI)
 
     # --- Младшие Арканы: Кубки (Kub/Cups) ---
-    '_01_kub.png', '_02_kub.png', '_03_kub.png', '_04_kub.png',
-    '_05_kub.png', '_06_kub.png', '_07_kub.png', '_08_kub.png',
-    '_09_kub.png', '_10_kub.png', '_11_kub.png', '_12_kub.png',
-    '_13_kub.png', '_14_kub.png',
+    '_01_kub.webp', '_02_kub.webp', '_03_kub.webp', '_04_kub.webp',
+    '_05_kub.webp', '_06_kub.webp', '_07_kub.webp', '_08_kub.webp',
+    '_09_kub.webp', '_10_kub.webp', '_11_kub.webp', '_12_kub.webp',
+    '_13_kub.webp', '_14_kub.webp',
 
     # --- Младшие Арканы: Мечи (Mech/Swords) ---
-    '_01_mech.png', '_02_mech.png', '_03_mech.png', '_04_mech.png',
-    '_05_mech.png', '_06_mech.png', '_07_mech.png', '_08_mech.png',
-    '_09_mech.png', '_10_mech.png', '_11_mech.png', '_12_mech.png',
-    '_13_mech.png', '_14_mech.png',
+    '_01_mech.webp', '_02_mech.webp', '_03_mech.webp', '_04_mech.webp',
+    '_05_mech.webp', '_06_mech.webp', '_07_mech.webp', '_08_mech.webp',
+    '_09_mech.webp', '_10_mech.webp', '_11_mech.webp', '_12_mech.webp',
+    '_13_mech.webp', '_14_mech.webp',
 
     # --- Младшие Арканы: Пентакли (Pentakl/Pentacles) ---
-    '_01_pentakl.png', '_02_pentakl.png', '_03_pentakl.png', '_04_pentakl.png',
-    '_05_pentakl.png', '_06_pentakl.png', '_07_pentakl.png', '_08_pentakl.png',
-    '_09_pentakl.png', '_10_pentakl.png', '_11_pentakl.png', '_12_pentakl.png',
-    '_13_pentakl.png', '_14_pentakl.png',
+    '_01_pentakl.webp', '_02_pentakl.webp', '_03_pentakl.webp', '_04_pentakl.webp',
+    '_05_pentakl.webp', '_06_pentakl.webp', '_07_pentakl.webp', '_08_pentakl.webp',
+    '_09_pentakl.webp', '_10_pentakl.webp', '_11_pentakl.webp', '_12_pentakl.webp',
+    '_13_pentakl.webp', '_14_pentakl.webp',
 
     # --- Младшие Арканы: Посохи (Posoh/Wands) ---
-    '_01_posoh.png', '_02_posoh.png', '_03_posoh.png', '_04_posoh.png',
-    '_05_posoh.png', '_06_posoh.png', '_07_posoh.png', '_08_posoh.png',
-    '_09_posoh.png', '_10_posoh.png', '_11_posoh.png', '_12_posoh.png',
-    '_13_posoh.png', '_14_posoh.png',
+    '_01_posoh.webp', '_02_posoh.webp', '_03_posoh.webp', '_04_posoh.webp',
+    '_05_posoh.webp', '_06_posoh.webp', '_07_posoh.webp', '_08_posoh.webp',
+    '_09_posoh.webp', '_10_posoh.webp', '_11_posoh.webp', '_12_posoh.webp',
+    '_13_posoh.webp', '_14_posoh.webp',
 ]
 
 path = 'tarot'

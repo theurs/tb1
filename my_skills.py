@@ -103,7 +103,7 @@ def send_tarot_cards(chat_id: str, num_cards: int) -> str:
             # Retrieve a single random card.
             card_data, card_name = my_tarot.get_single_tarot_card_data()
             final_item_data = card_data
-            final_item_filename = card_name.replace('.webp', '_card.png')
+            final_item_filename = card_name.replace('.webp', '')
             card_names_for_message.append(card_name)
 
         elif num_cards == 3:
@@ -138,7 +138,7 @@ def send_tarot_cards(chat_id: str, num_cards: int) -> str:
             byte_arr = io.BytesIO()
             collage_image.save(byte_arr, format='PNG')
             final_item_data = byte_arr.getvalue()
-            final_item_filename = f"tarot_spread_{'_'.join(name.replace('.webp', '') for name in card_names_for_message)}.png"
+            final_item_filename = f"{', '.join(name.replace('.webp', '') for name in card_names_for_message)}"
 
         else:
             # Handle invalid num_cards input.

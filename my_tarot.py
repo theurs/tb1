@@ -82,7 +82,7 @@ tarots_files = [
     "21-TheWorld.webp",
 
     # --- Младшие Арканы: Кубки (Cups) ---
-    "Cups01.webp",
+    "Cups01-ace.webp",
     "Cups02.webp",
     "Cups03.webp",
     "Cups04.webp",
@@ -92,13 +92,13 @@ tarots_files = [
     "Cups08.webp",
     "Cups09.webp",
     "Cups10.webp",
-    "Cups11.webp",  # Page of Cups
-    "Cups12.webp",  # Knight of Cups
-    "Cups13.webp",  # Queen of Cups
-    "Cups14.webp",  # King of Cups
+    "Cups11-page.webp",  # Page of Cups
+    "Cups12-knight.webp",  # Knight of Cups
+    "Cups13-queen.webp",  # Queen of Cups
+    "Cups14-king.webp",  # King of Cups
 
     # --- Младшие Арканы: Пентакли (Pentacles) ---
-    "Pentacles01.webp",
+    "Pentacles01-ace.webp",
     "Pentacles02.webp",
     "Pentacles03.webp",
     "Pentacles04.webp",
@@ -108,13 +108,13 @@ tarots_files = [
     "Pentacles08.webp",
     "Pentacles09.webp",
     "Pentacles10.webp",
-    "Pentacles11.webp", # Page of Pentacles
-    "Pentacles12.webp", # Knight of Pentacles
-    "Pentacles13.webp", # Queen of Pentacles
-    "Pentacles14.webp", # King of Pentacles
+    "Pentacles11-page.webp", # Page of Pentacles
+    "Pentacles12-knight.webp", # Knight of Pentacles
+    "Pentacles13-queen.webp", # Queen of Pentacles
+    "Pentacles14-king.webp", # King of Pentacles
 
     # --- Младшие Арканы: Мечи (Swords) ---
-    "Swords01.webp",
+    "Swords01-ace.webp",
     "Swords02.webp",
     "Swords03.webp",
     "Swords04.webp",
@@ -124,13 +124,13 @@ tarots_files = [
     "Swords08.webp",
     "Swords09.webp",
     "Swords10.webp",
-    "Swords11.webp", # Page of Swords
-    "Swords12.webp", # Knight of Swords
-    "Swords13.webp", # Queen of Swords
-    "Swords14.webp", # King of Swords
+    "Swords11-page.webp", # Page of Swords
+    "Swords12-knight.webp", # Knight of Swords
+    "Swords13-queen.webp", # Queen of Swords
+    "Swords14-king.webp", # King of Swords
 
     # --- Младшие Арканы: Жезлы (Wands) ---
-    "Wands01.webp",
+    "Wands01-ace.webp",
     "Wands02.webp",
     "Wands03.webp",
     "Wands04.webp",
@@ -140,11 +140,12 @@ tarots_files = [
     "Wands08.webp",
     "Wands09.webp",
     "Wands10.webp",
-    "Wands11.webp", # Page of Wands
-    "Wands12.webp", # Knight of Wands
-    "Wands13.webp", # Queen of Wands
-    "Wands14.webp", # King of Wands
+    "Wands11-page.webp", # Page of Wands
+    "Wands12-knight.webp", # Knight of Wands
+    "Wands13-queen.webp", # Queen of Wands
+    "Wands14-king.webp", # King of Wands
 ]
+
 
 
 path = 'tarot'

@@ -9674,6 +9674,16 @@ def do_task(message, custom_prompt: str = ''):
 
                 answer = ''
 
+                telegram_user_name = ''
+                is_not_bot = message.from_user.username and not message.from_user.username.lower().endswith('bot')
+                has_any_name_info = (message.from_user.first_name or
+                     message.from_user.last_name or
+                     (message.from_user.username and len(message.from_user.username) > 1))
+                if is_not_bot and has_any_name_info:
+                    telegram_user_name = (f'First name: {message.from_user.first_name} '
+                                        f'Last name: {message.from_user.last_name} '
+                                        f'Username: {message.from_user.username}')
+
                 # если активирован режим общения с Gemini
                 if chat_mode_.startswith(('gemini', 'gemma')):
                     if len(msg) > my_gemini.MAX_REQUEST:
@@ -9696,6 +9706,7 @@ def do_task(message, custom_prompt: str = ''):
                                 model = gmodel,
                                 system = hidden_text,
                                 use_skills=True,
+                                telegram_user_name=telegram_user_name,
                                 THINKING_BUDGET = THINKING_BUDGET
                             )
 
@@ -9707,6 +9718,7 @@ def do_task(message, custom_prompt: str = ''):
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
+                                    telegram_user_name=telegram_user_name,
                                     use_skills=True
                                 )
                                 WHO_ANSWERED[chat_id_full] = gmodel
@@ -9719,6 +9731,7 @@ def do_task(message, custom_prompt: str = ''):
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
+                                    telegram_user_name=telegram_user_name,
                                     use_skills=True
                                 )
                                 WHO_ANSWERED[chat_id_full] = gmodel
@@ -9731,6 +9744,7 @@ def do_task(message, custom_prompt: str = ''):
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
+                                    telegram_user_name=telegram_user_name,
                                     use_skills=True
                                 )
                                 WHO_ANSWERED[chat_id_full] = gmodel
@@ -9744,6 +9758,7 @@ def do_task(message, custom_prompt: str = ''):
                                     model = gmodel,
                                     system = hidden_text,
                                     use_skills=True,
+                                    telegram_user_name=telegram_user_name,
                                     THINKING_BUDGET = THINKING_BUDGET,
                                 )
                                 WHO_ANSWERED[chat_id_full] = gmodel
@@ -9756,6 +9771,7 @@ def do_task(message, custom_prompt: str = ''):
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
+                                    telegram_user_name=telegram_user_name,
                                     use_skills=True
                                 )
                                 WHO_ANSWERED[chat_id_full] = gmodel
@@ -9768,6 +9784,7 @@ def do_task(message, custom_prompt: str = ''):
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
+                                    telegram_user_name=telegram_user_name,
                                     use_skills=True
                                 )
                                 WHO_ANSWERED[chat_id_full] = gmodel
@@ -9780,6 +9797,7 @@ def do_task(message, custom_prompt: str = ''):
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
+                                    telegram_user_name=telegram_user_name,
                                     use_skills=True
                                 )
                                 WHO_ANSWERED[chat_id_full] = gmodel
@@ -9794,6 +9812,7 @@ def do_task(message, custom_prompt: str = ''):
                                     temp,
                                     model = gmodel,
                                     system = hidden_text,
+                                    telegram_user_name=telegram_user_name,
                                     use_skills=True
                                 )
                                 WHO_ANSWERED[chat_id_full] = gmodel

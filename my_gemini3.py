@@ -479,6 +479,7 @@ def chat(
     json_output: bool = False,
     do_not_update_history: bool = False,
     key__: str = '',
+    telegram_user_name: str = '',
     ) -> str:
     """Interacts with a generative AI model (presumably Gemini) to process a user query.
 
@@ -500,6 +501,8 @@ def chat(
         THINKING_BUDGET: The maximum number of tokens to spend on thinking. -1 = AUTO
         json_output: A boolean flag indicating whether to return the response as a JSON object.
         do_not_update_history: A boolean flag indicating whether to update the conversation history.
+        key__: The API key to use for the request.
+        telegram_user_name: The user's Telegram username.
 
     Returns:
         A string containing the model's response, or an empty string if an error occurs or the response is empty.
@@ -604,6 +607,9 @@ def chat(
             *SYSTEM_,
             system,
         ]
+        if telegram_user_name:
+            system_.insert(1, f'Telegram reported user name: {telegram_user_name}')
+
         if saved_file_name:
             my_skills_storage.STORAGE_ALLOWED_IDS[chat_id] = chat_id
             system_.insert(1, f'Telegram user have saved file/files and assistant can query it: {saved_file_name} ({saved_file_size} chars)')

@@ -264,7 +264,7 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
         filename: str - The desired file name for the DOCX file (e.g., 'document').
         text: str - The HTML string to convert to DOCX. It must be well-formed and use valid tags
                     (e.g., proper <html>, <head>, <body> structure, correct nesting, closed tags).
-                    **Important note on styling and layout:** Do not use CSS except user asked for it.
+                    **Important note on styling and layout:** Do not use CSS except user asked for it. Use <s> tag for strikethrough.
         chat_id: str - The Telegram user chat ID where the file should be sent.
 
     Returns:

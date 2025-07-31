@@ -197,22 +197,79 @@ def save_to_txt(filename: str, text: str, chat_id: str) -> str:
         return f"FAIL: An unexpected error occurred: {error}"
 
 
+# def save_to_docx(filename: str, text: str, chat_id: str) -> str:
+#     r'''
+#     Send DOCX file to user, converted from markdown text(~~ for strikethrough).
+
+#     Args:
+#         filename: str - The desired file name for the DOCX file (e.g., 'document').
+#         text: str - The markdown formatted text to convert to DOCX.
+#                     To include mathematical equations, use LaTeX syntax enclosed in dollar signs:
+#                     - For inline formulas, use $...$ (e.g., `$a^2 + b^2 = c^2$`).
+#                     - For display formulas on a new line, use $$...$$ 
+#                       (e.g., `$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$`).
+#         chat_id: str - The Telegram user chat ID where the file should be sent.
+
+#     Returns:
+#         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+#     '''
+#     try:
+#         my_log.log_gemini_skills_save_docs(f'save_to_docx {chat_id}\n\n{filename}\n{text}')
+
+#         chat_id = restore_id(chat_id)
+#         if chat_id == '[unknown]':
+#             return "FAIL, unknown chat id"
+
+#         # Ensure filename has .docx extension and is safe
+#         if not filename.lower().endswith('.docx'):
+#             filename += '.docx'
+#         filename = utils.safe_fname(filename)
+
+#         # Convert the markdown text to DOCX bytes using the provided function
+#         docx_bytes = my_pandoc.convert_markdown_to_document(text, 'docx')
+#         if isinstance(docx_bytes, str):
+#             # If a string is returned, it indicates an error message from convert_markdown_to_document
+#             my_log.log_gemini_skills_save_docs(f'save_to_docx: No DOCX data could be generated for chat {chat_id} - {docx_bytes}')
+#             return f"FAIL: No DOCX data could be generated: {docx_bytes}"
+
+#         # If bytes were successfully generated, prepare the item for storage
+#         if docx_bytes:
+#             item = {
+#                 'type': 'docx file',
+#                 'filename': filename,
+#                 'data': docx_bytes,
+#             }
+#             with my_skills_storage.STORAGE_LOCK:
+#                 if chat_id in my_skills_storage.STORAGE:
+#                     if item not in my_skills_storage.STORAGE[chat_id]:
+#                         my_skills_storage.STORAGE[chat_id].append(item)
+#                 else:
+#                     my_skills_storage.STORAGE[chat_id] = [item,]
+#             return "OK"
+#         else:
+#             # This case indicates that no DOCX data was generated.
+#             my_log.log_gemini_skills_save_docs(f'save_to_docx: No DOCX data could be generated for chat {chat_id}\n\nText length: {len(text)}')
+#             return "FAIL: No DOCX data could be generated."
+
+#     except Exception as error:
+#         traceback_error = traceback.format_exc()
+#         my_log.log_gemini_skills_save_docs(f'save_to_docx: Unexpected error: {error}\n\n{traceback_error}\n\nText length: {len(text)}\n\n{chat_id}')
+#         return f"FAIL: An unexpected error occurred: {error}"
+
+
 def save_to_docx(filename: str, text: str, chat_id: str) -> str:
-    r'''
-    Send DOCX file to user, converted from markdown text(~~ for strikethrough).
+    """Send a DOCX file to the user, converted from well-formed HTML.
 
     Args:
         filename: str - The desired file name for the DOCX file (e.g., 'document').
-        text: str - The markdown formatted text to convert to DOCX.
-                    To include mathematical equations, use LaTeX syntax enclosed in dollar signs:
-                    - For inline formulas, use $...$ (e.g., `$a^2 + b^2 = c^2$`).
-                    - For display formulas on a new line, use $$...$$ 
-                      (e.g., `$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$`).
+        text: str - The HTML string to convert to DOCX. It must be well-formed and use valid tags
+                    (e.g., proper <html>, <head>, <body> structure, correct nesting, closed tags).
+                    **Important note on styling and layout:** Do not use CSS except user asked for it.
         chat_id: str - The Telegram user chat ID where the file should be sent.
 
     Returns:
         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
-    '''
+    """
     try:
         my_log.log_gemini_skills_save_docs(f'save_to_docx {chat_id}\n\n{filename}\n{text}')
 
@@ -226,11 +283,7 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
         filename = utils.safe_fname(filename)
 
         # Convert the markdown text to DOCX bytes using the provided function
-        docx_bytes = my_pandoc.convert_markdown_to_document(text, 'docx')
-        if isinstance(docx_bytes, str):
-            # If a string is returned, it indicates an error message from convert_markdown_to_document
-            my_log.log_gemini_skills_save_docs(f'save_to_docx: No DOCX data could be generated for chat {chat_id} - {docx_bytes}')
-            return f"FAIL: No DOCX data could be generated: {docx_bytes}"
+        docx_bytes = my_pandoc.convert_html_to_docx(text)
 
         # If bytes were successfully generated, prepare the item for storage
         if docx_bytes:

@@ -244,6 +244,86 @@ def convert_markdown_to_document(text: str, output_format: str) -> bytes | str:
             utils.remove_file(temp_output_file)
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl=5 * 60)
+def convert_html_to_docx(html: str) -> bytes:
+    """
+    Converts well-formed HTML (using correct, valid tags) to a DOCX document via LibreOffice (headless mode).
+    Uses the exact working CLI command with explicit export filter:
+    --convert-to "docx:Office Open XML Text"
+
+    Assumes LibreOffice is installed. On Windows the function uses the full path:
+    "C:\\Program Files\\LibreOffice\\program\\soffice.exe"
+    On other platforms it uses "libreoffice" from PATH.
+
+    Args:
+        html (str): The input HTML string. Must be well-formed and use valid tags.
+
+    Returns:
+        bytes: The binary content of the generated DOCX, or b'' on failure.
+    """
+    temp_input_html_file = None
+    temp_output_docx_file = None
+    temp_output_dir = None
+
+    try:
+        # 1) Save HTML to a temporary file
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.html', encoding='utf-8') as f_html:
+            temp_input_html_file = f_html.name
+            f_html.write(html)
+
+        # 2) Create a temporary output directory
+        temp_output_dir = tempfile.mkdtemp()
+
+        # 3) Build the LibreOffice command with explicit DOCX filter
+        exe = r"C:\Program Files\LibreOffice\program\soffice.exe" if 'windows' in utils.platform().lower() else 'libreoffice'
+        libreoffice_command = [
+            exe,
+            '--headless',
+            '--convert-to', 'docx:Office Open XML Text',
+            '--outdir', temp_output_dir,
+            temp_input_html_file
+        ]
+        result = subprocess.run(libreoffice_command, capture_output=True, text=True, check=False)
+
+        if result.returncode != 0:
+            my_log.log2(f"my_pandoc:convert_html_to_docx: LibreOffice conversion failed (html->docx):\n{result.stderr}")
+            return b''
+
+        # 4) On Windows, allow a short delay to ensure the file is fully written
+        if 'windows' in utils.platform().lower():
+            time.sleep(3)
+
+        # 5) Determine the path to the generated DOCX (same basename, .docx extension)
+        basename = os.path.splitext(os.path.basename(temp_input_html_file))[0] + '.docx'
+        temp_output_docx_file = os.path.join(temp_output_dir, basename)
+
+        if not os.path.exists(temp_output_docx_file):
+            my_log.log2(
+                f"my_pandoc:convert_html_to_docx: LibreOffice did not create expected DOCX at {temp_output_docx_file}. "
+                f"Stderr: {result.stderr}"
+            )
+            return b''
+
+        # 6) Read and return the DOCX bytes
+        with open(temp_output_docx_file, 'rb') as f_doc:
+            return f_doc.read()
+
+    except FileNotFoundError as e:
+        my_log.log2(f"my_pandoc:convert_html_to_docx: LibreOffice not found or not accessible. Error: {e}")
+        return b""
+    except Exception as e:
+        my_log.log2(f"my_pandoc:convert_html_to_docx: Unexpected error: {e}\n{traceback.format_exc()}")
+        return b""
+    finally:
+        # Cleanup temp files/directories
+        if temp_input_html_file:
+            utils.remove_file(temp_input_html_file)
+        if temp_output_docx_file:
+            utils.remove_file(temp_output_docx_file)
+        if temp_output_dir:
+            utils.remove_dir(temp_output_dir)
+
+
 def convert_file_to_html(data: bytes, filename: str) -> str:
     """
     Convert any supported file to HTML, determining the input format from the filename extension.

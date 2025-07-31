@@ -9,13 +9,12 @@ import tempfile
 import time
 import traceback
 
-import markdown
 import my_mistral
 import PyPDF2
 import pandas as pd
 from bs4 import BeautifulSoup
 from pptx import Presentation
-from pygments.formatters import HtmlFormatter
+
 
 import my_log
 import utils
@@ -324,6 +323,68 @@ def convert_html_to_docx(html: str) -> bytes:
             utils.remove_dir(temp_output_dir)
 
 
+def convert_html_to_pdf(text: str) -> bytes:
+    """
+    Converts well-formed HTML directly to PDF via LibreOffice (headless).
+    Note: Direct HTML->PDF may render worse than HTML->DOCX->PDF.
+    """
+    temp_input_html_file = None
+    temp_output_pdf_file = None
+    temp_output_dir = None
+
+    try:
+        # 1) Save HTML to a temporary file
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.html', encoding='utf-8') as f_html:
+            temp_input_html_file = f_html.name
+            f_html.write(text)
+
+        # 2) Create temporary output directory
+        temp_output_dir = tempfile.mkdtemp()
+
+        # 3) Run LibreOffice to convert HTML -> PDF
+        exe = r"C:\Program Files\LibreOffice\program\soffice.exe" if 'windows' in utils.platform().lower() else 'libreoffice'
+        libreoffice_command = [
+            exe,
+            '--headless',
+            '--convert-to', 'pdf',
+            '--outdir', temp_output_dir,
+            temp_input_html_file
+        ]
+        result = subprocess.run(libreoffice_command, capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            my_log.log2(f"my_pandoc:convert_html_to_pdf (direct): LibreOffice failed (html->pdf):\n{result.stderr}")
+            return b""
+
+        # 4) Wait a bit on Windows
+        if 'windows' in utils.platform().lower():
+            time.sleep(3)
+
+        # 5) Locate output PDF
+        basename = os.path.splitext(os.path.basename(temp_input_html_file))[0] + '.pdf'
+        temp_output_pdf_file = os.path.join(temp_output_dir, basename)
+        if not os.path.exists(temp_output_pdf_file):
+            my_log.log2(f"my_pandoc:convert_html_to_pdf (direct): Expected PDF not found at {temp_output_pdf_file}. Stderr: {result.stderr}")
+            return b""
+
+        # 6) Read and return bytes
+        with open(temp_output_pdf_file, 'rb') as f_pdf:
+            return f_pdf.read()
+
+    except FileNotFoundError as e:
+        my_log.log2(f"my_pandoc:convert_html_to_pdf (direct): LibreOffice not found. Error: {e}")
+        return b""
+    except Exception as e:
+        my_log.log2(f"my_pandoc:convert_html_to_pdf (direct): Unexpected error: {e}\n{traceback.format_exc()}")
+        return b""
+    finally:
+        if temp_input_html_file:
+            utils.remove_file(temp_input_html_file)
+        if temp_output_pdf_file:
+            utils.remove_file(temp_output_pdf_file)
+        if temp_output_dir:
+            utils.remove_dir(temp_output_dir)
+
+
 def convert_file_to_html(data: bytes, filename: str) -> str:
     """
     Convert any supported file to HTML, determining the input format from the filename extension.
@@ -435,117 +496,6 @@ def convert_file_to_html(data: bytes, filename: str) -> str:
     return result
 
 
-# def convert_file_to_html(data: bytes, filename: str) -> str:
-#     """
-#     Convert any supported file to HTML, determining the input format from the filename extension.
-
-#     Args:
-#         data: The file content as bytes.
-#         filename: The name of the file, used to determine the input format.
-
-#     Returns:
-#         The converted content in HTML format as a string.
-#     """
-#     output_file: str = utils.get_tmp_fname() + '.html'  # Generate a temporary file name for the output
-#     result: str = ''
-#     _, file_extension = os.path.splitext(filename)
-#     input_format: str = file_extension[1:].lower()  # Remove the leading dot and convert to lowercase
-
-#     if input_format == 'txt':
-#         # autodetect codepage and convert to utf8
-
-#         data = utils.extract_text_from_bytes(data)
-#         if not data:
-#             my_log.log2(f'my_pandoc:convert_file_to_html: convert_file_to_html: no data or unknown codepage {filename}')
-#             return ''
-
-#     # Mapping of file extensions to pandoc input formats
-#     format_mapping: dict[str, str] = {
-#         'bib': 'biblatex',
-#         'bibtex': 'bibtex',
-#         'bits': 'bits',
-#         'commonmark': 'commonmark',
-#         'cm': 'commonmark_x',  # Assuming .cm is a common extension for CommonMark
-#         'creole': 'creole',
-#         'csljson': 'csljson',
-#         'csv': 'csv',
-#         'djot': 'djot',
-#         'docbook': 'docbook',
-#         'docx': 'docx',
-#         'dokuwiki': 'dokuwiki',
-#         'endnote': 'endnotexml', # Assuming .endnote is a possible extension
-#         'epub': 'epub',
-#         'fb2': 'fb2',
-#         'gfm': 'gfm',
-#         'haddock': 'haddock',
-#         'html': 'html',
-#         'htm': 'html',
-#         'xhtml': 'html',
-#         'ipynb': 'ipynb',
-#         'jats': 'jats',
-#         'jira': 'jira',
-#         'json': 'json',
-#         'tex': 'latex',
-#         'latex': 'latex',
-#         'man': 'man',
-#         'md': 'markdown',
-#         'markdown': 'markdown',
-#         'markdown_github': 'markdown_github',
-#         'mmd': 'markdown_mmd', # Assuming .mmd is a common extension for MultiMarkdown
-#         'markdown_phpextra': 'markdown_phpextra',
-#         'markdown_strict': 'markdown_strict',
-#         'mediawiki': 'mediawiki',
-#         'muse': 'muse',
-#         'native': 'native',
-#         'odt': 'odt',
-#         'opml': 'opml',
-#         'org': 'org',
-#         'ris': 'ris',
-#         'rst': 'rst',
-#         'rtf': 'rtf',
-#         't2t': 't2t',
-#         'textile': 'textile',
-#         'txt': 'commonmark',
-#         'tikiwiki': 'tikiwiki',
-#         'tsv': 'tsv',
-#         'twiki': 'twiki',
-#         'typst': 'typst',
-#         'vimwiki': 'vimwiki',
-#     }
-
-#     pandoc_format: str | None = format_mapping.get(input_format)
-
-#     if not pandoc_format:
-#         my_log.log2(f'my_pandoc:convert_file_to_html: Unsupported file extension - {input_format}')
-#         return ""
-
-#     try:
-#         # Execute the pandoc command to convert the file
-#         process = subprocess.run(
-#             ['pandoc', '+RTS', '-M256M', '-RTS', '-f', pandoc_format, '-t', 'html', '-o', output_file, '-'],
-#             input=data,
-#             stdout=subprocess.PIPE,
-#             stderr=subprocess.PIPE,  # Capture standard error for potential issues
-#             check=True # Raise an exception for non-zero exit codes
-#         )
-#         # Check for errors in pandoc execution
-#         if process.stderr:
-#             my_log.log2(f'my_pandoc:convert_file_to_html: Pandoc error - {process.stderr.decode()}')
-#             return "" # Or handle the error as needed
-
-#         with open(output_file, 'r', encoding='utf-8') as f:
-#             result = f.read()
-#     except FileNotFoundError:
-#         my_log.log2('my_pandoc:convert_file_to_html: Pandoc not found. Ensure it is installed and in your PATH.')
-#     except subprocess.CalledProcessError as error:
-#         my_log.log2(f'my_pandoc:convert_file_to_html: Pandoc conversion failed - {error}')
-#     except Exception as error:
-#         my_log.log2(f'my_pandoc:convert_file_to_html: An unexpected error occurred - {error}')
-#     finally:
-#         utils.remove_file(output_file)  # Clean up the temporary file
-#     return result
-
-
 def ensure_utf8_meta(html_content: str) -> str:
     """
     Ensures the HTML content has a UTF-8 charset meta tag using BeautifulSoup,
@@ -571,134 +521,6 @@ def ensure_utf8_meta(html_content: str) -> str:
             soup.insert(0, meta_charset) # insert to the beginning if no <head> tag
 
     return str(soup)
-
-
-# def convert_html_to_bytes(html_data: str, output_filename: str) -> bytes:
-#     """
-#     Convert HTML content to bytes of a specified format, determining the output
-#     format from the output filename extension, using a temporary file.
-
-#     Args:
-#         html_data: The HTML content as a string.
-#         output_filename: The name of the output file, used to determine the output format.
-
-#     Returns:
-#         The converted content in bytes.
-#     """
-
-#     # Гарантируем, что в HTML задана кодировка UTF-8
-#     html_data = ensure_utf8_meta(html_data)
-
-#     _, file_extension = os.path.splitext(output_filename)
-#     output_format: str = file_extension[1:].lower()  # Remove the leading dot and convert to lowercase
-
-#     # Mapping of file extensions to pandoc output formats
-#     format_mapping_out: dict[str, str] = {
-#         'adoc': 'asciidoc',
-#         'asciidoc': 'asciidoc',
-#         'beamer': 'beamer',
-#         'bib': 'biblatex',
-#         'biblatex': 'biblatex',
-#         'bibtex': 'bibtex',
-#         'csljson': 'csljson',
-#         'csv': 'csv',
-#         'context': 'context',
-#         'djot': 'djot',
-#         'docbook': 'docbook',
-#         'docbook4': 'docbook4',
-#         'docbook5': 'docbook5',
-#         'docx': 'docx',
-#         'dokuwiki': 'dokuwiki',
-#         'dzslides': 'dzslides',
-#         'epub': 'epub',
-#         'epub2': 'epub2',
-#         'epub3': 'epub3',
-#         'fb2': 'fb2',
-#         'gfm': 'gfm',
-#         'haddock': 'haddock',
-#         'html': 'html',
-#         'htm': 'html',
-#         'html4': 'html4',
-#         'html5': 'html5',
-#         'icml': 'icml',
-#         'ipynb': 'ipynb',
-#         'jats': 'jats',
-#         'jats_archiving': 'jats_archiving',
-#         'jats_articleauthoring': 'jats_articleauthoring',
-#         'jats_publishing': 'jats_publishing',
-#         'jira': 'jira',
-#         'json': 'json',
-#         'tex': 'latex',
-#         'latex': 'latex',
-#         'man': 'man',
-#         'md': 'markdown',
-#         'markdown': 'markdown',
-#         'markdown_github': 'markdown_github',
-#         'markdown_mmd': 'markdown_mmd',
-#         'markdown_phpextra': 'markdown_phpextra',
-#         'markdown_strict': 'markdown_strict',
-#         'markua': 'markua',
-#         'mediawiki': 'mediawiki',
-#         'ms': 'ms',
-#         'muse': 'muse',
-#         'native': 'native',
-#         'odt': 'odt',
-#         'opendocument': 'opendocument',
-#         'opml': 'opml',
-#         'org': 'org',
-#         'pdf': 'pdf',
-#         'pptx': 'pptx',
-#         'plain': 'plain',
-#         'revealjs': 'revealjs',
-#         'rst': 'rst',
-#         'rtf': 'rtf',
-#         's5': 's5',
-#         'slideous': 'slideous',
-#         'slidy': 'slidy',
-#         'tei': 'tei',
-#         'txt': 'plain',
-#         'texinfo': 'texinfo',
-#         'textile': 'textile',
-#         'typst': 'typst',
-#         'xwiki': 'xwiki',
-#         'zimwiki': 'zimwiki',
-#     }
-
-#     pandoc_format_out: str | None = format_mapping_out.get(output_format)
-
-#     if not pandoc_format_out:
-#         my_log.log2(f'my_pandoc:convert_html_to_bytes:1: Unsupported output file extension - {output_format}')
-#         return b""
-
-#     temp_output_file: str = utils.get_tmp_fname()  # Generate a temporary file name
-#     try:
-#         # Execute the pandoc command to convert the HTML to a temporary file
-#         process = subprocess.run(
-#             ['pandoc', '+RTS', '-M256M', '-RTS', '-f', 'html', '-t', pandoc_format_out, '-o', temp_output_file, '-'],
-#             input=html_data.encode('utf-8', 'replace'),  # Encode HTML string to bytes
-#             stdout=subprocess.PIPE,
-#             stderr=subprocess.PIPE,  # Capture standard error for potential issues
-#             check=True  # Raise an exception for non-zero exit codes
-#         )
-#         # Check for errors in pandoc execution
-#         if process.stderr:
-#             my_log.log2(f'my_pandoc:convert_html_to_bytes:2: Pandoc error - {process.stderr.decode()}')
-#             # return b""
-
-#         with open(temp_output_file, 'rb') as f:
-#             return f.read()
-
-#     except FileNotFoundError:
-#         my_log.log2('my_pandoc:convert_html_to_bytes:3: Pandoc not found. Ensure it is installed and in your PATH.')
-#         return b""
-#     except subprocess.CalledProcessError as error:
-#         my_log.log2(f'my_pandoc:convert_html_to_bytes:4: Pandoc conversion failed - {error}')
-#         return b""
-#     except Exception as error:
-#         my_log.log2(f'my_pandoc:convert_html_to_bytes:5: An unexpected error occurred - {error}')
-#         return b""
-#     finally:
-#         utils.remove_file(temp_output_file)  # Clean up the temporary file
 
 
 def convert_html_to_bytes(html_data: str, output_filename: str) -> bytes:

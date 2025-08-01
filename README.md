@@ -420,10 +420,15 @@ COHERE_AI_KEYS = [
 #    'yyy',
 #]
 
+# https://platform.inceptionlabs.ai/dashboard/api-keys
+# 10млн токенов за регистрацию, пропускают джимейл синонимы
+#MERCURY_KEYS = [
+#    'xxx',
+#    'yyy',
+#]
+
 # string for /donate command html parsing
 # DONATION_STRING = '<a href = "https://www.donationalerts.com/r/xxx">DonationAlerts</a>'
-
-
 
 # DEBUG = False
 ```

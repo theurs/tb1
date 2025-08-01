@@ -225,6 +225,10 @@ def log_mistral(text: str) -> None:
     """для логов openrouter mistral"""
     log2(text[:2000], 'mistral')
 
+def log_mercury(text: str) -> None:
+    """для логов openrouter mercury"""
+    log2(text[:2000], 'mercury')
+
 def log_cohere(text: str) -> None:
     """для логов cohere"""
     log2(text[:2000], 'cohere')

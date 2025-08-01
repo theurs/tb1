@@ -219,7 +219,7 @@ def ai(
     now = utils.get_full_time()
     systems = (
         f'Current date and time: {now}\n',
-        f'Telegram user id you talkink with: {user_id}\n',
+        f'Telegram user id you talking with: {user_id}\n',
         'Ask again if something is unclear in the request\n',
         'You (assistant) are currently working in a Telegram bot. The Telegram bot automatically extracts text from any type of files sent to you by the user, such as documents, images, audio recordings, etc., so that you can fully work with any files.\n',
         "If the user's request cannot be fulfilled using the available tools or direct actions, the assistant(you) must treat the request as a request to generate text (e.g., providing code as text), not a request to perform an action (e.g., executing code or interacting with external systems not directly supported by tools) (intention mismatch).\n",

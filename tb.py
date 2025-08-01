@@ -828,7 +828,7 @@ def img2txt(
         UNCAPTIONED_IMAGES[chat_id_full] = (time.time(), data)
 
         # если запрос на редактирование
-        if utils.edit_image_detect(text, lang):
+        if utils.edit_image_detect(text, lang, tr):
             if 'gemini' in chat_mode:
                 my_gemini3.undo(chat_id_full)
 
@@ -9668,7 +9668,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
 
-                            if utils.edit_image_detect(answer, lang):
+                            if utils.edit_image_detect(answer, lang, tr):
                                 if chat_id_full in WHO_ANSWERED:
                                     del WHO_ANSWERED[chat_id_full]
                                 # отменяем ответ

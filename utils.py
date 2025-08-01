@@ -2624,7 +2624,7 @@ def extract_text_from_bytes(
         return None
 
 
-def edit_image_detect(text: str, lang: str) -> bool:
+def edit_image_detect(text: str, lang: str, tr) -> bool:
     '''
     Пытается определить есть ли в строке маркер EDIT IMAGE
     '''

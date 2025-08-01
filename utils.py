@@ -1051,228 +1051,14 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
         return original_text
 
 
-# def split_html(text: str, max_length: int = 3800) -> list:
-#     """
-#     Разбивает HTML-подобный текст на части, не превышающие max_length.
-#     ИСПРАВЛЕННАЯ ВЕРСИЯ: не разрезает теги, корректно обрабатывая
-#     превышение лимита за счет добавления закрывающих тегов.
-#     """
-
-#     # --- Вспомогательные функции (без изменений) ---
-#     def _split_long_string(s_text: str, s_max_length: int) -> list:
-#         """Простая функция для грубой разбивки очень длинной строки."""
-#         return [s_text[i:i + s_max_length] for i in range(0, len(s_text), s_max_length)]
-
-#     def _post_process(chunks_to_process: list) -> list:
-#         """Выполняет постобработку: исправляет теги и убирает пустые чанки."""
-#         def fix_html_tags(text: str) -> str:
-#             """
-#             Fixes HTML tag errors in the text using BeautifulSoup.
-
-#             Args:
-#                 text: The input text containing HTML tags.
-
-#             Returns:
-#                 The text with fixed HTML tags.
-#             """
-#             soup = BeautifulSoup(text, 'html.parser')
-#             return str(soup)
-
-#         processed_chunks = []
-#         for chunk in chunks_to_process:
-#             # BeautifulSoup может помочь "дозакрыть" забытые теги, хотя основная логика
-#             # уже должна была это сделать. Это своего рода страховка.
-#             soup = BeautifulSoup(f"<body>{chunk}</body>", 'html.parser')
-#             body_content = soup.find('body')
-
-#             # Извлекаем внутреннее содержимое body, чтобы не добавлять лишние теги <html><body>
-#             fixed_html = ''.join(str(c) for c in body_content.contents)
-
-#             if fixed_html.strip() and fixed_html.strip().lower() not in ('<p></p>', '<html></html>', '<body></body>'):
-#                 processed_chunks.append(fix_html_tags(fixed_html))
-#         return processed_chunks
-
-#     # --- Основная логика функции ---
-#     tags_map = {
-#         "b": "</b>", "i": "</i>", "code": "</code>", "pre": "</pre>",
-#         "blockquote": "</blockquote>", "blockquote expandable": "</blockquote>"
-#     }
-
-#     final_chunks = []
-#     current_chunk = ""
-#     open_tags_stack = []
-#     lines = text.splitlines(keepends=True)
-
-#     for line in lines:
-#         # ### КЛЮЧЕВОЕ ИЗМЕНЕНИЕ 1: Обработка аномально длинных строк ###
-#         # Если одна строка сама по себе длиннее лимита, разбираемся с ней отдельно.
-#         if len(line) > max_length:
-#             # Сначала завершаем и сохраняем всё, что было до этой аномальной строки
-#             if current_chunk:
-#                 for tag_name in reversed(open_tags_stack):
-#                     current_chunk += tags_map.get(tag_name, '')
-#                 final_chunks.append(current_chunk)
-#                 current_chunk = ""
-#                 # Начинаем новый чанк с открывающими тегами для частей длинной строки
-#                 for tag_name in open_tags_stack:
-#                     current_chunk += f"<{tag_name}>"
-
-#             # Грубо режем длинную строку и добавляем ее части как отдельные чанки
-#             # (предполагается, что внутри нет сложного форматирования)
-#             split_parts = _split_long_string(line, max_length)
-#             for part in split_parts:
-#                 chunk_to_add = current_chunk + part # Добавляем открывающие теги
-#                 final_chunks.append(chunk_to_add)
-
-#             # После обработки длинной строки, мы должны начать следующий чанк "с чистого листа",
-#             # но с восстановленным стеком тегов.
-#             current_chunk = ""
-#             for tag_name in open_tags_stack:
-#                 current_chunk += f"<{tag_name}>"
-#             continue # Переходим к следующей строке
-
-#         # Проверяем, не превысит ли добавление НОВОЙ строки лимит.
-#         if current_chunk and (len(current_chunk) + len(line)) > max_length:
-#             # 1. Завершаем старый чанк, закрывая все теги
-#             for tag_name in reversed(open_tags_stack):
-#                 current_chunk += tags_map.get(tag_name, '')
-
-#             # ### КЛЮЧЕВОЕ ИЗМЕНЕНИЕ 2: Убрана ловушка ###
-#             # Мы больше НЕ проверяем длину чанка ПОСЛЕ добавления закрывающих тегов.
-#             # Мы доверяем нашей логике и просто добавляем результат.
-#             final_chunks.append(current_chunk)
-
-#             # 2. Начинаем НОВЫЙ чанк, восстанавливая открытые теги
-#             current_chunk = ""
-#             for tag_name in open_tags_stack:
-#                 current_chunk += f"<{tag_name}>"
-
-#         # 3. Добавляем строку в текущий чанк (старый или только что созданный).
-#         current_chunk += line
-
-#         # 4. Логика обработки тегов (остается без изменений)
-#         # Эта логика отслеживает, какие теги открываются и закрываются в строке
-#         line_stripped = line.strip()
-#         # Ищем закрывающие теги
-#         for tag_name, tag_closing_str in tags_map.items():
-#              if tag_closing_str in line_stripped:
-#                 if tag_name in open_tags_stack:
-#                     # Удаляем последний соответствующий открытый тег из стека
-#                     for i in reversed(range(len(open_tags_stack))):
-#                         if open_tags_stack[i] == tag_name:
-#                             open_tags_stack.pop(i)
-#                             break
-
-#         # Ищем открывающие теги, которые не закрываются в той же строке
-#         for tag_name, tag_closing_str in tags_map.items():
-#             opening_tag = f"<{tag_name}" # Проверяем начало тега, чтобы учесть атрибуты
-#             if line_stripped.startswith(opening_tag) and tag_closing_str not in line_stripped:
-#                  open_tags_stack.append(tag_name)
-
-#     # Обработка последнего оставшегося чанка
-#     if current_chunk:
-#         for tag_name in reversed(open_tags_stack):
-#             current_chunk += tags_map.get(tag_name, '')
-#         final_chunks.append(current_chunk)
-
-#     return _post_process(final_chunks)
-
-
-# def split_html(text: str, max_length: int = 1500) -> list:
-#     """
-#     Разбивает HTML-подобный текст на части, не превышающие max_length символов.
-
-#     Учитывает вложенность тегов и корректно переносит их между частями.
-#     """
-
-#     tags = {
-#         "b": "</b>",
-#         "i": "</i>",
-#         "code": "</code>",
-#         "pre": "</pre>",
-#         "blockquote": "</blockquote>",
-#         "blockquote expandable": "</blockquote>",
-#     }
-#     opening_tags = {f"<{tag}>" for tag in tags}
-#     closing_tags = {tag for tag in tags.values()}
-
-#     result = []
-#     current_chunk = ""
-#     open_tags_stack = []
-
-#     lines = text.splitlines(keepends=True)
-#     for line in lines:
-#         line_stripped = line.strip()
-
-#         # Обработка открывающих тегов
-#         for tag in opening_tags:
-#             if line_stripped.startswith(tag):
-#                 tag_name = tag[1:-1]
-
-#                 # Проверяем, закрыт ли тег в этой же строке
-#                 if tags[tag_name] not in line:
-#                     open_tags_stack.append(tag_name)
-
-#                 # Обработка случая <pre><code class="">
-#                 if tag_name == "pre" and '<code class="' in line:
-#                     open_tags_stack.append("code")
-
-#                 break
-
-#         # Обработка закрывающих тегов
-#         for closing_tag in closing_tags:
-#             if closing_tag in line:
-#                 tag_name = closing_tag[2:-1]
-
-#                 remove_index = -1
-#                 for i in reversed(range(len(open_tags_stack))):
-#                     if open_tags_stack[i] == tag_name:
-#                         remove_index = i
-#                         break
-#                 if remove_index != -1:
-#                     open_tags_stack.pop(remove_index)
-
-#         # Добавление строки к текущему чанку
-#         if len(current_chunk) + len(line) > max_length:
-#             # Чанк переполнен, нужно его завершить и начать новый
-
-#             # 1. Закрываем теги в текущем чанке
-#             for tag_name in reversed(open_tags_stack):
-#                 current_chunk += tags[tag_name]
-
-#             # 2. Добавляем текущий чанк в результат
-#             if len(current_chunk) > max_length:
-#                 for x in split_text(current_chunk, max_length):
-#                     result.append(x)
-#             else:
-#                 result.append(current_chunk)
-
-#             # 3. Начинаем новый чанк
-#             current_chunk = ""
-
-#             # 4. Открываем теги в новом чанке
-#             for tag_name in open_tags_stack:
-#                 current_chunk += f"<{tag_name}>"
-
-#         current_chunk += line
-
-#     # Добавление последнего чанка
-#     if current_chunk:
-#         if len(current_chunk) > max_length:
-#             for x in split_text(current_chunk, max_length):
-#                 result.append(x)
-#         result.append(current_chunk)
-
-#     result2 = post_process_split_html(result)
-
-#     return result2
-
-
 def split_html(text: str, max_length: int = 1500) -> list:
     """
     Разбивает HTML-подобный текст на части, не превышающие max_length символов.
     Учитывает вложенность тегов и корректно переносит их между частями.
     """
+    # меняем переносы на <br /> после тегов
+    text = re.sub(r'(</\w+>)(\s+)(<\w+[^>]*>)', r'\1<br/><br/>\3', text)
+
     tags = {
         "b": "</b>",
         "i": "</i>",
@@ -1342,28 +1128,28 @@ def split_html(text: str, max_length: int = 1500) -> list:
 
 def post_process_split_html(chunks: list) -> list:
     """
-    Выполняет постобработку списка чанков, полученного из split_html.
-    Исправляет поломанные теги, и убирает пусты чанки
+    Выполняет постобработку списка чанков...
+    Исправляет поломанные теги и убирает пустые чанки.
     """
 
     def fix_html_tags(text: str) -> str:
-        """
-        Fixes HTML tag errors in the text using BeautifulSoup.
-
-        Args:
-            text: The input text containing HTML tags.
-
-        Returns:
-            The text with fixed HTML tags.
-        """
+        """Fixes HTML tag errors in the text using BeautifulSoup."""
         soup = BeautifulSoup(text, 'html.parser')
         return str(soup)
 
     processed_chunks = []
     for chunk in chunks:
-        processed_chunks.append(fix_html_tags(chunk))
+        # 2. Каждый чанк проходит через BeautifulSoup. Он может съесть \n,
+        # но теги <br /> он оставит в покое.
+        fixed_chunk = fix_html_tags(chunk)
 
-    # удалить пустые чанки
+        # 3. ВОССТАНАВЛИВАЕМ исходные переносы строк из наших "протекторов".
+        # Это нужно делать ПОСЛЕ BeautifulSoup.
+        final_chunk = fixed_chunk.replace('<br/><br/>', '\n\n')
+
+        processed_chunks.append(final_chunk)
+
+    # удаление пустых чанков
     processed_chunks = [chunk for chunk in processed_chunks if chunk.strip() and chunk.strip() != '</code>']
 
     return processed_chunks
@@ -2843,4 +2629,28 @@ if __name__ == '__main__':
 
     # print(extract_text_from_bytes(r'C:\Users\user\Downloads\samples for ai\простая небольшая таблица Имя,Возраст,Город,Профессия,Зарплат.xlsx'))
     # print(extract_text_from_bytes(r'C:\Users\user\Downloads\samples for ai\Алиса в изумрудном городе (большая книга).txt'))
-    print(extract_text_from_bytes(r'C:\Users\user\Downloads\2.txt'))
+    # print(extract_text_from_bytes(r'C:\Users\user\Downloads\2.txt'))
+
+    t = '''
+ `H8#kZ2m!Qt5`
+
+`rV7!pH3$Nd1`
+
+`A!6yZ0^cJw8`
+
+`nQ%5Xb!2Lt7`
+
+`S#3mDv!9qP0`
+
+**привет**
+
+**как**
+
+**дела**
+
+'''
+
+    r = bot_markdown_to_html(t)
+    print(r)
+    chunks = split_html(r, 3800)
+    print(chunks[0])

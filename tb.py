@@ -12,7 +12,6 @@ import random
 import re
 import subprocess
 import sys
-import tempfile
 import traceback
 import threading
 import time
@@ -41,7 +40,6 @@ import my_google
 import my_gemini
 import my_gemini_general
 import my_gemini3
-import my_gemini_live_text
 import my_gemini_tts
 import my_gemini_genimg
 import my_gemini_google
@@ -2971,140 +2969,6 @@ def handle_voice(message: telebot.types.Message):
         # Гарантированно очищаем очередь, если что-то пошло не так
         if chat_id_full in MESSAGE_QUEUE_AUDIO_GROUP:
             del MESSAGE_QUEUE_AUDIO_GROUP[chat_id_full]
-
-
-# @bot.message_handler(content_types = ['voice', 'video', 'video_note', 'audio'], func=authorized)
-# @async_run
-# def handle_voice(message: telebot.types.Message):
-#     """Автоматическое распознавание текст из голосовых сообщений и аудио файлов"""
-#     try:
-#         is_private = message.chat.type == 'private'
-#         chat_id_full = get_topic_id(message)
-#         lang = get_lang(chat_id_full, message)
-
-#         # рано
-#         # COMMAND_MODE[chat_id_full] = ''
-
-#         # проверка на подписку
-#         if not check_donate(message, chat_id_full, lang):
-#             return
-
-#         supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
-#         if supch == 1:
-#             is_private = True
-
-#         message.caption = my_log.restore_message_text(message.caption, message.caption_entities)
-
-#         # if check_blocks(get_topic_id(message)) and not is_private:
-#         #     return
-#         # определяем какое имя у бота в этом чате, на какое слово он отзывается
-#         bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
-#         if not is_private:
-#             if not message.caption or not message.caption.startswith('?') or \
-#                 not message.caption.startswith(f'@{_bot_name}') or \
-#                     not message.caption.startswith(bot_name):
-#                 return
-
-#         if chat_id_full in VOICE_LOCKS:
-#             lock = VOICE_LOCKS[chat_id_full]
-#         else:
-#             lock = threading.Lock()
-#             VOICE_LOCKS[chat_id_full] = lock
-
-#         with lock:
-#             # Скачиваем аудиофайл во временный файл
-#             file_name = 'unknown'
-#             try:
-#                 file_info = None
-#                 if message.voice:
-#                     file_info = bot.get_file(message.voice.file_id)
-#                     file_name = 'telegram voice message'
-#                 elif message.audio:
-#                     file_info = bot.get_file(message.audio.file_id)
-#                     file_name = message.audio.file_name
-#                 elif message.video:
-#                     file_info = bot.get_file(message.video.file_id)
-#                     file_name = message.video.file_name
-#                 elif message.video_note:
-#                     file_info = bot.get_file(message.video_note.file_id)
-#                 elif message.document:
-#                     file_info = bot.get_file(message.document.file_id)
-#                     file_name = message.document.file_name
-#                 else:
-#                     bot_reply_tr(message, 'Unknown message type')
-#             except telebot.apihelper.ApiTelegramException as error:
-#                 if 'file is too big' in str(error):
-#                     bot_reply_tr(message, 'Too big file. Try /transcribe command. (Button - [Too big file])')
-#                     return
-#                 else:
-#                     raise error
-
-#             # Создание временного файла
-#             with tempfile.NamedTemporaryFile(delete=True) as temp_file:
-#                 file_path = temp_file.name + (utils.get_file_ext(file_info.file_path) or 'unknown')
-
-#             downloaded_file = bot.download_file(file_info.file_path)
-
-
-            # ## /transcribe ###################################################################################
-            # # если отправили аудио файл для транскрибации в субтитры
-            # if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
-            #     transcribe_file(downloaded_file, file_name, message)
-            #     return
-            # ## /transcribe ###################################################################################
-
-
-#             COMMAND_MODE[chat_id_full] = ''
-
-
-#             with open(file_path, 'wb') as new_file:
-#                 new_file.write(downloaded_file)
-
-#             # Распознаем текст из аудио
-#             if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-#                 action = 'record_audio'
-#             else:
-#                 action = 'typing'
-#             with ShowAction(message, action):
-#                 try:
-#                     # prompt = tr('Распознай аудиозапись и исправь ошибки.', lang)
-#                     prompt = ''
-#                     text = my_stt.stt(file_path, lang, chat_id_full, prompt)
-#                 except Exception as error_stt:
-#                     my_log.log2(f'tb:handle_voice: {error_stt}')
-#                     text = ''
-
-#                 utils.remove_file(file_path)
-
-#                 text = text.strip()
-#                 # Отправляем распознанный текст
-#                 if text:
-#                     if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-#                         # в этом режиме не показываем распознанный текст а просто отвечаем на него голосом
-#                         pass
-#                     else:
-#                         bot_reply(message, utils.bot_markdown_to_html(text),
-#                                 parse_mode='HTML',
-#                                 reply_markup=get_keyboard('translate', message))
-#                 else:
-#                     if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-#                         message.text = f'/tts {lang or "de"} ' + tr('Не удалось распознать текст', lang)
-#                         tts(message)
-#                     else:
-#                         bot_reply_tr(message, 'Не удалось распознать текст')
-
-#                 # и при любом раскладе отправляем текст в обработчик текстовых сообщений, возможно бот отреагирует на него если там есть кодовые слова
-#                 if text:
-#                     if not my_db.get_user_property(chat_id_full, 'transcribe_only'):
-#                         # message.text = f'voice message: {text}'
-#                         if message.caption:
-#                             message.text = f'{message.caption}\n\n{tr("Audio message transcribed:", lang)}\n\n{text}'
-#                         else:
-#                             message.text = text
-#                         echo_all(message)
-#     except Exception as unknown:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'tb:handle_voice: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(content_types = ['location',], func=authorized)
@@ -8178,24 +8042,26 @@ def reply_to_long_message(
                         _send_message(message, chunk, parse_mode, preview, reply_markup, send_message, resp, 5)
 
         # если есть таблицы в ответе то отправить их картинками в догонку
+        tables = my_md_tables_to_png.find_markdown_tables(resp)
+        if tables:
+            for table in tables:
+                try:
+                    image = my_md_tables_to_png.markdown_table_to_image_bytes(table)
+                    if image:
+                        m = send_photo(
+                            message,
+                            chat_id=message.chat.id,
+                            photo=image,
+                            reply_to_message_id = message.message_id,
+                            reply_markup=get_keyboard('hide', message),
+                        )
+                        log_message(m)
+                except Exception as error:
+                    my_log.log2(f'tb:do_task:send tables images: {error}')
+
         if parse_mode == 'HTML':
-            tables = my_md_tables_to_png.find_markdown_tables(resp)
+            # если есть графики в ответе то отправить их картинками в догонку
             graphs = my_plantweb.find_code_snippets(resp)
-            if tables:
-                for table in tables:
-                    try:
-                        image = my_md_tables_to_png.markdown_table_to_image_bytes(table)
-                        if image:
-                            m = send_photo(
-                                message,
-                                chat_id=message.chat.id,
-                                photo=image,
-                                reply_to_message_id = message.message_id,
-                                reply_markup=get_keyboard('hide', message),
-                            )
-                            log_message(m)
-                    except Exception as error:
-                        my_log.log2(f'tb:do_task:send tables images: {error}')
             if graphs:
                 for graph in graphs:
                     try:
@@ -10771,7 +10637,6 @@ def main():
         # my_gemini_imagen.test_imagen()
         # print(my_gemini3.chat('привет ты как', model = 'gemini-2.5-flash', chat_id='test', system='отвечай всегда по-русски'))
         # my_gemini3.trim_all()
-        # my_gemini_live_text.chat_cli()
         # print(my_mistral.transcribe_audio(r'C:\Users\user\Downloads\samples for ai\аудио\короткий диалог 3 голоса.m4a', language='en', get_timestamps=False))
 
 

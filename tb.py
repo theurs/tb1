@@ -388,6 +388,8 @@ def edit_image_detect(text: str, lang: str) -> bool:
             return False
         if "EDIT IMAGE" in text and len(text) < 30:
             return True
+        elif text.lower() == 'edit_image':
+            return True
         elif "EDIT IMAGE" in text and len(text) > 30 and 'edit_image(' in text:
             return True
         elif text == tr('Changed image successfully.', lang):

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import cachetools.func
 import chardet
 import concurrent.futures
 import datetime
@@ -27,8 +26,9 @@ import threading
 import time
 import traceback
 import platform as platform_module
-from typing import Any, Union, List, Tuple
+from typing import Any, Callable, List, Tuple, Union
 
+import cachetools.func
 import json_repair
 import markdownify
 import PIL
@@ -2624,7 +2624,7 @@ def extract_text_from_bytes(
         return None
 
 
-def edit_image_detect(text: str, lang: str, tr) -> bool:
+def edit_image_detect(text: str, lang: str, tr: Callable) -> bool:
     '''
     Пытается определить есть ли в строке маркер EDIT IMAGE
     '''

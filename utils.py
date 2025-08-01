@@ -2624,6 +2624,35 @@ def extract_text_from_bytes(
         return None
 
 
+def edit_image_detect(text: str, lang: str) -> bool:
+    '''
+    Пытается определить есть ли в строке маркер EDIT IMAGE
+    '''
+    try:
+        if text and text.strip():
+            text = text.strip()
+        else:
+            return False
+        if "EDIT IMAGE" in text and len(text) < 30:
+            return True
+        elif text.lower() == 'edit_image':
+            return True
+        elif "EDIT IMAGE" in text and len(text) > 30 and 'edit_image(' in text:
+            return True
+        elif text == tr('Changed image successfully.', lang):
+            return True
+        elif text in ('Изображение создается.',):
+            return True
+        elif text.startswith(('<<GENERATE IMAGE>>','<<CREATE IMAGE>>')):
+            return True
+        else:
+            return False
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'utils:edit_image_detect: {e}\n{traceback_error}')
+        return False
+
+
 if __name__ == '__main__':
     pass
 

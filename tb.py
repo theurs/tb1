@@ -377,35 +377,6 @@ class ShowAction(threading.Thread):
         self.stop()
 
 
-def edit_image_detect(text: str, lang: str) -> bool:
-    '''
-    Пытается определить есть ли в строке маркер EDIT IMAGE
-    '''
-    try:
-        if text and text.strip():
-            text = text.strip()
-        else:
-            return False
-        if "EDIT IMAGE" in text and len(text) < 30:
-            return True
-        elif text.lower() == 'edit_image':
-            return True
-        elif "EDIT IMAGE" in text and len(text) > 30 and 'edit_image(' in text:
-            return True
-        elif text == tr('Changed image successfully.', lang):
-            return True
-        elif text in ('Изображение создается.',):
-            return True
-        elif text.startswith(('<<GENERATE IMAGE>>','<<CREATE IMAGE>>')):
-            return True
-        else:
-            return False
-    except Exception as e:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:edit_image_detect: {e}\n{traceback_error}')
-        return False
-
-
 def get_uptime() -> str:
     """Calculates and returns the uptime in a human-readable format (English).
 
@@ -857,7 +828,7 @@ def img2txt(
         UNCAPTIONED_IMAGES[chat_id_full] = (time.time(), data)
 
         # если запрос на редактирование
-        if edit_image_detect(text, lang):
+        if utils.edit_image_detect(text, lang):
             if 'gemini' in chat_mode:
                 my_gemini3.undo(chat_id_full)
 
@@ -9697,7 +9668,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
 
-                            if edit_image_detect(answer, lang):
+                            if utils.edit_image_detect(answer, lang):
                                 if chat_id_full in WHO_ANSWERED:
                                     del WHO_ANSWERED[chat_id_full]
                                 # отменяем ответ

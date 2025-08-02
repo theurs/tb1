@@ -4360,6 +4360,17 @@ def send_all_files_from_storage(message, chat_id_full):
                         )
                         log_message(m)
                         continue
+                    elif _type in ('video/mp4 file',):
+                        m = send_video(
+                            message=message,
+                            chat_id=message.chat.id,
+                            video=data,
+                            caption=filename,
+                            reply_to_message_id=message.message_id,
+                            reply_markup=get_keyboard('hide', message),
+                        )
+                        log_message(m)
+                        continue
                     elif _type in ('pdf file',):
                         m = send_document(
                             message=message,
@@ -8176,7 +8187,7 @@ def send_document(
     business_connection_id: str | None = None,
     message_effect_id: str | None = None,
     allow_paid_broadcast: bool | None = None
-) -> telebot.types.Message | None:
+) -> telebot.types.Message:
     '''
     bot.send_document wrapper
 
@@ -8268,6 +8279,169 @@ def send_document(
                 traceback_error = traceback.format_exc()
                 my_log.log2(f'tb:send_document:2: {error}\n\n{traceback_error}')
                 break
+
+    return None
+
+
+def send_video(
+    message: telebot.types.Message,
+    chat_id: int | str,
+    video: Any | str,
+    duration: int | None = None,
+    width: int | None = None,
+    height: int | None = None,
+    thumbnail: Any | str | None = None,
+    caption: str | None = None,
+    parse_mode: str | None = None,
+    caption_entities: List[telebot.types.MessageEntity] | None = None,
+    supports_streaming: bool | None = True,
+    disable_notification: bool | None = True,
+    protect_content: bool | None = None,
+    reply_to_message_id: int | None = None,
+    allow_sending_without_reply: bool | None = None,
+    reply_markup: telebot.REPLY_MARKUP_TYPES | None = None,
+    timeout: int | None = 120,
+    data: str | Any | None = None,  # совместимость, не используем
+    message_thread_id: int | None = None,
+    has_spoiler: bool | None = None,
+    thumb: Any | str | None = None,  # deprecated alias
+    reply_parameters: telebot.types.ReplyParameters | None = None,
+    business_connection_id: str | None = None,
+    message_effect_id: str | None = None,
+    show_caption_above_media: bool | None = None,
+    allow_paid_broadcast: bool | None = None,
+    cover: Any | str | None = None,
+    start_timestamp: int | None = None,
+) -> telebot.types.Message:
+    '''
+    bot.send_video wrapper
+    Отправляет mp4 как медиа (а не документ). Следит за reply-настройкой, делает ретраи.
+    '''
+
+    # alias: поддержим старое имя параметра thumb -> thumbnail
+    if thumbnail is None and thumb is not None:
+        thumbnail = thumb
+
+    # Если пришли "сырые" байты/файлоподобный объект — обернем в InputFile с .mp4 именем
+    try:
+        from telebot.types import InputFile
+        def to_inputfile_if_needed(obj, default_name: str):
+            if isinstance(obj, (bytes, bytearray)):
+                return InputFile(obj, filename=default_name)
+            # file-like с read
+            if hasattr(obj, 'read') and callable(getattr(obj, 'read', None)):
+                # попытка вытащить имя
+                fname = getattr(obj, 'name', None)
+                if not fname or not str(fname).lower().endswith('.mp4'):
+                    fname = default_name
+                return InputFile(obj, filename=fname)
+            return obj
+        video = to_inputfile_if_needed(video, 'video.mp4')
+        if thumbnail is not None:
+            thumbnail = to_inputfile_if_needed(thumbnail, 'thumb.jpg')
+        if cover is not None:
+            cover = to_inputfile_if_needed(cover, 'cover.jpg')
+    except Exception:
+        pass
+
+    full_chat_id = get_topic_id(message)
+    reply = my_db.get_user_property(full_chat_id, 'send_message') or ''
+
+    n = 5
+    while n >= 0:
+        n -= 1
+        try:
+            kwargs = dict(
+                chat_id=chat_id,
+                video=video,
+                duration=duration,
+                width=width,
+                height=height,
+                caption=caption,
+                parse_mode=parse_mode,
+                caption_entities=caption_entities,
+                supports_streaming=supports_streaming,
+                disable_notification=disable_notification,
+                protect_content=protect_content,
+                allow_sending_without_reply=allow_sending_without_reply,
+                reply_markup=reply_markup,
+                timeout=timeout,
+                message_thread_id=message_thread_id,
+                has_spoiler=has_spoiler,
+                reply_parameters=reply_parameters,
+                business_connection_id=business_connection_id,
+                message_effect_id=message_effect_id,
+                show_caption_above_media=show_caption_above_media,
+                allow_paid_broadcast=allow_paid_broadcast,
+                cover=cover,
+                start_timestamp=start_timestamp,
+            )
+            if thumbnail is not None:
+                kwargs['thumbnail'] = thumbnail
+            if not reply:
+                kwargs['reply_to_message_id'] = reply_to_message_id
+
+            r = bot.send_video(**kwargs)
+            return r
+
+        except Exception as error:
+            err = str(error)
+
+            if 'Error code: 500. Description: Internal Server Error' in err:
+                my_log.log2(f'tb:send_video:1: {error}')
+                time.sleep(10)
+                continue
+
+            # убрать reply если исходный месседж исчез
+            if 'Bad Request: message to be replied not found' in err:
+                reply = True
+                continue
+
+            # слишком много запросов — подождать
+            seconds = utils.extract_retry_seconds(err)
+            if seconds:
+                time.sleep(seconds + 5)
+                continue
+
+            # Популярные проблемы файла: попробуем запасной путь как документ
+            if any(s in err for s in [
+                'file is too big',
+                'wrong file identifier',
+                'invalid file HTTP URL',
+                'failed to get HTTP URL content',
+                'VIDEO_CONTENT_TYPE_INVALID',
+                'wrong file_id specified',
+            ]):
+                try:
+                    m = send_document(
+                        message=message,
+                        chat_id=chat_id,
+                        document=video,
+                        caption=caption,
+                        parse_mode=parse_mode,
+                        caption_entities=caption_entities,
+                        disable_notification=disable_notification,
+                        protect_content=protect_content,
+                        reply_to_message_id=None if reply else reply_to_message_id,
+                        allow_sending_without_reply=allow_sending_without_reply,
+                        reply_markup=reply_markup,
+                        timeout=timeout,
+                        message_thread_id=message_thread_id,
+                        reply_parameters=reply_parameters,
+                        business_connection_id=business_connection_id,
+                        message_effect_id=message_effect_id,
+                        allow_paid_broadcast=allow_paid_broadcast,
+                        visible_file_name='video.mp4',
+                    )
+                    log_message(m)
+                    return m
+                except Exception as e2:
+                    my_log.log2(f'tb:send_video:doc_fallback: {e2}')
+                    continue
+
+            traceback_error = traceback.format_exc()
+            my_log.log2(f'tb:send_video:2: {error}\n\n{traceback_error}')
+            break
 
     return None
 

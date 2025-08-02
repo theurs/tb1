@@ -6,6 +6,7 @@ import cachetools.func
 import datetime
 import decimal
 import io
+import hashlib
 import math
 import mpmath
 import numbers
@@ -15,7 +16,9 @@ import os
 import random
 import requests
 import subprocess
+import time
 import traceback
+import tempfile
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -25,6 +28,7 @@ from kerykeion.charts.charts_utils import convert_latitude_coordinate_to_string,
 from kerykeion.utilities import get_houses_list
 from datetime import datetime
 from PIL import Image
+from playwright.sync_api import sync_playwright
 from simpleeval import simple_eval
 from typing import Callable, List, Optional, Tuple, Union
 
@@ -436,6 +440,573 @@ Saved text: {saved_file}
         return result
     else:
         return 'No result was given.'
+
+
+# def save_html_to_animation(
+#     filename: str,
+#     chat_id: str,
+#     html: str,
+#     viewport_width: int,
+#     viewport_height: int,
+# ) -> str:
+#     """Save (render) HTML code to mp4 video file and send it to the user.
+#     This function renders the HTML content in a headless browser environment,
+#     supporting full HTML5, CSS3, and JavaScript execution. This means you
+#     can use JavaScript to create dynamic content, draw on <canvas> elements,
+#     manipulate the DOM, and generate any visual output that a web browser can display.
+
+#     Args:
+#         filename: str - The desired file name for the image file (e.g., 'sales_chart_animation').
+#         chat_id: str - The Telegram user chat ID where the file should be sent.
+#         html: str - The HTML code to be saved as an image file. The page must be fully
+#                     formed according to the HTML standard with CSS and JavaScript included.
+#                     You can embed JavaScript directly within <script> tags to create complex
+#                     visualizations, animations, or interactive elements that will be rendered
+#                     into the final image. Animation should be less than 120 seconds.
+#         viewport_width: int - The width of the viewport in pixels up to 1920.
+#         viewport_height: int - The height of the viewport in pixels up to 1080.
+
+#     Returns:
+#         str: 'OK' or 'FAILED'
+#     """
+#     cut_external_assets: bool = False
+#     quality: int = 65
+#     fps: int = 15
+#     duration_seconds: float = 120
+
+#     my_log.log_gemini_skills_html(
+#         f'"{chat_id} {filename} {viewport_width}x{viewport_height}"\n\n"{html}"'
+#     )
+
+#     chat_id = my_skills_general.restore_id(chat_id)
+#     if chat_id == '[unknown]':
+#         return "FAIL, unknown chat id"
+
+#     if not filename.lower().endswith('.mp4'):
+#         filename += '.mp4'
+#     filename = utils.safe_fname(filename)
+
+#     try:
+#         class _HashStopper:
+#             def __init__(self, stable_frames: int = 10):
+#                 self.prev = None
+#                 self.stable = 0
+#                 self.need = stable_frames
+#             def push(self, b: bytes) -> bool:
+#                 h = hashlib.md5(b).hexdigest()
+#                 if self.prev is None:
+#                     self.prev = h
+#                     return False
+#                 if h == self.prev:
+#                     self.stable += 1
+#                 else:
+#                     self.stable = 0
+#                 self.prev = h
+#                 return self.stable >= self.need
+
+#         frames: List[np.ndarray] = []
+#         frame_times: List[float] = []
+#         stopper = _HashStopper(10)
+
+#         start = time.time()
+#         base_interval = max(1.0 / max(1, min(fps, 30)), 0.02)
+#         interval = base_interval
+#         last_t = start
+
+#         with sync_playwright() as p:
+#             browser = p.chromium.launch(
+#                 headless=True,
+#                 args=['--disable-dev-shm-usage', '--disable-extensions']
+#             )
+#             page = browser.new_page(viewport={'width': viewport_width, 'height': viewport_height})
+
+#             if cut_external_assets:
+#                 page.route('/**/*', lambda route: route.abort() if route.request.resource_type in ('image', 'font') else route.continue_())
+
+#             page.set_content(html, wait_until='domcontentloaded')
+
+#             page.evaluate("""
+# (() => {
+#   try {
+#     const all = document.querySelectorAll('*');
+#     for (const el of all) {
+#       const cs = getComputedStyle(el);
+#       const hasAnim = (cs.animationName && cs.animationName !== 'none') || (cs.transitionDuration && cs.transitionDuration !== '0s');
+#       if (hasAnim) {
+#         el.style.animationPlayState = 'paused';
+#       }
+#     }
+#   } catch(e) {}
+#   window.__ready_to_start = false;
+#   if (typeof window.__start !== 'function') {
+#     window.__start = () => {
+#       const all = document.querySelectorAll('*');
+#       for (const el of all) {
+#         const cs = getComputedStyle(el);
+#         const hasAnim = (cs.animationName && cs.animationName !== 'none');
+#         if (hasAnim) {
+#           el.style.animation = 'none';
+#           el.offsetHeight;
+#           el.style.animation = '';
+#           el.style.animationPlayState = 'running';
+#         }
+#       }
+#       window.__recording = true;
+#     };
+#   }
+# })();
+# """)
+
+#             page.evaluate("""
+# () => new Promise(async (resolve) => {
+#   try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch(e) {}
+#   requestAnimationFrame(() => requestAnimationFrame(() => {
+#     window.__ready_to_start = true;
+#     resolve();
+#   }));
+# })
+# """)
+#             page.wait_for_function("() => window.__ready_to_start === true", timeout=5000)
+#             page.evaluate("() => { window.__start && window.__start(); }")
+
+#             first_shot = page.screenshot(full_page=False, type='jpeg', quality=int(max(1, min(100, quality))))
+#             im0 = Image.open(io.BytesIO(first_shot)).convert('RGB')
+#             arr0 = np.array(im0, copy=False)
+#             frames.append(arr0)
+#             frame_times.append(0.0)
+#             last_t = time.time()
+
+#             while True:
+#                 now = time.time()
+#                 if now - start >= duration_seconds:
+#                     break
+#                 if now - last_t < interval:
+#                     time.sleep(0.005)
+#                     continue
+
+#                 t0 = time.time()
+#                 try:
+#                     shot = page.screenshot(full_page=False, type='jpeg', quality=int(max(1, min(100, quality))))
+#                 except Exception:
+#                     time.sleep(0.02)
+#                     try:
+#                         shot = page.screenshot(full_page=False, type='jpeg', quality=int(max(1, min(100, quality))))
+#                     except Exception:
+#                         break
+
+#                 im = Image.open(io.BytesIO(shot)).convert('RGB')
+#                 arr = np.array(im, copy=False)
+#                 frames.append(arr)
+
+#                 dt = time.time() - t0
+#                 frame_times.append(dt)
+#                 last_t = now
+
+#                 if len(frame_times) >= 5:
+#                     avg = sum(frame_times[-5:]) / 5.0
+#                     interval = max(base_interval, avg * 1.5)
+
+#                 if len(frames) > 12 and stopper.push(shot):
+#                     break
+
+#             browser.close()
+
+#         if not frames:
+#             return "FAILED"
+
+#         total = max(time.time() - start, 1e-6)
+#         real_fps = max(1, min(30, int(round(len(frames) / total)) or fps))
+
+#         fd, tmp_path = tempfile.mkstemp(suffix='.mp4')
+#         os.close(fd)
+
+#         workdir = tempfile.mkdtemp(prefix="html2anim_")
+#         raw_list_path = os.path.join(workdir, "frames.txt")
+
+#         try:
+#             h = viewport_height
+#             w = viewport_width
+#             delays = [1.0 / real_fps] * len(frames)
+#             with open(raw_list_path, "w", encoding="utf-8") as f:
+#                 for i, fr in enumerate(frames):
+#                     img_path = os.path.join(workdir, f"frame_{i:06d}.jpg")
+#                     if fr.shape[1] != w or fr.shape[0] != h:
+#                         _img = Image.fromarray(fr).resize((w, h), Image.Resampling.BILINEAR)
+#                         _img.save(img_path, "JPEG", quality=max(1, min(100, quality)))
+#                     else:
+#                         _img = Image.fromarray(fr)
+#                         _img.save(img_path, "JPEG", quality=max(1, min(100, quality)))
+#                     f.write(f"file '{img_path}'\n")
+#                     f.write(f"duration {delays[i]:.6f}\n")
+#                 f.write(f"file '{img_path}'\n")
+
+#             enc = "libx264"
+#             pix = "yuv420p"
+#             crf = 20
+#             preset = "veryfast"
+
+#             cmd = [
+#                 "ffmpeg",
+#                 "-y",
+#                 "-hide_banner",
+#                 "-loglevel", "error",
+#                 "-f", "concat",
+#                 "-safe", "0",
+#                 "-r", str(real_fps),
+#                 "-i", raw_list_path,
+#                 "-vf", f"scale={w}:{h}:flags=bicubic",
+#                 "-c:v", enc,
+#                 "-preset", preset,
+#                 "-crf", str(crf),
+#                 "-pix_fmt", pix,
+#                 "-movflags", "+faststart",
+#                 tmp_path
+#             ]
+
+#             try:
+#                 subprocess.run(cmd, check=True)
+#             except subprocess.CalledProcessError:
+#                 pass
+
+#             if not (os.path.exists(tmp_path) and os.path.getsize(tmp_path) > 0):
+#                 utils.remove_file(tmp_path)
+#                 utils.remove_dir(workdir)
+#                 return "FAILED"
+
+#             with open(tmp_path, 'rb') as f:
+#                 mp4_bytes = f.read()
+
+#             utils.remove_file(tmp_path)
+#             utils.remove_dir(workdir)
+
+#             if mp4_bytes:
+#                 item = {
+#                     'type': 'video/mp4 file',
+#                     'filename': filename,
+#                     'data': mp4_bytes,
+#                 }
+#                 with my_skills_storage.STORAGE_LOCK:
+#                     if chat_id in my_skills_storage.STORAGE:
+#                         if item not in my_skills_storage.STORAGE[chat_id]:
+#                             my_skills_storage.STORAGE[chat_id].append(item)
+#                     else:
+#                         my_skills_storage.STORAGE[chat_id] = [item,]
+#                 return "OK"
+
+#             return "FAILED"
+
+#         except Exception:
+#             try:
+#                 utils.remove_dir(workdir)
+#             except Exception:
+#                 pass
+#             try:
+#                 utils.remove_file(tmp_path)
+#             except Exception:
+#                 pass
+#             raise
+
+#     except Exception as e:
+#         tb = traceback.format_exc()
+#         my_log.log_gemini_skills_html(
+#             f'save_html_to_animation: Unexpected error: {e}\n\n{tb}\n\n{html}\n\n'
+#             f'{chat_id} {filename} {viewport_width}x{viewport_height} {fps}fps\n\n{chat_id}'
+#         )
+#         return f"FAIL: An unexpected error occurred: {e}"
+
+
+@cachetools.func.ttl_cache(maxsize=5, ttl=10*60)
+def render_html_to_mp4_bytes(
+    html: str,
+    viewport_width: int,
+    viewport_height: int,
+    fps: int = 15,
+    quality: int = 65,
+    duration_seconds: float = 60.0,
+    cut_external_assets: bool = False,
+) -> bytes | None:
+    try:
+        class _HashStopper:
+            def __init__(self, stable_frames: int = 10):
+                self.prev = None
+                self.stable = 0
+                self.need = stable_frames
+            def push(self, b: bytes) -> bool:
+                h = hashlib.md5(b).hexdigest()
+                if self.prev is None:
+                    self.prev = h
+                    return False
+                if h == self.prev:
+                    self.stable += 1
+                else:
+                    self.stable = 0
+                self.prev = h
+                return self.stable >= self.need
+
+        frames: List[np.ndarray] = []
+        frame_times: List[float] = []
+        stopper = _HashStopper(10)
+
+        start = time.time()
+        base_interval = max(1.0 / max(1, min(fps, 30)), 0.02)
+        interval = base_interval
+        last_t = start
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(
+                headless=True,
+                args=['--disable-dev-shm-usage', '--disable-extensions']
+            )
+            page = browser.new_page(viewport={'width': viewport_width, 'height': viewport_height})
+
+            if cut_external_assets:
+                page.route('/**/*', lambda route: route.abort() if route.request.resource_type in ('image', 'font') else route.continue_())
+
+            page.set_content(html, wait_until='domcontentloaded')
+            page.evaluate("""
+(() => {
+  try {
+    const all = document.querySelectorAll('*');
+    for (const el of all) {
+      const cs = getComputedStyle(el);
+      const hasAnim = (cs.animationName && cs.animationName !== 'none') || (cs.transitionDuration && cs.transitionDuration !== '0s');
+      if (hasAnim) {
+        el.style.animationPlayState = 'paused';
+      }
+    }
+  } catch(e) {}
+  window.__ready_to_start = false;
+  if (typeof window.__start !== 'function') {
+    window.__start = () => {
+      const all = document.querySelectorAll('*');
+      for (const el of all) {
+        const cs = getComputedStyle(el);
+        const hasAnim = (cs.animationName && cs.animationName !== 'none');
+        if (hasAnim) {
+          el.style.animation = 'none';
+          el.offsetHeight;
+          el.style.animation = '';
+          el.style.animationPlayState = 'running';
+        }
+      }
+      window.__recording = true;
+    };
+  }
+})();
+""")
+            page.evaluate("""
+() => new Promise(async (resolve) => {
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch(e) {}
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    window.__ready_to_start = true;
+    resolve();
+  }));
+})
+""")
+            page.wait_for_function("() => window.__ready_to_start === true", timeout=5000)
+            page.evaluate("() => { window.__start && window.__start(); }")
+
+            first_shot = page.screenshot(full_page=False, type='jpeg', quality=int(max(1, min(100, quality))))
+            im0 = Image.open(io.BytesIO(first_shot)).convert('RGB')
+            arr0 = np.array(im0, copy=False)
+            frames.append(arr0)
+            frame_times.append(0.0)
+            last_t = time.time()
+
+            while True:
+                now = time.time()
+                if now - start >= duration_seconds:
+                    break
+                if now - last_t < interval:
+                    time.sleep(0.005)
+                    continue
+
+                t0 = time.time()
+                try:
+                    shot = page.screenshot(full_page=False, type='jpeg', quality=int(max(1, min(100, quality))))
+                except Exception:
+                    time.sleep(0.02)
+                    try:
+                        shot = page.screenshot(full_page=False, type='jpeg', quality=int(max(1, min(100, quality))))
+                    except Exception:
+                        break
+
+                im = Image.open(io.BytesIO(shot)).convert('RGB')
+                arr = np.array(im, copy=False)
+                frames.append(arr)
+
+                dt = time.time() - t0
+                frame_times.append(dt)
+                last_t = now
+
+                if len(frame_times) >= 5:
+                    avg = sum(frame_times[-5:]) / 5.0
+                    interval = max(base_interval, avg * 1.5)
+
+                if len(frames) > 12 and stopper.push(shot):
+                    break
+
+            browser.close()
+
+        if not frames:
+            return None
+
+        total = max(time.time() - start, 1e-6)
+        real_fps = max(1, min(30, int(round(len(frames) / total)) or fps))
+
+        fd, tmp_path = tempfile.mkstemp(suffix='.mp4')
+        os.close(fd)
+
+        workdir = tempfile.mkdtemp(prefix="html2anim_")
+        raw_list_path = os.path.join(workdir, "frames.txt")
+
+        try:
+            h = viewport_height
+            w = viewport_width
+            delays = [1.0 / real_fps] * len(frames)
+            with open(raw_list_path, "w", encoding="utf-8") as f:
+                for i, fr in enumerate(frames):
+                    img_path = os.path.join(workdir, f"frame_{i:06d}.jpg")
+                    if fr.shape[1] != w or fr.shape[0] != h:
+                        _img = Image.fromarray(fr).resize((w, h), Image.Resampling.BILINEAR)
+                        _img.save(img_path, "JPEG", quality=max(1, min(100, quality)))
+                    else:
+                        _img = Image.fromarray(fr)
+                        _img.save(img_path, "JPEG", quality=max(1, min(100, quality)))
+                    f.write(f"file '{img_path}'\n")
+                    f.write(f"duration {delays[i]:.6f}\n")
+                f.write(f"file '{img_path}'\n")
+
+            cmd = [
+                "ffmpeg",
+                "-y",
+                "-hide_banner",
+                "-loglevel", "error",
+                "-f", "concat",
+                "-safe", "0",
+                "-r", str(real_fps),
+                "-i", raw_list_path,
+                "-vf", f"scale={w}:{h}:flags=bicubic",
+                "-c:v", "libx264",
+                "-preset", "veryfast",
+                "-crf", "20",
+                "-pix_fmt", "yuv420p",
+                "-movflags", "+faststart",
+                tmp_path
+            ]
+
+            try:
+                subprocess.run(cmd, check=True)
+            except subprocess.CalledProcessError:
+                pass
+            if not (os.path.exists(tmp_path) and os.path.getsize(tmp_path) > 0):
+                utils.remove_file(tmp_path)
+                utils.remove_dir(workdir)
+                return None
+
+            with open(tmp_path, 'rb') as f:
+                mp4_bytes = f.read()
+
+            utils.remove_file(tmp_path)
+            utils.remove_dir(workdir)
+            return mp4_bytes if mp4_bytes else None
+
+        except Exception:
+            try:
+                utils.remove_dir(workdir)
+            except Exception:
+                pass
+            try:
+                utils.remove_file(tmp_path)
+            except Exception:
+                pass
+            raise
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        my_log.log_gemini_skills_html(
+            f'render_html_to_mp4_bytes: Unexpected error: {e}\n\n{tb}\n\n{html[:2000]}'
+        )
+        return None
+
+
+def save_html_to_animation(
+    filename: str,
+    chat_id: str,
+    html: str,
+    viewport_width: int,
+    viewport_height: int,
+) -> str:
+    """
+    Save (render) HTML code to mp4 video file and send it to the user.
+
+    Important:
+    - Do NOT use infinite animations. Avoid `animation-iteration-count: infinite` and endless JS loops.
+    - All motion must complete within a finite time (target <= 60 seconds).
+    - If looping is needed, repeat a fixed number of cycles (e.g., 3), not infinite.
+
+    Authoring rules for HTML:
+    - Page must become visually ready without user input.
+    - Keep animations bounded in time. Example (CSS):
+        animation-iteration-count: 3;  /* not infinite */
+    - For JS-driven motion, stop explicitly (setTimeout/Promise) before 60s.
+    - Minimize heavy external assets; inline when possible.
+
+    Args:
+        filename (str): Desired video filename ('.mp4' will be appended if missing).
+        chat_id (str): Telegram chat ID of the user requesting the video.
+        html (str): Fully-formed HTML producing a finite animation (<60s).
+        viewport_width (int): Viewport width in pixels (max 1920).
+        viewport_height (int): Viewport height in pixels (max 1080).
+
+    Returns:
+        str: 'OK' or 'FAILED'
+    """
+
+    my_log.log_gemini_skills_html(
+        f'"{chat_id} {filename} {viewport_width}x{viewport_height}"\n\n"{html[:2000]}"'
+    )
+
+    chat_id = my_skills_general.restore_id(chat_id)
+    if chat_id == '[unknown]':
+        return "FAIL, unknown chat id"
+
+    if not filename.lower().endswith('.mp4'):
+        filename += '.mp4'
+    filename = utils.safe_fname(filename)
+
+    mp4_bytes = render_html_to_mp4_bytes(
+        html=html,
+        viewport_width=viewport_width,
+        viewport_height=viewport_height,
+        fps=15,
+        quality=65,
+        duration_seconds=60.0,
+        cut_external_assets=False,
+    )
+
+    if not mp4_bytes:
+        return "FAILED"
+
+    item = {
+        'type': 'video/mp4 file',
+        'filename': filename,
+        'data': mp4_bytes,
+    }
+    try:
+        with my_skills_storage.STORAGE_LOCK:
+            if chat_id in my_skills_storage.STORAGE:
+                if item not in my_skills_storage.STORAGE[chat_id]:
+                    my_skills_storage.STORAGE[chat_id].append(item)
+            else:
+                my_skills_storage.STORAGE[chat_id] = [item]
+        return "OK"
+    except Exception as e:
+        tb = traceback.format_exc()
+        my_log.log_gemini_skills_html(
+            f'save_html_to_animation: storage error: {e}\n\n{tb}'
+        )
+        return "FAILED"
 
 
 def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_height: int, chat_id: str) -> str:

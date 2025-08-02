@@ -964,7 +964,7 @@ def save_html_to_animation(
     """
 
     my_log.log_gemini_skills_html(
-        f'"{chat_id} {filename} {viewport_width}x{viewport_height}"\n\n"{html[:2000]}"'
+        f'"{chat_id} {filename} {viewport_width}x{viewport_height}"\n\n"{html}"'
     )
 
     chat_id = my_skills_general.restore_id(chat_id)

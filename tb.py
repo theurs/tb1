@@ -59,6 +59,7 @@ import my_skills_storage
 import my_stat
 import my_stt
 import my_svg
+import my_subscription
 import my_sum
 import my_tavily
 import my_qrcode
@@ -411,6 +412,9 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
     """
     This function translates text to the specified language,
     using either the AI translation engine or the standard translation engine.
+    Here, caching needs to be disabled for strings that might be too numerous,
+    which are created individually on request, because all saved strings will then be translated
+    into all possible languages, which is a very expensive operation.
 
     Args:
         text: The text to translate.
@@ -7461,7 +7465,7 @@ def id_cmd_handler(message: telebot.types.Message):
         if user_model in models.keys():
             user_model = f'<b>{models[user_model]}</b>'
 
-        telegram_stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+        telegram_stars: int = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
 
         total_msgs = my_db.get_total_msg_user(chat_id_full)
         # totals_pics = my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0
@@ -7481,7 +7485,7 @@ def id_cmd_handler(message: telebot.types.Message):
         except:
             delta_time_str = diff.in_words(locale='en')
 
-        last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
+        last_donate_time: float = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0.0
         if time.time() - last_donate_time > 60*60*24*30:
             last_donate_time = 0
 
@@ -7500,17 +7504,30 @@ def id_cmd_handler(message: telebot.types.Message):
 
 {tr("Выбранная чат модель:", lang)} {user_model}'''
 
-        if last_donate_time:
-            msg += f'\n\n{tr("Подписка:", lang)} {utils.format_timestamp(last_donate_time)}'
+        # if last_donate_time:
+        #     msg += f'\n\n{tr("Подписка:", lang)} {utils.format_timestamp(last_donate_time)}'
 
         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
             msg += f' <b>{open_router_model}</b>'
 
-        tstarsmsg = tr('Telegram stars:', lang, help = 'Telegram Stars is a new feature that allows users to buy and spend Stars, a new digital currency, on digital goods and services within the Telegram ecosystem, like ebooks, online courses, or items in Telegram games.')
-        if telegram_stars:
-            msg += f'\n\n🌟 {tstarsmsg} {telegram_stars} /stars'
-        else:
-            msg += f'\n\n⭐️ {tstarsmsg} {telegram_stars} /stars'
+
+        subscription_info = my_subscription.get_subscription_status_string(
+            chat_id_full=chat_id_full,
+            lang=lang,
+            telegram_stars=telegram_stars,
+            total_msgs=total_msgs,
+            last_donate_time=last_donate_time,
+            cfg=cfg,
+            my_db=my_db,
+            tr=tr,
+            my_gemini_general=my_gemini_general,
+            my_groq=my_groq,
+            my_mistral=my_mistral,
+            my_cohere=my_cohere,
+            my_github=my_github
+        )
+        msg += f'\n\n{subscription_info}'
+
 
         gemini_keys = my_gemini_general.USER_KEYS[chat_id_full] if chat_id_full in my_gemini_general.USER_KEYS else []
         groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []

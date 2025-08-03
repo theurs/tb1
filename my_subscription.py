@@ -1,6 +1,21 @@
+import cachetools
+import functools
 import math
+import threading
 import time
+import traceback
+
 import pendulum
+import telebot
+
+import cfg
+import my_cohere
+import my_db
+import my_gemini_general
+import my_groq
+import my_log
+import my_mistral
+import my_github
 
 
 def get_subscription_status_string(chat_id_full: str, lang: str, telegram_stars: int, total_msgs: int, last_donate_time: float, cfg, my_db, tr, my_gemini_general, my_groq, my_mistral, my_cohere, my_github) -> str:
@@ -33,7 +48,7 @@ def get_subscription_status_string(chat_id_full: str, lang: str, telegram_stars:
         (chat_id_full in my_github.USER_KEYS)
     )
     #DEBUG
-    # have_keys = False
+    have_keys = False
 
     MAX_TOTAL_MESSAGES = getattr(cfg, 'MAX_TOTAL_MESSAGES', 999999)
     DONATE_PRICE = getattr(cfg, 'DONATE_PRICE', 1)
@@ -95,3 +110,133 @@ def get_subscription_status_string(chat_id_full: str, lang: str, telegram_stars:
 
             msg += f"\n{texts['resume_with_stars_or_keys']}"
             return msg
+
+
+def cache_positive_by_user_id(maxsize: int = 1000, ttl: int = 10*60):
+    """
+    Декоратор для кеширования результатов функции.
+    Кеширует только положительные (True) результаты, используя chat_id_full в качестве ключа.
+    """
+    _cache = cachetools.TTLCache(maxsize=maxsize, ttl=ttl)
+    _cache_lock = threading.Lock()
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # Предполагаем, что chat_id_full всегда второй позиционный аргумент
+            # или передается как именованный
+            user_id = kwargs.get('chat_id_full')
+            if user_id is None and len(args) > 1:
+                user_id = args[1]
+
+            if user_id is None:
+                # Если user_id не найден, кеширование не применимо, просто вызываем функцию
+                return func(*args, **kwargs)
+
+            # Проверяем кеш
+            with _cache_lock:
+                if user_id in _cache:
+                    return _cache[user_id] # Возвращаем True, так как кешируем только его
+
+            # Вызываем оригинальную функцию
+            result = func(*args, **kwargs)
+
+            # Кешируем только если результат True
+            if result is True:
+                with _cache_lock:
+                    _cache[user_id] = True
+
+            return result
+        return wrapper
+    return decorator
+
+_GLOBAL_CHECK_DONATE_LOCKS_ACCESS_LOCK = threading.Lock()
+@cache_positive_by_user_id(maxsize=1000, ttl=10*60)
+def check_donate(
+    message: telebot.types.Message,
+    chat_id_full: str,
+    lang: str,
+    COMMAND_MODE,
+    CHECK_DONATE_LOCKS,
+    BOT_ID,
+    tr,
+    bot_reply,
+    get_keyboard
+) -> bool:
+    '''
+    Если общее количество сообщений превышает лимит то надо проверить подписку
+    и если не подписан то предложить подписаться.
+
+    Если у юзера есть все ключи, и есть звезды в достаточном количестве то
+    звезды надо потреблять всё равно, что бы не накапливались.
+    '''
+    try:
+        SECONDS_IN_MONTH = 60 * 60 * 24 * 30
+        # если ожидается нестандартная сумма то пропустить
+        if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'enter_start_amount':
+            return True
+
+        with _GLOBAL_CHECK_DONATE_LOCKS_ACCESS_LOCK:
+            lock = CHECK_DONATE_LOCKS.setdefault(message.from_user.id, threading.Lock())
+
+        with lock:
+            try:
+                chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
+                # если админ или это в группе происходит то пропустить или режим чата = openrouter
+                if message.from_user.id in cfg.admins or chat_id_full.startswith('[-') or message.from_user.id == BOT_ID or chat_mode == 'openrouter':
+                    return True
+
+                # если за сутки было меньше 10 запросов то пропустить
+                # msgs24h = my_db.count_msgs_last_24h(chat_id_full)
+                # max_per_day = cfg.MAX_FREE_PER_DAY if hasattr(cfg, 'MAX_FREE_PER_DAY') else 10
+                # if msgs24h <= max_per_day:
+                #     return True
+
+                # юзеры у которых есть 2 ключа не требуют подписки,
+                # но если есть звезды то их надо снимать чтоб не копились
+                have_keys = 0
+                if chat_id_full in my_gemini_general.USER_KEYS:
+                    have_keys += 1
+                if chat_id_full in my_groq.USER_KEYS:
+                    have_keys += 1
+                if chat_id_full in my_mistral.USER_KEYS:
+                    have_keys += 1
+                if chat_id_full in my_cohere.USER_KEYS:
+                    have_keys += 1
+                if chat_id_full in my_github.USER_KEYS:
+                    have_keys += 1
+                have_keys = have_keys > 1
+
+                total_messages = my_db.count_msgs_total_user(chat_id_full)
+                MAX_TOTAL_MESSAGES = cfg.MAX_TOTAL_MESSAGES if hasattr(cfg, 'MAX_TOTAL_MESSAGES') else 500000
+                DONATE_PRICE = cfg.DONATE_PRICE if hasattr(cfg, 'DONATE_PRICE') else 50
+
+                if total_messages > MAX_TOTAL_MESSAGES:
+                    last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
+                    if time.time() - last_donate_time > SECONDS_IN_MONTH:
+                        stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
+                        if stars >= DONATE_PRICE:
+                            my_db.set_user_property(chat_id_full, 'last_donate_time', time.time())
+                            my_db.set_user_property(chat_id_full, 'telegram_stars', stars - DONATE_PRICE)
+                            my_log.log_donate_consumption(f'{chat_id_full} -{DONATE_PRICE} stars')
+                            # msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
+                            msg = tr('You have enough stars for a month of free access. Thank you for your support!', lang)
+                            bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
+                        else:
+                            if have_keys:
+                                pass
+                            else:
+                                msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
+                                msg += '\n\n' + tr('You have not enough stars for a month of free access.\n\nYou can get free access if bring all free keys, see /keys command for instruction.', lang)
+                                bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
+                                # my_log.log_donate_consumption_fail(f'{chat_id_full} user have not enough stars {stars}')
+                                return False
+            except Exception as unexpected_error:
+                error_traceback = traceback.format_exc()
+                my_log.log2(f'tb:check_donate: {chat_id_full}\n\n{unexpected_error}\n\n{error_traceback}')
+
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:check_donate: {unknown}\n{traceback_error}')
+
+    return True

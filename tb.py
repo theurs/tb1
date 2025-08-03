@@ -2750,7 +2750,7 @@ def handle_voice(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     # Проверка на подписку/донат
-    if not check_donate(message, chat_id_full, lang):
+    if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
         return
 
 
@@ -2959,7 +2959,7 @@ def handle_location(message: telebot.types.Message):
         COMMAND_MODE[chat_id_full] = ''
 
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         message.text = f'{tr("User sent a location to your telegram bot:", lang)} {str(message.location)}'
@@ -2981,7 +2981,7 @@ def handle_contact(message: telebot.types.Message):
         COMMAND_MODE[chat_id_full] = ''
 
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         message.text = f'{tr("User sent a contact to your telegram bot:", lang)} {str(message.contact)}'
@@ -3235,7 +3235,7 @@ def handle_document(message: telebot.types.Message):
 
         COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] != 'transcribe':
@@ -4423,7 +4423,7 @@ def calc_gemini(message: telebot.types.Message):
         lang = get_lang(chat_id_full, message)
         COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         with ShowAction(message, "typing"):
@@ -4462,7 +4462,7 @@ def download_ytb_audio(message: telebot.types.Message):
 
         COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         url = message.text.split(maxsplit=1)
@@ -5807,7 +5807,7 @@ def google(message: telebot.types.Message):
 
         COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         if chat_id_full not in GOOGLE_LOCKS:
@@ -5950,7 +5950,7 @@ def image_gemini_gen(message: telebot.types.Message):
         COMMAND_MODE[chat_id_full] = ''
 
         # Check for donations
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         # Lock to prevent concurrent requests
@@ -6074,7 +6074,7 @@ def image_flux_gen(message: telebot.types.Message):
         COMMAND_MODE[chat_id_full] = ''
 
         # Check for donations
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         # Lock to prevent concurrent requests
@@ -6357,7 +6357,7 @@ def image_gen(message: telebot.types.Message):
 
         COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
 
@@ -6955,7 +6955,7 @@ def summ_text(message: telebot.types.Message):
 
         COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         if chat_id_full not in SUM_LOCKS:
@@ -7077,7 +7077,7 @@ def trans(message: telebot.types.Message):
 
         COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         help = f"""/trans [en|ru|uk|..] {tr('''текст для перевода на указанный язык
@@ -8825,88 +8825,6 @@ def send_voice(
     return None
 
 
-def check_donate(message: telebot.types.Message, chat_id_full: str, lang: str) -> bool:
-    '''
-    Если общее количество сообщений превышает лимит то надо проверить подписку
-    и если не подписан то предложить подписаться.
-
-    Если у юзера есть все ключи, и есть звезды в достаточном количестве то
-    звезды надо потреблять всё равно, что бы не накапливались.
-    '''
-    try:
-        SECONDS_IN_MONTH = 60 * 60 * 24 * 30
-        # если ожидается нестандартная сумма то пропустить
-        if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'enter_start_amount':
-            return True
-
-        if message.from_user.id in CHECK_DONATE_LOCKS:
-            lock = CHECK_DONATE_LOCKS[message.from_user.id]
-        else:
-            CHECK_DONATE_LOCKS[message.from_user.id] = threading.Lock()
-            lock = CHECK_DONATE_LOCKS[message.from_user.id]
-        with lock:
-            try:
-                chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
-                # если админ или это в группе происходит то пропустить или режим чата = openrouter
-                if message.from_user.id in cfg.admins or chat_id_full.startswith('[-') or message.from_user.id == BOT_ID or chat_mode == 'openrouter':
-                    return True
-
-                # если за сутки было меньше 10 запросов то пропустить
-                # msgs24h = my_db.count_msgs_last_24h(chat_id_full)
-                # max_per_day = cfg.MAX_FREE_PER_DAY if hasattr(cfg, 'MAX_FREE_PER_DAY') else 10
-                # if msgs24h <= max_per_day:
-                #     return True
-
-                # юзеры у которых есть 2 ключа не требуют подписки,
-                # но если есть звезды то их надо снимать чтоб не копились
-                have_keys = 0
-                if chat_id_full in my_gemini_general.USER_KEYS:
-                    have_keys += 1
-                if chat_id_full in my_groq.USER_KEYS:
-                    have_keys += 1
-                if chat_id_full in my_mistral.USER_KEYS:
-                    have_keys += 1
-                if chat_id_full in my_cohere.USER_KEYS:
-                    have_keys += 1
-                if chat_id_full in my_github.USER_KEYS:
-                    have_keys += 1
-                have_keys = have_keys > 1
-
-                total_messages = my_db.count_msgs_total_user(chat_id_full)
-                MAX_TOTAL_MESSAGES = cfg.MAX_TOTAL_MESSAGES if hasattr(cfg, 'MAX_TOTAL_MESSAGES') else 500000
-                DONATE_PRICE = cfg.DONATE_PRICE if hasattr(cfg, 'DONATE_PRICE') else 50
-
-                if total_messages > MAX_TOTAL_MESSAGES:
-                    last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
-                    if time.time() - last_donate_time > SECONDS_IN_MONTH:
-                        stars = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
-                        if stars >= DONATE_PRICE:
-                            my_db.set_user_property(chat_id_full, 'last_donate_time', time.time())
-                            my_db.set_user_property(chat_id_full, 'telegram_stars', stars - DONATE_PRICE)
-                            my_log.log_donate_consumption(f'{chat_id_full} -{DONATE_PRICE} stars')
-                            # msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
-                            msg = tr('You have enough stars for a month of free access. Thank you for your support!', lang)
-                            bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
-                        else:
-                            if have_keys:
-                                pass
-                            else:
-                                msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
-                                msg += '\n\n' + tr('You have not enough stars for a month of free access.\n\nYou can get free access if bring all free keys, see /keys command for instruction.', lang)
-                                bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
-                                # my_log.log_donate_consumption_fail(f'{chat_id_full} user have not enough stars {stars}')
-                                return False
-            except Exception as unexpected_error:
-                error_traceback = traceback.format_exc()
-                my_log.log2(f'tb:check_donate: {chat_id_full}\n\n{unexpected_error}\n\n{error_traceback}')
-
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:check_donate: {unknown}\n{traceback_error}')
-
-    return True
-
-
 @bot.message_handler(content_types = ['photo', "text"], func=authorized)
 @async_run
 def handle_photo_and_text(message: telebot.types.Message):
@@ -8930,7 +8848,7 @@ def handle_photo_and_text(message: telebot.types.Message):
         # COMMAND_MODE[chat_id_full] = ''
 
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         # catch groups of messages
@@ -9032,7 +8950,7 @@ def handle_photo(message: telebot.types.Message):
 
         COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         # catch groups of images
@@ -9382,7 +9300,7 @@ def do_task(message, custom_prompt: str = ''):
         msg = message.text.lower()
 
         # проверка на подписку
-        if not check_donate(message, chat_id_full, lang):
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
         # detect /tts /t /tr /trans command

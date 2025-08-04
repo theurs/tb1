@@ -1,7 +1,6 @@
 # pip install diskcache zstandard
 
 
-import cachetools.func
 import functools
 # import io
 # import lzma
@@ -322,7 +321,6 @@ def create_knowledge_base(raw_documents: list[dict]) -> pd.DataFrame:
 #     return df
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl = 10 * 60)
 def find_best_passages(
     query: str,
     dataframe: pd.DataFrame,

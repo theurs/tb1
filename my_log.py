@@ -249,6 +249,10 @@ def log_gemini_skills_query_file(text: str) -> None:
     """для логов вызовов скилов в джемини query_file"""
     log2(text, 'gemini_skills_query_file')
 
+def log_gemini_skills_query_logs(text: str) -> None:
+    """для логов вызовов скилов в джемини query_logs"""
+    log2(text, 'gemini_skills_query_logs')
+
 def log_gemini_skills_img(text: str) -> None:
     """для логов вызовов скилов в джемини img"""
     log2(text, 'gemini_skills_query_img')
@@ -573,6 +577,104 @@ def purge(chat_id: int) -> bool:
     return True
 
 
+def get_user_logs(user_id: str) -> str:
+    """
+    Searches for all log files associated with a user in the 'logs2' directory,
+    concatenates them in chronological order (by modification time), and returns
+    their combined text content.
+
+    Log file naming conventions:
+    - For user IDs ending in '[0]' (e.g., '[12345] [0]'), the function looks for
+      files matching the pattern `* [private] [main_id].log`.
+      Example: `[Kati134949] [private] [36857347865].log`
+    - For user IDs ending in '[non-zero]' (e.g., '[12345] [2355]'), the function
+      looks for files matching the pattern `* [chat] [main_id] [topic_id].log`.
+      Example: `[KeRlly] [chat] [36857347865] [2355].log`
+
+    Args:
+        user_id (str): The user identifier string in the format '[main_id] [topic_id]'.
+                       - main_id: The primary user or chat ID (digits).
+                       - topic_id: The topic ID (digits).
+
+    Returns:
+        str: The concatenated content of all found log files, sorted by modification
+             time (oldest first), separated by a 'Next file' delimiter. Returns an
+             empty string if the 'logs2' directory does not exist, the `user_id`
+             format is invalid, or no matching log files are found.
+
+    Note:
+        - Errors encountered during file reading (e.g., permissions) are logged
+          using the `log2` function and an error message is included in the
+          returned string for that specific file.
+        - Only files directly matching the naming convention for the given `user_id`
+          are considered.
+        - The function relies on file modification times (`os.path.getmtime`) for
+          sorting, assuming this reflects the chronological order of log creation.
+    """
+    logs_dir = 'logs2'
+    if not os.path.exists(logs_dir):
+        log2(f"get_user_logs: Log directory '{logs_dir}' does not exist.")
+        return ""
+
+    id_match = re.match(r'^\[(\d+)\] \[(\d+)\]$', user_id.strip())
+    if not id_match:
+        log2(f"get_user_logs: Invalid user ID format: {user_id}. Expected format: '[12345] [0]'.")
+        return ""
+
+    main_id = id_match.group(1)
+    topic_id = id_match.group(2)
+
+    user_files = []
+    
+    # Составляем шаблон регулярного выражения
+    if topic_id == '0':
+        # Для ID, оканчивающихся на [0], ищем файлы вида * [private] [main_id].log
+        # re.escape гарантирует, что все спецсимволы будут обработаны как обычный текст
+        regex_pattern = re.compile(r".* \[private\] \[" + re.escape(main_id) + r"\]\.log")
+    else:
+        # Для ID, оканчивающихся на [не 0], ищем файлы вида * [chat] [main_id] [topic_id].log
+        regex_pattern = re.compile(r".* \[chat\] \[" + re.escape(main_id) + r"\] \[" + re.escape(topic_id) + r"\]\.log")
+
+    # Ищем файлы вручную, проверяя каждый с помощью регулярного выражения
+    for filename in os.listdir(logs_dir):
+        if regex_pattern.match(filename):
+            user_files.append(os.path.join(logs_dir, filename))
+
+
+    if not user_files:
+        return ""
+
+    try:
+        user_files.sort(key=lambda f: os.path.getmtime(f))
+    except OSError as e:
+        log2(f"get_user_logs: Error sorting log files by modification time: {e}")
+        return ""
+
+    combined_log_content = ""
+    separator = "\n" + "="*20 + " Next file " + "="*20 + "\n"
+
+    # Пропускаем первый сепаратор
+    first_file = True
+    for file_path in user_files:
+        try:
+            if not first_file:
+                combined_log_content += separator
+            else:
+                first_file = False
+                
+            with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                combined_log_content += f.read()
+        except Exception as e:
+            error_msg = f"get_user_logs: Error reading file '{file_path}': {e}"
+            log2(error_msg)
+            combined_log_content += f"\n[{error_msg}]\n"
+
+    if user_files:
+        combined_log_content += "\n" + "="*20 + " End of logs " + "="*20 + "\n"
+
+    return combined_log_content
+
+
 if __name__ == '__main__':
     pass
 
@@ -583,5 +685,6 @@ if __name__ == '__main__':
     # transliterated_text = transliterate(example_text)
     # print(transliterated_text)
  
-    log_parser_error2('test')
+    # log_parser_error2('test')
+    print(get_user_logs('[1651196] [0]'))
  

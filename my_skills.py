@@ -442,277 +442,53 @@ Saved text: {saved_file}
         return 'No result was given.'
 
 
-# def save_html_to_animation(
-#     filename: str,
-#     chat_id: str,
-#     html: str,
-#     viewport_width: int,
-#     viewport_height: int,
-# ) -> str:
-#     """Save (render) HTML code to mp4 video file and send it to the user.
-#     This function renders the HTML content in a headless browser environment,
-#     supporting full HTML5, CSS3, and JavaScript execution. This means you
-#     can use JavaScript to create dynamic content, draw on <canvas> elements,
-#     manipulate the DOM, and generate any visual output that a web browser can display.
+def query_user_logs(query: str, user_id: str) -> str:
+    '''
+    Query saved user logs (do not ask for full text, just answer the question).
+    Log is the big history of user queries and assistant answers.
 
-#     Args:
-#         filename: str - The desired file name for the image file (e.g., 'sales_chart_animation').
-#         chat_id: str - The Telegram user chat ID where the file should be sent.
-#         html: str - The HTML code to be saved as an image file. The page must be fully
-#                     formed according to the HTML standard with CSS and JavaScript included.
-#                     You can embed JavaScript directly within <script> tags to create complex
-#                     visualizations, animations, or interactive elements that will be rendered
-#                     into the final image. Animation should be less than 120 seconds.
-#         viewport_width: int - The width of the viewport in pixels up to 1920.
-#         viewport_height: int - The height of the viewport in pixels up to 1080.
+    Args:
+        query: str - user query
+        user_id: str - user id
 
-#     Returns:
-#         str: 'OK' or 'FAILED'
-#     """
-#     cut_external_assets: bool = False
-#     quality: int = 65
-#     fps: int = 15
-#     duration_seconds: float = 120
+    Returns:
+        str
+    '''
+    user_id = my_skills_general.restore_id(user_id)
 
-#     my_log.log_gemini_skills_html(
-#         f'"{chat_id} {filename} {viewport_width}x{viewport_height}"\n\n"{html}"'
-#     )
+    if user_id not in my_skills_storage.STORAGE_ALLOWED_IDS or my_skills_storage.STORAGE_ALLOWED_IDS[user_id] != user_id:
+        my_log.log_gemini_skills_query_file(f'/query_user_log "{query}" "{user_id}" - Unauthorized access detected.')
+        return 'Unauthorized access detected.'
 
-#     chat_id = my_skills_general.restore_id(chat_id)
-#     if chat_id == '[unknown]':
-#         return "FAIL, unknown chat id"
+    my_log.log_gemini_skills_query_logs(f'/query_user_log "{query}" "{user_id}"')
 
-#     if not filename.lower().endswith('.mp4'):
-#         filename += '.mp4'
-#     filename = utils.safe_fname(filename)
+    logs = my_log.get_user_logs(user_id)
 
-#     try:
-#         class _HashStopper:
-#             def __init__(self, stable_frames: int = 10):
-#                 self.prev = None
-#                 self.stable = 0
-#                 self.need = stable_frames
-#             def push(self, b: bytes) -> bool:
-#                 h = hashlib.md5(b).hexdigest()
-#                 if self.prev is None:
-#                     self.prev = h
-#                     return False
-#                 if h == self.prev:
-#                     self.stable += 1
-#                 else:
-#                     self.stable = 0
-#                 self.prev = h
-#                 return self.stable >= self.need
+    q = f'''Answer the user`s query using saved text(chat log) and your own mind, answer plain text with fancy markdown formatting, do not use code block for answer.
 
-#         frames: List[np.ndarray] = []
-#         frame_times: List[float] = []
-#         stopper = _HashStopper(10)
+User query: {query}
 
-#         start = time.time()
-#         base_interval = max(1.0 / max(1, min(fps, 30)), 0.02)
-#         interval = base_interval
-#         last_t = start
+Saved text: {logs}
+'''
 
-#         with sync_playwright() as p:
-#             browser = p.chromium.launch(
-#                 headless=True,
-#                 args=['--disable-dev-shm-usage', '--disable-extensions']
-#             )
-#             page = browser.new_page(viewport={'width': viewport_width, 'height': viewport_height})
+    temperature = my_db.get_user_property(user_id, 'temperature') or 1
+    role = my_db.get_user_property(user_id, 'role') or ''
 
-#             if cut_external_assets:
-#                 page.route('/**/*', lambda route: route.abort() if route.request.resource_type in ('image', 'font') else route.continue_())
+    result = my_gemini.ai(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini25_flash_model, system=role)
+    if not result:
+        result = my_gemini.ai(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
+    if not result:
+        result = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST], system=role)
+    if not result:
+        result = my_mistral.ai(q[:my_mistral.MAX_SUM_REQUEST], system=role)
+    if not result:
+        result = my_groq.ai(q[:my_groq.MAX_SUM_REQUEST], temperature=temperature, max_tokens_ = 4000, system=role)
 
-#             page.set_content(html, wait_until='domcontentloaded')
-
-#             page.evaluate("""
-# (() => {
-#   try {
-#     const all = document.querySelectorAll('*');
-#     for (const el of all) {
-#       const cs = getComputedStyle(el);
-#       const hasAnim = (cs.animationName && cs.animationName !== 'none') || (cs.transitionDuration && cs.transitionDuration !== '0s');
-#       if (hasAnim) {
-#         el.style.animationPlayState = 'paused';
-#       }
-#     }
-#   } catch(e) {}
-#   window.__ready_to_start = false;
-#   if (typeof window.__start !== 'function') {
-#     window.__start = () => {
-#       const all = document.querySelectorAll('*');
-#       for (const el of all) {
-#         const cs = getComputedStyle(el);
-#         const hasAnim = (cs.animationName && cs.animationName !== 'none');
-#         if (hasAnim) {
-#           el.style.animation = 'none';
-#           el.offsetHeight;
-#           el.style.animation = '';
-#           el.style.animationPlayState = 'running';
-#         }
-#       }
-#       window.__recording = true;
-#     };
-#   }
-# })();
-# """)
-
-#             page.evaluate("""
-# () => new Promise(async (resolve) => {
-#   try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch(e) {}
-#   requestAnimationFrame(() => requestAnimationFrame(() => {
-#     window.__ready_to_start = true;
-#     resolve();
-#   }));
-# })
-# """)
-#             page.wait_for_function("() => window.__ready_to_start === true", timeout=5000)
-#             page.evaluate("() => { window.__start && window.__start(); }")
-
-#             first_shot = page.screenshot(full_page=False, type='jpeg', quality=int(max(1, min(100, quality))))
-#             im0 = Image.open(io.BytesIO(first_shot)).convert('RGB')
-#             arr0 = np.array(im0, copy=False)
-#             frames.append(arr0)
-#             frame_times.append(0.0)
-#             last_t = time.time()
-
-#             while True:
-#                 now = time.time()
-#                 if now - start >= duration_seconds:
-#                     break
-#                 if now - last_t < interval:
-#                     time.sleep(0.005)
-#                     continue
-
-#                 t0 = time.time()
-#                 try:
-#                     shot = page.screenshot(full_page=False, type='jpeg', quality=int(max(1, min(100, quality))))
-#                 except Exception:
-#                     time.sleep(0.02)
-#                     try:
-#                         shot = page.screenshot(full_page=False, type='jpeg', quality=int(max(1, min(100, quality))))
-#                     except Exception:
-#                         break
-
-#                 im = Image.open(io.BytesIO(shot)).convert('RGB')
-#                 arr = np.array(im, copy=False)
-#                 frames.append(arr)
-
-#                 dt = time.time() - t0
-#                 frame_times.append(dt)
-#                 last_t = now
-
-#                 if len(frame_times) >= 5:
-#                     avg = sum(frame_times[-5:]) / 5.0
-#                     interval = max(base_interval, avg * 1.5)
-
-#                 if len(frames) > 12 and stopper.push(shot):
-#                     break
-
-#             browser.close()
-
-#         if not frames:
-#             return "FAILED"
-
-#         total = max(time.time() - start, 1e-6)
-#         real_fps = max(1, min(30, int(round(len(frames) / total)) or fps))
-
-#         fd, tmp_path = tempfile.mkstemp(suffix='.mp4')
-#         os.close(fd)
-
-#         workdir = tempfile.mkdtemp(prefix="html2anim_")
-#         raw_list_path = os.path.join(workdir, "frames.txt")
-
-#         try:
-#             h = viewport_height
-#             w = viewport_width
-#             delays = [1.0 / real_fps] * len(frames)
-#             with open(raw_list_path, "w", encoding="utf-8") as f:
-#                 for i, fr in enumerate(frames):
-#                     img_path = os.path.join(workdir, f"frame_{i:06d}.jpg")
-#                     if fr.shape[1] != w or fr.shape[0] != h:
-#                         _img = Image.fromarray(fr).resize((w, h), Image.Resampling.BILINEAR)
-#                         _img.save(img_path, "JPEG", quality=max(1, min(100, quality)))
-#                     else:
-#                         _img = Image.fromarray(fr)
-#                         _img.save(img_path, "JPEG", quality=max(1, min(100, quality)))
-#                     f.write(f"file '{img_path}'\n")
-#                     f.write(f"duration {delays[i]:.6f}\n")
-#                 f.write(f"file '{img_path}'\n")
-
-#             enc = "libx264"
-#             pix = "yuv420p"
-#             crf = 20
-#             preset = "veryfast"
-
-#             cmd = [
-#                 "ffmpeg",
-#                 "-y",
-#                 "-hide_banner",
-#                 "-loglevel", "error",
-#                 "-f", "concat",
-#                 "-safe", "0",
-#                 "-r", str(real_fps),
-#                 "-i", raw_list_path,
-#                 "-vf", f"scale={w}:{h}:flags=bicubic",
-#                 "-c:v", enc,
-#                 "-preset", preset,
-#                 "-crf", str(crf),
-#                 "-pix_fmt", pix,
-#                 "-movflags", "+faststart",
-#                 tmp_path
-#             ]
-
-#             try:
-#                 subprocess.run(cmd, check=True)
-#             except subprocess.CalledProcessError:
-#                 pass
-
-#             if not (os.path.exists(tmp_path) and os.path.getsize(tmp_path) > 0):
-#                 utils.remove_file(tmp_path)
-#                 utils.remove_dir(workdir)
-#                 return "FAILED"
-
-#             with open(tmp_path, 'rb') as f:
-#                 mp4_bytes = f.read()
-
-#             utils.remove_file(tmp_path)
-#             utils.remove_dir(workdir)
-
-#             if mp4_bytes:
-#                 item = {
-#                     'type': 'video/mp4 file',
-#                     'filename': filename,
-#                     'data': mp4_bytes,
-#                 }
-#                 with my_skills_storage.STORAGE_LOCK:
-#                     if chat_id in my_skills_storage.STORAGE:
-#                         if item not in my_skills_storage.STORAGE[chat_id]:
-#                             my_skills_storage.STORAGE[chat_id].append(item)
-#                     else:
-#                         my_skills_storage.STORAGE[chat_id] = [item,]
-#                 return "OK"
-
-#             return "FAILED"
-
-#         except Exception:
-#             try:
-#                 utils.remove_dir(workdir)
-#             except Exception:
-#                 pass
-#             try:
-#                 utils.remove_file(tmp_path)
-#             except Exception:
-#                 pass
-#             raise
-
-#     except Exception as e:
-#         tb = traceback.format_exc()
-#         my_log.log_gemini_skills_html(
-#             f'save_html_to_animation: Unexpected error: {e}\n\n{tb}\n\n{html}\n\n'
-#             f'{chat_id} {filename} {viewport_width}x{viewport_height} {fps}fps\n\n{chat_id}'
-#         )
-#         return f"FAIL: An unexpected error occurred: {e}"
+    if result:
+        my_log.log_gemini_skills_query_logs(result)
+        return result
+    else:
+        return 'No result was given.'
 
 
 @cachetools.func.ttl_cache(maxsize=5, ttl=10*60)

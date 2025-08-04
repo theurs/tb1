@@ -610,8 +610,10 @@ def chat(
         if telegram_user_name:
             system_.insert(1, f'Telegram reported user name: {telegram_user_name}')
 
+        # сохраняем маркер для проверки валидности chat_id в модуле my_skills*
+        my_skills_storage.STORAGE_ALLOWED_IDS[chat_id] = chat_id
+
         if saved_file_name:
-            my_skills_storage.STORAGE_ALLOWED_IDS[chat_id] = chat_id
             system_.insert(1, f'Telegram user have saved file/files and assistant can query it: {saved_file_name} ({saved_file_size} chars)')
         if 'flash-lite' in model:
             system_.insert(1, 'You can draw graphs and charts using the code_execution_tool')
@@ -663,6 +665,7 @@ def chat(
                             my_skills.save_natal_chart_to_image,
                             my_skills.send_tarot_cards,
                             my_skills.query_user_file,
+                            my_skills.query_user_logs,
                             my_skills_general.get_location_name,
                             my_skills.help,
                         ]

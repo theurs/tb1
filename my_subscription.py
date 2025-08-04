@@ -48,7 +48,7 @@ def get_subscription_status_string(chat_id_full: str, lang: str, telegram_stars:
         (chat_id_full in my_github.USER_KEYS)
     )
     #DEBUG
-    have_keys = False
+    # have_keys = False
 
     MAX_TOTAL_MESSAGES = getattr(cfg, 'MAX_TOTAL_MESSAGES', 999999)
     DONATE_PRICE = getattr(cfg, 'DONATE_PRICE', 1)

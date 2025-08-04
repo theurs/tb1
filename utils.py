@@ -1051,12 +1051,87 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
         return original_text
 
 
+# def split_html(text: str, max_length: int = 1500) -> list:
+#     """
+#     Разбивает HTML-подобный текст на части, не превышающие max_length символов.
+#     Учитывает вложенность тегов и корректно переносит их между частями.
+#     """
+#     # меняем переносы на <br /> после тегов
+#     text = re.sub(r'(</\w+>)(\s+)(<\w+[^>]*>)', r'\1<br/><br/>\3', text)
+
+#     tags = {
+#         "b": "</b>",
+#         "i": "</i>",
+#         "code": "</code>",
+#         "pre": "</pre>",
+#         "blockquote": "</blockquote>",
+#         "blockquote expandable": "</blockquote>",
+#     }
+#     opening_tags = {f"<{tag}>" for tag in tags}
+#     closing_tags = {tag for tag in tags.values()}
+#     result = []
+#     current_chunk = ""
+#     open_tags_stack = []
+#     lines = text.splitlines(keepends=True)
+#     for line in lines:
+#         line_stripped = line.strip()
+#         # Обработка открывающих тегов
+#         for tag in opening_tags:
+#             if line_stripped.startswith(tag):
+#                 tag_name = tag[1:-1]
+#                 # Проверяем, закрыт ли тег в этой же строке
+#                 if tags[tag_name] not in line:
+#                     open_tags_stack.append(tag_name)
+#                 # Обработка случая <pre><code class="">
+#                 if tag_name == "pre" and '<code class="' in line:
+#                     open_tags_stack.append("code")
+#                 break
+#         # Обработка закрывающих тегов
+#         for closing_tag in closing_tags:
+#             if closing_tag in line:
+#                 tag_name = closing_tag[2:-1]
+#                 remove_index = -1
+#                 for i in reversed(range(len(open_tags_stack))):
+#                     if open_tags_stack[i] == tag_name:
+#                         remove_index = i
+#                         break
+#                 if remove_index != -1:
+#                     open_tags_stack.pop(remove_index)
+#         # Добавление строки к текущему чанку
+#         if len(current_chunk) + len(line) > max_length:
+#             # Чанк переполнен, нужно его завершить и начать новый
+#             # 1. Закрываем теги в текущем чанке
+#             for tag_name in reversed(open_tags_stack):
+#                 current_chunk += tags[tag_name]
+#             # 2. Добавляем текущий чанк в результат
+#             if len(current_chunk) > max_length:
+#                 for x in split_text(current_chunk, max_length):
+#                     result.append(x)
+#             else:
+#                 result.append(current_chunk)
+#             # 3. Начинаем новый чанк
+#             current_chunk = ""
+#             # 4. Открываем теги в новом чанке
+#             for tag_name in open_tags_stack:
+#                 current_chunk += f"<{tag_name}>"
+#         current_chunk += line
+#     # Добавление последнего чанка
+#     if current_chunk:
+#         if len(current_chunk) > max_length:
+#             for x in split_text(current_chunk, max_length):
+#                 result.append(x)
+#         else:
+#             result.append(current_chunk)
+#     result2 = post_process_split_html(result)
+#     return result2
+
+
 def split_html(text: str, max_length: int = 1500) -> list:
     """
     Разбивает HTML-подобный текст на части, не превышающие max_length символов.
-    Учитывает вложенность тегов и корректно переносит их между частями.
+    Учитывает вложенность тегов и корректно переносит их между частями,
+    СОХРАНЯЯ АТРИБУТЫ ТЕГОВ.
     """
-    # меняем переносы на <br /> после тегов
     text = re.sub(r'(</\w+>)(\s+)(<\w+[^>]*>)', r'\1<br/><br/>\3', text)
 
     tags = {
@@ -1067,61 +1142,70 @@ def split_html(text: str, max_length: int = 1500) -> list:
         "blockquote": "</blockquote>",
         "blockquote expandable": "</blockquote>",
     }
-    opening_tags = {f"<{tag}>" for tag in tags}
-    closing_tags = {tag for tag in tags.values()}
+    
     result = []
     current_chunk = ""
+    # ИЗМЕНЕНИЕ 1: Стек теперь хранит кортежи (имя_тега, полный_тег_с_атрибутами)
     open_tags_stack = []
+    
     lines = text.splitlines(keepends=True)
+    
     for line in lines:
-        line_stripped = line.strip()
-        # Обработка открывающих тегов
-        for tag in opening_tags:
-            if line_stripped.startswith(tag):
-                tag_name = tag[1:-1]
-                # Проверяем, закрыт ли тег в этой же строке
-                if tags[tag_name] not in line:
-                    open_tags_stack.append(tag_name)
-                # Обработка случая <pre><code class="">
-                if tag_name == "pre" and '<code class="' in line:
-                    open_tags_stack.append("code")
-                break
-        # Обработка закрывающих тегов
-        for closing_tag in closing_tags:
-            if closing_tag in line:
-                tag_name = closing_tag[2:-1]
-                remove_index = -1
+        # ИЗМЕНЕНИЕ 2: Ищем все теги в строке, а не только в начале
+        # Это позволяет найти <code...> после <pre> в одной строке
+        line_tags = re.finditer(r'<([^>]+)>', line)
+        
+        for match in line_tags:
+            full_tag = match.group(0)  # Полный тег, например, '<code class="language-python">'
+            tag_content = match.group(1) # Содержимое, например, 'code class="language-python"'
+            
+            if tag_content.startswith('/'): # Это закрывающий тег
+                tag_name = tag_content[1:]
+                # Ищем в стеке с конца и удаляем
                 for i in reversed(range(len(open_tags_stack))):
-                    if open_tags_stack[i] == tag_name:
-                        remove_index = i
+                    if open_tags_stack[i][0] == tag_name:
+                        open_tags_stack.pop(i)
                         break
-                if remove_index != -1:
-                    open_tags_stack.pop(remove_index)
-        # Добавление строки к текущему чанку
+            elif not tag_content.endswith('/'): # Это открывающий тег
+                # Извлекаем только имя тега для логики
+                tag_name = tag_content.split()[0]
+                # Ваша специальная логика для blockquote
+                if tag_name == "blockquote" and "expandable" in tag_content:
+                    tag_name = "blockquote expandable"
+                
+                open_tags_stack.append((tag_name, full_tag))
+
+        # Логика добавления строки и разрыва чанка остается почти такой же
         if len(current_chunk) + len(line) > max_length:
-            # Чанк переполнен, нужно его завершить и начать новый
             # 1. Закрываем теги в текущем чанке
-            for tag_name in reversed(open_tags_stack):
-                current_chunk += tags[tag_name]
-            # 2. Добавляем текущий чанк в результат
+            for tag_name, _ in reversed(open_tags_stack):
+                # Используем ваш словарь tags для корректного закрытия
+                if tag_name in tags:
+                    current_chunk += tags[tag_name]
+            
+            # 2. Добавляем чанк
             if len(current_chunk) > max_length:
-                for x in split_text(current_chunk, max_length):
-                    result.append(x)
+                # Используем вашу функцию split_text для очень длинных строк без тегов
+                result.extend(split_text(current_chunk, max_length))
             else:
                 result.append(current_chunk)
+            
             # 3. Начинаем новый чанк
             current_chunk = ""
-            # 4. Открываем теги в новом чанке
-            for tag_name in open_tags_stack:
-                current_chunk += f"<{tag_name}>"
+            # ИЗМЕНЕНИЕ 3: Восстанавливаем теги, используя сохраненный ПОЛНЫЙ ТЕГ
+            for _, full_tag_str in open_tags_stack:
+                current_chunk += full_tag_str
+        
         current_chunk += line
+
     # Добавление последнего чанка
     if current_chunk:
         if len(current_chunk) > max_length:
-            for x in split_text(current_chunk, max_length):
-                result.append(x)
+            result.extend(split_text(current_chunk, max_length))
         else:
             result.append(current_chunk)
+            
+    # Ваша постобработка остается без изменений
     result2 = post_process_split_html(result)
     return result2
 
@@ -2660,26 +2744,154 @@ if __name__ == '__main__':
     # print(extract_text_from_bytes(r'C:\Users\user\Downloads\samples for ai\Алиса в изумрудном городе (большая книга).txt'))
     # print(extract_text_from_bytes(r'C:\Users\user\Downloads\2.txt'))
 
-    t = '''
- `H8#kZ2m!Qt5`
+    t = r'''Вы абсолютно правы. Моя предыдущая логика была неверной. Предельный размер должен быть строгим и включать **всё**: и текст, и заголовки, и всю XML-разметку, включая метаданные.
 
-`rV7!pH3$Nd1`
+Я переписал алгоритм, чтобы он работал корректно.
 
-`A!6yZ0^cJw8`
+**Что изменено:**
 
-`nQ%5Xb!2Lt7`
+Теперь перед добавлением каждого нового фрагмента, код точно вычисляет, **какой полный размер этот фрагмент добавит в итоговую строку**, включая:
+*   Сам текст и заголовок.
+*   Все теги (`<fragment_source_...>`, `<fragment_text_...>` и т.д.).
+*   Символы переноса строк.
+*   Даже учитывает, что номер фрагмента может стать длиннее (например, при переходе с `_9` на `_10`, что добавляет один символ).
 
-`S#3mDv!9qP0`
+Если добавление этого полного блока превысит лимит (`target_size_chars`), фрагмент просто не будет включен в итоговый результат, и сборка остановится. Это гарантирует, что итоговый размер **никогда не превысит** заданный предел.
 
-**привет**
+### Исправленный код
 
-**как**
 
-**дела**
 
-'''
+```python
+import numpy as np
+import pandas as pd
+import re
+import random
+from google import genai
+from google.genai import types
+
+# Предполагается, что эти переменные существуют в вашем коде.
+# import cfg
+# EMBEDDING_MODEL_ID = "gemini-embedding-001"
+
+def find_best_passages(
+    query: str,
+    dataframe: pd.DataFrame,
+    target_size_chars: int = 20000
+) -> str:
+    """
+    Находит наиболее релевантные фрагменты текста, чтобы собрать из них
+    единый контекст, СТРОГО не превышающий заданный размер,
+    и форматирует результат в виде XML-подобной строки.
+
+    Args:
+        query (str): Запрос пользователя.
+        dataframe (pd.DataFrame): DataFrame с данными.
+        target_size_chars (int): Максимальный размер итоговой строки в символах.
+
+    Returns:
+        str: Строка в XML-формате.
+    """
+    if dataframe.empty:
+        return "<fragments><query>Исходных данных нет</query></fragments>"
+
+    # 1. Получаем эмбеддинг для запроса
+    client = genai.Client(api_key=random.choice(cfg.gemini_keys))
+    query_embedding_response = client.models.embed_content(
+        model=EMBEDDING_MODEL_ID,
+        contents=query,
+        config=types.EmbedContentConfig(task_type="retrieval_query")
+    )
+    query_embedding = query_embedding_response.embeddings[0].values
+
+    # 2. Считаем и сортируем все фрагменты по релевантности
+    dot_products = np.dot(np.stack(dataframe['Embeddings'].values), query_embedding)
+    all_passages = []
+    for i, row in dataframe.iterrows():
+        all_passages.append({
+            'title': row['Title'],
+            'text': row['Text'],
+            'relevance': dot_products[i]
+        })
+    all_passages.sort(key=lambda x: x['relevance'], reverse=True)
+
+    # 3. Итеративно набираем фрагменты, строго контролируя общий размер
+    candidate_passages = []
+    current_total_size = 0
+
+    # Экранируем запрос один раз
+    safe_query = query.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+    for passage in all_passages:
+        # Сначала — логически сортируем ТЕКУЩИЙ набор кандидатов
+        temp_candidates = candidate_passages + [passage]
+        title_pattern = re.compile(r"^(.*?)(?: - Part (\d+))?$")
+        for p in temp_candidates:
+            if 'original_title' not in p: # Парсим только новые
+                match = title_pattern.match(p['title'])
+                if match:
+                    p['original_title'] = match.group(1).strip()
+                    p['part_number'] = int(match.group(2)) if match.group(2) else 1
+                else:
+                    p['original_title'] = p['title']
+                    p['part_number'] = 1
+        temp_candidates.sort(key=lambda x: (x['original_title'], x['part_number']))
+
+        # Теперь "рендерим" потенциальную итоговую строку и считаем её длину
+        # Это самый точный способ узнать будущий размер
+        
+        # Заголовок и метаданные
+        temp_text_len = sum(len(p['text']) for p in temp_candidates)
+        meta_line = f"<meta>Найдено {len(temp_candidates)} фрагментов, общая длина {temp_text_len} символов.</meta>"
+        
+        # Собираем все части в список
+        output_parts = ["<fragments>"]
+        output_parts.append(f"<query>{safe_query}</query>")
+        output_parts.append(meta_line)
+        
+        for i, p in enumerate(temp_candidates, 1):
+            safe_title = p['title'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            safe_text = p['text'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            output_parts.append(f"<fragment_source_{i}>{safe_title}</fragment_source_{i}>")
+            output_parts.append(f"<fragment_text_{i}>\n{safe_text}\n</fragment_text_{i}>")
+        
+        output_parts.append("</fragments>")
+        
+        # Считаем длину, как если бы мы соединили все части через \n
+        provisional_size = len("\n".join(output_parts))
+
+        # Главная проверка: если вылезли за лимит, не добавляем последний фрагмент и выходим
+        if provisional_size > target_size_chars:
+            break
+        
+        # Если всё хорошо, фиксируем добавление фрагмента
+        candidate_passages.append(passage)
+        current_total_size = provisional_size
+
+    # 4. Финальная сборка результата из утвержденных кандидатов
+    # (повторяем рендеринг, но уже с финальным списком)
+    candidate_passages.sort(key=lambda x: (x['original_title'], x['part_number']))
+    final_text_len = sum(len(p['text']) for p in candidate_passages)
+    
+    output_parts = ["<fragments>"]
+    output_parts.append(f"<query>{safe_query}</query>")
+    output_parts.append(f"<meta>Найдено {len(candidate_passages)} фрагментов, общая длина {final_text_len} символов. Итоговый размер: {current_total_size} из {target_size_chars}.</meta>")
+
+    for i, p in enumerate(candidate_passages, 1):
+        safe_title = p['title'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        safe_text = p['text'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        output_parts.append(f"<fragment_source_{i}>{safe_title}</fragment_source_{i}>")
+        output_parts.append(f"<fragment_text_{i}>\n{safe_text}\n</fragment_text_{i}>")
+        
+    output_parts.append("</fragments>")
+    
+    return "\n".join(output_parts)
+```'''
 
     r = bot_markdown_to_html(t)
     print(r)
     chunks = split_html(r, 3800)
+    print('==================')
     print(chunks[0])
+    print('==================')
+    print(chunks[1])

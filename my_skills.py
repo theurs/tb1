@@ -474,15 +474,15 @@ Saved text: {logs}
     temperature = my_db.get_user_property(user_id, 'temperature') or 1
     role = my_db.get_user_property(user_id, 'role') or ''
 
-    result = my_gemini.ai(q[:-my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini25_flash_model, system=role)
+    result = my_gemini.ai(q[-my_gemini_general.MAX_SUM_REQUEST:], temperature=temperature, tokens_limit=8000, model = cfg.gemini25_flash_model, system=role)
     if not result:
-        result = my_gemini.ai(q[:-my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
+        result = my_gemini.ai(q[-my_gemini_general.MAX_SUM_REQUEST:], temperature=temperature, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
     if not result:
-        result = my_cohere.ai(q[:-my_cohere.MAX_SUM_REQUEST], system=role)
+        result = my_cohere.ai(q[-my_cohere.MAX_SUM_REQUEST:], system=role)
     if not result:
-        result = my_mistral.ai(q[:-my_mistral.MAX_SUM_REQUEST], system=role)
+        result = my_mistral.ai(q[-my_mistral.MAX_SUM_REQUEST:], system=role)
     if not result:
-        result = my_groq.ai(q[:-my_groq.MAX_SUM_REQUEST], temperature=temperature, max_tokens_ = 4000, system=role)
+        result = my_groq.ai(q[-my_groq.MAX_SUM_REQUEST:], temperature=temperature, max_tokens_ = 4000, system=role)
 
     if result:
         my_log.log_gemini_skills_query_logs(result)

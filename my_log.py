@@ -686,5 +686,4 @@ if __name__ == '__main__':
     # print(transliterated_text)
  
     # log_parser_error2('test')
-    print(get_user_logs('[1651196] [0]'))
- 
+  

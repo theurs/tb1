@@ -29,6 +29,7 @@ def restore_id(chat_id: str) -> str:
     Returns:
         chat_id in format '[number1] [number2]'
     '''
+    chat_id_original = chat_id
     def is_integer(s):
         try:
             int(s)
@@ -54,6 +55,7 @@ def restore_id(chat_id: str) -> str:
     chat_id = chat_id.strip()
     if not chat_id:
         chat_id = '[unknown]'
+        my_log.log_gemini_skills(f'my_skills_general:restore_id: Error: {chat_id_original} -> {chat_id}')
     return chat_id
 
 

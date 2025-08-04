@@ -2024,9 +2024,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.row(button_gemini_flash25, button_mistral)
             markup.row(button_qwen3, button_cohere)
             markup.row(button_gpt_4o, button_gpt_41)
-            markup.row(button_gemini_pro, button_gemini_flash20)
+            markup.row(button_gemini_pro, button_gemini_lite) # button_gemini_flash20
             markup.row(button_deepseek_v3, button_openrouter)
-            # markup.row(button_gemini_lite)
 
             if voice_title in ('OpenAI', 'Gemini'):
                 markup.row(button_filler1)
@@ -9658,87 +9657,22 @@ def do_task(message, custom_prompt: str = ''):
                                 THINKING_BUDGET = THINKING_BUDGET
                             )
 
-                            if not answer and gmodel == cfg.gemini_pro_model:
-                                gmodel = cfg.gemini_pro_model_fallback
-                                answer = my_gemini3.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temp,
-                                    model = gmodel,
-                                    system = hidden_text,
-                                    telegram_user_name=telegram_user_name,
-                                    use_skills=True
-                                )
-                                WHO_ANSWERED[chat_id_full] = gmodel
+                            if not answer:
+                                if gmodel == cfg.gemini_pro_model:
+                                    gmodel = cfg.gemini_pro_model_fallback
+                                elif gmodel == cfg.gemini_flash_model:
+                                    gmodel = cfg.gemini_flash_model_fallback
+                                elif gmodel == cfg.gemini25_flash_model:
+                                    gmodel = cfg.gemini25_flash_model_fallback
+                                elif cfg.gemini_flash_light_model == gmodel:
+                                    gmodel = cfg.gemini_flash_light_model_fallback
+                                elif gmodel == cfg.gemini_learn_model:
+                                    gmodel = cfg.gemini_learn_model_fallback
+                                elif gmodel == cfg.gemini_exp_model:
+                                    gmodel = cfg.gemini_exp_model_fallback
+                                elif gmodel == cfg.gemma3_27b_model:
+                                    gmodel = cfg.gemma3_27b_model_fallback
 
-                            if not answer and gmodel == cfg.gemini_flash_model:
-                                gmodel = cfg.gemini_flash_model_fallback
-                                answer = my_gemini3.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temp,
-                                    model = gmodel,
-                                    system = hidden_text,
-                                    telegram_user_name=telegram_user_name,
-                                    use_skills=True
-                                )
-                                WHO_ANSWERED[chat_id_full] = gmodel
-
-                            if not answer and gmodel == cfg.gemini25_flash_model:
-                                gmodel = cfg.gemini25_flash_model_fallback
-                                answer = my_gemini3.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temp,
-                                    model = gmodel,
-                                    system = hidden_text,
-                                    telegram_user_name=telegram_user_name,
-                                    use_skills=True
-                                )
-                                WHO_ANSWERED[chat_id_full] = gmodel
-
-                            if not answer and gmodel == cfg.gemini_flash_light_model:
-                                gmodel = cfg.gemini_flash_light_model_fallback
-                                answer = my_gemini3.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temp,
-                                    model = gmodel,
-                                    system = hidden_text,
-                                    use_skills=True,
-                                    telegram_user_name=telegram_user_name,
-                                    THINKING_BUDGET = THINKING_BUDGET,
-                                )
-                                WHO_ANSWERED[chat_id_full] = gmodel
-
-                            if not answer and gmodel == cfg.gemini_learn_model:
-                                gmodel = cfg.gemini_learn_model_fallback
-                                answer = my_gemini3.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temp,
-                                    model = gmodel,
-                                    system = hidden_text,
-                                    telegram_user_name=telegram_user_name,
-                                    use_skills=True
-                                )
-                                WHO_ANSWERED[chat_id_full] = gmodel
-
-                            if not answer and gmodel == cfg.gemini_exp_model:
-                                gmodel = cfg.gemini_exp_model_fallback
-                                answer = my_gemini3.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temp,
-                                    model = gmodel,
-                                    system = hidden_text,
-                                    telegram_user_name=telegram_user_name,
-                                    use_skills=True
-                                )
-                                WHO_ANSWERED[chat_id_full] = gmodel
-
-                            if not answer and gmodel == cfg.gemma3_27b_model:
-                                gmodel = cfg.gemma3_27b_model_fallback
                                 answer = my_gemini3.chat(
                                     message.text,
                                     chat_id_full,

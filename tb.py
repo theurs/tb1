@@ -8041,9 +8041,9 @@ def reply_to_long_message(
         preview = telebot.types.LinkPreviewOptions(is_disabled=disable_web_page_preview)
 
         if parse_mode == 'HTML':
-            chunks = utils.split_html(resp, 3800)
+            chunks = utils.split_html(resp, 4000)
         else:
-            chunks = utils.split_text(resp, 3800)
+            chunks = utils.split_text(resp, 4000)
 
         # в режиме только голоса ответы идут голосом без текста и разделения на части
         if my_db.get_user_property(chat_id_full, 'voice_only_mode') and allow_voice:

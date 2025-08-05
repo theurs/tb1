@@ -294,6 +294,47 @@ def remove_old_pics(mem: List[Union['Content', 'UserContent']], turns_cutoff: in
     return mem
 
 
+def remove_all_pics(mem: List[Union['Content', 'UserContent']]) -> bool:
+    """
+    Удаляет все части, содержащие изображения (Blob), из всех записей в списке памяти.
+    Функция модифицирует список `mem` напрямую (in-place).
+    Возвращает True, если были удалены какие-либо изображения, иначе False.
+
+    Идентификация "части изображения":
+    Часть считается изображением, если ее атрибут `inline_data` является объектом 'Blob'
+    И ее атрибут `text` равен None.
+
+    Args:
+        mem (List[Union[Content, UserContent]]): Список записей памяти,
+                                                   который будет модифицирован.
+    """
+    if not mem:
+        return False
+
+    changed = False # Флаг, который покажет, были ли изменения
+    for entry in mem:
+        if hasattr(entry, 'parts') and isinstance(entry.parts, list):
+            original_parts_len = len(entry.parts)
+
+            # Собираем только те части, которые НЕ являются изображениями
+            parts_to_keep = []
+            for p in entry.parts:
+                is_image_blob = (
+                    hasattr(p, 'inline_data') and
+                    hasattr(p.inline_data, '__class__') and
+                    p.inline_data.__class__.__name__ == 'Blob' and
+                    hasattr(p, 'text') and p.text is None
+                )
+                if not is_image_blob:
+                    parts_to_keep.append(p)
+
+            # Если количество частей изменилось, значит, мы что-то удалили
+            if len(parts_to_keep) < original_parts_len:
+                entry.parts = parts_to_keep # Обновляем список частей
+                changed = True # Отмечаем, что были изменения
+    return changed # Возвращаем флаг
+
+
 def validate_mem(mem):
     '''
     Проверяется корректность памяти
@@ -1509,9 +1550,35 @@ def converts_all_mems():
         my_log.log_gemini(f'my_gemini3:converts_all_mems:Failed to convert all mems: {error}\n\n{error_traceback}')
 
 
+def remove_pics_from_all_mems():
+    '''
+    Удаляет все картинки из всех диалогов в dialog_gemini3
+    '''
+    try:
+        all_users = my_db.get_all_users_ids()
+        my_log.log_gemini(f'my_gemini3:remove_pics_from_all_mems: Removing pics from {len(all_users)} users')
+        for chat_id in all_users:
+            mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
+
+            # Вызываем измененную функцию, которая теперь возвращает True, если были изменения
+            has_changed = remove_all_pics(mem) 
+
+            if has_changed:
+                my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(mem))
+                my_log.log_gemini(f'my_gemini3:remove_pics_from_all_mems: Pics removed for user {chat_id}')
+            else:
+                pass
+                # my_log.log_gemini(f'my_gemini3:remove_pics_from_all_mems: No pics found or removed for user {chat_id}')
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_gemini(f'my_gemini3:remove_pics_from_all_mems: Failed to remove pics from all mems: {error}\n\n{error_traceback}')
+
+
 if __name__ == "__main__":
-    my_db.init(backup=False)
+    my_db.init(backup=False, vacuum=False)
     my_gemini_general.load_users_keys()
+
+    # remove_pics_from_all_mems()
 
     # один раз запустить надо
     # converts_all_mems()

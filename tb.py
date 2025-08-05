@@ -10515,6 +10515,7 @@ def one_time_shot():
             pass
 
             # my_gemini3.converts_all_mems()
+            my_gemini3.remove_pics_from_all_mems()
 
             queries = [
                 # '''ALTER TABLE users DROP COLUMN api_key_huggingface;''',
@@ -10536,7 +10537,7 @@ def one_time_shot():
 
             # Выполняем VACUUM вне транзакции
             try:
-                my_db.CUR.execute('VACUUM;')
+                # my_db.CUR.execute('VACUUM;')
                 my_db.CON.commit()
             except Exception as error:
                 my_log.log2(f'tb:one_time_shot: VACUUM error: {error}')

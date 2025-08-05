@@ -728,7 +728,17 @@ def img2txt(
                     text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
-
+                elif not text and chat_mode == 'cohere':
+                    text = my_cohere.img2txt(
+                        image_data=data,
+                        prompt=query,
+                        temperature=temperature,
+                        chat_id=chat_id_full,
+                        system=system_message,
+                        timeout=timeout
+                    )
+                    if text:
+                        WHO_ANSWERED[chat_id_full] = 'img2txt_cohere'
 
             # если модель не указана явно и не был получен ответ в предыдущем блоке то используем
             # стандартную модель (возможно что еще раз)
@@ -806,12 +816,24 @@ def img2txt(
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
-
             # llama-4-maverick at groq
             if not text:
                 text = my_groq.img2txt(data, query, model = 'meta-llama/llama-4-maverick-17b-128e-instruct', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
                 if text:
                     WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'meta-llama/llama-4-maverick-17b-128e-instruct'
+
+            # далее пробуем Cohere command-a-vision
+            if not text:
+                text = my_cohere.img2txt(
+                    image_data=data,
+                    prompt=query,
+                    temperature=temperature,
+                    chat_id=chat_id_full,
+                    system=system_message,
+                    timeout=timeout
+                )
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_cohere'
 
         except Exception as img_from_link_error:
             traceback_error = traceback.format_exc()

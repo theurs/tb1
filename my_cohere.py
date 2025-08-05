@@ -2,11 +2,14 @@
 # pip install -U cohere
 # hosts: 50.7.85.220 api.cohere.com
 
+import base64
+import io
 import random
 import threading
 import traceback
 
 import cohere
+import PIL
 from sqlitedict import SqliteDict
 
 import cfg
@@ -23,6 +26,7 @@ MAX_REQUEST = 20000
 DEFAULT_MODEL = 'command-a-03-2025'
 FALLBACK_MODEL = 'command-r-plus'
 #FALLBACK_MODEL = 'command-r'
+VISION_MODEL = 'command-a-vision-07-2025'
 MAX_MEM_LINES = 20
 MAX_HIST_CHARS = 60000
 
@@ -405,6 +409,109 @@ def list_models():
         print(m.name)
 
 
+def img2txt(
+    image_data: bytes,
+    prompt: str = 'Describe picture',
+    model = VISION_MODEL,
+    temperature: float = 1,
+    max_tokens: int = 4000,
+    timeout: int = 120,
+    chat_id: str = '',
+    system: str = '',
+    ) -> str:
+    """
+    Describes an image using the Cohere vision model, based on documentation.
+
+    Args:
+        image_data: The image data as bytes or a file path as a string.
+        prompt: The prompt to guide the description. Defaults to 'Describe picture'.
+        model: The model to use. Defaults to VISION_MODEL.
+        temperature: The randomness of the output. Defaults to 1.
+        max_tokens: The maximum number of tokens to generate. Defaults to 4000.
+        timeout: The timeout for the request in seconds. Defaults to 120.
+        chat_id: The chat ID to log the message count.
+        system: An optional system prompt.
+
+    Returns:
+        A string containing the description of the image, or an empty string if an error occurs.
+    """
+
+    if not ALL_KEYS:
+        my_log.log_cohere('img2txt: No API keys available.')
+        return ''
+
+    keys = ALL_KEYS[:]
+    random.shuffle(keys)
+    keys = keys[:4]
+
+    try:
+        if isinstance(image_data, str):
+            # Если image_data - это путь к файлу
+            img = PIL.Image.open(image_data)
+        else:
+            # Если image_data - это байты
+            img = PIL.Image.open(io.BytesIO(image_data))
+
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")
+        img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        image_url = f"data:image/png;base64,{img_base64}"
+    except Exception as e:
+        my_log.log_cohere(f'img2txt: Failed to process image data: {e}')
+        return ''
+
+    mem = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": image_url}}
+            ]
+        }
+    ]
+
+    now = utils.get_full_time()
+    systems = (
+        f'Current date and time: {now}\n',
+        'Ask again if something is unclear in the request',
+        'You (assistant) are currently working in a Telegram bot. The Telegram bot automatically extracts text from any type of files sent to you by the user, such as documents, images, audio recordings, etc., so that you can fully work with any files.',
+        "If the user's request cannot be fulfilled using the available tools or direct actions, the assistant(you) must treat the request as a request to generate text (e.g., providing code as text), not a request to perform an action (e.g., executing code or interacting with external systems not directly supported by tools) (intention mismatch).",
+    )
+
+    if system:
+        mem.insert(0, {"role": "system", "content": system})
+    for s in reversed(systems):
+        mem.insert(0, {"role": "system", "content": s})
+
+    for key in keys:
+        try:
+            client = cohere.ClientV2(key, timeout=timeout)
+            response = client.chat(
+                model=model,
+                messages=mem,
+                temperature=temperature / 2,
+                max_tokens=max_tokens,
+            )
+            resp = response.message.content[0].text.strip()
+            if resp:
+                if chat_id:
+                    my_db.add_msg(chat_id, model)
+                return resp
+        except Exception as error:
+            error_str = str(error).lower()
+            if 'invalid api token' in error_str or 'unauthorized' in error_str:
+                remove_key(key)
+                my_log.log_cohere(f'img2txt: Removed invalid key. Error: {error}')
+            elif 'message must be at least 1 token long' in error_str:
+                my_log.log_cohere(f'img2txt: Empty message error: {error}')
+                return ''
+            else:
+                my_log.log_cohere(f'img2txt: API call failed with key {key[:5]}... Error: {error}')
+            continue
+
+    my_log.log_cohere(f'img2txt: Failed to get a response after trying {len(keys)} keys.')
+    return ''
+
 
 if __name__ == '__main__':
     pass
@@ -415,6 +522,8 @@ if __name__ == '__main__':
 
     # print(test_key(input('Enter key: ')))
 
+    print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи 3.jpg', 'перепиши весь текст используя знаки из юникода вместо латеха'))
+
     chat_cli()
 
     # list_models()
@@ -422,3 +531,4 @@ if __name__ == '__main__':
     # with open('C:/Users/user/Downloads/2.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()
     # print(sum_big_text(text, 'сделай подробный пересказ по тексту'))
+

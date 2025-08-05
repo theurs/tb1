@@ -38,7 +38,7 @@ import my_doc_translate
 import my_github
 import my_google
 import my_gemini
-import my_gemini_embedding
+# import my_gemini_embedding
 import my_gemini_general
 import my_gemini3
 import my_gemini_tts

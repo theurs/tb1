@@ -3446,8 +3446,9 @@ def handle_document(message: telebot.types.Message):
                             my_db.set_user_property(chat_id_full, 'saved_file_name', 'group of files')
 
                             text = f'{prev_text}\n\n<FILE>\n<NAME>\n{message.document.file_name if hasattr(message, "document") else "noname.txt"}\n</NAME>\n<TEXT>\n{text}\n</TEXT>\n</FILE>\n\n'
-                            if len(text) > 1000000:
-                                text = text[-1000000:]
+                            max_size = cfg.MAX_SAVE_DOCUMENTS_SIZE if hasattr(cfg, 'MAX_SAVE_DOCUMENTS_SIZE') else 1000000
+                            if len(text) > max_size:
+                                text = text[:max_size]
                             my_db.set_user_property(chat_id_full, 'saved_file', text.strip())
                             bot_reply(message, tr('The file has been added to the group of files, use /ask to query it', lang) + ': ' + message.document.file_name if hasattr(message, 'document') else 'noname.txt')
                         else:
@@ -8040,10 +8041,11 @@ def reply_to_long_message(
 
         preview = telebot.types.LinkPreviewOptions(is_disabled=disable_web_page_preview)
 
+        max_size = cfg.SPLIT_CHUNK_HTML if hasattr(cfg, 'SPLIT_CHUNK_HTML') else 3800
         if parse_mode == 'HTML':
-            chunks = utils.split_html(resp, 4000)
+            chunks = utils.split_html(resp, max_size)
         else:
-            chunks = utils.split_text(resp, 4000)
+            chunks = utils.split_text(resp, max_size)
 
         # в режиме только голоса ответы идут голосом без текста и разделения на части
         if my_db.get_user_property(chat_id_full, 'voice_only_mode') and allow_voice:

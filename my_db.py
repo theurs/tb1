@@ -18,6 +18,7 @@ import zstandard
 from collections import OrderedDict
 from cachetools import LRUCache
 
+import cfg
 import my_log
 from utils import async_run, remove_file
 
@@ -986,7 +987,8 @@ def set_user_property(user_id: str, property: str, value):
 
     # limit file save size
     if property == 'saved_file':
-        value = value[:300000]
+        max_size = cfg.MAX_SAVE_DOCUMENTS_SIZE if hasattr(cfg, 'MAX_SAVE_DOCUMENTS_SIZE') else 300000
+        value = value[:max_size]
         value = obj_to_blob(value)
 
     cache_key = hashlib.md5(f"{user_id}_{property}".encode()).hexdigest()

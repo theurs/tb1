@@ -1132,7 +1132,14 @@ def split_html(text: str, max_length: int = 1500) -> list:
     Учитывает вложенность тегов и корректно переносит их между частями,
     СОХРАНЯЯ АТРИБУТЫ ТЕГОВ.
     """
-    text = re.sub(r'(</\w+>)(\s+)(<\w+[^>]*>)', r'\1<br/><br/>\3', text)
+    # text = re.sub(r'(</\w+>)(\s+)(<\w+[^>]*>)', r'\1<br/><br/>\3', text)
+    # Шаг 1: Превращаем пустые строки (\n\n) в двойной <br/> для создания видимого отступа.
+    # Это правило должно идти первым, так как оно более специфичное.
+    text = re.sub(r'(</\w+>)(\s*\n\s*\n\s*)(<\w+[^>]*>)', r'\1<br/><br/>\3', text)
+    # Шаг 2: Превращаем оставшиеся одиночные переносы (\n) в одиночный <br/>.
+    # Это сохранит переносы строк, например, в вашей таблице.
+    text = re.sub(r'(</\w+>)\s*\n\s*(<\w+[^>]*>)', r'\1<br/>\2', text)
+
 
     tags = {
         "b": "</b>",
@@ -1218,18 +1225,21 @@ def post_process_split_html(chunks: list) -> list:
 
     def fix_html_tags(text: str) -> str:
         """Fixes HTML tag errors in the text using BeautifulSoup."""
+        # BeautifulSoup может выводить <br> как <br/>. 
+        # Чтобы унифицировать, заменим все на <br/> перед обработкой.
         soup = BeautifulSoup(text, 'html.parser')
-        return str(soup)
+        return str(soup).replace('<br>', '<br/>')
 
     processed_chunks = []
     for chunk in chunks:
-        # 2. Каждый чанк проходит через BeautifulSoup. Он может съесть \n,
-        # но теги <br /> он оставит в покое.
         fixed_chunk = fix_html_tags(chunk)
 
-        # 3. ВОССТАНАВЛИВАЕМ исходные переносы строк из наших "протекторов".
-        # Это нужно делать ПОСЛЕ BeautifulSoup.
+        # ВАЖНО: Соблюдаем порядок. Сначала заменяем двойные, потом одиночные.
+        # 1. Восстанавливаем ПУСТЫЕ строки из двойных <br/>
         final_chunk = fixed_chunk.replace('<br/><br/>', '\n\n')
+
+        # 2. Восстанавливаем ОБЫЧНЫЕ переносы из одиночных <br/>
+        final_chunk = final_chunk.replace('<br/>', '\n')
 
         processed_chunks.append(final_chunk)
 
@@ -2740,158 +2750,20 @@ def edit_image_detect(text: str, lang: str, tr: Callable) -> bool:
 if __name__ == '__main__':
     pass
 
-    # print(extract_text_from_bytes(r'C:\Users\user\Downloads\samples for ai\простая небольшая таблица Имя,Возраст,Город,Профессия,Зарплат.xlsx'))
-    # print(extract_text_from_bytes(r'C:\Users\user\Downloads\samples for ai\Алиса в изумрудном городе (большая книга).txt'))
-    # print(extract_text_from_bytes(r'C:\Users\user\Downloads\2.txt'))
+    t = r'''
+Окей, понял тебя. Каждую строку отдельно, вот так:
 
-    t = r'''Вы абсолютно правы. Моя предыдущая логика была неверной. Предельный размер должен быть строгим и включать **всё**: и текст, и заголовки, и всю XML-разметку, включая метаданные.
+`+---+---+---+---+---+---+`
+`| А | Б | В | Г | Д | Е |`
+`+---+---+---+---+---+---+`
+`| 3 | 2 | 2 | 1 | 1 | 3 |`
+`+---+---+---+---+---+---+`
 
-Я переписал алгоритм, чтобы он работал корректно.
-
-**Что изменено:**
-
-Теперь перед добавлением каждого нового фрагмента, код точно вычисляет, **какой полный размер этот фрагмент добавит в итоговую строку**, включая:
-*   Сам текст и заголовок.
-*   Все теги (`<fragment_source_...>`, `<fragment_text_...>` и т.д.).
-*   Символы переноса строк.
-*   Даже учитывает, что номер фрагмента может стать длиннее (например, при переходе с `_9` на `_10`, что добавляет один символ).
-
-Если добавление этого полного блока превысит лимит (`target_size_chars`), фрагмент просто не будет включен в итоговый результат, и сборка остановится. Это гарантирует, что итоговый размер **никогда не превысит** заданный предел.
-
-### Исправленный код
-
-
-
-```python
-import numpy as np
-import pandas as pd
-import re
-import random
-from google import genai
-from google.genai import types
-
-# Предполагается, что эти переменные существуют в вашем коде.
-# import cfg
-# EMBEDDING_MODEL_ID = "gemini-embedding-001"
-
-def find_best_passages(
-    query: str,
-    dataframe: pd.DataFrame,
-    target_size_chars: int = 20000
-) -> str:
-    """
-    Находит наиболее релевантные фрагменты текста, чтобы собрать из них
-    единый контекст, СТРОГО не превышающий заданный размер,
-    и форматирует результат в виде XML-подобной строки.
-
-    Args:
-        query (str): Запрос пользователя.
-        dataframe (pd.DataFrame): DataFrame с данными.
-        target_size_chars (int): Максимальный размер итоговой строки в символах.
-
-    Returns:
-        str: Строка в XML-формате.
-    """
-    if dataframe.empty:
-        return "<fragments><query>Исходных данных нет</query></fragments>"
-
-    # 1. Получаем эмбеддинг для запроса
-    client = genai.Client(api_key=random.choice(cfg.gemini_keys))
-    query_embedding_response = client.models.embed_content(
-        model=EMBEDDING_MODEL_ID,
-        contents=query,
-        config=types.EmbedContentConfig(task_type="retrieval_query")
-    )
-    query_embedding = query_embedding_response.embeddings[0].values
-
-    # 2. Считаем и сортируем все фрагменты по релевантности
-    dot_products = np.dot(np.stack(dataframe['Embeddings'].values), query_embedding)
-    all_passages = []
-    for i, row in dataframe.iterrows():
-        all_passages.append({
-            'title': row['Title'],
-            'text': row['Text'],
-            'relevance': dot_products[i]
-        })
-    all_passages.sort(key=lambda x: x['relevance'], reverse=True)
-
-    # 3. Итеративно набираем фрагменты, строго контролируя общий размер
-    candidate_passages = []
-    current_total_size = 0
-
-    # Экранируем запрос один раз
-    safe_query = query.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-
-    for passage in all_passages:
-        # Сначала — логически сортируем ТЕКУЩИЙ набор кандидатов
-        temp_candidates = candidate_passages + [passage]
-        title_pattern = re.compile(r"^(.*?)(?: - Part (\d+))?$")
-        for p in temp_candidates:
-            if 'original_title' not in p: # Парсим только новые
-                match = title_pattern.match(p['title'])
-                if match:
-                    p['original_title'] = match.group(1).strip()
-                    p['part_number'] = int(match.group(2)) if match.group(2) else 1
-                else:
-                    p['original_title'] = p['title']
-                    p['part_number'] = 1
-        temp_candidates.sort(key=lambda x: (x['original_title'], x['part_number']))
-
-        # Теперь "рендерим" потенциальную итоговую строку и считаем её длину
-        # Это самый точный способ узнать будущий размер
-        
-        # Заголовок и метаданные
-        temp_text_len = sum(len(p['text']) for p in temp_candidates)
-        meta_line = f"<meta>Найдено {len(temp_candidates)} фрагментов, общая длина {temp_text_len} символов.</meta>"
-        
-        # Собираем все части в список
-        output_parts = ["<fragments>"]
-        output_parts.append(f"<query>{safe_query}</query>")
-        output_parts.append(meta_line)
-        
-        for i, p in enumerate(temp_candidates, 1):
-            safe_title = p['title'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            safe_text = p['text'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            output_parts.append(f"<fragment_source_{i}>{safe_title}</fragment_source_{i}>")
-            output_parts.append(f"<fragment_text_{i}>\n{safe_text}\n</fragment_text_{i}>")
-        
-        output_parts.append("</fragments>")
-        
-        # Считаем длину, как если бы мы соединили все части через \n
-        provisional_size = len("\n".join(output_parts))
-
-        # Главная проверка: если вылезли за лимит, не добавляем последний фрагмент и выходим
-        if provisional_size > target_size_chars:
-            break
-        
-        # Если всё хорошо, фиксируем добавление фрагмента
-        candidate_passages.append(passage)
-        current_total_size = provisional_size
-
-    # 4. Финальная сборка результата из утвержденных кандидатов
-    # (повторяем рендеринг, но уже с финальным списком)
-    candidate_passages.sort(key=lambda x: (x['original_title'], x['part_number']))
-    final_text_len = sum(len(p['text']) for p in candidate_passages)
-    
-    output_parts = ["<fragments>"]
-    output_parts.append(f"<query>{safe_query}</query>")
-    output_parts.append(f"<meta>Найдено {len(candidate_passages)} фрагментов, общая длина {final_text_len} символов. Итоговый размер: {current_total_size} из {target_size_chars}.</meta>")
-
-    for i, p in enumerate(candidate_passages, 1):
-        safe_title = p['title'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        safe_text = p['text'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        output_parts.append(f"<fragment_source_{i}>{safe_title}</fragment_source_{i}>")
-        output_parts.append(f"<fragment_text_{i}>\n{safe_text}\n</fragment_text_{i}>")
-        
-    output_parts.append("</fragments>")
-    
-    return "\n".join(output_parts)
-```'''
+'''
 
     r = bot_markdown_to_html(t)
     print(r)
     chunks = split_html(r, 3800)
     print('==================')
     print(chunks[0])
-    print('==================')
-    print(chunks[1])
+

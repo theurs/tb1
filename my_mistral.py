@@ -451,7 +451,7 @@ def ocr_image(
     Returns:
         A string containing the description of the image, or an empty string if an error occurs.
     '''
-
+    api_key = ''
     try:
         if not len(ALL_KEYS):
             return ''
@@ -482,7 +482,10 @@ def ocr_image(
         return _clear_ocred_text(resp)
 
     except Exception as error:
-        my_log.log_mistral(f'ocr_image: {error}')
+        if 'Unauthorized' in str(error):
+            remove_key(api_key)
+            return ocr_image(image_data, timeout)
+        my_log.log_mistral(f'ocr_image:ocr: {error}')
         return ''
 
 
@@ -504,6 +507,7 @@ def ocr_pdf(
     tmp_fname = ''
     client = None
     uploaded_pdf = None
+    api_key = ''
     try:
         if not len(ALL_KEYS):
             return ''
@@ -555,7 +559,12 @@ def ocr_pdf(
             utils.remove_file(tmp_fname)
         if client and uploaded_pdf:
             client.files.delete(file_id=uploaded_pdf.id, timeout_ms = timeout * 1000)
-        my_log.log_mistral(f'ocr_image: {error}')
+
+        if 'Unauthorized' in str(error):
+            remove_key(api_key)
+            return ocr_pdf(image_data, timeout)
+
+        my_log.log_mistral(f'ocr_image:ocr_pdf: {error}')
         return ''
 
 
@@ -1130,15 +1139,15 @@ if __name__ == '__main__':
 
 
     # trgt=r'C:\Users\user\AppData\Local\Temp\tmpjekvkdii\1_part_01.ogg'
-    trgt=r'C:\Users\user\Downloads\samples for ai\аудио\кусок радио-т подкаста несколько голосов.mp3'
-    r=transcribe_audio(
-        trgt,
-        language='ru',
-        get_timestamps=True,
-        timeout=300
-    )
-    with open('C:/Users/user/Downloads/1.txt', 'w', encoding='utf-8') as f:
-        f.write(r)
+    # trgt=r'C:\Users\user\Downloads\samples for ai\аудио\кусок радио-т подкаста несколько голосов.mp3'
+    # r=transcribe_audio(
+    #     trgt,
+    #     language='ru',
+    #     get_timestamps=True,
+    #     timeout=300
+    # )
+    # with open('C:/Users/user/Downloads/1.txt', 'w', encoding='utf-8') as f:
+    #     f.write(r)
 
 
     chat_cli(model = MEDIUM_MODEL)

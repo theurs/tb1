@@ -2472,17 +2472,17 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         elif call.data == 'select_magistral':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'magistral')
         elif call.data == 'select_gpt-4o':
-            if chat_id_full in my_github.USER_KEYS:
+            if my_subscription.github_models(chat_id_full):
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o')
             else:
                 bot_reply_tr(message, 'Insert your github key first. /keys')
         elif call.data == 'select_gpt_41':
-            if chat_id_full in my_github.USER_KEYS:
+            if my_subscription.github_models(chat_id_full):
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_41')
             else:
                 bot_reply_tr(message, 'Insert your github key first. /keys')
         elif call.data == 'select_gpt_41_mini':
-            if chat_id_full in my_github.USER_KEYS:
+            if my_subscription.github_models(chat_id_full):
                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_41_mini')
             else:
                 bot_reply_tr(message, 'Insert your github key first. /keys')

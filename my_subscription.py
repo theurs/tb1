@@ -242,3 +242,43 @@ def check_donate(
         my_log.log2(f'tb:check_donate: {unknown}\n{traceback_error}')
 
     return True
+
+
+def github_models(user_id: str) -> bool:
+    """
+    Проверяет, имеет ли пользователь рабочую подписку или ключ от гитхаба.
+
+    1. У пользователя есть личный API-ключ от GitHub.
+    или
+    2. У пользователя активна оплаченная подписка (через Telegram Stars).
+
+    Пробный период (по лимиту сообщений) не учитывается как "рабочая подписка".
+
+    Принимает ID пользователя как строку и возвращает True, если подписка активна, иначе False.
+    """
+    SECONDS_IN_MONTH = 60 * 60 * 24 * 30
+
+    # 1. Проверка на наличие GitHub API ключа
+    has_github_key = (user_id in my_github.USER_KEYS)
+    if has_github_key:
+        return True
+
+    # 2. Проверка на оплаченную подписку (через Telegram Stars)
+    # Пробный период больше не считается "рабочей подпиской".
+
+    last_donate_time = my_db.get_user_property(user_id, 'last_donate_time') or 0
+    stars = my_db.get_user_property(user_id, 'telegram_stars') or 0
+    DONATE_PRICE = getattr(cfg, 'DONATE_PRICE', 50)
+
+    # Проверяем, активна ли подписка по времени (не истек ли месяц с последнего платежа)
+    if (time.time() - last_donate_time) < SECONDS_IN_MONTH:
+        return True # Подписка активна по времени
+
+    # Если подписка истекла, проверяем, достаточно ли звезд для продления
+    if stars >= DONATE_PRICE:
+        # Если звезд достаточно для продления, считаем, что подписка "рабочая",
+        # так как пользователь имеет возможность её продлить.
+        return True
+    else:
+        # Нет GitHub ключа, подписка истекла и звезд недостаточно.
+        return False

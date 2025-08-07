@@ -501,7 +501,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         if not query or not resp:
             return
 
-        mode = my_db.get_user_property(chat_id_full, 'chat_mode')
+        mode = my_db.get_user_property(chat_id_full, 'chat_mode') or ''
 
         # Updates the memory of the selected bot based on the chat mode.
         if any(mode.startswith(m) for m in ('gemini', 'gemma')):
@@ -517,7 +517,7 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         elif 'cohere' in mode:
             my_cohere.update_mem(query, resp, chat_id_full)
         else:
-            raise Exception(f'Unknown chat mode: {mode}')
+            raise Exception(f'Unknown chat mode: {mode} for chat_id_full: {chat_id_full}')
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:add_to_bots_mem:{unexpected_error}\n\n{traceback_error}')

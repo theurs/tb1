@@ -221,8 +221,9 @@ def check_donate(
                             my_db.set_user_property(chat_id_full, 'telegram_stars', stars - DONATE_PRICE)
                             my_log.log_donate_consumption(f'{chat_id_full} -{DONATE_PRICE} stars')
                             # msg = tr(f'You need {DONATE_PRICE} stars for a month of free access.', lang)
-                            msg = tr('You have enough stars for a month of free access. Thank you for your support!', lang)
-                            bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
+
+                            # msg = tr('You have enough stars for a month of free access. Thank you for your support!', lang)
+                            # bot_reply(message, msg, disable_web_page_preview = True, reply_markup = get_keyboard('donate_stars', message))
                         else:
                             if have_keys:
                                 pass

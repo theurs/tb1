@@ -104,7 +104,7 @@ def rate_limiter(max_calls, max_tokens, time_window=60):
 limiter = rate_limiter(max_calls=100, max_tokens=30000)
 
 
-@cache.memoize(expire=60*60*24*7) # 1 week
+@cache.memoize()
 @limiter
 def embed_fn(title, text):
     """

@@ -151,7 +151,8 @@ def get_text(data: bytes) -> str:
     try:
 
         text = extract_text_from_pdf_bytes(data)
-        if len(text) < 100:
+        text_ = text
+        if len(text) < 300:
             images = extract_images_from_pdf_bytes(data)
             results = {}
             index = 0
@@ -174,7 +175,7 @@ def get_text(data: bytes) -> str:
         traceback_error = traceback.format_exc()
         my_log.log2(f"my_pdf:get_text: Error processing PDF: {error}\n\n{traceback_error}")
 
-    return text
+    return text if len(text) > len(text_) else text_
 
 
 def count_pages_in_pdf(file_path: Union[str, bytes]) -> int:

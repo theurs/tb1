@@ -281,6 +281,7 @@ def init(backup: bool = True, vacuum: bool = False):
             temperature REAL,
             bot_name TEXT,
             openrouter_timeout INTEGER,
+            openrouter_reasoning_effort TEXT,
             action_style TEXT,
             send_message INTEGER,
 

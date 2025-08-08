@@ -3920,6 +3920,42 @@ def set_timeout(message: telebot.types.Message):
         my_log.log2(f'tb:timeout: {unknown}\n{traceback_error}')
 
 
+@bot.message_handler(commands=['reasoningeffort',], func=authorized_owner)
+@async_run
+def reasoningeffort(message: telebot.types.Message):
+    """Юзеры могут менять reasoning effort для openrouter.ai"""
+    try:
+        chat_id_full = get_topic_id(message)
+        COMMAND_MODE[chat_id_full] = ''
+
+        try:
+            effort_value = message.text.split(maxsplit=1)[1].strip().lower()
+
+            valid_options = ['none', 'low', 'medium', 'high', 'minimal']
+
+            if effort_value == 'none':
+                stored_value = None
+            elif effort_value in valid_options:
+                stored_value = effort_value
+            else:
+                stored_value = effort_value # Позволяем свой вариант
+
+            my_db.set_user_property(chat_id_full, 'openrouter_reasoning_effort', stored_value)
+            bot_reply_tr(message, 'Reasoning effort changed.')
+            return
+        except IndexError:
+            pass
+        except Exception as error:
+            error_tr = traceback.format_exc()
+            my_log.log2(f'tb:reasoningeffort:{error}\n\n{error_tr}')
+
+        # Обновленное сообщение об использовании
+        bot_reply(message, 'Usage: /reasoningeffort [none|low|medium|high|minimal|custom_value]', disable_web_page_preview=True)
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:reasoningeffort: {unknown}\n{traceback_error}')
+
+
 @bot.message_handler(commands=['openrouter', 'bothub'], func=authorized_owner)
 @async_run
 def openrouter(message: telebot.types.Message):
@@ -3973,7 +4009,9 @@ def openrouter(message: telebot.types.Message):
                 msg += f'{tr("Model price:", lang)} in {my_db.get_user_property(chat_id_full, "openrouter_in_price") or 0}{currency} / out {my_db.get_user_property(chat_id_full, "openrouter_out_price") or 0}{currency} /model_price'
             model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
             timeout_ = my_db.get_user_property(chat_id_full, 'openrouter_timeout') or my_openrouter.DEFAULT_TIMEOUT
+            reasoning_effort_value = my_db.get_user_property(chat_id_full, 'openrouter_reasoning_effort') or 'none'
             msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]\n[timeout {timeout_}]\n'
+            msg += f'[reasoning effort {reasoning_effort_value if reasoning_effort_value is not None else "none"}]'
             msg += '\n\n' + tr('''/model <model> see available models at https://openrouter.ai/models or https://bothub.chat/models
 /list_models - show all models scanned
 /temp <temperature> - 0.1 ... 2.0
@@ -3981,6 +4019,7 @@ def openrouter(message: telebot.types.Message):
 /maxhistlines <maxhistlines> - how many lines in history
 /maxhistchars <maxhistchars> - how many chars in history
 /set_timeout <timeout> - 2-1000 seconds
+/reasoningeffort [none|low|medium|high|minimal|custom_value]
 
 Usage: /openrouter <api key> or <api base url>
 /openrouter https://openrouter.ai/api/v1 (ok)
@@ -3989,7 +4028,6 @@ https://api.groq.com/openai/v1 (ok)
 https://api.mistral.ai/v1 (ok)
 https://api.x.ai/v1 (ok)
 https://api.openai.com/v1 (ok)
-
 /help2 for more info
 ''', lang)
             bot_reply(message, msg, disable_web_page_preview=True)

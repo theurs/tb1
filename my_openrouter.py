@@ -145,19 +145,33 @@ def ai(prompt: str = '',
 
     URL = my_db.get_user_property(user_id, 'base_api_url') or BASE_URL
 
+    reasoning_effort_value = 'none'
+    if user_id:
+        reasoning_effort_value = my_db.get_user_property(user_id, 'openrouter_reasoning_effort') or 'none'
+
     if not 'openrouter' in URL:
         try:
             client = OpenAI(
                 api_key = key,
                 base_url = URL,
                 )
-            response = client.chat.completions.create(
-                messages = mem_,
-                model = model,
-                max_tokens = max_tokens,
-                temperature = temperature,
-                timeout = timeout,
-                )
+            if reasoning_effort_value != 'none':
+                client.chat.completions.create(
+                    messages = mem_,
+                    model = model,
+                    max_tokens = max_tokens,
+                    temperature = temperature,
+                    reasoning_effort = reasoning_effort_value,
+                    timeout = timeout,
+                    )
+            else:
+                response = client.chat.completions.create(
+                    messages = mem_,
+                    model = model,
+                    max_tokens = max_tokens,
+                    temperature = temperature,
+                    timeout = timeout,
+                    )
         except Exception as error_other:
             if 'filtered' in str(error_other).lower():
                 return 0, FILTERED_SIGN
@@ -166,18 +180,25 @@ def ai(prompt: str = '',
     else:
         if not URL.endswith('/chat/completions'):
             URL += '/chat/completions'
+
+        data = {
+                "model": model, # Optional
+                "messages": mem_,
+                "max_tokens": max_tokens,
+                "temperature": temperature
+            }
+        if reasoning_effort_value != 'none':
+            data['reasoning'] = {
+                "effort": reasoning_effort_value
+            }
+
         response = requests.post(
             url = URL,
             headers={
                 "Authorization": f"Bearer {key}",
 
             },
-            data=json.dumps({
-                "model": model, # Optional
-                "messages": mem_,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-            }),
+            data=json.dumps(data),
             timeout = timeout,
         )
     if not 'openrouter' in URL:
@@ -736,7 +757,7 @@ if __name__ == '__main__':
 
     # print(img2txt(r'C:\Users\user\Downloads\samples for ai\большая фотография.jpg', 'извлеки весь текст с картинки, сохрани форматирование', model = 'qwen/qwen2.5-vl-32b-instruct:free'))
 
-    chat_cli(model='')
+    chat_cli(model='openai/gpt-5-nano')
 
     # txt2img(
     #     'Girl, portrait, European appearance, long black messy straight hair, dark red sunglasses with a faint red glow coming out from behind it, thin lips, cheekbones, frowning, cyberpunk style, realistic style, dark style, cyberpunk, wearing a red satin waistcoat vest and a necktie over a white satin shirt',
@@ -745,13 +766,14 @@ if __name__ == '__main__':
     #     )
 
     # reset('test')
-    # with open('C:/Users/user/Downloads/1.txt', 'r', encoding='utf-8') as f:
+
+    # with open(r'C:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_-_znachaschie_tsifryi_106746.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()
-    # r = ai(f'сделай хороший перевод на английский этого текста:\n\n{text[:60000]}',
+    # r = ai(f'сделай хороший перевод на английский этого текста:\n\n{text[:100000]}',
     #          user_id='test',
-    #          model = 'openai/gpt-4o-mini',
-    #          max_tokens=16000,
-    #          timeout=600)
+    #          model = 'openai/gpt-5-nano',
+    #          max_tokens=40000,
+    #          timeout=6000)
     # r = r[1]
     # with open('C:/Users/user/Downloads/2.txt', 'w', encoding='utf-8') as f:
     #     f.write(r)

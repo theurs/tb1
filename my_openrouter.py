@@ -99,7 +99,8 @@ def ai(prompt: str = '',
        model = '',
        temperature: float = 1,
        max_tokens: int = 8000,
-       timeout: int = DEFAULT_TIMEOUT
+       timeout: int = DEFAULT_TIMEOUT,
+       reasoning_effort_value_: str = 'none'
        ) -> str:
 
     if not prompt and not mem:
@@ -148,6 +149,8 @@ def ai(prompt: str = '',
     reasoning_effort_value = 'none'
     if user_id:
         reasoning_effort_value = my_db.get_user_property(user_id, 'openrouter_reasoning_effort') or 'none'
+    if reasoning_effort_value_ != 'none':
+        reasoning_effort_value = reasoning_effort_value_
 
     if not 'openrouter' in URL:
         try:
@@ -773,7 +776,8 @@ if __name__ == '__main__':
     #          user_id='test',
     #          model = 'openai/gpt-5-nano',
     #          max_tokens=40000,
-    #          timeout=6000)
+    #          timeout=6000,
+    #          reasoning_effort_value_='minimal')
     # r = r[1]
     # with open('C:/Users/user/Downloads/2.txt', 'w', encoding='utf-8') as f:
     #     f.write(r)

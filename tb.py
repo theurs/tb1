@@ -515,6 +515,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_openrouter.update_mem(query, resp, chat_id_full)
         elif 'qwen3' in mode:
             my_openrouter_free.update_mem(query, resp, chat_id_full)
+        elif 'gpt_oss' in mode:
+            my_cerebras.update_mem(query, resp, chat_id_full)
         elif mode in ('mistral', 'magistral'):
             my_mistral.update_mem(query, resp, chat_id_full)
         elif mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
@@ -2045,6 +2047,11 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
                 msg = 'Qwen 3'
             button_qwen3 = telebot.types.InlineKeyboardButton(msg, callback_data='select_qwen3')
 
+            if chat_mode == 'gpt_oss':
+                msg = '✅ GPT OSS 120b'
+            else:
+                msg = 'GPT OSS 120b'
+            button_gpt_oss = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt_oss')
 
             msg = '==='
             button_filler1 = telebot.types.InlineKeyboardButton(msg, callback_data='switch_do_nothing')
@@ -2052,7 +2059,7 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             markup.row(button_gemini_flash25, button_mistral)
             markup.row(button_qwen3, button_cohere)
             markup.row(button_gpt_4o, button_gpt_41)
-            markup.row(button_gemini_pro, button_gemini_lite) # button_gemini_flash20
+            markup.row(button_gemini_pro, button_gpt_oss) # button_gemini_lite) # button_gemini_flash20
             markup.row(button_deepseek_v3, button_openrouter)
 
             if voice_title in ('OpenAI', 'Gemini'):
@@ -2529,6 +2536,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать openrouter. Команда /openrouter')
         elif call.data == 'select_qwen3':
             my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen3')
+
+        elif call.data == 'select_gpt_oss':
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_oss')
 
         elif call.data == 'general_reset':
             reset_(message, say = True, chat_id_full = chat_id_full)
@@ -5075,6 +5085,8 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_openrouter.force(chat_id_full, text)
         elif mode == 'qwen3':
             my_openrouter_free.force(chat_id_full, text)
+        elif mode == 'gpt_oss':
+            my_cerebras.force(chat_id_full, text)
         elif mode in ('mistral', 'magistral'):
             my_mistral.force(chat_id_full, text)
         elif mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
@@ -5128,6 +5140,8 @@ def undo_cmd(message: telebot.types.Message, show_message: bool = True):
             my_openrouter.undo(chat_id_full)
         elif mode == 'qwen3':
             my_openrouter_free.undo(chat_id_full)
+        elif mode == 'gpt_oss':
+            my_cerebras.undo(chat_id_full)
         elif mode in ('mistral', 'magistral'):
             my_mistral.undo(chat_id_full)
         elif mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
@@ -5171,6 +5185,8 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
                 my_openrouter.reset(chat_id_full)
             elif mode == 'qwen3':
                 my_openrouter_free.reset(chat_id_full)
+            elif mode == 'gpt_oss':
+                my_cerebras.reset(chat_id_full)
             elif mode in ('mistral', 'magistral'):
                 my_mistral.reset(chat_id_full)
             elif mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
@@ -5274,6 +5290,8 @@ def save_history(message: telebot.types.Message):
             prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
         if mode == 'qwen3':
             prompt = my_openrouter_free.get_mem_as_string(chat_id_full, md = True) or ''
+        if mode == 'gpt_oss':
+            prompt = my_cerebras.get_mem_as_string(chat_id_full, md = True) or ''
         if mode in ('mistral', 'magistral'):
             prompt = my_mistral.get_mem_as_string(chat_id_full, md = True) or ''
         if mode in ('gpt-4o', 'gpt_41', 'gpt_41_mini', 'deepseek_r1', 'deepseek_v3'):
@@ -5342,6 +5360,9 @@ def send_debug_history(message: telebot.types.Message):
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen3':
             prompt = 'Qwen 3 235b a22b\n\n'
             prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt_oss':
+            prompt = 'GPT OSS 120b\n\n'
+            prompt += my_cerebras.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
             prompt = 'Mistral Large\n\n'
             prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
@@ -5435,6 +5456,8 @@ def load_memory_handler(message: telebot.types.Message):
             target_mem_string = my_openrouter.get_mem_as_string(target_user_id_str)
         elif target_chat_mode == 'qwen3':
             target_mem_string = my_openrouter_free.get_mem_as_string(target_user_id_str)
+        elif target_chat_mode == 'gpt_oss':
+            target_mem_string = my_cerebras.get_mem_as_string(target_user_id_str)
         elif target_chat_mode == 'mistral' or target_chat_mode == 'magistral':
             target_mem_string = my_mistral.get_mem_as_string(target_user_id_str)
         elif target_chat_mode.startswith('gpt-4') or target_chat_mode.startswith('deepseek'):
@@ -7566,6 +7589,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'cohere': my_cohere.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
             'qwen3': my_cerebras.MODEL_QWEN_3_235B_A22B_INSTRUCT,
+            'gpt_oss': my_cerebras.MODEL_GPT_OSS_120B,
             'bothub': 'bothub.chat',
         }
         if user_model == 'openrouter':
@@ -10184,6 +10208,60 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:qwen3 {error3}\n{error_traceback}')
+
+
+                # если активирован режим общения с GPT OSS 120b
+                elif chat_mode_ == 'gpt_oss':
+                    if len(msg) > my_cerebras.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для GPT OSS 120b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_cerebras.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            answer = my_cerebras.chat(
+                                message.text,
+                                chat_id_full,
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                system=hidden_text,
+                                model = my_cerebras.MODEL_GPT_OSS_120B,
+                            )
+
+                            WHO_ANSWERED[chat_id_full] = 'GPT OSS 120b'
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            thoughts, answer = utils_llm.split_thoughts(answer)
+                            thoughts = utils.bot_markdown_to_html(thoughts)
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            answer = answer.strip()
+                            if not answer:
+                                answer = 'GPT OSS 120b ' + tr('did not answered, try to /reset and start again.', lang)
+
+                            my_log.log_echo(message, f'[GPT OSS 120b] {answer}')
+
+                            try:
+                                if command_in_answer(answer, message):
+                                    return
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:gpt_oss {error3}\n{error_traceback}')
 
 
                 # если активирован режим общения с gpt-4o

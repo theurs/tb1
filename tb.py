@@ -6480,11 +6480,8 @@ def image_gen(message: telebot.types.Message):
 <b>{draw_text}</b> {tr('красивый сад с цветами и фонтаном', lang)}
 
 {tr('Use /bing command for Bing only.', lang)}
-
 {tr('Use /gpt command for GPT4o only.', lang)}
-
 {tr('Use /flux command for black-forest-labs/flux-dev only.', lang)}
-
 {tr('Use /gem command for Gemini only.', lang)}
 
 {tr('Write what to draw, what it looks like.', lang)}

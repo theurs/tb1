@@ -6533,9 +6533,17 @@ def image_gen(message: telebot.types.Message):
                                 bot_reply_tr(message, 'Bing не смог ничего нарисовать.')
                             BING_FAILS[chat_id_full] = bf
                         elif GPT_FLAG:
-                            images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG, model='gpt')
-                            if not images:
-                                bot_reply_tr(message, 'Bing не смог ничего нарисовать.')
+                            bf = BING_FAILS[chat_id_full] if chat_id_full in BING_FAILS else [0, 0]
+                            if bf[0] >= 5:
+                                if time.time() - bf[1] > 5 * 60:
+                                    bf = [0, 0]
+                            if bf[0] < 5:
+                                images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG, model='gpt')
+                                if not images:
+                                    bot_reply_tr(message, 'Bing не смог ничего нарисовать.')
+                            else:
+                                images = []
+                                time.sleep(random.randint(20,30))
                         else:
                             images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
 

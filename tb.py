@@ -6581,8 +6581,12 @@ def image_gen(message: telebot.types.Message):
                             d = utils.download_image_as_bytes(i)
                             if len(d) < 2000: # placeholder?
                                 continue
-                            caption_ = f'{bot_addr} bing.com\n\n' + caption_
-                            my_db.add_msg(chat_id_full, 'img ' + 'bing.com')
+                            if GPT_FLAG:
+                                caption_ = f'{bot_addr} bing.com - gpt4o\n\n' + caption_
+                                my_db.add_msg(chat_id_full, 'img ' + 'bing.com gtp4o')
+                            else:
+                                caption_ = f'{bot_addr} bing.com - dalle\n\n' + caption_
+                                my_db.add_msg(chat_id_full, 'img ' + 'bing.com')
                         elif isinstance(i, bytes):
                             if utils.fast_hash(i) in my_genimg.WHO_AUTOR:
                                 nn_ = '\n\n'

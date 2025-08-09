@@ -75,7 +75,12 @@ def gemini_flash(prompt: str, width: int = 1024, height: int = 1024, num: int = 
     return []
 
 
-def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
+def bing(
+    prompt: str,
+    moderation_flag: bool = False,
+    user_id: str = '',
+    model: str = 'dalle'
+):
     """
     Рисует бингом, не больше 1 потока и 20 секунд пауза между запросами
     Ограничение на размер промпта 950, хз почему
@@ -104,7 +109,7 @@ def bing(prompt: str, moderation_flag: bool = False, user_id: str = ''):
         with BING_LOCK:
             images = []
             if os.path.exists('cfg_bing.py'):
-                images = bing_api_client.gen_images(prompt)
+                images = bing_api_client.gen_images(prompt, model=model)
 
                 if images:
                     my_log.log_bing_success('BING SUCCESS ' + prompt + '\n\n' + '\n'.join(images))
@@ -308,7 +313,13 @@ Return a `reprompt`
     return reprompt, negative
 
 
-def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: str ='', iterations: int = 1) -> list:
+def gen_images_bing_only(
+    prompt: str,
+    user_id: str = '',
+    conversation_history: str ='',
+    iterations: int = 1,
+    model: str = 'dalle'
+) -> list:
     if iterations == 0:
         iterations = 1
 
@@ -334,7 +345,7 @@ def gen_images_bing_only(prompt: str, user_id: str = '', conversation_history: s
     if reprompt.strip():
         result = []
         for _ in range(iterations):
-            r = bing(reprompt, user_id=user_id)
+            r = bing(reprompt, user_id=user_id, model=model)
             if r:
                 result += r
             else:

@@ -6282,6 +6282,23 @@ def image_bing_gen(message: telebot.types.Message):
         my_log.log2(f'tb:image_bing_gen: {unknown}\n{traceback_error}')
 
 
+@bot.message_handler(commands=['gpt', 'Gpt', 'GPT'], func=authorized)
+@async_run
+def image_bing_gen_gpt(message: telebot.types.Message):
+    try:
+        chat_id_full = get_topic_id(message)
+        IMG_MODE_FLAG[chat_id_full] = 'gpt'
+        if my_db.get_user_property(chat_id_full, 'blocked_bing'):
+            bot_reply_tr(message, 'Bing вас забанил.')
+            time.sleep(2)
+            return
+        message.text += '[{(GPT)}]'
+        image_gen(message)
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:image_bing_gen: {unknown}\n{traceback_error}')
+
+
 @async_run
 def send_images_to_user(
     chunks: list,
@@ -6405,6 +6422,11 @@ def image_gen(message: telebot.types.Message):
             message.text = message.text[:-10]
             BING_FLAG = 1
 
+        # рисовать только gpt, команда /bing_gpt
+        GPT_FLAG = 0
+        if message.text.endswith('[{(GPT)}]'):
+            message.text = message.text[:-9]
+            GPT_FLAG = 1
 
         # 10х и 20х отключены пока
         # BING_FLAG = 0
@@ -6479,6 +6501,8 @@ def image_gen(message: telebot.types.Message):
                     if chat_id_full in IMG_MODE_FLAG:
                         if IMG_MODE_FLAG[chat_id_full] == 'bing':
                             BING_FLAG = 1
+                        elif IMG_MODE_FLAG[chat_id_full] == 'gpt':
+                            GPT_FLAG = 1
 
                 # get chat history for content
                 conversation_history = my_gemini3.get_mem_as_string(chat_id_full) or ''
@@ -6509,6 +6533,8 @@ def image_gen(message: telebot.types.Message):
                             if not images:
                                 bot_reply_tr(message, 'Bing не смог ничего нарисовать.')
                             BING_FAILS[chat_id_full] = bf
+                        elif GPT_FLAG:
+                            images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG, model='gpt')
                         else:
                             images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
 

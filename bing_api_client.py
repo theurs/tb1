@@ -15,7 +15,7 @@ CURRENT_BING_APIS = []
 CFG_LOCK = threading.Lock()
 
 
-def get_base_url() -> str:
+def get_base_url(model: str = 'dalle') -> str:
     '''
     Returns the base URL for the image generation API.
     Auto reload cfg.py if it has changed
@@ -36,6 +36,8 @@ def get_base_url() -> str:
                 CURRENT_BING_APIS = ALL[:]
             BASE_URL = CURRENT_BING_APIS.pop(0)
 
+        if model == 'gpt':
+            BASE_URL = f'{BASE_URL}_gpt'
         return BASE_URL
 
     except Exception as error:
@@ -44,7 +46,7 @@ def get_base_url() -> str:
         return ''
 
 
-def send_image_generation_request(prompt: str) -> List[str]:
+def send_image_generation_request(prompt: str, model: str = 'dalle') -> List[str]:
     """
     Sends a POST request to the image generation API with the given prompt.
 
@@ -53,7 +55,7 @@ def send_image_generation_request(prompt: str) -> List[str]:
     :raises requests.RequestException: If there's an error with the request.
     :raises json.JSONDecodeError: If the response is not a valid JSON.
     """
-    url: str = get_base_url()
+    url: str = get_base_url(model)
 
     if not url:
         return []
@@ -87,8 +89,8 @@ def send_image_generation_request(prompt: str) -> List[str]:
     return []
 
 
-def gen_images(prompt: str) -> List[str]:
-    return send_image_generation_request(prompt)
+def gen_images(prompt: str, model: str = 'dalle') -> List[str]:
+    return send_image_generation_request(prompt, model)
 
 
 if __name__ == "__main__":

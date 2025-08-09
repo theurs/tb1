@@ -2,6 +2,7 @@
 
 import base64
 import json
+import re
 import requests
 import time
 import threading
@@ -152,7 +153,7 @@ def ai(prompt: str = '',
     if reasoning_effort_value_ != 'none':
         reasoning_effort_value = reasoning_effort_value_
 
-    if not 'openrouter' in URL:
+    if not 'openrouter' in URL and not 'cerebras' in URL:
         try:
             client = OpenAI(
                 api_key = key,
@@ -166,7 +167,7 @@ def ai(prompt: str = '',
                     temperature = temperature,
                     reasoning_effort = reasoning_effort_value,
                     timeout = timeout,
-                    )
+                )
             else:
                 response = client.chat.completions.create(
                     messages = mem_,
@@ -174,7 +175,7 @@ def ai(prompt: str = '',
                     max_tokens = max_tokens,
                     temperature = temperature,
                     timeout = timeout,
-                    )
+                )
         except Exception as error_other:
             if 'filtered' in str(error_other).lower():
                 return 0, FILTERED_SIGN
@@ -183,7 +184,7 @@ def ai(prompt: str = '',
     else:
         if not URL.endswith('/chat/completions'):
             URL += '/chat/completions'
-
+            URL = re.sub(r'(?<!:)//', '/', URL)
         data = {
                 "model": model, # Optional
                 "messages": mem_,
@@ -191,9 +192,12 @@ def ai(prompt: str = '',
                 "temperature": temperature
             }
         if reasoning_effort_value != 'none':
-            data['reasoning'] = {
-                "effort": reasoning_effort_value
-            }
+            if not 'cerebras' in URL:
+                data['reasoning'] = {
+                    "effort": reasoning_effort_value
+                }
+            else:
+                data['reasoning_effort'] = reasoning_effort_value
 
         response = requests.post(
             url = URL,
@@ -204,7 +208,7 @@ def ai(prompt: str = '',
             data=json.dumps(data),
             timeout = timeout,
         )
-    if not 'openrouter' in URL:
+    if not 'openrouter' in URL and not 'cerebras' in URL:
         try:
             text = response.choices[0].message.content
             try:
@@ -578,6 +582,7 @@ def img2txt(
     timeout: int = DEFAULT_TIMEOUT,
     chat_id: str = '',
     system: str = '',
+    reasoning_effort_value_: str = 'none'
     ) -> str:
     """
     Describes an image using the specified model and parameters.
@@ -621,6 +626,12 @@ def img2txt(
 
     URL = my_db.get_user_property(chat_id, 'base_api_url') or BASE_URL
 
+    reasoning_effort_value = 'none'
+    if chat_id:
+        reasoning_effort_value = my_db.get_user_property(chat_id, 'openrouter_reasoning_effort') or 'none'
+    if reasoning_effort_value_ != 'none':
+        reasoning_effort_value = reasoning_effort_value_
+
     img_b64_str = base64.b64encode(image_data).decode('utf-8')
     img_type = 'image/png'
 
@@ -639,25 +650,53 @@ def img2txt(
     if system:
         mem.insert(0, {'role': 'system', 'content': system})
 
-    if not 'openrouter' in URL:
+    if not 'openrouter' in URL and not 'cerebras' in URL:
         try:
             client = OpenAI(
                 api_key = key,
                 base_url = URL,
                 )
-            response = client.chat.completions.create(
-                messages = mem,
-                model = model_,
-                max_tokens = max_tokens,
-                temperature = temperature,
-                timeout = timeout,
-                )
+
+            if reasoning_effort_value != 'none':
+                response = client.chat.completions.create(
+                    messages = mem,
+                    model = model_,
+                    max_tokens = max_tokens,
+                    temperature = temperature,
+                    reasoning_effort = reasoning_effort_value,
+                    timeout = timeout,
+                    )
+            else:
+                response = client.chat.completions.create(
+                    messages = mem,
+                    model = model_,
+                    max_tokens = max_tokens,
+                    temperature = temperature,
+                    timeout = timeout,
+                    )
+
         except Exception as error_other:
             my_log.log_openrouter(f'ai: {error_other}')
             return ''
     else:
         if not URL.endswith('/chat/completions'):
             URL += '/chat/completions'
+        URL = re.sub(r'(?<!:)//', '/', URL)
+
+        data = {
+            "model": model_,
+            "messages": mem,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if reasoning_effort_value != 'none':
+            if not 'cerebras' in URL:
+                data['reasoning'] = {
+                    "effort": reasoning_effort_value
+                }
+            else:
+                data['reasoning_effort'] = reasoning_effort_value
+
         response = requests.post(
             url = URL,
             headers={
@@ -672,7 +711,7 @@ def img2txt(
             }),
             timeout = timeout,
         )
-    if not 'openrouter' in URL:
+    if not 'openrouter' in URL and not 'cerebras' in URL:
         try:
             text = response.choices[0].message.content
             try:

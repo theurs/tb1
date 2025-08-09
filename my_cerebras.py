@@ -3,10 +3,11 @@
 # pip install -U cerebras_cloud_sdk
 
 
+import re
 import time
 import threading
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 
 import langcodes
@@ -680,6 +681,120 @@ def format_models_for_telegram(models: List[str]) -> str:
 #     return '' # return empty string if all attempts fail
 
 
+def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> Tuple[str, str]:
+    """
+    Generates an improved prompt and a negative prompt for image generation
+    using the Cerebras AI with structured JSON output.
+
+    Args:
+        prompt (str): The user's original prompt for the image.
+        conversation_history (str): The preceding dialogue for context.
+        chat_id (str): The user's ID for logging and model configuration.
+
+    Returns:
+        A tuple containing (reprompt, negative_reprompt).
+    """
+    try:
+        clean_prompt = prompt.strip()
+        # Handle the '!' prefix to use the prompt as-is without enhancement
+        dont_enhance = clean_prompt.startswith('!')
+        if dont_enhance:
+            clean_prompt = re.sub(r'^!+', '', clean_prompt).strip()
+
+        # Define the JSON schema for structured output from the AI
+        reprompt_schema: Dict[str, Any] = {
+            "type": "object",
+            "properties": {
+                "reprompt": {
+                    "type": "string",
+                    "description": "The enhanced, detailed, and translated prompt in English."
+                },
+                "negative_reprompt": {
+                    "type": "string",
+                    "description": "A list of concepts to exclude, e.g., 'ugly, blurry, watermark'."
+                },
+                "was_translated": {
+                    "type": "boolean",
+                    "description": "True if the original prompt was translated to English."
+                },
+                "lang_from": {
+                    "type": "string",
+                    "description": "The detected language code of the original prompt (e.g., 'ru', 'en')."
+                },
+                "moderation_sexual": {
+                    "type": "boolean",
+                    "description": "True if the prompt contains sexually explicit content."
+                },
+                "moderation_hate": {
+                    "type": "boolean",
+                    "description": "True if the prompt contains hate speech or violence."
+                }
+            },
+            "required": ["reprompt", "negative_reprompt", "was_translated", "lang_from", "moderation_sexual", "moderation_hate"],
+            "additionalProperties": False
+        }
+
+        # The instruction prompt for the AI model
+        system_instruction = f"""
+You are an expert prompt engineer for a text-to-image AI. Your task is to take a user's idea and transform it into a detailed, descriptive, and effective prompt in English up to 900 characters. You must also generate a corresponding negative prompt.
+
+CRITICAL INSTRUCTIONS:
+1.  **Analyze and Enhance:** Analyze the user's idea, using conversation history for context. If the idea is short, enrich it with details about style (e.g., 'photorealistic, 4k, cinematic lighting'), composition, and mood.
+2.  **Translate to English:** The final `reprompt` MUST be in English.
+3.  **Negative Prompt:** The `negative_reprompt` should include terms to prevent common image flaws (e.g., 'low quality, blurry, ugly, text, watermark, deformed, extra limbs').
+4.  **Moderation:** Accurately flag any sexually explicit or hateful content.
+
+USER'S IDEA: "{clean_prompt}"
+
+CONVERSATION CONTEXT:
+{conversation_history}
+"""
+
+        # Call the AI with JSON schema enforcement
+        json_response = ai(
+            prompt=system_instruction,
+            user_id=chat_id,
+            model=MODEL_QWEN_3_235B_A22B_INSTRUCT,
+            temperature=1.5,
+            response_format='json',
+            json_schema=reprompt_schema,
+        )
+
+        if not json_response:
+            my_log.log_cerebras(f'get_reprompt: AI returned empty response for prompt: {prompt}')
+            return '', ''
+
+        data: Optional[Dict] = utils.string_to_dict(json_response)
+        if not data:
+            my_log.log_cerebras(f'get_reprompt: Failed to parse AI JSON response: {json_response}')
+            return '', ''
+        
+        # Moderation check
+        if data.get('moderation_sexual') or data.get('moderation_hate'):
+            my_log.log_reprompt_moderation(f'get_reprompt: MODERATION triggered for prompt: {prompt} | Data: {data}')
+            return 'MODERATION', '' # Adhering to the example's return style
+
+        reprompt = data.get('reprompt', '')
+        negative_reprompt = data.get('negative_reprompt', '')
+
+        if not reprompt:
+            return '', ''
+
+        # Log for analysis
+        log_final_reprompt = clean_prompt if dont_enhance else reprompt
+        my_log.log_reprompt_moderations(f'get_reprompt:\n\nOriginal: {prompt}\n\nFinal: {log_final_reprompt}\n\nNegative: {negative_reprompt}')
+
+        if dont_enhance:
+            return clean_prompt, negative_reprompt
+        
+        return reprompt, negative_reprompt
+
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_cerebras(f'get_reprompt: Unhandled exception for prompt "{prompt}": {error}\n\n{error_traceback}')
+        return '', ''
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
@@ -688,15 +803,28 @@ if __name__ == '__main__':
 
     # print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи 3.jpg', prompt='вытащи весь текст с картинки как лучший в мире OCR'))
 
-    print(translate('Нужно срочно задеплоить фикс на прод, пока все не упало.', 'ru', 'en', help='IT slang, urgent situation with software deployment.'))
-    print(translate('Hello, my friend. We need to bypass this security system.', 'en', 'ru', help='Context is about hacking, collaborative tone.'))
-    print(translate('Без кота и жизнь не та, особенно когда дебажишь код.', 'ru', 'en', help='Informal, humorous, about programmer life.'))
-    print(translate('Haben Sie eine funktionierende API-Schnittstelle?', 'de', 'ru', help='Formal business/technical question.'))
-    print(translate('The quick brown fox jumps over the lazy dog.', 'en', 'ru', help='This is a pangram, a sentence used for testing typefaces.'))
-    print(translate('Лол, кек, чебурек, я просто в ауте с этого бага.', 'ru', 'en', help='Modern internet slang expressing being overwhelmed or frustrated.'))
-    print(translate('Je ne parle pas russe, mais je peux utiliser cet outil.', 'fr', 'ru', help='A user is talking about using a tool or software.'))
-    print(translate('Взломать пентагон через SQL-инъекцию? Это кринж.', 'ru', 'en', help='Informal cybersecurity context, using the modern slang word "cringe".'))
-    print(translate('Сколько стоит этот эксплойт нулевого дня?', 'ru', 'en', help='Specific cybersecurity term "zero-day exploit".'))
+    # print(translate('Нужно срочно задеплоить фикс на прод, пока все не упало.', 'ru', 'en', help='IT slang, urgent situation with software deployment.'))
+    # print(translate('Hello, my friend. We need to bypass this security system.', 'en', 'ru', help='Context is about hacking, collaborative tone.'))
+    # print(translate('Без кота и жизнь не та, особенно когда дебажишь код.', 'ru', 'en', help='Informal, humorous, about programmer life.'))
+    # print(translate('Haben Sie eine funktionierende API-Schnittstelle?', 'de', 'ru', help='Formal business/technical question.'))
+    # print(translate('The quick brown fox jumps over the lazy dog.', 'en', 'ru', help='This is a pangram, a sentence used for testing typefaces.'))
+    # print(translate('Лол, кек, чебурек, я просто в ауте с этого бага.', 'ru', 'en', help='Modern internet slang expressing being overwhelmed or frustrated.'))
+    # print(translate('Je ne parle pas russe, mais je peux utiliser cet outil.', 'fr', 'ru', help='A user is talking about using a tool or software.'))
+    # print(translate('Взломать пентагон через SQL-инъекцию? Это кринж.', 'ru', 'en', help='Informal cybersecurity context, using the modern slang word "cringe".'))
+    # print(translate('Сколько стоит этот эксплойт нулевого дня?', 'ru', 'en', help='Specific cybersecurity term "zero-day exploit".'))
+
+    # # --- Safe Prompts ---
+    # print(get_reprompt('собака положила передние лапы на плечи девушки, их тень падает на старую полуразрушенную стену'))
+    # print(get_reprompt('a cyberpunk hacker in a neon-lit alley, with code reflecting in his chrome glasses, cinematic lighting'))
+    # print(get_reprompt('фантастический замок на летающем острове, водопады стекают в облака, стиль фэнтези'))
+    # print(get_reprompt('un chaton mignon jouant avec une pelote de laine dans une bibliothèque, lumière du soleil', conversation_history='user: I need something cute and cozy.'))
+    # print(get_reprompt('a hyper-realistic portrait of an old fisherman with a weathered face, looking at the stormy sea, 8k, detailed'))
+    # print(get_reprompt('astronaut discovering an ancient alien artifact on a desolate martian landscape'))
+    # print(get_reprompt('минимализм, японский дзен-сад с сакурой и прудом с карпами кои'))
+    # # --- Prompts designed to fail moderation ---
+    # print(get_reprompt('обнаженная пара занимается любовью в лесу, откровенная сцена'))
+    # print(get_reprompt('человек в форме СС на фоне флага со свастикой'))
+    # print(get_reprompt('кровавая сцена резни, много жертв, жестокость крупным планом'))
 
     # with open(r'C:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_processed_by_sections.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()

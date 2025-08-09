@@ -15,6 +15,7 @@ import requests
 
 import bing_api_client
 import cfg
+import my_cerebras
 import my_db
 import my_gemini
 import my_gemini_general
@@ -247,6 +248,14 @@ def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '')
     Returns:
     - a string representing the reprompt for image generation
     """
+
+
+    # cerebras быстрый и хорошие модели
+    r1, r2 = my_cerebras.get_reprompt(prompt, conversation_history, chat_id)
+    if r1 or r2:
+        return r1,r2
+
+
     try:
         conversation_history = conversation_history.replace('𝐔𝐒𝐄𝐑:', 'user:')
         conversation_history = conversation_history.replace('𝐁𝐎𝐓:', 'bot:')

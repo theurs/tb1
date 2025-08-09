@@ -922,11 +922,11 @@ if __name__ == '__main__':
     # print(rewrite_text_for_tts('The script failed with exit code 1. Check /var/log/app.log for details.', 'test'))
     # print(rewrite_text_for_tts('Доставка: 2-3 нед., цена 500-700 руб. Адрес: ул. Строителей, д. 15, кв. 4.', 'test'))
     # print(rewrite_text_for_tts('Hello world, this is a simple sentence.', 'test'))
-    print(rewrite_text_for_tts('For more info, please visit https://example.com/path?query=123#section', 'test'))
+    # print(rewrite_text_for_tts('For more info, please visit https://example.com/path?query=123#section', 'test'))
     # print(rewrite_text_for_tts('Dr. Smith from the U.K. is arriving on flight BA2490 at 5 p.m.', 'test'))
     # print(rewrite_text_for_tts('The formula for water is H2O. The result is >99%.', 'test'))
     # print(rewrite_text_for_tts('The item costs £20, which is about $25 or 23€.', 'test'))
-    print(rewrite_text_for_tts('My favorite cafe is "Счастье", the bill was 1500 RUB.', 'test'))
+    # print(rewrite_text_for_tts('My favorite cafe is "Счастье", the bill was 1500 RUB.', 'test'))
 
     # with open(r'C:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_processed_by_sections.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()

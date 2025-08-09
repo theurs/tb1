@@ -2,6 +2,7 @@ assemblyai
 beautifulsoup4
 chardet
 cachetools
+cerebras_cloud_sdk
 cohere
 cryptocompare
 

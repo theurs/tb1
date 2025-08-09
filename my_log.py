@@ -197,6 +197,10 @@ def log_keys(text: str) -> None:
     """для логов новых ключей"""
     log2(text, 'keys')
 
+def log_cerebras(text: str) -> None:
+    """для логов cerebras"""
+    log2(text[:2000], 'cerebras')
+
 def log_openrouter(text: str) -> None:
     """для логов openrouter"""
     log2(text[:2000], 'openrouter')

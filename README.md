@@ -431,6 +431,13 @@ COHERE_AI_KEYS = [
 #    'yyy',
 #]
 
+# https://cloud.cerebras.ai/platform/
+# дают по 1млн токенов в день на все модели с бешенной скоростью
+#CEREBRAS_KEYS = [
+#    'xxx',
+#    'yyy',
+#]
+
 # string for /donate command html parsing
 # DONATION_STRING = '<a href = "https://www.donationalerts.com/r/xxx">DonationAlerts</a>'
 

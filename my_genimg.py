@@ -340,7 +340,9 @@ def gen_images_bing_only(
     # если промпт начинается с ! то не переводим
     if prompt.startswith('!'):
         reprompt = re.sub(r'^!+', '', prompt).strip()
-
+    # если модель гпт то тоже не переводим
+    if model == 'gpt':
+        reprompt = prompt.strip()
 
     if reprompt.strip():
         result = []

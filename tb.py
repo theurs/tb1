@@ -6534,6 +6534,8 @@ def image_gen(message: telebot.types.Message):
                             BING_FAILS[chat_id_full] = bf
                         elif GPT_FLAG:
                             images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG, model='gpt')
+                            if not images:
+                                bot_reply_tr(message, 'Bing не смог ничего нарисовать.')
                         else:
                             images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
 

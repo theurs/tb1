@@ -6481,6 +6481,8 @@ def image_gen(message: telebot.types.Message):
 
 {tr('Use /bing command for Bing only.', lang)}
 
+{tr('Use /gpt command for GPT4o only.', lang)}
+
 {tr('Use /flux command for black-forest-labs/flux-dev only.', lang)}
 
 {tr('Use /gem command for Gemini only.', lang)}

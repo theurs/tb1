@@ -6583,7 +6583,7 @@ def image_gen(message: telebot.types.Message):
                                 continue
                             if GPT_FLAG:
                                 caption_ = f'{bot_addr} bing.com - gpt4o\n\n' + caption_
-                                my_db.add_msg(chat_id_full, 'img ' + 'bing.com gtp4o')
+                                my_db.add_msg(chat_id_full, 'img ' + 'bing.com_gtp4o')
                             else:
                                 caption_ = f'{bot_addr} bing.com - dalle\n\n' + caption_
                                 my_db.add_msg(chat_id_full, 'img ' + 'bing.com')

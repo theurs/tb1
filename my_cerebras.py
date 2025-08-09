@@ -3,6 +3,7 @@
 # pip install -U cerebras_cloud_sdk
 
 
+import cachetools.func
 import re
 import time
 import threading
@@ -795,6 +796,96 @@ CONVERSATION CONTEXT:
         return '', ''
 
 
+@cachetools.func.ttl_cache(maxsize=100, ttl=15 * 60)
+def rewrite_text_for_tts(text: str, user_id: str) -> str:
+    """
+    Rewrites text for TTS using structured JSON output from the AI.
+
+    This function normalizes text by expanding numbers, symbols, and abbreviations
+    into full words. It uses a strict JSON schema to ensure the AI's response is
+    predictable and easy to parse. The result is cached for 15 minutes.
+
+    Args:
+        text (str): The text to rewrite.
+        user_id (str): The user ID for tracking and model configuration.
+
+    Returns:
+        str: The rewritten text, or an empty string.
+    """
+    if not text.strip():
+        return ""
+
+    try:
+        # Define the exact JSON schema for the AI's output.
+        tts_schema: Dict[str, Any] = {
+            "type": "object",
+            "properties": {
+                "rewritten_text": {
+                    "type": "string",
+                    "description": "The fully expanded and normalized text suitable for TTS."
+                }
+            },
+            "required": ["rewritten_text"],
+            "additionalProperties": False
+        }
+
+        # A detailed prompt instructing the AI to perform a specific task and use JSON.
+        system_prompt = f"""
+You are an AI assistant specializing in text normalization for Text-to-Speech (TTS). Your task is to rewrite the given text to be easily pronounceable by a computer voice.
+
+CRITICAL RULES:
+1.  **Expand, Don't Add:** Expand all abbreviations, symbols, and numbers into full words (e.g., 'Dr.' -> 'Doctor', '$5' -> 'five dollars', '2-3' -> 'two to three').
+2.  **Preserve Meaning:** Do not alter the core meaning or add information not present in the original text.
+3.  **Same Language:** The output language must match the input language.
+4.  **Remove unreadable text:** Rewrite code, links etc any text that is not easily pronounceable or readable by a computer voice.
+5.  **Transliterate foreign words in text:** Transliterate any foreign words into their closest equivalent of the main language.**
+
+TEXT TO REWRITE:
+{text}
+"""
+        # Call the AI, enforcing the JSON schema.
+        json_response = ai(
+            prompt=system_prompt,
+            user_id=user_id,
+            temperature=0.1,
+            model=MODEL_QWEN_3_235B_A22B_INSTRUCT,
+            response_format='json',
+            json_schema=tts_schema,
+        )
+
+        # Fallback if the primary model fails.
+        if not json_response:
+            json_response = ai(
+                prompt=system_prompt,
+                user_id=user_id,
+                temperature=0.1,
+                model=MODEL_LLAMA_4_MAVERICK_17B_128E_INSTRUCT,
+                response_format='json',
+                json_schema=tts_schema,
+            )
+
+        if not json_response:
+            return ''
+
+        # Safely parse the JSON response.
+        data: Optional[Dict] = utils.string_to_dict(json_response)
+        if not data:
+            my_log.log_cerebras(f'rewrite_text_for_tts: Failed to parse AI JSON response: {json_response}')
+            return text
+
+        rewritten_text = data.get('rewritten_text')
+        if isinstance(rewritten_text, str):
+            return rewritten_text.strip()
+
+        return text
+
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_cerebras(f'rewrite_text_for_tts: Unhandled exception for text "{text[:50]}...": {error}\n\n{error_traceback}')
+        # On any exception, return the original text to prevent failure.
+        return text
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
@@ -825,6 +916,17 @@ if __name__ == '__main__':
     # print(get_reprompt('обнаженная пара занимается любовью в лесу, откровенная сцена'))
     # print(get_reprompt('человек в форме СС на фоне флага со свастикой'))
     # print(get_reprompt('кровавая сцена резни, много жертв, жестокость крупным планом'))
+
+    # print(rewrite_text_for_tts('a hyper-realistic portrait of an old fisherman with a weathered face, looking at the stormy sea, 8k, detailed', 'test'))
+    # print(rewrite_text_for_tts('The event is on 12/10/2025 at 4pm, and tickets cost ~$50-75.', 'test'))
+    # print(rewrite_text_for_tts('The script failed with exit code 1. Check /var/log/app.log for details.', 'test'))
+    # print(rewrite_text_for_tts('Доставка: 2-3 нед., цена 500-700 руб. Адрес: ул. Строителей, д. 15, кв. 4.', 'test'))
+    # print(rewrite_text_for_tts('Hello world, this is a simple sentence.', 'test'))
+    print(rewrite_text_for_tts('For more info, please visit https://example.com/path?query=123#section', 'test'))
+    # print(rewrite_text_for_tts('Dr. Smith from the U.K. is arriving on flight BA2490 at 5 p.m.', 'test'))
+    # print(rewrite_text_for_tts('The formula for water is H2O. The result is >99%.', 'test'))
+    # print(rewrite_text_for_tts('The item costs £20, which is about $25 or 23€.', 'test'))
+    print(rewrite_text_for_tts('My favorite cafe is "Счастье", the bill was 1500 RUB.', 'test'))
 
     # with open(r'C:\Users\user\Downloads\samples for ai\myachev_Significant_Digits_processed_by_sections.txt', 'r', encoding='utf-8') as f:
     #     text = f.read()

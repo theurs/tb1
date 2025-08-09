@@ -1445,7 +1445,7 @@ def rewrite_text_for_tts(text: str, user_id: str) -> str:
         user_id (str): The user ID associated with the request.
 
     Returns:
-        str: The rewritten text suitable for TTS.
+        str: The rewritten text suitable for TTS or empty string.
     '''
 
     try:
@@ -1476,14 +1476,14 @@ TEXT to rewrite:
             )
 
         if not result:
-            return text
+            return ''
 
         return result
 
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log2(f'my_gemini3:rewrite_text_for_tts: {error}\n\n{error_traceback}')
-        return text
+        return ''
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl = 2*60)

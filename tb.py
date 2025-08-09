@@ -2368,7 +2368,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 if not detected_lang:
                     detected_lang = lang or "de"
 
-                rewrited_text = my_gemini3.rewrite_text_for_tts(text, chat_id_full)
+                rewrited_text = my_cerebras.rewrite_text_for_tts(text, chat_id_full)
+                if not rewrited_text:
+                    rewrited_text = my_gemini3.rewrite_text_for_tts(text, chat_id_full)
+                    if not rewrited_text:
+                        rewrited_text = text
                 message.text = f'/tts {detected_lang} {rewrited_text}'
                 tts(message)
         elif call.data.startswith('select_lang-'):
@@ -7561,7 +7565,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'deepseek_v3': my_nebius.DEFAULT_V3_MODEL,
             'cohere': my_cohere.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
-            'qwen3': my_openrouter_free.DEFAULT_MODEL,
+            'qwen3': my_cerebras.MODEL_QWEN_3_235B_A22B_INSTRUCT,
             'bothub': 'bothub.chat',
         }
         if user_model == 'openrouter':
@@ -10117,22 +10121,35 @@ def do_task(message, custom_prompt: str = ''):
 
                 # если активирован режим общения с Qwen 3 235b a22b
                 elif chat_mode_ == 'qwen3':
-                    if len(msg) > my_openrouter_free.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Qwen 3 235b a22b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_openrouter_free.MAX_REQUEST}')
+                    if len(msg) > my_cerebras.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Qwen 3 235b a22b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_cerebras.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
                         try:
-                            answer = my_openrouter_free.chat(
+                            answer = my_cerebras.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=hidden_text,
-                                model = my_openrouter_free.DEFAULT_MODEL,
+                                model = my_cerebras.MODEL_QWEN_3_235B_A22B_INSTRUCT,
                             )
 
                             WHO_ANSWERED[chat_id_full] = 'Qwen 3 235b a22b'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if not answer:
+                                answer = my_cerebras.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_cerebras.MODEL_QWEN_3_CODER_480B,
+                                )
+
+                                WHO_ANSWERED[chat_id_full] = 'Qwen 3 Coder 480b'
+                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)

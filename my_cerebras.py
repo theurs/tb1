@@ -157,6 +157,9 @@ def ai(
     elif reasoning_effort == 'minimal':
         reasoning_effort = 'low'
 
+    if 'qwen' in model.lower() or 'llama' in model.lower():
+        reasoning_effort = None
+
     RETRY_MAX = 3
     for _ in range(RETRY_MAX):
         api_key = get_next_key()

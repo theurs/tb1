@@ -9,7 +9,7 @@ cryptocompare
 deepgram_captions
 deepgram-sdk
 diskcache
-
+docstring_parser
 duckduckgo_search
 edge_tts
 fastapi

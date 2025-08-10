@@ -33,6 +33,8 @@ MODEL_LLAMA_4_SCOUT_17B_16E_INSTRUCT = 'llama-4-scout-17b-16e-instruct'
 DEFAULT_MODEL = MODEL_GPT_OSS_120B # https://inference-docs.cerebras.ai/models/openai-oss
 BACKUP_MODEL = MODEL_QWEN_3_235B_A22B_INSTRUCT
 
+# системная инструкция для чат бота
+SYSTEM_ = my_skills_general.SYSTEM_
 
 # сколько запросов хранить
 MAX_MEM_LINES = 30
@@ -373,8 +375,8 @@ def ai(
     now = time.strftime('%Y-%m-%d %H:%M:%S')
     systems = (
         f'Current date and time: {now}\n',
-        f'Telegram user id you talking with: {user_id}\n',
-        'Ask again if something is unclear in the request\n',
+        f'Use this telegram chat id (user id) for API function calls: {user_id}',
+        *SYSTEM_,
         'You (assistant) are currently working in a Telegram bot. The Telegram bot automatically extracts text from any type of files sent to you by the user, such as documents, images, audio recordings, etc., so that you can fully work with any files.\n',
         "If the user's request cannot be fulfilled using the available tools or direct actions, the assistant(you) must treat the request as a request to generate text (e.g., providing code as text), not a request to perform an action (e.g., executing code or interacting with external systems not directly supported by tools) (intention mismatch).\n",
         "To edit image user can send image with caption starting ! symbol\n",

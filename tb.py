@@ -9741,13 +9741,15 @@ def do_task(message, custom_prompt: str = ''):
 
                     if answer.startswith('```'):
                         answer = answer[3:]
-                    if answer.startswith(('/img ', '/image ', '/image: ', '/bing ', '/flux ', '/gem ', '/tts ', '/google ', '/trans ', '/sum ', '/reset', '/calc ', '/ask ')):
+                    if answer.startswith(('/img ', '/image ', '/image: ', '/bing ', '/gpt', '/flux ', '/gem ', '/tts ', '/google ', '/trans ', '/sum ', '/reset', '/calc ', '/ask ')):
                         cmd = answer.split(maxsplit=1)[0]
                         message.text = answer
                         if cmd == '/img' or cmd == '/image':
                             image_gen(message)
                         elif cmd == '/bing':
                             image_bing_gen(message)
+                        elif cmd == '/gpt':
+                            image_bing_gen_gpt(message)
                         elif cmd == '/flux':
                             image_flux_gen(message)
                         elif cmd == '/gem':

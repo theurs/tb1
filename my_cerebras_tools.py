@@ -1,6 +1,5 @@
-# my_cerebras_tools.py
-
 import inspect
+from functools import lru_cache
 from typing import Any, Callable, Dict, List, Tuple
 
 import docstring_parser
@@ -17,78 +16,7 @@ PY_TO_JSON_TYPE_MAP = {
 }
 
 
-# def get_tools_gpt_oss(
-#     *functions: Callable[..., Any]
-# ) -> Tuple[List[Dict[str, Any]], Dict[str, Callable[..., Any]]]:
-#     """
-#     Builds tool configurations from a list of Python functions.
-
-#     This function uses runtime introspection to generate the necessary
-#     JSON schema for each tool and a map of available tool functions,
-#     compatible with the Cerebras API.
-
-#     Args:
-#         *functions: A sequence of callable Python functions passed as arguments.
-
-#     Returns:
-#         A tuple containing:
-#         - A list of JSON schemas, one for each function.
-#         - A dictionary mapping function names to the actual function objects.
-#     """
-#     tools_schema_list: List[Dict[str, Any]] = []
-#     available_tools_map: Dict[str, Callable[..., Any]] = {}
-
-#     for func in functions:
-#         # Get the function's signature to inspect its parameters.
-#         try:
-#             signature = inspect.signature(func)
-#         except (ValueError, TypeError):
-#             # Skip functions that cannot be inspected (e.g., some built-ins).
-#             continue
-
-#         # Use the function's name for both the map key and the schema name.
-#         func_name = func.__name__
-#         available_tools_map[func_name] = func
-
-#         # Use the function's docstring as its primary description.
-#         # inspect.getdoc cleans up indentation.
-#         description = inspect.getdoc(func) or "No description provided."
-
-#         # Define containers for parameter properties and required parameter names.
-#         param_properties: Dict[str, Dict[str, Any]] = {}
-#         required_params: List[str] = []
-
-#         for param in signature.parameters.values():
-#             # A parameter is required if it does not have a default value.
-#             if param.default is inspect.Parameter.empty:
-#                 required_params.append(param.name)
-
-#             # Map the Python type annotation to a JSON Schema type.
-#             # Default to 'string' if the type is not in our map or not annotated.
-#             param_type = PY_TO_JSON_TYPE_MAP.get(param.annotation, "string")
-            
-#             # Since we don't parse docstrings for params, the schema is simple.
-#             param_properties[param.name] = {"type": param_type}
-
-#         # Assemble the complete JSON schema for the function.
-#         schema = {
-#             "type": "function",
-#             "function": {
-#                 "name": func_name,
-#                 "strict": False,
-#                 "description": description,
-#                 "parameters": {
-#                     "type": "object",
-#                     "properties": param_properties,
-#                     "required": required_params,
-#                 },
-#             },
-#         }
-#         tools_schema_list.append(schema)
-
-#     return tools_schema_list, available_tools_map
-
-
+@lru_cache(maxsize=10)
 def get_tools_gpt_oss(
     *functions: Callable[..., Any]
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Callable[..., Any]]]:
@@ -116,6 +44,7 @@ def get_tools_gpt_oss(
     return schemas, available_tools_map
 
 
+@lru_cache(maxsize=10)
 def get_tools(
     *functions: Callable[..., Any]
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Callable[..., Any]]]:

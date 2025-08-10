@@ -383,7 +383,7 @@ def ai(
         reasoning_effort = None
     elif reasoning_effort == 'minimal':
         reasoning_effort = 'low'
-    if 'qwen' in model.lower() or 'llama' in model.lower():
+    if ('qwen' in model and 'thinking' not in model) or 'llama' in model:
         reasoning_effort = None
 
     RETRY_MAX = 3

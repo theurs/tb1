@@ -7612,7 +7612,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'deepseek_v3': my_nebius.DEFAULT_V3_MODEL,
             'cohere': my_cohere.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
-            'qwen3': my_cerebras.MODEL_QWEN_3_235B_A22B_INSTRUCT,
+            'qwen3': my_cerebras.MODEL_QWEN_3_235B_A22B_THINKING,
             'gpt_oss': my_cerebras.MODEL_GPT_OSS_120B,
             'llama4': my_cerebras.MODEL_LLAMA_4_MAVERICK_17B_128E_INSTRUCT,
             'bothub': 'bothub.chat',
@@ -10181,7 +10181,7 @@ def do_task(message, custom_prompt: str = ''):
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=hidden_text,
-                                model = my_cerebras.MODEL_QWEN_3_235B_A22B_INSTRUCT,
+                                model = my_cerebras.MODEL_QWEN_3_235B_A22B_THINKING,
                                 tools = my_cerebras.TOOLS_SCHEMA,
                                 available_tools = my_cerebras.AVAILABLE_TOOLS
                             )
@@ -10195,7 +10195,7 @@ def do_task(message, custom_prompt: str = ''):
                                     chat_id_full,
                                     temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                     system=hidden_text,
-                                    model = my_cerebras.MODEL_QWEN_3_CODER_480B,
+                                    model = my_cerebras.MODEL_QWEN_3_235B_A22B_INSTRUCT,
                                     tools = my_cerebras.TOOLS_SCHEMA,
                                     available_tools = my_cerebras.AVAILABLE_TOOLS
                                 )

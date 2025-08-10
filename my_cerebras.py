@@ -25,6 +25,7 @@ import utils
 MODEL_GPT_OSS_120B = 'gpt-oss-120b'
 MODEL_QWEN_3_CODER_480B = 'qwen-3-coder-480b'
 MODEL_QWEN_3_235B_A22B_INSTRUCT = 'qwen-3-235b-a22b-instruct-2507'
+MODEL_QWEN_3_235B_A22B_THINKING = 'qwen-3-235b-a22b-thinking-2507'
 MODEL_LLAMA_4_MAVERICK_17B_128E_INSTRUCT = 'llama-4-maverick-17b-128e-instruct'
 MODEL_LLAMA_4_SCOUT_17B_16E_INSTRUCT = 'llama-4-scout-17b-16e-instruct'
 DEFAULT_MODEL = MODEL_GPT_OSS_120B # https://inference-docs.cerebras.ai/models/openai-oss

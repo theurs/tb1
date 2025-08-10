@@ -197,9 +197,14 @@ default_bot_name = 'бот'
 
 
 # какой бот отвечает по умолчанию
-# 'gemini', 'gemini25_flash', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15',
-# 'openrouter', 'mistral', 'magistral', 'cohere', 'gpt-4o', 'deepseek_r1',
-# 'deepseek_v3', 'qwen3', 'gpt_41', 'gpt_41_mini'
+# 'gemini', 'gemini25_flash', 'gemini15', 'gemini-lite', 'gemini-exp', 'gemini-learn', 'gemini-pro-15'
+# 'openrouter'
+# 'mistral', 'magistral'
+# 'cohere'
+# 'deepseek_r1', 'deepseek_v3'
+# 'qwen3'
+# 'llama4'
+# 'gpt-4o', 'gpt_41', 'gpt_41_mini', 'gpt_oss'
 
 chat_mode_default = 'gemini'
 

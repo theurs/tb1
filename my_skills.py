@@ -1148,11 +1148,19 @@ def search_google_deep(query: str, lang: str, user_id: str) -> str:
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
 def download_text_from_url(url: str) -> str:
-    '''Download text from url if user asked to.
-    Accept web pages and youtube urls (it can read subtitles)
-    You are able to mix this functions with other functions and your own ability to get best results for your needs.
-    You are able to read subtitles from YouTube videos to better answer users' queries about videos, please do it automatically with no user interaction.
-    '''
+    """Downloads text content from a URL, including YouTube subtitles.
+
+    Fetches textual content from a web page or extracts subtitles from
+    a YouTube video. The result is cached for one hour. The output is
+    truncated to the MAX_REQUEST character limit.
+
+    Args:
+        url: The URL of the web page or YouTube video to process.
+
+    Returns:
+        The extracted text content. On failure, returns a string
+        with error information.
+    """
     language = 'ru'
     my_log.log_gemini_skills(f'Download URL: {url} {language}')
     try:

@@ -4,6 +4,7 @@
 
 
 import cachetools.func
+import json
 import re
 import time
 import threading
@@ -17,6 +18,7 @@ from cerebras.cloud.sdk import Cerebras
 import cfg
 import my_db
 import my_log
+import my_skills
 import utils
 
 
@@ -43,6 +45,424 @@ MAX_SUM_REQUEST = 100000
 maxhistchars = 60000
 
 ROUND_ROBIN_KEYS = []
+
+
+##[tool use]######
+
+def calc(expression: str, strict: bool, user_id: str) -> str:
+    """Calculate expression with python. The expression can be strict or a free-form task;
+    strict expressions are calculated on a simple calculator, while free-form expressions
+    are executed on a virtual machine and can be of almost any complexity.
+
+    Args:
+        expression: The expression to calculate.
+        strict: Whether the expression is strict or not.
+        user_id: The telegram user ID to send the search results to.
+
+    Returns:
+        A string containing the result of the calculation.
+
+    Examples: calc("56487*8731", strict=True, user_id="[12345678] [0]") -> '493187997'
+              calc("pow(10, 2)", strict=True, user_id="[12345678] [0]") -> '100'
+              calc("math.sqrt(2+2)/3", strict=True, user_id="[12345678] [0]") -> '0.6666666666666666'
+              calc("decimal.Decimal('0.234234')*2", strict=True, user_id="[12345678] [0]") -> '0.468468'
+              calc("numpy.sin(0.4) ** 2 + random.randint(12, 21)", strict=True, user_id="[12345678] [0]")
+              calc('Generate lists of numbers for plotting the graph of the sin(x) function in the range from -5 to 5 with a step of 0.1.', strict=False, user_id="[12345678] [0]")
+              etc
+    Returns:
+        A string containing the result of the calculation."""
+    return my_skills.calc(expression, strict, user_id)
+
+
+def search_google_fast(query: str, lang: str, user_id: str) -> str:
+    """
+    Fast searches Google for the given query and returns the search results.
+    You are able to mix this functions with other functions and your own ability to get best results for your needs.
+    This tool should not be used instead of other functions, such as text translation.
+
+    Args:
+        query: The search query string.
+        lang: The language to use for the search - 'ru', 'en', etc.
+        user_id: The user ID to send the search results to.
+
+    Returns:
+        A string containing the search results.
+        In case of an error, returns a string 'ERROR' with the error description.
+    """
+    return my_skills.search_google_fast(query, lang, user_id)
+
+
+def search_google_deep(query: str, lang: str, user_id: str) -> str:
+    """
+    Deep searches Google for the given query and returns the search results.
+    You are able to mix this functions with other functions and your own ability to get best results for your needs.
+    This tool can also find direct links to images.
+
+    Args:
+        query: The search query string.
+        lang: The language to use for the search - 'ru', 'en', etc.
+        user_id: The chat ID to send the search results to.
+
+    Returns:
+        A string containing the search results.
+        In case of an error, returns a string 'ERROR' with the error description.
+    """
+    return my_skills.search_google_deep(query, lang, user_id)
+
+
+def download_text_from_url(url: str) -> str:
+    """Downloads text content from a URL, including YouTube subtitles.
+
+    Fetches textual content from a web page or extracts subtitles from
+    a YouTube video. The result is cached for one hour. The output is
+    truncated to the MAX_REQUEST character limit.
+
+    Args:
+        url: The URL of the web page or YouTube video to process.
+
+    Returns:
+        The extracted text content. On failure, returns a string
+        with error information.
+    """
+    return my_skills.download_text_from_url(url)
+
+
+# The schemas tell the model HOW to use the tools.
+calculator_schema = {
+    "type": "function",
+    "function": {
+        # The exact name of the function to be called.
+        "name": "calc",
+
+        # This description is critical. The LLM uses it to decide WHEN to use this tool.
+        "description": (
+            "Executes a Python expression. It has two modes: "
+            "1. Simple calculator (`strict=True`) for math formulas. "
+            "2. Powerful virtual machine (`strict=False`) for complex, free-form tasks."
+        ),
+
+        # This defines the function's arguments.
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "expression": {
+                    "type": "string",
+                    # Description for the 'expression' parameter.
+                    "description": "The mathematical formula (e.g., '5 * (2+3)') or a free-form task in natural language (e.g., 'plot a sine wave from -5 to 5')."
+                },
+                "strict": {
+                    "type": "boolean",
+                    # Description for the 'strict' parameter. Crucial for the model to choose correctly.
+                    "description": "Set to `True` for simple math. Set to `False` for complex tasks, code generation, or natural language requests."
+                },
+                "user_id": {
+                    "type": "string",
+                    # Description for the 'user_id' parameter.
+                    "description": "The unique telegram identifier for the user, passed from the system context. Example: '[12345678] [0]'"
+                }
+            },
+            # A list of all mandatory parameters.
+            "required": ["expression", "strict", "user_id"]
+        }
+    }
+}
+
+search_google_fast_schema = {
+    "type": "function",
+    "function": {
+        # The exact name of the Python function.
+        "name": "search_google_fast",
+
+        # A clear, direct instruction for the LLM.
+        # It defines the tool's purpose and its limitations.
+        "description": (
+            "Performs a fast Google search for current events, facts, or real-world data. "
+            "This is for general-purpose searching. Do NOT use it for tasks that have a more "
+            "specific tool, such as text translation."
+        ),
+
+        # Defines the function's arguments.
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    # A concise description of the 'query' parameter.
+                    "description": "The search term or question to look up on Google."
+                },
+                "lang": {
+                    "type": "string",
+                    # Provides examples to guide the model.
+                    "description": "The two-letter language code for the search (e.g., 'en', 'ru', 'de')."
+                },
+                "user_id": {
+                    "type": "string",
+                    # Clarifies the source of this parameter.
+                    "description": "The unique telegram identifier for the user, passed from the system context. Example: '[12345678] [0]'"
+                }
+            },
+            # All parameters are mandatory.
+            "required": ["query", "lang", "user_id"]
+        }
+    }
+}
+
+search_google_deep_schema = {
+    "type": "function",
+    "function": {
+        # The exact name of the Python function.
+        "name": "search_google_deep",
+
+        # A clear, direct instruction for the LLM.
+        # It defines the tool's purpose and its limitations,
+        # distinguishing it from the 'fast' search tool.
+        "description": (
+            "Performs an in-depth Google search when a quick search is not enough. "
+            "Use this for complex queries requiring detailed information or "
+            "when you specifically need to find direct links to images."
+        ),
+
+        # Defines the function's arguments.
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    # A concise description of the 'query' parameter.
+                    "description": "The search term, question, or image description to look up on Google."
+                },
+                "lang": {
+                    "type": "string",
+                    # Provides examples to guide the model.
+                    "description": "The two-letter language code for the search (e.g., 'en', 'ru', 'de')."
+                },
+                "user_id": {
+                    "type": "string",
+                    # Clarifies the source of this parameter.
+                    "description": "The unique telegram identifier for the user, passed from the system context. Example: '[12345678] [0]'"
+                }
+            },
+            # All parameters are mandatory.
+            "required": ["query", "lang", "user_id"]
+        }
+    }
+}
+
+download_text_from_url_schema = {
+    "type": "function",
+    "function": {
+        # The exact name of the Python function.
+        "name": "download_text_from_url",
+
+        # This description tells the LLM what the tool does and when to use it.
+        # It specifically mentions handling web pages and YouTube subtitles.
+        "description": (
+            "Downloads the text content from a URL. "
+            "It can extract text from standard web pages and also "
+            "retrieve subtitles from YouTube videos. Use this to analyze "
+            "or summarize content from a specific link provided by the user."
+        ),
+
+        # Defines the function's arguments.
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    # A clear description of the 'url' parameter.
+                    "description": "The full URL of the web page or YouTube video to extract text from."
+                }
+            },
+            # The 'url' parameter is mandatory.
+            "required": ["url"]
+        }
+    }
+}
+
+TOOLS_SCHEMA = [
+    calculator_schema,
+    search_google_fast_schema,
+    search_google_deep_schema,
+    download_text_from_url_schema
+]
+
+# The map connects the tool name to the actual Python function.
+AVAILABLE_TOOLS = {
+    "calc": calc,
+    "search_google_fast": search_google_fast,
+    "search_google_deep": search_google_deep,
+    "download_text_from_url": download_text_from_url
+}
+##[tool use]######
+
+
+def ai(
+    prompt: str = '',
+    mem: Optional[List[Dict[str, str]]] = None,
+    user_id: str = '',
+    system: str = '',
+    model: str = '',
+    temperature: float = 1.0,
+    max_tokens: int = 16000,
+    timeout: int = DEFAULT_TIMEOUT,
+    response_format: str = 'text',
+    json_schema: Optional[Dict] = None,
+    reasoning_effort_value_: str = 'none',
+    tools: Optional[List[Dict]] = None,
+    available_tools: Optional[Dict] = None
+) -> str:
+    """
+    Sends a request to the Cerebras AI API with refined control over output format.
+
+    Args:
+        prompt (str): The user's current prompt.
+        mem (Optional[List[Dict[str, str]]]): The conversation history.
+        user_id (str): The unique identifier for the user.
+        system (str): An additional system-level instruction for the model.
+        model (str): The specific model to use for the completion.
+        temperature (float): Controls the randomness of the output.
+        max_tokens (int): The maximum number of tokens to generate.
+        timeout (int): The timeout for the API request in seconds.
+        response_format (str): 'text' for standard output, or 'json' to enable
+            one of the JSON output modes.
+        json_schema (Optional[Dict]): If response_format is 'json', this schema
+            will be enforced for structured output. If None, simple
+            unstructured JSON mode is used.
+        reasoning_effort_value_ (str): Overrides the user's default
+            reasoning effort setting.
+        tools (Optional[List[Dict]]): A list of tool schemas for the model to use.
+        available_tools (Optional[Dict]): A mapping of tool names to their callable functions.
+
+    Returns:
+        str: The AI's response as a string, or an empty string on failure.
+    """
+
+    # tools: Optional[List[Dict]] = TOOLS_SCHEMA
+    # available_tools: Optional[Dict] = AVAILABLE_TOOLS
+
+    if not prompt and not mem:
+        return ''
+
+    if not hasattr(cfg, 'CEREBRAS_KEYS') or not cfg.CEREBRAS_KEYS:
+        return ''
+
+    if not model:
+        model = DEFAULT_MODEL
+
+    if any(x in model.lower() for x in ('llama', 'gpt-oss', 'qwen')):
+        temperature /= 2
+
+    mem_ = mem[:] if mem else []
+
+    now = time.strftime('%Y-%m-%d %H:%M:%S')
+    systems = (
+        f'Current date and time: {now}\n',
+        f'Telegram user id you talking with: {user_id}\n',
+        'Ask again if something is unclear in the request\n',
+        'You (assistant) are currently working in a Telegram bot. The Telegram bot automatically extracts text from any type of files sent to you by the user, such as documents, images, audio recordings, etc., so that you can fully work with any files.\n',
+        "If the user's request cannot be fulfilled using the available tools or direct actions, the assistant(you) must treat the request as a request to generate text (e.g., providing code as text), not a request to perform an action (e.g., executing code or interacting with external systems not directly supported by tools) (intention mismatch).\n",
+        "To edit image user can send image with caption starting ! symbol\n",
+    )
+    if system:
+        mem_.insert(0, {"role": "system", "content": system})
+    for s in reversed(systems):
+        mem_.insert(0, {"role": "system", "content": s})
+    if prompt:
+        mem_.append({"role": "user", "content": prompt})
+
+    reasoning_effort = 'none'
+    if user_id:
+        reasoning_effort = my_db.get_user_property(user_id, 'openrouter_reasoning_effort') or 'none'
+    if reasoning_effort_value_ != 'none':
+        reasoning_effort = reasoning_effort_value_
+    if reasoning_effort == 'none':
+        reasoning_effort = None
+    elif reasoning_effort == 'minimal':
+        reasoning_effort = 'low'
+    if 'qwen' in model.lower() or 'llama' in model.lower():
+        reasoning_effort = None
+
+    RETRY_MAX = 3
+    for _ in range(RETRY_MAX):
+        api_key = get_next_key()
+        if not api_key:
+            return ''
+
+        try:
+            client = Cerebras(api_key=api_key)
+
+            # If tools are provided, enter the tool-use loop.
+            if tools and available_tools:
+                max_calls = 5
+                for call_count in range(max_calls):
+                    response = client.chat.completions.create(
+                        model=model,
+                        messages=mem_,
+                        tools=tools,
+                        tool_choice="auto",
+                        temperature=temperature,
+                        timeout=timeout,
+                    )
+                    message = response.choices[0].message
+
+                    # If no tool call, we have the final answer.
+                    if not message.tool_calls:
+                        return message.content or ""
+
+                    # Process the tool call
+                    mem_.append(message.model_dump())
+                    tool_call = message.tool_calls[0]
+                    function_name = tool_call.function.name
+
+                    if function_name in available_tools:
+                        function_to_call = available_tools[function_name]
+                        try:
+                            args = json.loads(tool_call.function.arguments)
+                            tool_output = function_to_call(**args)
+                        except Exception as e:
+                            tool_output = f"Error executing tool: {e}"
+                            my_log.log_cerebras(f'Error executing tool: {e}')
+                    else:
+                        tool_output = f"Error: Tool '{function_name}' not found."
+
+                    mem_.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": tool_output,
+                    })
+
+                # If loop finishes due to max_calls, force a final answer.
+                mem_.append({"role": "user", "content": "Tool call limit reached. Summarize your findings."})
+                final_response = client.chat.completions.create(model=model, messages=mem_)
+                return final_response.choices[0].message.content or ""
+
+            # If no tools, proceed with the original logic.
+            else:
+                sdk_params = {
+                    'messages': mem_, 'model': model, 'max_completion_tokens': max_tokens,
+                    'temperature': temperature, 'timeout': timeout,
+                }
+                if reasoning_effort:
+                    sdk_params['reasoning_effort'] = reasoning_effort
+                if response_format == 'json':
+                    if json_schema:
+                        sdk_params['response_format'] = {
+                            "type": "json_schema",
+                            "json_schema": {"name": "custom_schema", "strict": True, "schema": json_schema}
+                        }
+                    else:
+                        sdk_params['response_format'] = {'type': 'json_object'}
+
+                chat_completion = client.chat.completions.create(**sdk_params)
+                result = chat_completion.choices[0].message.content or ''
+
+                if result:
+                    return result.strip()
+
+        except Exception as error:
+            my_log.log_cerebras(f'ai:1: {error} [user_id: {user_id}]')
+
+    return '' 
 
 
 def clear_mem(mem, user_id: str = '') -> List[Dict[str, str]]:
@@ -79,131 +499,6 @@ def get_next_key():
     return ROUND_ROBIN_KEYS.pop(0)
 
 
-def ai(
-    prompt: str = '',
-    mem: Optional[List[Dict[str, str]]] = None,
-    user_id: str = '',
-    system: str = '',
-    model: str = '',
-    temperature: float = 1.0,
-    max_tokens: int = 16000,
-    timeout: int = DEFAULT_TIMEOUT,
-    response_format: str = 'text',
-    json_schema: Optional[Dict] = None,
-    reasoning_effort_value_: str = 'none'
-) -> str:
-    """
-    Sends a request to the Cerebras AI API with refined control over output format.
-
-    Args:
-        prompt (str): The user's current prompt.
-        mem (Optional[List[Dict[str, str]]]): The conversation history.
-        user_id (str): The unique identifier for the user.
-        system (str): An additional system-level instruction for the model.
-        model (str): The specific model to use for the completion.
-        temperature (float): Controls the randomness of the output.
-        max_tokens (int): The maximum number of tokens to generate.
-        timeout (int): The timeout for the API request in seconds.
-        response_format (str): 'text' for standard output, or 'json' to enable
-            one of the JSON output modes.
-        json_schema (Optional[Dict]): If response_format is 'json', this schema
-            will be enforced for structured output. If None, simple
-            unstructured JSON mode is used.
-        reasoning_effort_value_ (str): Overrides the user's default
-            reasoning effort setting.
-
-    Returns:
-        str: The AI's response as a string, or an empty string on failure.
-    """
-    if not prompt and not mem:
-        return ''
-
-    if not hasattr(cfg, 'CEREBRAS_KEYS') or not cfg.CEREBRAS_KEYS:
-        return ''
-
-    if not model:
-        model = DEFAULT_MODEL
-
-    if any(x in model.lower() for x in ('llama', 'gpt-oss', 'qwen')):
-        temperature /= 2
-
-    mem_ = mem[:] if mem else []
-
-    now = time.strftime('%Y-%m-%d %H:%M:%S')
-    systems = (
-        f'Current date and time: {now}\n',
-        f'Telegram user id you talking with: {user_id}\n',
-        'Ask again if something is unclear in the request\n',
-        'You (assistant) are currently working in a Telegram bot. The Telegram bot automatically extracts text from any type of files sent to you by the user, such as documents, images, audio recordings, etc., so that you can fully work with any files.\n',
-        "If the user's request cannot be fulfilled using the available tools or direct actions, the assistant(you) must treat the request as a request to generate text (e.g., providing code as text), not a request to perform an action (e.g., executing code or interacting with external systems not directly supported by tools) (intention mismatch).\n",
-        "To edit image user can send image with caption starting ! symbol\n",
-    )
-
-    if system:
-        mem_.insert(0, {"role": "system", "content": system})
-    for s in reversed(systems):
-        mem_.insert(0, {"role": "system", "content": s})
-    if prompt:
-        mem_.append({"role": "user", "content": prompt})
-
-    reasoning_effort = 'none'
-    if user_id:
-        reasoning_effort = my_db.get_user_property(user_id, 'openrouter_reasoning_effort') or 'none'
-    if reasoning_effort_value_ != 'none':
-        reasoning_effort = reasoning_effort_value_
-    
-    if reasoning_effort == 'none':
-        reasoning_effort = None
-    elif reasoning_effort == 'minimal':
-        reasoning_effort = 'low'
-
-    if 'qwen' in model.lower() or 'llama' in model.lower():
-        reasoning_effort = None
-
-    RETRY_MAX = 3
-    for _ in range(RETRY_MAX):
-        api_key = get_next_key()
-        if not api_key:
-            return ''
-
-        try:
-            client = Cerebras(api_key=api_key)
-
-            sdk_params = {
-                'messages': mem_,
-                'model': model,
-                'max_completion_tokens': max_tokens,
-                'temperature': temperature,
-                'timeout': timeout,
-            }
-            if reasoning_effort:
-                sdk_params['reasoning_effort'] = reasoning_effort
-
-            if response_format == 'json':
-                if json_schema:
-                    sdk_params['response_format'] = {
-                        "type": "json_schema",
-                        "json_schema": {
-                            "name": "custom_schema",
-                            "strict": True,
-                            "schema": json_schema
-                        }
-                    }
-                else:
-                    sdk_params['response_format'] = {'type': 'json_object'}
-
-            chat_completion = client.chat.completions.create(**sdk_params)
-            result = chat_completion.choices[0].message.content or ''
-
-            if result:
-                return result.strip()
-
-        except Exception as error:
-            my_log.log_cerebras(f'ai:1: {error} [user_id: {user_id}]')
-
-    return ''
-
-
 def update_mem(query: str, resp: str, chat_id: str):
     '''
     Добавляет запись в память
@@ -233,7 +528,9 @@ def chat(
     temperature: float = 1,
     system: str = '',
     model: str = '',
-    timeout: int = DEFAULT_TIMEOUT
+    timeout: int = DEFAULT_TIMEOUT,
+    tools: Optional[List[Dict]] = None,
+    available_tools: Optional[Dict] = None
 ) -> str:
 
     global LOCKS
@@ -247,7 +544,17 @@ def chat(
     with lock:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
 
-        text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
+        text = ai(
+            query,
+            mem,
+            user_id=chat_id,
+            temperature = temperature,
+            system=system,
+            model=model,
+            timeout=timeout,
+            tools=tools,
+            available_tools=available_tools
+        )
 
         if text:
             my_db.add_msg(chat_id, model)
@@ -266,7 +573,7 @@ def chat_cli(model: str = ''):
         if q == 'mem':
             print(get_mem_as_string('test'))
             continue
-        r = chat(q, 'test', model = model)
+        r = chat(q, 'test', model = model, tools=TOOLS_SCHEMA, available_tools=AVAILABLE_TOOLS)
         print(r)
 
 
@@ -772,7 +1079,7 @@ CONVERSATION CONTEXT:
         if not data:
             my_log.log_cerebras(f'get_reprompt: Failed to parse AI JSON response: {json_response}')
             return '', ''
-        
+
         # Moderation check
         if data.get('moderation_sexual') or data.get('moderation_hate'):
             my_log.log_reprompt_moderation(f'get_reprompt: MODERATION triggered for prompt: {prompt} | Data: {data}')
@@ -790,7 +1097,7 @@ CONVERSATION CONTEXT:
 
         if dont_enhance:
             return clean_prompt, negative_reprompt
-        
+
         return reprompt, negative_reprompt
 
     except Exception as error:
@@ -892,6 +1199,8 @@ TEXT TO REWRITE:
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
+    my_skills.init()
+    my_skills.my_groq.load_users_keys()
 
     # print(format_models_for_telegram(list_models()))
 

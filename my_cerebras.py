@@ -309,7 +309,8 @@ def ai(
     json_schema: Optional[Dict] = None,
     reasoning_effort_value_: str = 'none',
     tools: Optional[List[Dict]] = None,
-    available_tools: Optional[Dict] = None
+    available_tools: Optional[Dict] = None,
+    max_tools_use: int = 20
 ) -> str:
     """
     Sends a request to the Cerebras AI API with refined control over output format.
@@ -332,6 +333,7 @@ def ai(
             reasoning effort setting.
         tools (Optional[List[Dict]]): A list of tool schemas for the model to use.
         available_tools (Optional[Dict]): A mapping of tool names to their callable functions.
+        max_tools_use (int): The maximum number of tools to use in a single request.
 
     Returns:
         str: The AI's response as a string, or an empty string on failure.
@@ -393,7 +395,7 @@ def ai(
 
             # If tools are provided, enter the tool-use loop.
             if tools and available_tools:
-                max_calls = 5
+                max_calls = max_tools_use
                 for call_count in range(max_calls):
                     response = client.chat.completions.create(
                         model=model,

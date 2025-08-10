@@ -182,24 +182,22 @@ def send_tarot_cards(chat_id: str, num_cards: int) -> str:
 
 
 def save_natal_chart_to_image(name: str, date: str, time: str, place: str, nation: str, language: str, chat_id: str) -> str:
-    """Generates a natal chart in PNG format based on the provided astrological subject data and sends it to the user.
+    """Generates a natal chart in PNG format based on the provided astrological data.
 
-    This function uses the Kerykeion library to create an astrological natal chart.
+    This function uses the Kerykeion library to create a natal chart.
+    Assistant should guess nation and language and ask for other parameters.
 
     Args:
         name (str): The name of the astrological subject (e.g., "Alexandra Ivanova").
         date (str): The birth date in 'YYYY-MM-DD' format (e.g., "1994-10-17").
         time (str): The birth time in 'HH:MM' format (e.g., "06:42").
-        place (str): The city of birth. It is important that the city name is specified in English,
-                     as the library expects English city names (e.g., "St. Petersburg" instead of "Санкт-Петербург").
+        place (str): The city of birth, specified in English (e.g., "St. Petersburg").
         nation (str): The two-letter country code (e.g., "RU" for Russia, "US" for USA).
         language (str): The two-letter language code (e.g., "ru" for Russian, "en" for English).
         chat_id (str): The Telegram user chat ID where the file should be sent.
 
-        Assistant should guess nation and language itself. And ask for other parameters in human manner (no mention technical details, formats etc).
-
     Returns:
-        str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+        str: 'OK' on success, or a 'FAIL' message.
     """
 
     def get_textual_astrological_report(subject: AstrologicalSubject) -> str:
@@ -501,6 +499,21 @@ def render_html_to_mp4_bytes(
     duration_seconds: float = 60.0,
     cut_external_assets: bool = False,
 ) -> bytes | None:
+    """
+    Render HTML to mp4 bytes.
+
+    Args:
+        html (str): HTML text to render.
+        viewport_width (int): Width of viewport.
+        viewport_height (int): Height of viewport.
+        fps (int, optional): Frames per second. Defaults to 15.
+        quality (int, optional): Quality of output video. Defaults to 65.
+        duration_seconds (float, optional): Duration of output video in seconds. Defaults to 60.0.
+        cut_external_assets (bool, optional): Cut external assets such as images, styles and scripts. Defaults to False.
+
+    Returns:
+        bytes | None: Bytes of rendered mp4 video or None if error occurred.
+    """
     try:
         class _HashStopper:
             def __init__(self, stable_frames: int = 10):
@@ -856,7 +869,7 @@ def save_chart_and_graphs_to_image(user_id: str) -> str:
     Args:
         user_id: str - telegram user id
     Returns:
-        str:
+        str: Help mеssage
     '''
     user_id = my_skills_general.restore_id(user_id)
     my_log.log_gemini_skills_save_docs(f'/save_chart_and_graphs_to_image {user_id}')
@@ -1055,8 +1068,15 @@ def init():
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
 def get_currency_rates(date: str = '') -> str:
-    '''Return json all currencies rates from https://openexchangerates.org
-    date in YYYY-MM-DD format, if absent than latest'''
+    """
+    Return JSON with all currency rates from https://openexchangerates.org.
+
+    Args:
+        date (str): Date in YYYY-MM-DD format, if absent then latest.
+
+    Returns:
+        str: JSON string containing currency rates.
+    """
     try:
         if hasattr(cfg, 'OPENEXCHANGER_KEY') and cfg.OPENEXCHANGER_KEY:
             # https://openexchangerates.org/api/latest.json?app_id=APIKEY

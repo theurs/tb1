@@ -32,6 +32,7 @@ import my_alert
 import my_init
 import my_genimg
 import my_cerebras
+import my_cerebras_tools
 import my_cohere
 import my_db
 import my_ddg
@@ -10176,14 +10177,15 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
+                            TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs)
                             answer = my_cerebras.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=hidden_text,
                                 model = my_cerebras.MODEL_QWEN_3_235B_A22B_THINKING,
-                                tools = my_cerebras.TOOLS_SCHEMA,
-                                available_tools = my_cerebras.AVAILABLE_TOOLS
+                                tools = TOOLS_SCHEMA,
+                                available_tools = AVAILABLE_TOOLS
                             )
 
                             WHO_ANSWERED[chat_id_full] = 'Qwen 3 235b a22b'
@@ -10203,9 +10205,45 @@ def do_task(message, custom_prompt: str = ''):
                                 WHO_ANSWERED[chat_id_full] = 'Qwen 3 Coder 480b'
                                 WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
-
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
+
+                            if utils.edit_image_detect(answer, lang, tr):
+                                if chat_id_full in WHO_ANSWERED:
+                                    del WHO_ANSWERED[chat_id_full]
+                                # отменяем ответ
+                                my_cerebras.undo(chat_id_full)
+
+                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
+                                query = message.text
+                                if not last_image:
+                                    r = ''
+                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
+                                else:
+                                    r = img2img(
+                                        text=last_image,
+                                        lang=lang,
+                                        chat_id_full=chat_id_full,
+                                        query=query,
+                                        # model=gmodel,
+                                        temperature=temp,
+                                        system_message=hidden_text,
+                                    )
+                                if r and isinstance(r, bytes):
+                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+                                    m = send_photo(
+                                        message,
+                                        message.chat.id,
+                                        r,
+                                        disable_notification=True,
+                                        reply_to_message_id=message.message_id,
+                                        reply_markup=get_keyboard('hide', message),
+                                    )
+                                    log_message(m)
+                                else:
+                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+                                    bot_reply_tr(message, 'Failed to edit image.')
+                                return
 
                             if answer.startswith('The bot successfully generated images on the external services'):
                                 undo_cmd(message, show_message=False)
@@ -10223,6 +10261,9 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = 'Qwen 3 235b a22b ' + tr('did not answered, try to /reset and start again.', lang)
 
                             my_log.log_echo(message, f'[Qwen 3 235b a22b] {answer}')
+
+                            # отправляем файлы если они были сгенерированы в скилах
+                            send_all_files_from_storage(message, chat_id_full)
 
                             try:
                                 if command_in_answer(answer, message):
@@ -10247,14 +10288,15 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
+                            TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools_gpt_oss(*my_cerebras.funcs)
                             answer = my_cerebras.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=hidden_text,
                                 model = my_cerebras.MODEL_GPT_OSS_120B,
-                                tools = my_cerebras.TOOLS_SCHEMA,
-                                available_tools = my_cerebras.AVAILABLE_TOOLS
+                                tools = TOOLS_SCHEMA,
+                                available_tools = AVAILABLE_TOOLS
                             )
 
                             WHO_ANSWERED[chat_id_full] = 'GPT OSS 120b'
@@ -10262,6 +10304,43 @@ def do_task(message, custom_prompt: str = ''):
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
+
+                            if utils.edit_image_detect(answer, lang, tr):
+                                if chat_id_full in WHO_ANSWERED:
+                                    del WHO_ANSWERED[chat_id_full]
+                                # отменяем ответ
+                                my_cerebras.undo(chat_id_full)
+
+                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
+                                query = message.text
+                                if not last_image:
+                                    r = ''
+                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
+                                else:
+                                    r = img2img(
+                                        text=last_image,
+                                        lang=lang,
+                                        chat_id_full=chat_id_full,
+                                        query=query,
+                                        # model=gmodel,
+                                        temperature=temp,
+                                        system_message=hidden_text,
+                                    )
+                                if r and isinstance(r, bytes):
+                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+                                    m = send_photo(
+                                        message,
+                                        message.chat.id,
+                                        r,
+                                        disable_notification=True,
+                                        reply_to_message_id=message.message_id,
+                                        reply_markup=get_keyboard('hide', message),
+                                    )
+                                    log_message(m)
+                                else:
+                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+                                    bot_reply_tr(message, 'Failed to edit image.')
+                                return
 
                             if answer.startswith('The bot successfully generated images on the external services'):
                                 undo_cmd(message, show_message=False)
@@ -10279,6 +10358,9 @@ def do_task(message, custom_prompt: str = ''):
                                 answer = 'GPT OSS 120b ' + tr('did not answered, try to /reset and start again.', lang)
 
                             my_log.log_echo(message, f'[GPT OSS 120b] {answer}')
+
+                            # отправляем файлы если они были сгенерированы в скилах
+                            send_all_files_from_storage(message, chat_id_full)
 
                             try:
                                 if command_in_answer(answer, message):
@@ -10302,14 +10384,16 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
+                            # не работают функции?
+                            # TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs, use_strict_mode=False)
                             answer = my_cerebras.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=hidden_text,
                                 model = my_cerebras.MODEL_LLAMA_4_MAVERICK_17B_128E_INSTRUCT,
-                                tools = my_cerebras.TOOLS_SCHEMA,
-                                available_tools = my_cerebras.AVAILABLE_TOOLS
+                                # tools = TOOLS_SCHEMA,
+                                # available_tools = AVAILABLE_TOOLS
                             )
 
                             WHO_ANSWERED[chat_id_full] = 'Llama 4'

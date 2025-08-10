@@ -252,50 +252,127 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
         return f"FAIL: An unexpected error occurred: {error}"
 
 
-def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
-    '''
-    Send excel file to user. Supports multiple sheets, auto-adjusting column widths, and formulas.
+# def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
+#     """Send an Excel file to the user, converted from a dictionary of data.
+
+#     Args:
+#         filename: str - The desired file name for the Excel file (e.g., 'document').
+#         data: dict - A dictionary of sheets, where each sheet is a dictionary of columns,
+#                     and each column is a list of values.
+#         chat_id: str - The Telegram user chat ID where the file should be sent.
+
+#     Returns:
+#         str: 'OK' if the file was successfully prepared for sending, or a detailed 'FAIL' message otherwise.
+#     """
+#     try:
+#         my_log.log_gemini_skills_save_docs(f'save_to_excel {chat_id}\n\n {data}')
+
+#         chat_id = restore_id(chat_id)
+#         if chat_id == '[unknown]':
+#             return "FAIL, unknown chat id"
+
+#         if not filename.lower().endswith('.xlsx'):
+#             filename += '.xlsx'
+#         filename = utils.safe_fname(filename)
+
+#         excel_buffer = io.BytesIO()
+
+#         with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+#             if not data:
+#                 pd.DataFrame({}).to_excel(writer, sheet_name="Sheet1", index=False)
+#             else:
+#                 for sheet_name, sheet_content in data.items():
+#                     # --- Определяем данные и формулы ---
+#                     # Проверяем, используется ли новый формат с ключами 'data' и 'formulas'
+#                     if isinstance(sheet_content, dict) and 'data' in sheet_content:
+#                         sheet_data_dict = sheet_content['data']
+#                         formulas_to_apply = sheet_content.get('formulas', [])
+#                     else:
+#                         # Обратная совместимость: если формат старый, формул нет
+#                         sheet_data_dict = sheet_content
+#                         formulas_to_apply = []
+
+#                     if not isinstance(sheet_data_dict, dict):
+#                         return f"FAIL: Invalid data for sheet '{sheet_name}'. Expected a dictionary for sheet content."
+
+#                     try:
+#                         # 1. Заливаем основные данные через pandas
+#                         df = pd.DataFrame(sheet_data_dict)
+#                         df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+#                         # 2. Настраиваем ширину столбцов
+#                         worksheet = writer.sheets[sheet_name]
+#                         for idx, col in enumerate(df):
+#                             series = df[col]
+#                             max_len = max(
+#                                 series.astype(str).map(len).max(),
+#                                 len(str(series.name))
+#                             ) + 1
+#                             worksheet.set_column(idx, idx, max_len)
+
+#                         # 3. Вставляем формулы, если они есть
+#                         if formulas_to_apply:
+#                             for item in formulas_to_apply:
+#                                 if isinstance(item, dict) and 'cell' in item and 'formula' in item:
+#                                     worksheet.write_formula(item['cell'], item['formula'])
+#                                 else:
+#                                     # Можно логировать ошибку, если формат формулы неверный
+#                                     my_log.log_gemini_skills_save_docs(f'save_to_excel: Invalid formula item for sheet "{sheet_name}": {item}')
+
+#                     except Exception as sheet_write_error:
+#                         my_log.log_gemini_skills_save_docs(f'save_to_excel: Error writing sheet "{sheet_name}": {sheet_write_error}\n\n{traceback.format_exc()}')
+#                         return f"FAIL: Error writing data to sheet '{sheet_name}': {sheet_write_error}"
+
+#         excel_bytes = excel_buffer.getvalue()
+
+#         if excel_bytes:
+#             item = {'type': 'excel file', 'filename': filename, 'data': excel_bytes}
+#             with my_skills_storage.STORAGE_LOCK:
+#                 if chat_id in my_skills_storage.STORAGE:
+#                     if item not in my_skills_storage.STORAGE[chat_id]:
+#                         my_skills_storage.STORAGE[chat_id].append(item)
+#                 else:
+#                     my_skills_storage.STORAGE[chat_id] = [item,]
+#             return "OK"
+#         else:
+#             my_log.log_gemini_skills_save_docs(f'save_to_excel: No Excel data could be generated for chat {chat_id}\n\n{data}')
+#             return "FAIL: No Excel data could be generated."
+
+#     except Exception as error:
+#         traceback_error = traceback.format_exc()
+#         my_log.log_gemini_skills_save_docs(f'save_to_excel: Unexpected error: {error}\n\n{traceback_error}\n\n{data}\n\n{chat_id}')
+#         return f"FAIL: An unexpected error occurred: {error}"
+
+
+def save_to_excel(filename: str, data: str, chat_id: str) -> str:
+    """Sends an Excel file to the user from a JSON string.
 
     Args:
         filename (str): The desired file name for the Excel file (e.g., 'report').
-
-        data (dict): A ordered dictionary where keys are sheet names (str) and values are dictionaries
-                     defining the content of each sheet, KEEP THE ORDER OF SHEETS IN THE DICTIONARY.
-
-                     To specify formulas, each sheet's dictionary should contain two keys:
-                     - 'data': A dictionary that can be converted to a pandas DataFrame.
-                     - 'formulas': A list of dictionaries, where each item specifies a formula.
-                       - 'cell' (str): The cell to place the formula in (e.g., 'C2').
-                       - 'formula' (str): The Excel formula string (e.g., '=A2*B2').
-
-                     Example with formulas:
-                     {
-                         'Sales': {
-                             'data': {
-                                 'Product': ['Laptop', 'Mouse'],
-                                 'Quantity': [10, 50],
-                                 'Price': [1200, 25],
-                                 'Total': [0, 0]  # Placeholder for formula results
-                             },
-                             'formulas': [
-                                 {'cell': 'D2', 'formula': '=B2*C2'},
-                                 {'cell': 'D3', 'formula': '=B3*C3'},
-                                 {'cell': 'B5', 'formula': "='Total Quantity:'"},
-                                 {'cell': 'C5', 'formula': '=SUM(B2:B3)'}
-                             ]
-                         },
-                         'Sheet2': { # Example of a sheet without formulas (old format)
-                            'Product':['Keyboard', 'Monitor'], 'Price':[50, 300]
-                         }
-                     }
-
+        data (str): A JSON formatted string representing the sheets. The root must be an object where keys
+                    are sheet names. Each value is an object for the sheet's content, which can be
+                    simple data (e.g., {"ColA": [1, 2]}) or a complex object with 'data' and 'formulas' keys.
+                    Example for a simple sheet: '{"Sales": {"Product": ["Laptop"], "Price": [1200]}}'
         chat_id (str): The Telegram user chat ID where the file should be sent.
 
     Returns:
-        str: 'OK' if the file was successfully prepared, or a 'FAIL' message otherwise.
-    '''
+        str: 'OK' if the file was successfully prepared, or a 'FAIL' message.
+    """
     try:
-        my_log.log_gemini_skills_save_docs(f'save_to_excel {chat_id}\n\n {data}')
+        # --- NEW PROTOCOL: PARSE THE INPUT STRING ---
+        # The model provides a string, we convert it to a dict internally.
+        # This makes the function's public interface simple and robust.
+        # The `utils.string_to_dict` function will attempt to repair broken JSON from the LLM.
+        data_dict = utils.string_to_dict(data)
+
+        # The custom function returns None on failure. We must handle this case.
+        if not isinstance(data_dict, dict):
+            error_msg = f'save_to_excel: Failed to convert string to a valid dictionary. Input was: {data}'
+            my_log.log_gemini_skills_save_docs(error_msg)
+            return "FAIL: Invalid data format. Input must be a valid JSON string representing a dictionary."
+
+
+        my_log.log_gemini_skills_save_docs(f'save_to_excel {chat_id}\n\n {data_dict}')
 
         chat_id = restore_id(chat_id)
         if chat_id == '[unknown]':
@@ -308,69 +385,53 @@ def save_to_excel(filename: str, data: dict, chat_id: str) -> str:
         excel_buffer = io.BytesIO()
 
         with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-            if not data:
+            # The rest of the function now works with `data_dict`
+            if not data_dict:
                 pd.DataFrame({}).to_excel(writer, sheet_name="Sheet1", index=False)
             else:
-                for sheet_name, sheet_content in data.items():
-                    # --- Определяем данные и формулы ---
-                    # Проверяем, используется ли новый формат с ключами 'data' и 'formulas'
+                for sheet_name, sheet_content in data_dict.items():
                     if isinstance(sheet_content, dict) and 'data' in sheet_content:
                         sheet_data_dict = sheet_content['data']
                         formulas_to_apply = sheet_content.get('formulas', [])
                     else:
-                        # Обратная совместимость: если формат старый, формул нет
                         sheet_data_dict = sheet_content
                         formulas_to_apply = []
 
                     if not isinstance(sheet_data_dict, dict):
-                        return f"FAIL: Invalid data for sheet '{sheet_name}'. Expected a dictionary for sheet content."
+                        return f"FAIL: Invalid data for sheet '{sheet_name}'. Expected a dictionary."
 
-                    try:
-                        # 1. Заливаем основные данные через pandas
-                        df = pd.DataFrame(sheet_data_dict)
-                        df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    df = pd.DataFrame(sheet_data_dict)
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    worksheet = writer.sheets[sheet_name]
 
-                        # 2. Настраиваем ширину столбцов
-                        worksheet = writer.sheets[sheet_name]
-                        for idx, col in enumerate(df):
-                            series = df[col]
-                            max_len = max(
-                                series.astype(str).map(len).max(),
-                                len(str(series.name))
-                            ) + 1
-                            worksheet.set_column(idx, idx, max_len)
+                    for idx, col in enumerate(df):
+                        series = df[col]
+                        max_len = max((series.astype(str).map(len).max(), len(str(series.name)))) + 1
+                        worksheet.set_column(idx, idx, max_len)
 
-                        # 3. Вставляем формулы, если они есть
-                        if formulas_to_apply:
-                            for item in formulas_to_apply:
-                                if isinstance(item, dict) and 'cell' in item and 'formula' in item:
-                                    worksheet.write_formula(item['cell'], item['formula'])
-                                else:
-                                    # Можно логировать ошибку, если формат формулы неверный
-                                    my_log.log_gemini_skills_save_docs(f'save_to_excel: Invalid formula item for sheet "{sheet_name}": {item}')
-
-                    except Exception as sheet_write_error:
-                        my_log.log_gemini_skills_save_docs(f'save_to_excel: Error writing sheet "{sheet_name}": {sheet_write_error}\n\n{traceback.format_exc()}')
-                        return f"FAIL: Error writing data to sheet '{sheet_name}': {sheet_write_error}"
+                    if formulas_to_apply:
+                        for item in formulas_to_apply:
+                            if isinstance(item, dict) and 'cell' in item and 'formula' in item:
+                                worksheet.write_formula(item['cell'], item['formula'])
 
         excel_bytes = excel_buffer.getvalue()
 
         if excel_bytes:
             item = {'type': 'excel file', 'filename': filename, 'data': excel_bytes}
             with my_skills_storage.STORAGE_LOCK:
-                if chat_id in my_skills_storage.STORAGE:
-                    if item not in my_skills_storage.STORAGE[chat_id]:
-                        my_skills_storage.STORAGE[chat_id].append(item)
+                storage = my_skills_storage.STORAGE
+                if chat_id in storage:
+                    if item not in storage[chat_id]:
+                        storage[chat_id].append(item)
                 else:
-                    my_skills_storage.STORAGE[chat_id] = [item,]
+                    storage[chat_id] = [item]
             return "OK"
         else:
-            my_log.log_gemini_skills_save_docs(f'save_to_excel: No Excel data could be generated for chat {chat_id}\n\n{data}')
             return "FAIL: No Excel data could be generated."
 
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills_save_docs(f'save_to_excel: Unexpected error: {error}\n\n{traceback_error}\n\n{data}\n\n{chat_id}')
+        my_log.log_gemini_skills_save_docs(f'save_to_excel: Unexpected error: {error}\n\n{traceback_error}')
         return f"FAIL: An unexpected error occurred: {error}"
 
 
@@ -437,10 +498,12 @@ def save_to_pdf(filename: str, text: str, chat_id: str) -> str:
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
 def get_weather(location: str) -> str:
-    '''Get weather data from OpenMeteo API 7 days forth and back
-    Example: get_weather("Vladivostok")
-    Return json string
-    '''
+    """
+    Retrieve weather data from the OpenMeteo API for the past 7 days and the upcoming 7 days.
+
+    Args:
+        location (str): The name of the city for which to retrieve the weather data (e.g., "Vladivostok").
+    """
     try:
         location = decode_string(location)
         my_log.log_gemini_skills(f'Weather: {location}')
@@ -533,9 +596,10 @@ def tts(user_id: str) -> str:
     Use it only if asked by user to generate audio from text.
     To change voice user can use `/config` command
     Args:
-        text: str - text to say (up to 8000 symbols)
-        lang: str - language code, default is 'ru'
-        rate: str - speed rate, +-100%, default is '+0%'
+        user_id: str - telegram user id
+
+    Returns:
+        str: help message
     '''
     user_id = restore_id(user_id)
     my_log.log_gemini_skills(f'/tts {user_id}')
@@ -671,7 +735,13 @@ def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:
 def help(user_id: str) -> str:
     '''
     Return help info about you (assistant and telegram bot) skills and abilities.
-    Use it if user ask what he can do here or what you can do for him.
+    Use it if user asks what he can do here or what you can do for him.
+
+    Args:
+        user_id: str - telegram user id
+
+    Returns:
+        str: help message about assistant and telegram bot skills and abilities
     '''
     user_id = restore_id(user_id)
 

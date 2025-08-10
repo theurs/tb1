@@ -147,7 +147,7 @@ def img2txt(
     model: str = cfg.gemini25_flash_model,
     json_output: bool = False,
     chat_id: str = '',
-    use_skills: str = False,
+    use_skills: str = True,
     system: str = '',
     timeout: int = my_gemini_general.TIMEOUT,
     ) -> str:

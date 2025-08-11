@@ -312,9 +312,59 @@ def ai(
     key_: str = '',
 ) -> str:
     """
-    Sends a request to the Cerebras AI API and returns the response in the specified format.
-    ... (docstring без изменений) ...
+    Sends a request to the Cerebras AI API with comprehensive control and safety features.
+
+    This function manages conversation history, system prompts, tool usage, and implements
+    robust timeout and retry mechanisms to ensure stability.
+
+    Behavior:
+        - Global Timeout: The function has a total execution time limit to prevent indefinite
+          hangs. This limit is `timeout` for standard requests and `timeout * 2` for requests
+          that involve tools, to allow for multiple API calls and tool execution.
+        - Per-Call Timeout: The `timeout` parameter is also applied to each individual API
+          request sent to Cerebras.
+        - Retry Logic: If an API call fails (except for invalid key errors), the function
+          will retry up to 3 times with a 1-second delay between attempts.
+        - Key Management: It uses a shared pool of API keys, automatically cycling through
+          them and removing invalid keys upon failure.
+
+    Args:
+        prompt (str, optional): The user's current input prompt. Defaults to ''.
+        mem (Optional[List[Dict[str, str]]], optional): The conversation history, a list
+            of dictionaries with "role" and "content" keys. Defaults to None.
+        user_id (str, optional): The unique identifier for the user, used for logging
+            and context. Defaults to ''.
+        system (str, optional): An additional system-level instruction for the model,
+            prepended to the standard system prompts. Defaults to ''.
+        model (str, optional): The specific model to use (e.g., 'gpt-oss-120b').
+            Defaults to the value of DEFAULT_MODEL.
+        temperature (float, optional): Controls the randomness of the output (0.0 to 2.0).
+            Automatically halved for certain models like Llama and Qwen. Defaults to 1.0.
+        max_tokens (int, optional): The maximum number of tokens to generate in the final
+            response. Defaults to 16000.
+        timeout (int, optional): The timeout in seconds for each individual API request.
+            This value is also used as the base for the global timeout. Defaults to 60.
+        response_format (str, optional): The desired format for the model's output. Can be
+            'text' for plain text or 'json' for a JSON object. Defaults to 'text'.
+        json_schema (Optional[Dict], optional): If `response_format` is 'json', this schema
+            is enforced for structured JSON output. If None, any valid JSON is accepted.
+            Defaults to None.
+        reasoning_effort_value_ (str, optional): Overrides the user's default reasoning
+            effort setting ('none', 'minimal', 'advanced', etc.). Defaults to 'none'.
+        tools (Optional[List[Dict]], optional): A list of tool schemas available for the
+            model to use. Defaults to None.
+        available_tools (Optional[Dict], optional): A mapping of tool names to their
+            callable Python functions. Defaults to None.
+        max_tools_use (int, optional): The maximum number of tool calls the model can
+            make in a single turn before being forced to answer. Defaults to 20.
+        key_ (str, optional): A specific API key to use for this request, bypassing the
+            round-robin key pool. Useful for testing or priority tasks. Defaults to ''.
+
+    Returns:
+        str: The AI's response as a string. Returns an empty string if the request fails
+             after all retries or if it times out.
     """
+
     if not prompt and not mem:
         return ''
 
@@ -322,9 +372,7 @@ def ai(
         my_log.log_cerebras('API key not found')
         return ''
 
-    ## [НОВОЕ] Начало отсчета общего времени выполнения функции
     start_time = time.monotonic()
-    ## [НОВОЕ] Устанавливаем эффективный таймаут, удваивая его для режима с инструментами
     effective_timeout = timeout * 2 if tools and available_tools else timeout
 
     if not model:
@@ -362,7 +410,8 @@ def ai(
 
     RETRY_MAX = 1 if key_ else 3
     api_key = ''
-    for _ in range(RETRY_MAX):
+    # [ИЗМЕНЕНИЕ] Добавляем индекс для проверки, нужно ли делать sleep
+    for attempt in range(RETRY_MAX):
         api_key = key_ if key_ else get_next_key()
         if not api_key:
             return ''
@@ -375,7 +424,7 @@ def ai(
                 'model': model,
                 'messages': mem_,
                 'temperature': temperature,
-                'timeout': timeout, # Этот таймаут остается для каждого отдельного вызова
+                'timeout': timeout, 
             }
 
             # Add conditional parameters that apply to both tool and non-tool paths
@@ -399,10 +448,9 @@ def ai(
 
                 max_calls = max_tools_use
                 for call_count in range(max_calls):
-                    ## [НОВОЕ] Проверка общего таймаута перед каждым вызовом API в цикле
                     if time.monotonic() - start_time > effective_timeout:
                         raise TimeoutError(f"Global timeout of {effective_timeout}s exceeded in tool-use loop.")
-
+                    
                     sdk_params['messages'] = mem_
                     response = client.chat.completions.create(**sdk_params)
                     message = response.choices[0].message
@@ -417,8 +465,6 @@ def ai(
                     if function_name in available_tools:
                         function_to_call = available_tools[function_name]
                         try:
-                            # ВАЖНО: само выполнение инструмента не учитывается в таймауте,
-                            # если внутри него нет своего таймаута.
                             args = json.loads(tool_call.function.arguments)
                             tool_output = function_to_call(**args)
                         except Exception as e:
@@ -439,8 +485,7 @@ def ai(
                 final_params.pop('tools', None)
                 final_params.pop('tool_choice', None)
                 final_params['messages'] = mem_
-
-                ## [НОВОЕ] Проверка общего таймаута перед финальным вызовом API
+                
                 if time.monotonic() - start_time > effective_timeout:
                     raise TimeoutError(f"Global timeout of {effective_timeout}s exceeded before final summarization.")
 
@@ -449,7 +494,6 @@ def ai(
 
             # --- 3. Non-tool path, now much simpler ---
             else:
-                ## [НОВОЕ] Проверка общего таймаута перед единственным вызовом API
                 if time.monotonic() - start_time > effective_timeout:
                     raise TimeoutError(f"Global timeout of {effective_timeout}s exceeded.")
 
@@ -462,12 +506,16 @@ def ai(
                     return result.strip()
 
         except Exception as error:
+            # Логируем ошибку
+            my_log.log_cerebras(f'ai: attempt {attempt + 1}/{RETRY_MAX} failed with error: {error} [user_id: {user_id}]')
+            
             if 'Wrong API key' in str(error):
                 if not key_:
-                    my_log.log_cerebras(f'Error: {error} [user_id: {user_id}]')
                     remove_key(api_key)
-            # [ИЗМЕНЕНИЕ] Логируем и TimeoutError тоже
-            my_log.log_cerebras(f'ai:1: {error} [user_id: {user_id}]')
+            
+            # [НОВОЕ] Добавляем паузу перед следующей попыткой, если это не последняя попытка
+            if attempt < RETRY_MAX - 1:
+                time.sleep(1)
 
     return ''
 

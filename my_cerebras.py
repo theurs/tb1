@@ -730,13 +730,20 @@ def load_users_keys():
     """
     Load users' keys into memory and update the list of all keys available.
     """
-    with USER_KEYS_LOCK:
-        global USER_KEYS, ALL_KEYS
-        ALL_KEYS = cfg.CEREBRAS_KEYS if hasattr(cfg, 'CEREBRAS_KEYS') and cfg.CEREBRAS_KEYS else []
-        for user in USER_KEYS:
-            key = USER_KEYS[user]
-            if key not in ALL_KEYS:
-                ALL_KEYS.append(key)
+    # with USER_KEYS_LOCK:
+    #     global USER_KEYS, ALL_KEYS
+    #     ALL_KEYS = cfg.CEREBRAS_KEYS if hasattr(cfg, 'CEREBRAS_KEYS') and cfg.CEREBRAS_KEYS else []
+    #     for user in USER_KEYS:
+    #         key = USER_KEYS[user]
+    #         if key not in ALL_KEYS:
+    #             ALL_KEYS.append(key)
+
+    global USER_KEYS, ALL_KEYS
+    ALL_KEYS = cfg.CEREBRAS_KEYS if hasattr(cfg, 'CEREBRAS_KEYS') and cfg.CEREBRAS_KEYS else []
+    for user in USER_KEYS:
+        key = USER_KEYS[user]
+        if key not in ALL_KEYS:
+            ALL_KEYS.append(key)
 
 
 def remove_key(key: str):
@@ -751,19 +758,33 @@ def remove_key(key: str):
                 my_log.log_keys(f'remove_key: Invalid key {key} not found in ALL_KEYS list')
 
         keys_to_delete = []
-        with USER_KEYS_LOCK:
-            # remove key from USER_KEYS
-            for user in USER_KEYS:
-                if USER_KEYS[user] == key:
-                    keys_to_delete.append(user)
 
-            for user_key in keys_to_delete:
-                del USER_KEYS[user_key]
+        # with USER_KEYS_LOCK:
+        #     # remove key from USER_KEYS
+        #     for user in USER_KEYS:
+        #         if USER_KEYS[user] == key:
+        #             keys_to_delete.append(user)
 
-            if keys_to_delete:
-                my_log.log_keys(f'cerebras: Invalid key {key} removed from users {keys_to_delete}')
-            else:
-                my_log.log_keys(f'cerebras: Invalid key {key} was not associated with any user in USER_KEYS')
+        #     for user_key in keys_to_delete:
+        #         del USER_KEYS[user_key]
+
+        #     if keys_to_delete:
+        #         my_log.log_keys(f'cerebras: Invalid key {key} removed from users {keys_to_delete}')
+        #     else:
+        #         my_log.log_keys(f'cerebras: Invalid key {key} was not associated with any user in USER_KEYS')
+
+        # remove key from USER_KEYS
+        for user in USER_KEYS:
+            if USER_KEYS[user] == key:
+                keys_to_delete.append(user)
+
+        for user_key in keys_to_delete:
+            del USER_KEYS[user_key]
+
+        if keys_to_delete:
+            my_log.log_keys(f'cerebras: Invalid key {key} removed from users {keys_to_delete}')
+        else:
+            my_log.log_keys(f'cerebras: Invalid key {key} was not associated with any user in USER_KEYS')
 
     except Exception as error:
         error_traceback = traceback.format_exc()

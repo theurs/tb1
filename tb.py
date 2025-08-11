@@ -5134,9 +5134,25 @@ def set_chat_mode(message: telebot.types.Message):
         lang = get_lang(chat_id_full, message)
 
         _user = f'[{message.text.split(maxsplit=3)[1].strip()}] [0]'
+        _prev_mode = my_db.get_user_property(_user, 'chat_mode') or cfg.chat_mode_default
         _mode = message.text.split(maxsplit=3)[2].strip()
 
         my_db.set_user_property(_user, 'chat_mode', _mode)
+
+
+        # перегружаем память из джемини в опенаи или обратно
+        new_mem = []
+        if 'gemini' in _prev_mode and 'gemini' not in _mode:
+            # gemini to openai
+            new_mem = my_gemini3.gemini_to_openai_mem(_user)
+            if new_mem:
+                my_db.set_user_property(_user, 'dialog_openrouter', my_db.obj_to_blob(new_mem))
+        elif 'gemini' in _mode and 'gemini' not in _prev_mode:
+            # openai to gemini
+            new_mem = my_gemini3.openai_to_gemini_mem(_user)
+            if new_mem:
+                my_db.set_user_property(_user, 'dialog_gemini3', my_db.obj_to_blob(new_mem))
+
 
         msg = f'{tr("Changed: ", lang)} {_user} -> {_mode}.'
 

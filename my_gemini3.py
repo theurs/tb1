@@ -1540,9 +1540,136 @@ def remove_pics_from_all_mems():
         my_log.log_gemini(f'my_gemini3:remove_pics_from_all_mems: Failed to remove pics from all mems: {error}\n\n{error_traceback}')
 
 
+def gemini_to_openai_mem(
+    mem_input: Union[List[Union[Content, UserContent]], str]
+) -> List[Dict[str, str]]:
+    """
+    Converts Gemini-style memory to OpenAI-style memory.
+
+    Accepts either a list of Gemini Content objects or a string (chat_id)
+    to fetch the memory from the database ('dialog_gemini3').
+
+    This function strips all non-text parts, ensures role compatibility,
+    and returns a balanced list of user/assistant turns.
+
+    Args:
+        mem_input: A list of Gemini objects or a chat_id string.
+
+    Returns:
+        A list of dictionaries formatted for OpenAI.
+    """
+    mem: List[Union[Content, UserContent]]
+    if isinstance(mem_input, str):
+        # Input is a chat_id, fetch memory from the database
+        mem = my_db.blob_to_obj(
+            my_db.get_user_property(mem_input, 'dialog_gemini3')
+        ) or []
+    elif isinstance(mem_input, list):
+        # Input is already a memory list
+        mem = mem_input
+    else:
+        # Invalid input type
+        return []
+
+    openai_mem: List[Dict[str, str]] = []
+    if not mem:
+        return openai_mem
+
+    for entry in mem:
+        # Determine the role for the OpenAI format
+        role: str
+        if entry.role == 'user':
+            role = 'user'
+        elif entry.role == 'model':
+            role = 'assistant'
+        else:
+            # Skip any other roles (e.g., 'tool')
+            continue
+
+        # Extract and combine all text parts from the entry
+        if not hasattr(entry, 'parts') or not entry.parts:
+            continue
+
+        text_parts = [
+            part.text for part in entry.parts if hasattr(part, 'text') and part.text
+        ]
+        if not text_parts:
+            continue
+
+        content = "\n".join(text_parts).strip()
+        if content:
+            openai_mem.append({'role': role, 'content': content})
+
+    # Ensure the conversation is balanced (ends with an assistant response)
+    if openai_mem and openai_mem[-1]['role'] == 'user':
+        openai_mem.pop()
+
+    return openai_mem
+
+
+def openai_to_gemini_mem(
+    mem_input: Union[List[Dict[str, str]], str]
+) -> List[Union[Content, UserContent]]:
+    """
+    Converts OpenAI-style memory to Gemini-style memory.
+
+    Accepts either a list of OpenAI-style dictionaries or a string (chat_id)
+    to fetch the memory from the database ('dialog_openrouter').
+
+    Args:
+        mem_input: A list of dictionaries or a chat_id string.
+
+    Returns:
+        A list of Gemini Content or UserContent objects.
+    """
+    mem: List[Dict[str, str]]
+    if isinstance(mem_input, str):
+        # Input is a chat_id, fetch memory from the database
+        mem = my_db.blob_to_obj(
+            my_db.get_user_property(mem_input, 'dialog_openrouter')
+        ) or []
+    elif isinstance(mem_input, list):
+        # Input is already a memory list
+        mem = mem_input
+    else:
+        # Invalid input type
+        return []
+
+    gemini_mem: List[Union[Content, UserContent]] = []
+    if not mem:
+        return gemini_mem
+
+    for entry in mem:
+        role = entry.get('role')
+        content = entry.get('content')
+
+        # Validate entry structure and content
+        if not isinstance(content, str) or not content.strip():
+            continue
+
+        # Create the appropriate Gemini object based on the role
+        if role == 'user':
+            gemini_mem.append(UserContent(content))
+        elif role == 'assistant':
+            gemini_mem.append(ModelContent(content))
+        # Silently ignore other roles like 'system' or 'tool'
+
+    # Ensure the conversation is balanced (ends with a model response)
+    if gemini_mem and gemini_mem[-1].role == 'user':
+        gemini_mem.pop()
+
+    return gemini_mem
+
+
 if __name__ == "__main__":
     my_db.init(backup=False, vacuum=False)
     my_gemini_general.load_users_keys()
+
+    # mem2 = gemini_to_openai_mem('[123] [0]')
+    # mem3 = openai_to_gemini_mem('[123] [0]')
+    # from pprint import pprint
+    # pprint(mem2)
+    # pprint(mem3)
 
     # remove_pics_from_all_mems()
 

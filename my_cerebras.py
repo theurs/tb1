@@ -40,7 +40,7 @@ SYSTEM_ = my_skills_general.SYSTEM_
 # сколько запросов хранить
 MAX_MEM_LINES = 30
 
-DEFAULT_TIMEOUT = 60
+DEFAULT_TIMEOUT = 90
 
 # блокировка чатов что бы не испортить историю 
 # {id:lock}
@@ -58,6 +58,7 @@ maxhistchars = 60000
 ALL_KEYS = []
 USER_KEYS = SqliteDict('db/cerebras_user_keys.db', autocommit=True)
 USER_KEYS_LOCK = threading.Lock()
+CURRENT_KEYS_SET_LOCK = threading.Lock()
 CURRENT_KEYS_SET = []
 
 
@@ -91,207 +92,6 @@ funcs = [
     my_skills_general.get_location_name,
     my_skills.help,
 ]
-
-
-# def ai(
-#     prompt: str = '',
-#     mem: Optional[List[Dict[str, str]]] = None,
-#     user_id: str = '',
-#     system: str = '',
-#     model: str = '',
-#     temperature: float = 1.0,
-#     max_tokens: int = 16000,
-#     timeout: int = DEFAULT_TIMEOUT,
-#     response_format: str = 'text',
-#     json_schema: Optional[Dict] = None,
-#     reasoning_effort_value_: str = 'none',
-#     tools: Optional[List[Dict]] = None,
-#     available_tools: Optional[Dict] = None,
-#     max_tools_use: int = 20,
-#     key_: str = '',
-# ) -> str:
-#     """
-#     Sends a request to the Cerebras AI API and returns the response in the specified format.
-
-#     Args:
-#         prompt (str, optional): The input text to be processed by the AI model. Defaults to ''.
-#         mem (list[dict], optional): A list of dictionaries representing the memory of the chatbot.
-#             This can be used to store information about the chatbot's interaction with the user, such
-#             as the user's name, preferences, and conversation history. Defaults to [].
-#         user_id (str, optional): The ID of the user who is interacting with the chatbot. Defaults to ''.
-#         system (str, optional): A string that will be injected into the AI model as the system message.
-#             Defaults to ''.
-#         model (str, optional): The name of the AI model to be used. Defaults to 'llama-13b'.
-#         temperature (float, optional): The temperature of the AI model, which controls the
-#             randomness of the output. Defaults to 1.0. [0-2]
-#         max_tokens (int, optional): The maximum number of tokens that the AI model should generate.
-#             Defaults to 16000.
-#         timeout (int, optional): The maximum time in seconds that the AI model should take to generate
-#             a response. Defaults to 60.
-#         response_format (str, optional): The format of the response. Defaults to 'text'. Can be one of
-#             the following:
-#                 * 'text': Returns the response as a plain text string.
-#                 * 'json': Returns the response as a JSON-formatted string.
-#         json_schema (dict, optional): The JSON schema that the AI model should follow when generating
-#             the response. Defaults to None.
-#         reasoning_effort_value_ (str, optional): The reasoning effort of the AI model, which controls
-#             the amount of reasoning that the AI model should perform. Defaults to 'none'. Can be one of
-#             the following:
-#                 * 'none': The AI model should not use reasoning.
-#                 * 'basic': The AI model should use basic reasoning.
-#                 * 'advanced': The AI model should use advanced reasoning.
-#         tools (list[dict], optional): A list of dictionaries representing the tools that the AI model
-#             should use. Defaults to [].
-#         available_tools (dict, optional): A dictionary of available tools. Defaults to None.
-#         max_tools_use (int, optional): The maximum calls of tools that the AI model should use.
-#             Defaults to 20.
-#         key_ (str, optional): The API key for the Cerebras AI API. Defaults to None.
-
-#     Returns:
-#         str: The response from the Cerebras AI API in the specified format.
-#     """
-#     if not prompt and not mem:
-#         return ''
-
-#     if not ALL_KEYS:
-#         my_log.log_cerebras('API key not found')
-#         return ''
-
-#     if not model:
-#         model = DEFAULT_MODEL
-
-#     if any(x in model.lower() for x in ('llama', 'gpt-oss', 'qwen')):
-#         temperature /= 2
-
-#     mem_ = mem[:] if mem else []
-
-#     now = time.strftime('%Y-%m-%d %H:%M:%S')
-#     systems = (
-#         f'Current date and time: {now}\n',
-#         f'Use this telegram chat id (user id) for API function calls: {user_id}',
-#         *SYSTEM_
-#     )
-#     if system:
-#         mem_.insert(0, {"role": "system", "content": system})
-#     for s in reversed(systems):
-#         mem_.insert(0, {"role": "system", "content": s})
-#     if prompt:
-#         mem_.append({"role": "user", "content": prompt})
-
-#     # --- 1. Centralized SDK parameter preparation ---
-#     reasoning_effort = 'none'
-#     if user_id:
-#         reasoning_effort = my_db.get_user_property(user_id, 'openrouter_reasoning_effort') or 'none'
-#     if reasoning_effort_value_ != 'none':
-#         reasoning_effort = reasoning_effort_value_
-
-#     if reasoning_effort == 'none' or 'qwen' in model or 'llama' in model:
-#         reasoning_effort = None
-#     elif reasoning_effort == 'minimal':
-#         reasoning_effort = 'low'
-
-#     RETRY_MAX = 1 if key_ else 3
-#     api_key = ''
-#     for _ in range(RETRY_MAX):
-#         api_key = key_ if key_ else get_next_key()
-#         if not api_key:
-#             return ''
-
-#         try:
-#             client = Cerebras(api_key=api_key)
-
-#             # Base parameters for all API calls
-#             sdk_params = {
-#                 'model': model,
-#                 'messages': mem_,
-#                 'temperature': temperature,
-#                 'timeout': timeout,
-#             }
-
-#             # Add conditional parameters that apply to both tool and non-tool paths
-#             if reasoning_effort:
-#                 sdk_params['reasoning_effort'] = reasoning_effort
-
-#             # Note: response_format is complex with tools. The API might not support
-#             # enforcing a schema on the final response after tool calls in one go.
-#             # But we can still prepare it for the non-tool path.
-#             if response_format == 'json':
-#                 if json_schema:
-#                     sdk_params['response_format'] = {
-#                         "type": "json_schema",
-#                         "json_schema": {"name": "custom_schema", "strict": True, "schema": json_schema}
-#                     }
-#                 else:
-#                     sdk_params['response_format'] = {'type': 'json_object'}
-
-#             # --- 2. Tool-use loop using the prepared sdk_params ---
-#             if tools and available_tools:
-#                 # Add tool-specific parameters
-#                 sdk_params['tools'] = tools
-#                 sdk_params['tool_choice'] = "auto"
-
-#                 max_calls = max_tools_use
-#                 for call_count in range(max_calls):
-#                     # In each loop, we update the messages
-#                     sdk_params['messages'] = mem_
-#                     response = client.chat.completions.create(**sdk_params)
-#                     message = response.choices[0].message
-
-#                     if not message.tool_calls:
-#                         return message.content or ""
-
-#                     mem_.append(message.model_dump())
-#                     tool_call = message.tool_calls[0]
-#                     function_name = tool_call.function.name
-
-#                     if function_name in available_tools:
-#                         function_to_call = available_tools[function_name]
-#                         try:
-#                             args = json.loads(tool_call.function.arguments)
-#                             tool_output = function_to_call(**args)
-#                         except Exception as e:
-#                             tool_output = f"Error executing tool: {e}"
-#                             my_log.log_cerebras(f'Error executing tool: {e}')
-#                     else:
-#                         tool_output = f"Error: Tool '{function_name}' not found."
-
-#                     mem_.append({
-#                         "role": "tool",
-#                         "tool_call_id": tool_call.id,
-#                         "content": tool_output,
-#                     })
-
-#                 # If loop finishes, force a final answer (without tools)
-#                 mem_.append({"role": "user", "content": "Tool call limit reached. Summarize your findings."})
-
-#                 # For the final answer, we don't want to offer tools again
-#                 final_params = sdk_params.copy()
-#                 final_params.pop('tools', None)
-#                 final_params.pop('tool_choice', None)
-#                 final_params['messages'] = mem_
-
-#                 final_response = client.chat.completions.create(**final_params)
-#                 return final_response.choices[0].message.content or ""
-
-#             # --- 3. Non-tool path, now much simpler ---
-#             else:
-#                 # Add parameters specific to non-tool calls
-#                 sdk_params['max_completion_tokens'] = max_tokens
-
-#                 chat_completion = client.chat.completions.create(**sdk_params)
-#                 result = chat_completion.choices[0].message.content or ''
-
-#                 if result:
-#                     return result.strip()
-
-#         except Exception as error:
-#             if 'Wrong API key' in str(error):
-#                 if not key_:
-#                     my_log.log_cerebras(f'Error: {error} [user_id: {user_id}]')
-#                     remove_key(api_key)
-#             my_log.log_cerebras(f'ai:1: {error} [user_id: {user_id}]')
-
-#     return ''
 
 
 def ai(
@@ -934,15 +734,16 @@ def get_next_key() -> str:
     '''
     Return round robin key from ALL_KEYS
     '''
-    global CURRENT_KEYS_SET
-    if not CURRENT_KEYS_SET:
-        if ALL_KEYS:
-            CURRENT_KEYS_SET = ALL_KEYS[:]
+    with CURRENT_KEYS_SET_LOCK:
+        global CURRENT_KEYS_SET
+        if not CURRENT_KEYS_SET:
+            if ALL_KEYS:
+                CURRENT_KEYS_SET = ALL_KEYS[:]
 
-    if CURRENT_KEYS_SET:
-        return CURRENT_KEYS_SET.pop(0)
-    else:
-        return ''
+        if CURRENT_KEYS_SET:
+            return CURRENT_KEYS_SET.pop(0)
+        else:
+            return ''
 
 
 def test_key(key: str) -> bool:
@@ -973,7 +774,8 @@ def remove_key(key: str):
             return
         if key in ALL_KEYS:
             try:
-                ALL_KEYS.remove(key)
+                with USER_KEYS_LOCK:
+                    ALL_KEYS.remove(key)
             except ValueError:
                 my_log.log_keys(f'remove_key: Invalid key {key} not found in ALL_KEYS list')
 

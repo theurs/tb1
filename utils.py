@@ -1228,12 +1228,30 @@ def post_process_split_html(chunks: list) -> list:
     Исправляет поломанные теги и убирает пустые чанки.
     """
 
+    # def fix_html_tags(text: str) -> str:
+    #     """Fixes HTML tag errors in the text using BeautifulSoup."""
+    #     # BeautifulSoup может выводить <br> как <br/>. 
+    #     # Чтобы унифицировать, заменим все на <br/> перед обработкой.
+    #     soup = BeautifulSoup(text, 'html.parser')
+    #     return str(soup).replace('<br>', '<br/>')
     def fix_html_tags(text: str) -> str:
-        """Fixes HTML tag errors in the text using BeautifulSoup."""
-        # BeautifulSoup может выводить <br> как <br/>. 
-        # Чтобы унифицировать, заменим все на <br/> перед обработкой.
+        MARKER = "ay4dXVt4gfFpqmKT"
+        # 1️⃣ Сначала заменяем пробелы, которые идут после переноса строки
+        #    (или после <br/>), на неразрывные пробелы.
+        #    Мы ищем: \n + один или несколько пробелов
+        # text = re.sub(r'(\n)( +)', lambda m: m.group(1) + '&nbsp;' * len(m.group(2)), text)
+        # text = re.sub(r'(<br/>)( +)', lambda m: m.group(1) + '&nbsp;' * len(m.group(2)), text)
+        text = re.sub(r'(\n)( +)', lambda m: m.group(1) + MARKER * len(m.group(2)), text)
+        text = re.sub(r'(<br/>)( +)', lambda m: m.group(1) + MARKER * len(m.group(2)), text)
+        # 2️⃣ Парсим HTML
         soup = BeautifulSoup(text, 'html.parser')
-        return str(soup).replace('<br>', '<br/>')
+        # 3️⃣ Приводим <br> к <br/>
+        result = str(soup).replace('<br>', '<br/>')
+        # 4️⃣ Возвращаем обычные пробелы обратно (если нужно)
+        #    Здесь заменяем последовательности &nbsp; обратно на обычные пробелы.
+        result = result.replace(MARKER, ' ')
+        return result
+
 
     processed_chunks = []
     for chunk in chunks:
@@ -2757,8 +2775,10 @@ if __name__ == '__main__':
 
     t = r'''
 Окей, понял тебя. Каждую строку отдельно, вот так:
-### 123
-  ### 13
+text = """# первая строка
+  ## вторая строка
+   ### третья строка
+не меняется"""
 `+---+---+---+---+---+---+`
 `| А | Б | В | Г | Д | Е |`
 `+---+---+---+---+---+---+`

@@ -401,7 +401,7 @@ def query_user_file(query: str, user_id: str) -> str:
     user_id = my_skills_general.restore_id(user_id)
     if user_id not in my_skills_storage.STORAGE_ALLOWED_IDS or my_skills_storage.STORAGE_ALLOWED_IDS[user_id] != user_id:
         my_log.log_gemini_skills_query_file(f'/query_last_file "{query}" "{user_id}" - Unauthorized access detected.')
-        return 'Unauthorized access detected.'
+        return 'Unauthorized access detected. Did you send the correct user id?'
 
     my_log.log_gemini_skills_query_file(f'/query_last_file "{query}" "{user_id}"')
 
@@ -456,7 +456,7 @@ def query_user_logs(query: str, user_id: str) -> str:
 
     if user_id not in my_skills_storage.STORAGE_ALLOWED_IDS or my_skills_storage.STORAGE_ALLOWED_IDS[user_id] != user_id:
         my_log.log_gemini_skills_query_file(f'/query_user_log "{query}" "{user_id}" - Unauthorized access detected.')
-        return 'Unauthorized access detected.'
+        return 'Unauthorized access detected. Did you send the correct user id?'
 
     my_log.log_gemini_skills_query_logs(f'/query_user_log "{query}" "{user_id}"')
 

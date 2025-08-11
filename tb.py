@@ -9403,10 +9403,6 @@ def handle_photo_and_text(message: telebot.types.Message):
         # зачем тут сбрасывать? из за этого текстовый обработчик не получает команды
         # COMMAND_MODE[chat_id_full] = ''
 
-        # проверка на подписку
-        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
-            return
-
         # catch groups of messages
         if chat_id_full not in MESSAGE_QUEUE_GRP:
             MESSAGE_QUEUE_GRP[chat_id_full] = [message,]
@@ -9467,6 +9463,17 @@ def handle_photo_and_text(message: telebot.types.Message):
                 MSG.caption = ''
                 MSG.caption_entities = []
         combined_caption = combined_caption.strip()
+
+
+        # проверка на подписку
+        if is_image:
+            if chat_id_full in COMMAND_MODE:
+                del COMMAND_MODE[chat_id_full]
+
+        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
+            return
+
+
         # если есть картинки (в них уже зачищены подписи) тогда надо удалить текстовые соообщения
         # (точнее добавить текстовые сообщения сверху к объединенной подписи) и отправить
         # дальше только картинки но сначала в первую картинку надо добавить объединенную подпись

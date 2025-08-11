@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import langcodes
 from cerebras.cloud.sdk import Cerebras
+from sqlitedict import SqliteDict
 
 import cfg
 import my_cerebras_tools
@@ -50,7 +51,14 @@ MAX_REQUEST = 40000
 MAX_SUM_REQUEST = 100000
 maxhistchars = 60000
 
-ROUND_ROBIN_KEYS = []
+# каждый юзер дает свои ключи и они используются совместно со всеми
+# каждый ключ дает всего 1000000 токенов в час и день так что чем больше тем лучше
+# {full_chat_id as str: key}
+# {'[9123456789] [0]': 'key', ...}
+ALL_KEYS = []
+USER_KEYS = SqliteDict('db/cerebras_user_keys.db', autocommit=True)
+USER_KEYS_LOCK = threading.Lock()
+CURRENT_KEYS_SET = []
 
 
 funcs = [
@@ -99,16 +107,54 @@ def ai(
     reasoning_effort_value_: str = 'none',
     tools: Optional[List[Dict]] = None,
     available_tools: Optional[Dict] = None,
-    max_tools_use: int = 20
+    max_tools_use: int = 20,
+    key_: str = '',
 ) -> str:
     """
-    Sends a request to the Cerebras AI API with refined control over output format.
-    ... (docstring remains the same) ...
+    Sends a request to the Cerebras AI API and returns the response in the specified format.
+
+    Args:
+        prompt (str, optional): The input text to be processed by the AI model. Defaults to ''.
+        mem (list[dict], optional): A list of dictionaries representing the memory of the chatbot.
+            This can be used to store information about the chatbot's interaction with the user, such
+            as the user's name, preferences, and conversation history. Defaults to [].
+        user_id (str, optional): The ID of the user who is interacting with the chatbot. Defaults to ''.
+        system (str, optional): A string that will be injected into the AI model as the system message.
+            Defaults to ''.
+        model (str, optional): The name of the AI model to be used. Defaults to 'llama-13b'.
+        temperature (float, optional): The temperature of the AI model, which controls the
+            randomness of the output. Defaults to 1.0. [0-2]
+        max_tokens (int, optional): The maximum number of tokens that the AI model should generate.
+            Defaults to 16000.
+        timeout (int, optional): The maximum time in seconds that the AI model should take to generate
+            a response. Defaults to 60.
+        response_format (str, optional): The format of the response. Defaults to 'text'. Can be one of
+            the following:
+                * 'text': Returns the response as a plain text string.
+                * 'json': Returns the response as a JSON-formatted string.
+        json_schema (dict, optional): The JSON schema that the AI model should follow when generating
+            the response. Defaults to None.
+        reasoning_effort_value_ (str, optional): The reasoning effort of the AI model, which controls
+            the amount of reasoning that the AI model should perform. Defaults to 'none'. Can be one of
+            the following:
+                * 'none': The AI model should not use reasoning.
+                * 'basic': The AI model should use basic reasoning.
+                * 'advanced': The AI model should use advanced reasoning.
+        tools (list[dict], optional): A list of dictionaries representing the tools that the AI model
+            should use. Defaults to [].
+        available_tools (dict, optional): A dictionary of available tools. Defaults to None.
+        max_tools_use (int, optional): The maximum calls of tools that the AI model should use.
+            Defaults to 20.
+        key_ (str, optional): The API key for the Cerebras AI API. Defaults to None.
+
+    Returns:
+        str: The response from the Cerebras AI API in the specified format.
     """
     if not prompt and not mem:
         return ''
 
-    if not hasattr(cfg, 'CEREBRAS_KEYS') or not cfg.CEREBRAS_KEYS:
+    if not ALL_KEYS:
+        my_log.log_cerebras('API key not found')
         return ''
 
     if not model:
@@ -144,9 +190,10 @@ def ai(
     elif reasoning_effort == 'minimal':
         reasoning_effort = 'low'
 
-    RETRY_MAX = 3
+    RETRY_MAX = 1 if key_ else 3
+    api_key = ''
     for _ in range(RETRY_MAX):
-        api_key = get_next_key()
+        api_key = key_ if key_ else get_next_key()
         if not api_key:
             return ''
 
@@ -238,6 +285,10 @@ def ai(
                     return result.strip()
 
         except Exception as error:
+            if 'Wrong API key' in str(error):
+                if not key_:
+                    my_log.log_cerebras(f'Error: {error} [user_id: {user_id}]')
+                    remove_key(api_key)
             my_log.log_cerebras(f'ai:1: {error} [user_id: {user_id}]')
 
     return ''
@@ -259,22 +310,6 @@ def clear_mem(mem, user_id: str = '') -> List[Dict[str, str]]:
 
 def count_tokens(mem) -> int:
     return sum([len(m['content']) for m in mem])
-
-
-def get_next_key():
-    '''
-    Дает один ключ из всех, последовательно перебирает доступные ключи
-    '''
-    if not hasattr(cfg, 'CEREBRAS_KEYS') or not cfg.CEREBRAS_KEYS:
-        return ''
-
-    global ROUND_ROBIN_KEYS
-
-    if not ROUND_ROBIN_KEYS:
-        keys = cfg.CEREBRAS_KEYS[:]
-        ROUND_ROBIN_KEYS = keys[:]
-
-    return ROUND_ROBIN_KEYS.pop(0)
 
 
 def update_mem(query: str, resp: str, chat_id: str):
@@ -668,6 +703,73 @@ def format_models_for_telegram(models: List[str]) -> str:
     return output
 
 
+def get_next_key() -> str:
+    '''
+    Return round robin key from ALL_KEYS
+    '''
+    global CURRENT_KEYS_SET
+    if not CURRENT_KEYS_SET:
+        if ALL_KEYS:
+            CURRENT_KEYS_SET = ALL_KEYS[:]
+
+    if CURRENT_KEYS_SET:
+        return CURRENT_KEYS_SET.pop(0)
+    else:
+        raise Exception('cerebras_keys is empty')
+
+
+def test_key(key: str) -> bool:
+    '''
+    Tests a given key by making a simple request to the Cerebras AI API.
+    '''
+    r = ai('1+1=', key_=key.strip(), timeout=20)
+    return bool(r)
+
+
+def load_users_keys():
+    """
+    Load users' keys into memory and update the list of all keys available.
+    """
+    with USER_KEYS_LOCK:
+        global USER_KEYS, ALL_KEYS
+        ALL_KEYS = cfg.CEREBRAS_KEYS if hasattr(cfg, 'CEREBRAS_KEYS') and cfg.CEREBRAS_KEYS else []
+        for user in USER_KEYS:
+            key = USER_KEYS[user]
+            if key not in ALL_KEYS:
+                ALL_KEYS.append(key)
+
+
+def remove_key(key: str):
+    '''Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.'''
+    try:
+        if not key:
+            return
+        if key in ALL_KEYS:
+            try:
+                ALL_KEYS.remove(key)
+            except ValueError:
+                my_log.log_keys(f'remove_key: Invalid key {key} not found in ALL_KEYS list')
+
+        keys_to_delete = []
+        with USER_KEYS_LOCK:
+            # remove key from USER_KEYS
+            for user in USER_KEYS:
+                if USER_KEYS[user] == key:
+                    keys_to_delete.append(user)
+
+            for user_key in keys_to_delete:
+                del USER_KEYS[user_key]
+
+            if keys_to_delete:
+                my_log.log_keys(f'cerebras: Invalid key {key} removed from users {keys_to_delete}')
+            else:
+                my_log.log_keys(f'cerebras: Invalid key {key} was not associated with any user in USER_KEYS')
+
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_cerebras(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
+
+
 # нет ни одной модели поддерживающей визуальное описание?
 # def img2txt(
 #     image_data: bytes,
@@ -985,9 +1087,12 @@ TEXT TO REWRITE:
 
 if __name__ == '__main__':
     pass
+    load_users_keys()
     my_db.init(backup=False)
     my_skills.init()
     my_skills.my_groq.load_users_keys()
+
+    print(test_key(input('Key to test: ')))
 
     # print(format_models_for_telegram(list_models()))
 

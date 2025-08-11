@@ -96,7 +96,7 @@ def get_next_key() -> str:
     else:
         raise Exception('mistral_keys is empty')
 
-      
+
 def get_weather(city: str):
     """Получить текущую погоду для указанного города."""
     # Это фиктивная реализация
@@ -334,8 +334,11 @@ def ai(
                 if prompt: messages.append({"role": "user", "content": prompt})
                 continue # Повторяем попытку с урезанной историей
             if 'Unauthorized' in str(error2):
-                remove_key(key)
-                my_log.log_mistral(f'ai:2: {error2} | {key} | {user_id}')
+                if not key_:
+                    remove_key(key)
+                    my_log.log_mistral(f'ai:2: {error2} | {key} | {user_id}')
+                else:
+                    return ''
             my_log.log_mistral(f'ai:3: {error2} | {key} | {user_id}\n\n{model}\n\n{prompt}')
             time.sleep(2)
 

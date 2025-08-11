@@ -9,6 +9,7 @@ import pendulum
 import telebot
 
 import cfg
+import my_cerebras
 import my_cohere
 import my_db
 import my_gemini_general
@@ -45,7 +46,8 @@ def get_subscription_status_string(chat_id_full: str, lang: str, telegram_stars:
         (chat_id_full in my_groq.USER_KEYS) or
         (chat_id_full in my_mistral.USER_KEYS) or
         (chat_id_full in my_cohere.USER_KEYS) or
-        (chat_id_full in my_github.USER_KEYS)
+        (chat_id_full in my_github.USER_KEYS) or
+        (chat_id_full in my_cerebras.USER_KEYS)
     )
     #DEBUG
     # have_keys = False
@@ -203,6 +205,8 @@ def check_donate(
                 if chat_id_full in my_mistral.USER_KEYS:
                     have_keys += 1
                 if chat_id_full in my_cohere.USER_KEYS:
+                    have_keys += 1
+                if chat_id_full in my_cerebras.USER_KEYS:
                     have_keys += 1
                 if chat_id_full in my_github.USER_KEYS:
                     have_keys += 1

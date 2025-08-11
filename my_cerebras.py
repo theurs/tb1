@@ -250,7 +250,7 @@ def ai(
                 for call_count in range(max_calls):
                     if time.monotonic() - start_time > effective_timeout:
                         raise TimeoutError(f"Global timeout of {effective_timeout}s exceeded in tool-use loop.")
-                    
+
                     sdk_params['messages'] = mem_
                     response = client.chat.completions.create(**sdk_params)
                     message = response.choices[0].message
@@ -285,7 +285,7 @@ def ai(
                 final_params.pop('tools', None)
                 final_params.pop('tool_choice', None)
                 final_params['messages'] = mem_
-                
+
                 if time.monotonic() - start_time > effective_timeout:
                     raise TimeoutError(f"Global timeout of {effective_timeout}s exceeded before final summarization.")
 
@@ -308,11 +308,13 @@ def ai(
         except Exception as error:
             # Логируем ошибку
             my_log.log_cerebras(f'ai: attempt {attempt + 1}/{RETRY_MAX} failed with error: {error} [user_id: {user_id}]')
-            
+            if 'Please try again soon.' in str(error):
+                return ''
+
             if 'Wrong API key' in str(error):
                 if not key_:
                     remove_key(api_key)
-            
+
             # [НОВОЕ] Добавляем паузу перед следующей попыткой, если это не последняя попытка
             if attempt < RETRY_MAX - 1:
                 time.sleep(1)

@@ -10619,8 +10619,8 @@ def do_task(message, custom_prompt: str = ''):
                                     temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                     system=hidden_text,
                                     model = my_cerebras.MODEL_QWEN_3_235B_A22B_INSTRUCT,
-                                    tools = my_cerebras.TOOLS_SCHEMA,
-                                    available_tools = my_cerebras.AVAILABLE_TOOLS
+                                    tools = TOOLS_SCHEMA,
+                                    available_tools = AVAILABLE_TOOLS
                                 )
 
                                 WHO_ANSWERED[chat_id_full] = 'Qwen 3 Coder 480b'

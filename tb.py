@@ -8553,6 +8553,8 @@ def _send_message(
             my_log.log2(
                 f'tb:reply_to_long_message:1: {error}\n\nresp: {resp[:500]}\n\nparse_mode: {parse_mode}'
             )
+            if 'Forbidden: bot was blocked by the user' in str(error):
+                return
             # my_log.log2(chunk)
 
             _send_message(message, chunk, '', preview, reply_markup, send_message, resp, retry_times)

@@ -715,7 +715,7 @@ def get_next_key() -> str:
     if CURRENT_KEYS_SET:
         return CURRENT_KEYS_SET.pop(0)
     else:
-        raise Exception('cerebras_keys is empty')
+        return ''
 
 
 def test_key(key: str) -> bool:

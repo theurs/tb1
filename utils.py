@@ -506,10 +506,9 @@ def bot_markdown_to_html(text: str) -> str:
 
 
     # 1,2,3,4 # в начале строки меняем всю строку на жирный текст
-    text = re.sub(r"^(?:\.\s)?#(?:#{0,})\s(.*)$", r"<b>\1</b>", text, flags=re.MULTILINE)  # 1+ hashes
+    # text = re.sub(r"^(?:\.\s)?#(?:#{0,})\s(.*)$", r"<b>\1</b>", text, flags=re.MULTILINE)  # 1+ hashes
     # тут учитывается что в начале могут быть пробелы
-    text = re.sub(r"^\s*#+\s+(.*)$", r"<b>\1</b>", text, flags=re.MULTILINE)
-
+    text = re.sub(r"^(\s*)#{1,7}\s+(.*)$", r"\1<b>\2</b>", text, flags=re.MULTILINE)
 
     # цитаты начинаются с &gt; их надо заменить на <blockquote></blockquote>
     # &gt; должен быть либо в начале строки, либо сначала пробелы потом &gt;

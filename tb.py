@@ -10986,7 +10986,7 @@ def do_task(message, custom_prompt: str = ''):
                                 my_skills.search_google_deep,
                                 my_skills.download_text_from_url,
                                 my_skills_general.save_to_txt,
-                                my_skills.save_html_to_image,
+                                # my_skills.save_html_to_image,
                                 my_skills.send_tarot_cards,
                             ]
                             TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*funcs) # (*my_cerebras.funcs)

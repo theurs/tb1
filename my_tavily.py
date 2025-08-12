@@ -41,15 +41,15 @@ def get_next_key() -> str:
     if not KEYS:
         if hasattr(cfg, 'TAVILY_KEYS') and len(cfg.TAVILY_KEYS) > 0:
             KEYS = cfg.TAVILY_KEYS[:]
-            
+
             keys_to_unfreeze = []
             for k, v in list(FROZEN_KEYS.items()): # Создаем копию для безопасной итерации
                 if time.time() > v + 60*60*24*7:
                     keys_to_unfreeze.append(k)
-            
+
             for k in keys_to_unfreeze:
                 FROZEN_KEYS.pop(k) # Удаляем элементы после итерации
-                    
+
             KEYS = [x for x in KEYS if x not in FROZEN_KEYS.keys()]
 
     if KEYS:

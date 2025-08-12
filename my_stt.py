@@ -131,11 +131,11 @@ def convert_to_ogg_with_ffmpeg(audio_file: str|bytes) -> str:
 def stt_google(audio_file: str, language: str = 'ru') -> str:
     """
     Speech-to-text using Google's speech recognition API.
-    
+
     Args:
         audio_file (str): The path to the audio file to be transcribed.
         language (str, optional): The language of the audio file. Defaults to 'ru'.
-    
+
     Returns:
         str: The transcribed text from the audio file.
     """

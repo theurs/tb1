@@ -93,7 +93,7 @@ def recognize_chunk(audio_chunk: AudioSegment,
         return_dict: dict
         index: int
         language: str
-    
+
     Returns:
         dict with index as key and text as value
     '''
@@ -366,7 +366,7 @@ def download_worker(video_url: str, part: tuple, n: int, fname: str, language: s
 def download_worker_v2(video_url: str, part: tuple, n: int, fname: str, language: str):
     with download_worker_semaphore_v2:
         utils.remove_file(f'{fname}_{n}.ogg')
-        
+
         if hasattr(cfg, 'YTB_PROXY') and cfg.YTB_PROXY:
             proc = subprocess.run([YT_DLP, '-x', '--proxy', random.choice(cfg.YTB_PROXY), '-g', video_url], stdout=subprocess.PIPE)
         else:
@@ -618,7 +618,7 @@ def find_split_segments(audio_file: str, max_size: int = 50) -> list:
 
     pattern_start = re.compile(r'silence_start:\s+(\d+\.\d+)')
     pattern_end_duration = re.compile(r'silence_end:\s+(\d+\.\d+)\s+\|\s+silence_duration:\s+(\d+\.\d+)')
-    
+
     silences = []
     current_start = None
 
@@ -866,7 +866,7 @@ if __name__ == '__main__':
     # for x in urls:
     #     r = download_youtube_clip_v2(x, 'ru')
     #     print(r[0])
-        
+
     # print(transcribe_genai('d:\\downloads\\1.ogg', prompt='_'))
     # genai_clear()
 

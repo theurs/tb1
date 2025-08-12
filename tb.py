@@ -2311,7 +2311,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             process_image_stage_2(UNCAPTIONED_PROMPTS[chat_id_full], chat_id_full, lang, message)
 
         elif call.data.startswith('buy_stars_'):
-            
+
             amount = int(call.data.split('_')[-1])
             if amount == 0:
                 bot_reply_tr(message, 'Please enter the desired amount of stars you would like to donate', reply_markup=get_keyboard('command_mode', message))
@@ -2833,7 +2833,7 @@ def handle_voice(message: telebot.types.Message):
             elif message.document:
                 file_info = bot.get_file(message.document.file_id)
                 file_name = message.document.file_name
-            
+
             if file_info:
                 downloaded_file = bot.download_file(file_info.file_path)
                 transcribe_file(downloaded_file, file_name, message)
@@ -3095,7 +3095,7 @@ def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Messa
 
             # Set the command mode for the chat to 'image_prompt'.
             COMMAND_MODE[chat_id_full] = 'image_prompt'
-            
+
             # Retrieve the last prompt used by the user for uncaptioned images, if any.
             user_prompt = ''
             if chat_id_full in UNCAPTIONED_PROMPTS:
@@ -3747,7 +3747,7 @@ def maxhistlines(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
-        
+
         try:
             maxhistlines = int(message.text.split(maxsplit=1)[1].strip())
             if maxhistlines < 2 or maxhistlines > 100:
@@ -3776,7 +3776,7 @@ def maxhistchars(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
-        
+
         try:
             maxhistchars = int(message.text.split(maxsplit=1)[1].strip())
             if maxhistchars < 2000 or maxhistchars > 1000000:
@@ -3805,7 +3805,7 @@ def maxtokens(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
         COMMAND_MODE[chat_id_full] = ''
-        
+
         try:
             maxtokens = int(message.text.split(maxsplit=1)[1].strip())
             if maxtokens < 10 or maxtokens > 8000:
@@ -4138,7 +4138,7 @@ def create_translations_for_all_languages():
     # Получаем уникальные оригиналы и их подсказки из базы данных
     try:
         unique_originals = my_db.get_unique_originals()
-        
+
         for original, help_text in unique_originals:
             # Переводим на все поддерживаемые языки
             for target_lang in my_init.top_20_used_languages:
@@ -5223,7 +5223,7 @@ def disable_stt_mode(message: telebot.types.Message):
         for user_chat_id in all_users_ids:
             # Проверяем текущий STT движок пользователя
             current_stt_engine = my_db.get_user_property(user_chat_id, 'speech_to_text_engine')
-            
+
             if current_stt_engine == _from_stt:
                 my_db.set_user_property(user_chat_id, 'speech_to_text_engine', _to_stt)
                 n_changed += 1
@@ -7027,7 +7027,7 @@ def block_command_handler(message: telebot.types.Message):
         if action.endswith("2") or action.endswith("3"):
             level = int(action[-1])
             action = action[:-1]
-        
+
         if action == 'add':
             block_user(message, user_id, level, 'set')
         elif action == 'del':
@@ -7045,7 +7045,7 @@ def block_user(message: telebot.types.Message, user_id: int, level: int, operati
     """Adds or removes a user from the block list with the specified level."""
     try:
         lang = get_lang(get_topic_id(message), message)
-        
+
         block_properties = {
             1: 'blocked',
             2: 'blocked_bing',
@@ -7056,14 +7056,14 @@ def block_user(message: telebot.types.Message, user_id: int, level: int, operati
         if not block_property:
             bot_reply_tr(message, 'Invalid block level')
             return
-            
+
         if operation == 'set':
             if not my_db.get_user_property(user_id, 'first_meet'):
                 bot_reply(message, f'❌ {tr("Пользователь", lang)} {user_id} {tr("не найден в базе", lang)}\n')
                 return
             my_db.set_user_property(user_id, block_property, True)
             bot_reply(message, f'✅ {tr("Пользователь", lang)} {user_id} {tr("добавлен в стоп-лист", lang)} (level {level})\n')
-        
+
         elif operation == 'delete':
             if my_db.get_user_property(user_id, block_property):
                 my_db.delete_user_property(user_id, block_property)
@@ -7614,7 +7614,7 @@ def send_welcome_help2(message: telebot.types.Message):
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
         COMMAND_MODE[chat_id_full] = ''
-        
+
         args = message.text.split(maxsplit = 1)
         if len(args) == 2:
             if args[1] in my_init.supported_langs_trans+['pt-br',]:
@@ -9097,7 +9097,7 @@ def send_photo(
                 )
                 log_message(m)
                 photo = utils.resize_image_to_dimensions(photo, 2000, 2000)
-                
+
             if not reply:
                 r = bot.send_photo(
                     chat_id=chat_id,
@@ -11264,7 +11264,7 @@ def do_task(message, custom_prompt: str = ''):
                                     return
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                         reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
-                                
+
                             except Exception as error:
                                 print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
@@ -11289,7 +11289,7 @@ def load_msgs():
 
     Parameters:
         None
-    
+
     Returns:
         None
     """

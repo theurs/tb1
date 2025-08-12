@@ -430,13 +430,13 @@ def add_msg(user_id: str, model_used: str, timestamp: float = None):
     with LOCK:
         try:
             access_time = timestamp if timestamp else time.time()
-            
+
             # Проверка наличия записи
             CUR.execute('''
                 SELECT COUNT(*) FROM msg_counter
                 WHERE user_id = ? AND access_time = ? AND model_used = ?
             ''', (user_id, access_time, model_used))
-            
+
             if CUR.fetchone()[0] == 0:
                 # Если записи нет, добавляем новую
                 CUR.execute('''

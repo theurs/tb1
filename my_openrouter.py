@@ -453,13 +453,13 @@ def sum_big_text(text:str, query: str, temperature: float = 1, model: str = '', 
 def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '', censored: bool = False, model: str = '') -> str:
     """
     Translates the given text from one language to another.
-    
+
     Args:
         text (str): The text to be translated.
         from_lang (str, optional): The language of the input text. If not specified, the language will be automatically detected.
         to_lang (str, optional): The language to translate the text into. If not specified, the text will be translated into Russian.
         help (str, optional): Help text for tranlator.
-        
+
     Returns:
         str: The translated text.
     """
@@ -472,7 +472,7 @@ def translate(text: str, from_lang: str = '', to_lang: str = '', help: str = '',
     except Exception as error1:
         error_traceback = traceback.format_exc()
         my_log.log_translate(f'my_gemini:translate:error1: {error1}\n\n{error_traceback}')
-        
+
     try:
         to_lang = langcodes.Language.make(language=to_lang).display_name(language='en')
     except Exception as error2:

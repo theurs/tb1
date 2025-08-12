@@ -84,7 +84,7 @@ def get_next_key():
     Дает один ключ из всех, последовательно перебирает доступные ключи
     '''
     global ROUND_ROBIN_KEYS
-    
+
     if not ROUND_ROBIN_KEYS:
         keys = cfg.gemini_keys[:] + ALL_KEYS[:]
         random.shuffle(keys)

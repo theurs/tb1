@@ -112,7 +112,7 @@ def get_model_usage_for_days(num_days: int) -> List[Tuple[str, Dict[str, int]]]:
                     GROUP BY model_used
                 ''', (start_timestamp, end_timestamp))
                 results = my_db.CUR.fetchall()
-                
+
                 for row in results:
                     model = row[0]
                     usage_count = row[1]

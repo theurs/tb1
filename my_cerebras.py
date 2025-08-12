@@ -872,7 +872,7 @@ def remove_key(key: str):
 #         reasoning_effort = my_db.get_user_property(chat_id, 'openrouter_reasoning_effort') or 'none'
 #     if reasoning_effort_value_ != 'none':
 #         reasoning_effort = reasoning_effort_value_
-    
+
 #     # the SDK expects None for default, not the string 'none'
 #     if reasoning_effort in ('none', 'auto'):
 #         reasoning_effort = None

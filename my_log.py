@@ -340,7 +340,7 @@ def restore_message_text(s1: str, l) -> str:
     """
     if not l:
         return s1
-    
+
     # Группируем элементы по их диапазонам
     formatted_intervals = defaultdict(list)
     for i in l:
@@ -353,7 +353,7 @@ def restore_message_text(s1: str, l) -> str:
     for (offset, length), formats in sorted(formatted_intervals.items(), key=lambda x: x[0][0]):
         # Добавляем текст до текущего форматированного блока
         s0 += s1[last_pos:offset]
-        
+
         # Извлекаем текст для форматирования
         formatted_text = s1[offset:offset + length]
 
@@ -399,7 +399,7 @@ def restore_message_text(s1: str, l) -> str:
                     'url'
                 ):
                     log2(f'Unknown message entity type {i.type} {formatted_text}')
-        
+
         # Добавляем результат в итоговую строку
         s0 += formatted_text
 
@@ -446,7 +446,7 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bo
         topic_id = message.message_thread_id
 
     log_file_path = logname
-    
+
     if debug:
         log_file_path = log_file_path + '.debug.log'
 
@@ -629,7 +629,7 @@ def get_user_logs(user_id: str) -> str:
     topic_id = id_match.group(2)
 
     user_files = []
-    
+
     # Составляем шаблон регулярного выражения
     if topic_id == '0':
         # Для ID, оканчивающихся на [0], ищем файлы вида * [private] [main_id].log
@@ -665,7 +665,7 @@ def get_user_logs(user_id: str) -> str:
                 combined_log_content += separator
             else:
                 first_file = False
-                
+
             with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
                 combined_log_content += f.read()
         except Exception as e:
@@ -688,6 +688,6 @@ if __name__ == '__main__':
     # example_text += 'ሰላም አለም! 🪐🎉🎊✨🎈'
     # transliterated_text = transliterate(example_text)
     # print(transliterated_text)
- 
+
     # log_parser_error2('test')
-  
+

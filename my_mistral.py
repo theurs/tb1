@@ -193,7 +193,7 @@ def get_next_key() -> str:
 
 #             MAX_TOOL_CALL_STEPS = 5 # Предохранитель от бесконечных циклов
 #             for _ in range(MAX_TOOL_CALL_STEPS):
-                
+
 #                 api_params = {
 #                     'model': model,
 #                     'messages': messages,
@@ -1187,7 +1187,7 @@ def remove_key(key: str):
     try:
         if not key:
             return
-        
+
         # Protect the global key lists during modification
         with CURRENT_KEYS_SET_LOCK:
             if key in ALL_KEYS:
@@ -1247,11 +1247,11 @@ def load_users_keys():
     with CURRENT_KEYS_SET_LOCK:
         global ALL_KEYS
         base_keys = cfg.MISTRALAI_KEYS if hasattr(cfg, 'MISTRALAI_KEYS') and cfg.MISTRALAI_KEYS else []
-        
+
         all_keys_set = set(base_keys)
         all_keys_set.update(user_keys_list)
         ALL_KEYS = list(all_keys_set)
-        
+
         # Invalidate the current round-robin set
         global CURRENT_KEYS_SET
         CURRENT_KEYS_SET = []

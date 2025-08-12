@@ -18,7 +18,7 @@ def parse_voices(text):
     """
     voices = {}
     lines = text.split('\n')
-    
+
     # Skip the header lines (first two lines)
     for line in lines[2:]:
         line = line.strip()
@@ -30,7 +30,7 @@ def parse_voices(text):
         if len(parts) >= 2:
             name = parts[0]
             gender = parts[1]
-            
+
             language, region, _ = name.split('-', maxsplit=2)
 
             if language not in voices:
@@ -125,7 +125,7 @@ def format_voices(voices):
                 key = f"{lang}{lang_count}"
                 formatted_voices[key] = {'male': None, 'female': female_voices[i]}
                 lang_count += 1
-                
+
     return formatted_voices
 
 

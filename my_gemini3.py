@@ -424,7 +424,7 @@ def trim_mem(mem: list, max_chat_mem_chars: int, clear: bool = False):
     """
     if clear:
         mem = clear_non_text_parts(mem)
-            
+
     total_chars = 0
     # Индекс, с которого мы будем сохранять историю.
     # Если вся история помещается в лимит, он останется равен 0.
@@ -701,7 +701,7 @@ def chat(
                     )
                 response = chat.send_message(query,)
             except Exception as error:
-                
+
                 if '429 RESOURCE_EXHAUSTED' in str(error):
                     my_log.log_gemini(f'my_gemini3:chat:2: {str(error)} {model} {key}')
                     return ''
@@ -1105,7 +1105,7 @@ def get_mem_as_string(chat_id: str, md: bool = False, model: str = '') -> str:
                 result_string += '\n\n' # Already added by text formatting. Let's make it consistent.
             else:
                 result_string += '\n' # Add an extra newline for separation in plain text.
-    
+
     return result_string.strip()
 
 
@@ -1189,7 +1189,7 @@ def translate(
     ) -> str:
     """
     Translates the given text from one language to another.
-    
+
     Args:
         text (str): The text to be translated.
         from_lang (str, optional): The language of the input text. If not specified, the language will be automatically detected.
@@ -1362,7 +1362,7 @@ def list_models(include_context: bool = False):
                 result += [f'{model.name}',]
     # sort results
     result = sorted(result)
-        
+
     return '\n'.join(result)
 
 

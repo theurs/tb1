@@ -748,12 +748,12 @@ def summ_text(text: str, subj: str = 'text', lang: str = 'ru', query: str = '', 
 def download_text(urls: list, max_req: int = cfg.max_request, no_links = False) -> str:
     """
     Downloads text from a list of URLs and returns the concatenated result.
-    
+
     Args:
         urls (list): A list of URLs from which to download text.
         max_req (int, optional): The maximum length of the result string. Defaults to cfg.max_request.
         no_links(bool, optional): Include links in the result. Defaults to False.
-        
+
     Returns:
         str: The concatenated text downloaded from the URLs.
     """

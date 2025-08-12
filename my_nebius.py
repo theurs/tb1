@@ -617,7 +617,7 @@ if __name__ == "__main__":
 
     # print(img2txt('C:/Users/user/Downloads/samples for ai/мат задачи.jpg', 'реши задачи, в ответе используй юникод символы для математики вместо latex выражений', model = 'gpt-4o', temperature=0))
     # print(voice2txt('C:/Users/user/Downloads/1.ogg'))
-    
+
     # test_txt2img()
 
     my_db.close()

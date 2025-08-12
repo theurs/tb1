@@ -14,7 +14,7 @@ def get_targets(DDOS_BLOCKED_USERS, chat_id_full):
     for x in all_users:
         chat_id = x
         chat = utils.extract_user_id(x)
- 
+
         # посылать только админам, для проверки    
         # if chat not in cfg.admins:
         #     continue

@@ -476,7 +476,7 @@ def update_mem(query: str, resp: str, mem):
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_groq(f'my_groq:update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
-    
+
     if chat_id:
         my_db.set_user_property(chat_id, 'dialog_groq', my_db.obj_to_blob(mem__))
     else:
@@ -849,13 +849,13 @@ def translate(text: str,
               model = '') -> str:
     """
     Translates the given text from one language to another.
-    
+
     Args:
         text (str): The text to be translated.
         from_lang (str, optional): The language of the input text. If not specified, the language will be automatically detected.
         to_lang (str, optional): The language to translate the text into. If not specified, the text will be translated into Russian.
         help (str, optional): Help text for tranlator.
-        
+
     Returns:
         str: The translated text.
     """

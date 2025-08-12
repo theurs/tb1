@@ -429,9 +429,9 @@ def find_best_passages(
         safe_text = p['text'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
         output_parts.append(f"<fragment_source_{i}>{safe_title}</fragment_source_{i}>")
         output_parts.append(f"<fragment_text_{i}>\n{safe_text}\n</fragment_text_{i}>")
-        
+
     output_parts.append("</fragments>")
-    
+
     return "\n".join(output_parts)
 
 

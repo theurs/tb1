@@ -194,16 +194,16 @@ async def generate_audio_bytes_chunked(
                     )
                     if raw_chunk_bytes:
                         return raw_chunk_bytes # Успешно получено аудио, возвращаем его
-                    
+
                     # Если raw_chunk_bytes пуст, это означает, что генерация не удалась или ничего не вернула
                     print(f"Chunk {chunk_num}, attempt {attempt+1}: No audio data received. Retrying in 5 seconds...")
                 except Exception as e:
                     # Перехватываем любые исключения во время вызова API
                     print(f"Chunk {chunk_num}, attempt {attempt+1}: Error during generation: {e}. Retrying in 5 seconds...")
-                
+
                 if attempt < 2: # Задержка только если это не последняя попытка
                     await asyncio.sleep(5)
-            
+
             # Если мы дошли до сюда, все попытки для этого чанка провалились
             print(f"Chunk {chunk_num} failed to generate raw audio after all attempts.")
             return b''

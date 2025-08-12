@@ -137,11 +137,11 @@ def split_text(text: str, chunk_size: int = 5000) -> list[str]:
             else:
                 chunks.append(current_chunk.strip())
                 current_chunk = line + "\n"
-    
+
     # добавляем последний чанк
     if current_chunk:
         chunks.append(current_chunk.strip())
-    
+
     return chunks
 
 

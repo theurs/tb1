@@ -150,7 +150,7 @@ def platform() -> str:
 
 def bot_markdown_to_tts(text: str) -> str:
     """меняет текст от ботов так что бы можно было зачитать с помощью функции TTS"""
-    
+
     # переделываем списки на более красивые
     new_text = ''
     for i in text.split('\n'):
@@ -518,7 +518,7 @@ def bot_markdown_to_html(text: str) -> str:
         lines = text.split('\n')
         result = []
         quote_lines = []
-        
+
         for line in lines:
             # Проверяем, является ли строка цитатой (с учетом пробелов в начале)
             if re.match(r'^\s*&gt;\s*(.*)$', line):
@@ -532,12 +532,12 @@ def bot_markdown_to_html(text: str) -> str:
                     result.append(f'<blockquote>{quote_text}</blockquote>')
                     quote_lines = []
                 result.append(line)
-        
+
         # Добавляем оставшиеся цитаты в конце текста
         if quote_lines:
             quote_text = '\n'.join(quote_lines)
             result.append(f'<blockquote>{quote_text}</blockquote>')
-        
+
         return '\n'.join(result)
 
     text = process_quotes(text)
@@ -860,7 +860,7 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
     """
     Заменяет markdown таблицы на их prettytable представление.
     Улучшена обработка различных форматов таблиц, включая ограничение ширины и обрезание длинных заголовков.
-    
+
     :param text: Исходный текст с markdown таблицами
     :param max_width: Максимальная ширина таблицы в символах
     :param max_cell_width: Максимальная ширина ячейки в символах
@@ -958,7 +958,7 @@ def replace_tables(text: str, max_width: int = 80, max_cell_width: int = 20, ) -
                     alignments.append('r')
                 else:
                     alignments.append('l')
-            
+
             for i, align in enumerate(alignments):
                 x.align[x.field_names[i]] = align
 
@@ -1154,23 +1154,23 @@ def split_html(text: str, max_length: int = 1500) -> list:
         "blockquote": "</blockquote>",
         "blockquote expandable": "</blockquote>",
     }
-    
+
     result = []
     current_chunk = ""
     # ИЗМЕНЕНИЕ 1: Стек теперь хранит кортежи (имя_тега, полный_тег_с_атрибутами)
     open_tags_stack = []
-    
+
     lines = text.splitlines(keepends=True)
-    
+
     for line in lines:
         # ИЗМЕНЕНИЕ 2: Ищем все теги в строке, а не только в начале
         # Это позволяет найти <code...> после <pre> в одной строке
         line_tags = re.finditer(r'<([^>]+)>', line)
-        
+
         for match in line_tags:
             full_tag = match.group(0)  # Полный тег, например, '<code class="language-python">'
             tag_content = match.group(1) # Содержимое, например, 'code class="language-python"'
-            
+
             if tag_content.startswith('/'): # Это закрывающий тег
                 tag_name = tag_content[1:]
                 # Ищем в стеке с конца и удаляем
@@ -1184,7 +1184,7 @@ def split_html(text: str, max_length: int = 1500) -> list:
                 # Ваша специальная логика для blockquote
                 if tag_name == "blockquote" and "expandable" in tag_content:
                     tag_name = "blockquote expandable"
-                
+
                 open_tags_stack.append((tag_name, full_tag))
 
         # Логика добавления строки и разрыва чанка остается почти такой же
@@ -1194,20 +1194,20 @@ def split_html(text: str, max_length: int = 1500) -> list:
                 # Используем ваш словарь tags для корректного закрытия
                 if tag_name in tags:
                     current_chunk += tags[tag_name]
-            
+
             # 2. Добавляем чанк
             if len(current_chunk) > max_length:
                 # Используем вашу функцию split_text для очень длинных строк без тегов
                 result.extend(split_text(current_chunk, max_length))
             else:
                 result.append(current_chunk)
-            
+
             # 3. Начинаем новый чанк
             current_chunk = ""
             # ИЗМЕНЕНИЕ 3: Восстанавливаем теги, используя сохраненный ПОЛНЫЙ ТЕГ
             for _, full_tag_str in open_tags_stack:
                 current_chunk += full_tag_str
-        
+
         current_chunk += line
 
     # Добавление последнего чанка
@@ -1216,7 +1216,7 @@ def split_html(text: str, max_length: int = 1500) -> list:
             result.extend(split_text(current_chunk, max_length))
         else:
             result.append(current_chunk)
-            
+
     # Ваша постобработка остается без изменений
     result2 = post_process_split_html(result)
     return result2
@@ -1459,14 +1459,14 @@ def download_yandex_disk_audio(url: str) -> str:
             '--quiet',                       # Suppress normal output (like download progress)
             url                              # The URL to download from
         ]
-        
+
         process = subprocess.run(
             cmd,
             capture_output=True,  # Capture stdout and stderr
             text=True,            # Decode output as text
             check=True            # Raise CalledProcessError for non-zero exit codes
         )
-        
+
         downloaded_filepath = process.stdout.strip()
 
         if not downloaded_filepath:
@@ -1474,7 +1474,7 @@ def download_yandex_disk_audio(url: str) -> str:
             # on failure to produce a path, but it's a good safeguard.
             my_log.log2(f"my_ytb:download_yandex_disk_audio: yt-dlp did not return a filepath for URL: {url}")
             return ""
-            
+
         # At this point, downloaded_filepath should be the full path to the downloaded file,
         # e.g., /tmp/somerandomname.mp3
         return downloaded_filepath
@@ -1884,15 +1884,15 @@ def get_username_for_log(message) -> str:
 
 def safe_fname(s: str) -> str:
     """Return a safe filename for the given string, truncated to 250 bytes in UTF-8 encoding."""
-    
+
     # Replace invalid characters
     s = re.sub(r'[\\/*?:"<>|]', '_', s)
-    
+
     # Encode to UTF-8 and check length
     encoded_s = s.encode('utf-8')
     if len(encoded_s) <= 250:
         return s
-    
+
     # Shorten filename if longer than 250 bytes
     while len(encoded_s) > 247:
         s = s[:len(s)//2-3] + '___' + s[len(s)//2+3:]
@@ -2025,7 +2025,7 @@ def create_image_collages(images: list, batch_size: int = 4) -> list:
         list: Список объединенных коллажей (байтов).
     """
     collages = []
-    
+
     # Если исходный список пуст, возвращаем пустой список коллажей
     if not images:
         return collages
@@ -2036,13 +2036,13 @@ def create_image_collages(images: list, batch_size: int = 4) -> list:
     for i in range(num_batches):
         start_index = i * batch_size
         end_index = min((i + 1) * batch_size, len(images))
-        
+
         current_batch = images[start_index:end_index]
-        
+
         # utils.make_collage должен принимать список байтов и возвращать байты
         collage_bytes = make_collage(current_batch)
         collages.append(collage_bytes)
-        
+
     return collages
 
 
@@ -2447,10 +2447,10 @@ def resize_image_to_dimensions(data: bytes, dim1: int, dim2: int) -> bytes:
         # most over its limit, to ensure both fit while preserving aspect ratio.
         # We need to ensure that the largest side of the image fits into target_max_dim
         # and the smallest side fits into target_min_dim.
-        
+
         # Calculate scale factor needed for the maximum dimension
         scale_factor_by_max_dim = target_max_dim / image_max_dim if image_max_dim > 0 else float('inf')
-        
+
         # Calculate scale factor needed for the minimum dimension
         scale_factor_by_min_dim = target_min_dim / image_min_dim if image_min_dim > 0 else float('inf')
 
@@ -2535,7 +2535,7 @@ def format_timestamp(timestamp: float) -> str:
     day = datetime_object.strftime('%d')
     year = datetime_object.strftime('%Y')
     time_str = datetime_object.strftime('%H:%M:%S')
-    
+
     return f"{day} {month_name} {year} {time_str}"
 
 

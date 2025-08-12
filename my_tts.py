@@ -484,7 +484,7 @@ def change_audio_speed_and_format(input_audio: bytes | str, speed_factor_percent
             stderr=subprocess.PIPE
         )
         stdout_data, stderr_data = process.communicate(input=audio_bytes_to_process)
-        
+
         if process.returncode != 0:
             stderr_str = stderr_data.decode('utf-8', errors='ignore').strip()
             my_log.log2(f'my_tts:change_audio_speed_and_format:ffmpeg_error: FFmpeg failed with return code {process.returncode}.\nCommand: {" ".join(ffmpeg_command)}\nStderr:\n{stderr_str if stderr_str else "No stderr output."}')

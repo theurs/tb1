@@ -78,10 +78,10 @@ def download_image_wrapper(image):
 def check_image_against_query(image) -> bool:
     """
     Check if an image is relevant to a given query by asking a superhot AI assistant.
-    
+
     Args:
         image (tuple): A tuple containing the image data and the search query.
-        
+
     Returns:
         bool: True if the image is relevant to the query, False otherwise.
     """
@@ -130,7 +130,7 @@ def get_images(query: str, max_results: int = 16) -> list:
     # Downloading images.
     with ThreadPoolExecutor() as executor:
         result = list(executor.map(download_image_wrapper, images_with_data))
-    
+
     # Filter only images that were successfully downloaded.
     images_to_check = [(img_data, query) for img_data, _ in result if img_data]
 
@@ -139,7 +139,7 @@ def get_images(query: str, max_results: int = 16) -> list:
     with ThreadPoolExecutor() as executor:
         # Submit all check_image_against_query tasks to the executor.
         future_to_image = {executor.submit(check_image_against_query, image): image for image in images_to_check}
-        
+
         # Iterate over completed tasks.
         for future in as_completed(future_to_image):
             image = future_to_image[future]
@@ -149,7 +149,7 @@ def get_images(query: str, max_results: int = 16) -> list:
                     relevant_images.append(image)  # If relevant add to the results list.
             except Exception as exc:
                 print(f'Image relevance check generated an exception: {exc}')
-    
+
     # Sort by data size.
     sorted_images = sorted(relevant_images, key=lambda x: len(x[0]), reverse=True)
 

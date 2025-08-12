@@ -721,13 +721,13 @@ def translate(text: str,
               model = '') -> str:
     """
     Translates the given text from one language to another.
-    
+
     Args:
         text (str): The text to be translated.
         from_lang (str, optional): The language of the input text. If not specified, the language will be automatically detected.
         to_lang (str, optional): The language to translate the text into. If not specified, the text will be translated into Russian.
         help (str, optional): Help text for tranlator.
-        
+
     Returns:
         str: The translated text.
     """
@@ -848,7 +848,7 @@ def test_all_keys():
     the invalid key and pauses for a random interval between 2 to 5 seconds before continuing. This 
     pause helps in managing the rate of requests and avoiding potential throttling or rate limiting 
     issues with the service being tested.
-    
+
     Note:
     - The `test_new_key` function is expected to return a boolean indicating the validity of a key.
     - Invalid keys are identified by the `test_new_key` function returning False.

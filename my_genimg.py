@@ -250,10 +250,10 @@ def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '')
     """
 
 
-    # cerebras быстрый и хорошие модели
-    r1, r2 = my_cerebras.get_reprompt(prompt, conversation_history, chat_id)
-    if r1 or r2:
-        return r1,r2
+    # # cerebras быстрый и хорошие модели, но склонен затупить и висеть до таймаута
+    # r1, r2 = my_cerebras.get_reprompt(prompt, conversation_history, chat_id)
+    # if r1 or r2:
+    #     return r1,r2
 
 
     try:

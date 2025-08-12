@@ -448,28 +448,21 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
             TRANS_CACHE.set(cache_key_hash, translated)
             return translated
 
-        translated = ''
 
-        translated = my_cerebras.translate(text, to_lang=lang, help=help)
+        translated = ''
 
         if not translated:
             translated = my_gemini3.translate(text, to_lang=lang, help=help, censored=True)
 
         if not translated:
-            # time.sleep(1)
-            # try again and another ai engine
             translated = my_groq.translate(text, to_lang=lang, help=help)
-            if not translated:
-                my_log.log_translate(f'gemini\n\n{text}\n\n{lang}\n\n{help}')
+
+        if not translated:
+            translated = my_cerebras.translate(text, to_lang=lang, help=help)
 
         if not translated:
             translated = my_trans.translate(text, lang)
 
-        if not translated and not help:
-            translated = my_groq.translate(text, to_lang=lang, help=help)
-
-        if not translated and not help:
-            translated = my_gemini3.translate(text, to_lang=lang, help=help)
 
         if not translated:
             translated = text
@@ -2384,9 +2377,9 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 if not detected_lang:
                     detected_lang = lang or "de"
 
-                rewrited_text = my_cerebras.rewrite_text_for_tts(text, chat_id_full)
+                rewrited_text = my_gemini3.rewrite_text_for_tts(text, chat_id_full)
                 if not rewrited_text:
-                    rewrited_text = my_gemini3.rewrite_text_for_tts(text, chat_id_full)
+                    rewrited_text = my_cerebras.rewrite_text_for_tts(text, chat_id_full)
                     if not rewrited_text:
                         rewrited_text = text
                 message.text = f'/tts {detected_lang} {rewrited_text}'

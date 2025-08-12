@@ -310,7 +310,8 @@ def ai(
             my_log.log_cerebras(f'ai: attempt {attempt + 1}/{RETRY_MAX} failed with error: {error} [user_id: {user_id}]')
             if 'Please try again soon.' in str(error):
                 return ''
-
+            if 'Request timed out.' in str(error) or 'Global timeout' in str(error):
+                return ''
             if 'Wrong API key' in str(error):
                 if not key_:
                     remove_key(api_key)

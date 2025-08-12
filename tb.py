@@ -2254,6 +2254,38 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
 
         MSG_CONFIG = get_config_msg(chat_id_full, lang)
 
+
+        def _transfer_chat_memory(user_id: str, prev_mode: str, new_mode: str) -> None:
+            """
+            Transfers chat history between Gemini and OpenAI compatible models.
+            Args:
+                user_id: The full user identifier.
+                prev_mode: The previous chat mode.
+                new_mode: The new chat mode.
+            """
+            # from gemini to openai-like
+            if 'gemini' in prev_mode and 'gemini' not in new_mode:
+                new_mem = my_gemini3.gemini_to_openai_mem(user_id)
+                if new_mem:
+                    my_db.set_user_property(user_id, 'dialog_openrouter', my_db.obj_to_blob(new_mem))
+            # from openai-like to gemini
+            elif 'gemini' not in prev_mode and 'gemini' in new_mode:
+                new_mem = my_gemini3.openai_to_gemini_mem(user_id)
+                if new_mem:
+                    my_db.set_user_property(user_id, 'dialog_gemini3', my_db.obj_to_blob(new_mem))
+
+        def _set_chat_mode(new_mode: str) -> None:
+            """
+            Sets a new chat mode for the user and handles memory transfer.
+            Args:
+                new_mode: The target chat mode to set.
+            """
+            prev_mode = my_db.get_user_property(chat_id_full, 'chat_mode') or cfg.chat_mode_default
+            if prev_mode != new_mode:
+                _transfer_chat_memory(chat_id_full, prev_mode, new_mode)
+                my_db.set_user_property(chat_id_full, 'chat_mode', new_mode)
+
+
         if call.data == 'clear_history':
             # обработка нажатия кнопки "Стереть историю"
             reset_(message)
@@ -2485,65 +2517,120 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 bot_reply_tr(message, 'No text was saved.')
             COMMAND_MODE[chat_id_full] = ''
 
+
         elif call.data == 'select_mistral':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'mistral')
+            _set_chat_mode('mistral')
         elif call.data == 'select_magistral':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'magistral')
+            _set_chat_mode('magistral')
         elif call.data == 'select_gpt-4o':
             if my_subscription.github_models(chat_id_full):
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o')
+                _set_chat_mode('gpt-4o')
             else:
                 bot_reply_tr(message, 'Insert your github key first. /keys')
         elif call.data == 'select_gpt_41':
             if my_subscription.github_models(chat_id_full):
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_41')
+                _set_chat_mode('gpt_41')
             else:
                 bot_reply_tr(message, 'Insert your github key first. /keys')
         elif call.data == 'select_gpt_41_mini':
             if my_subscription.github_models(chat_id_full):
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_41_mini')
+                _set_chat_mode('gpt_41_mini')
             else:
                 bot_reply_tr(message, 'Insert your github key first. /keys')
         elif call.data == 'select_deepseek_r1':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1')
+            _set_chat_mode('deepseek_r1')
         elif call.data == 'select_deepseek_v3':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_v3')
+            _set_chat_mode('deepseek_v3')
         elif call.data == 'select_cohere':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'cohere')
+            _set_chat_mode('cohere')
         elif call.data == 'select_gemini_flash':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
+            _set_chat_mode('gemini')
         elif call.data == 'select_gemini25_flash':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini25_flash')
+            _set_chat_mode('gemini25_flash')
         elif call.data == 'select_gemini-lite':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-lite')
+            _set_chat_mode('gemini-lite')
         elif call.data == 'select_gemini-exp':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-exp')
+            _set_chat_mode('gemini-exp')
         elif call.data == 'select_gemini-learn':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
+            _set_chat_mode('gemini-learn')
         elif call.data == 'select_gemma3_27b':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemma3_27b')
+            _set_chat_mode('gemma3_27b')
         elif call.data == 'select_gemini_pro':
-            # SECONDS_IN_MONTH = 60 * 60 * 24 * 30
-            # last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
-            # donater = time.time() - last_donate_time < SECONDS_IN_MONTH
-            # if (chat_id_full in my_gemini_general.USER_KEYS and my_gemini_general.USER_KEYS[chat_id_full]) or donater:
-            #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
-            # else:
-            #     bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать PRO модель. Команда /keys')
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
+            _set_chat_mode('gemini15')
         elif call.data == 'select_openrouter':
             if chat_id_full in my_openrouter.KEYS:
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+                _set_chat_mode('openrouter')
             else:
                 bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать openrouter. Команда /openrouter')
         elif call.data == 'select_qwen3':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen3')
-
+            _set_chat_mode('qwen3')
         elif call.data == 'select_gpt_oss':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_oss')
-
+            _set_chat_mode('gpt_oss')
         elif call.data == 'select_llama4':
-            my_db.set_user_property(chat_id_full, 'chat_mode', 'llama4')
+            _set_chat_mode('llama4')
+
+
+        # elif call.data == 'select_mistral':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'mistral')
+        # elif call.data == 'select_magistral':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'magistral')
+        # elif call.data == 'select_gpt-4o':
+        #     if my_subscription.github_models(chat_id_full):
+        #         my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o')
+        #     else:
+        #         bot_reply_tr(message, 'Insert your github key first. /keys')
+        # elif call.data == 'select_gpt_41':
+        #     if my_subscription.github_models(chat_id_full):
+        #         my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_41')
+        #     else:
+        #         bot_reply_tr(message, 'Insert your github key first. /keys')
+        # elif call.data == 'select_gpt_41_mini':
+        #     if my_subscription.github_models(chat_id_full):
+        #         my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_41_mini')
+        #     else:
+        #         bot_reply_tr(message, 'Insert your github key first. /keys')
+        # elif call.data == 'select_deepseek_r1':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1')
+        # elif call.data == 'select_deepseek_v3':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_v3')
+        # elif call.data == 'select_cohere':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'cohere')
+        # elif call.data == 'select_gemini_flash':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
+        # elif call.data == 'select_gemini25_flash':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini25_flash')
+        # elif call.data == 'select_gemini-lite':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-lite')
+        # elif call.data == 'select_gemini-exp':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-exp')
+        # elif call.data == 'select_gemini-learn':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
+        # elif call.data == 'select_gemma3_27b':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemma3_27b')
+        # elif call.data == 'select_gemini_pro':
+        #     # SECONDS_IN_MONTH = 60 * 60 * 24 * 30
+        #     # last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
+        #     # donater = time.time() - last_donate_time < SECONDS_IN_MONTH
+        #     # if (chat_id_full in my_gemini_general.USER_KEYS and my_gemini_general.USER_KEYS[chat_id_full]) or donater:
+        #     #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
+        #     # else:
+        #     #     bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать PRO модель. Команда /keys')
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
+        # elif call.data == 'select_openrouter':
+        #     if chat_id_full in my_openrouter.KEYS:
+        #         my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+        #     else:
+        #         bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать openrouter. Команда /openrouter')
+        # elif call.data == 'select_qwen3':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen3')
+
+        # elif call.data == 'select_gpt_oss':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_oss')
+
+        # elif call.data == 'select_llama4':
+        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'llama4')
+
+
 
         elif call.data == 'general_reset':
             reset_(message, say = True, chat_id_full = chat_id_full)

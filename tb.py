@@ -58,6 +58,7 @@ import my_openrouter_free
 import my_pandoc
 import my_plantweb
 import my_skills
+import my_skills_general
 import my_skills_storage
 import my_stat
 import my_stt
@@ -10978,7 +10979,17 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs)
+                            # ограниченный набор функций иначе тупит
+                            funcs = [
+                                my_skills.calc,
+                                my_skills.search_google_fast,
+                                my_skills.search_google_deep,
+                                my_skills.download_text_from_url,
+                                my_skills_general.save_to_txt,
+                                my_skills.save_html_to_image,
+                                my_skills.send_tarot_cards,
+                            ]
+                            TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*funcs) # (*my_cerebras.funcs)
                             answer = my_cohere.chat(
                                 message.text,
                                 chat_id_full,

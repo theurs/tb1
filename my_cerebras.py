@@ -315,7 +315,8 @@ def ai(
             if 'Wrong API key' in str(error):
                 if not key_:
                     remove_key(api_key)
-
+            if 'Please reduce the length of the messages or completion' in str(error):
+                return ''
             # [НОВОЕ] Добавляем паузу перед следующей попыткой, если это не последняя попытка
             if attempt < RETRY_MAX - 1:
                 time.sleep(1)

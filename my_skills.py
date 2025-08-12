@@ -68,26 +68,133 @@ edit_image = my_skills_general.edit_image
 get_weather = my_skills_general.get_weather
 
 
-def send_tarot_cards(chat_id: str, num_cards: int) -> str:
-    """Sends one or three random tarot cards to the user.
+# def send_tarot_cards(chat_id: str, num_cards: int) -> str:
+#     """Sends one or three random tarot cards to the user.
 
-    This function retrieves either one random tarot card or three unique tarot
-    cards (including their binary image data) from the `my_tarot` module
-    and prepares them for sending to the specified Telegram user.
-    If three cards are requested, they are combined into a single collage
-    image, arranged from left to right, without gaps, before sending.
+#     This function retrieves unique tarot cards (including their binary image data)
+#     from the `my_tarot` module and prepares them for sending to the specified Telegram user.
+#     If >1 cards are requested, they are combined into a single collage
+#     image, arranged from left to right, without gaps, before sending.
+
+#     Args:
+#         chat_id (str): The Telegram user chat ID where the card(s) should be sent.
+#                        The ID will be restored and validated internally.
+#         num_cards (int): The number of cards to send. Valid values are 1 or 3.
+
+#     Returns:
+#         str: 'OK' followed by a confirmation message if the card(s) were
+#              successfully prepared for sending. Returns 'FAIL' followed by an
+#              error description if an issue occurred, such as an invalid
+#              `num_cards` value, an unknown chat ID, or an error during card
+#              retrieval or storage.
+#     """
+#     try:
+#         # Log the request for auditing/debugging purposes.
+#         my_log.log_gemini_skills(f'Sending {num_cards} tarot card(s) for chat_id: {chat_id}')
+
+#         # Restore and validate the chat_id.
+#         restored_chat_id: str = my_skills_general.restore_id(chat_id)
+#         if restored_chat_id == '[unknown]':
+#             return "FAIL: Unknown chat ID."
+
+#         final_item_data: bytes
+#         final_item_filename: str
+#         card_names_for_message: List[str] = []
+
+#         # Determine how many cards to retrieve based on num_cards.
+#         if num_cards == 1:
+#             # Retrieve a single random card.
+#             card_data, card_name = my_tarot.get_single_tarot_card_data()
+#             final_item_data = card_data
+#             final_item_filename = card_name.replace('.webp', '')
+#             card_names_for_message.append(card_name)
+
+#         elif num_cards == 3:
+#             # Retrieve three unique cards.
+#             three_cards_data: List[Tuple[bytes, str]] = my_tarot.get_three_unique_tarot_card_data()
+
+#             if len(three_cards_data) != 3:
+#                 return "FAIL: Could not retrieve three unique tarot cards."
+
+#             images: List[Image.Image] = []
+#             total_width: int = 0
+#             max_height: int = 0
+
+#             # Open each image and prepare for collage
+#             for card_bytes, card_name in three_cards_data:
+#                 image: Image.Image = Image.open(io.BytesIO(card_bytes))
+#                 images.append(image)
+#                 total_width += image.width
+#                 max_height = max(max_height, image.height)
+#                 card_names_for_message.append(card_name)
+
+#             # Create a new blank image with transparent background
+#             collage_image = Image.new('RGBA', (total_width, max_height))
+
+#             # Paste images onto the collage
+#             x_offset: int = 0
+#             for img in images:
+#                 collage_image.paste(img, (x_offset, 0))
+#                 x_offset += img.width
+
+#             # Save the collage to bytes
+#             byte_arr = io.BytesIO()
+#             collage_image.save(byte_arr, format='PNG')
+#             final_item_data = byte_arr.getvalue()
+#             final_item_filename = f"{', '.join(name.replace('.webp', '') for name in card_names_for_message)}"
+
+#         else:
+#             # Handle invalid num_cards input.
+#             return "FAIL: Invalid number of cards specified. Please choose 1 or 3."
+
+#         # Check if final item data was generated.
+#         if not final_item_data:
+#             return "FAIL: No tarot card image data was generated."
+
+#         # Acquire a lock before modifying the shared storage to prevent race conditions.
+#         with my_skills_storage.STORAGE_LOCK:
+#             # Ensure the chat_id exists in storage, if not, initialize it.
+#             if restored_chat_id not in my_skills_storage.STORAGE:
+#                 my_skills_storage.STORAGE[restored_chat_id] = []
+
+#             # Define the item structure for storing the image data.
+#             item = {
+#                 'type': 'image/png file',
+#                 'filename': final_item_filename,
+#                 'data': final_item_data,
+#             }
+#             # Append the prepared item to the user's storage.
+#             my_skills_storage.STORAGE[restored_chat_id].append(item)
+
+#         # Return a success message.
+#         msg_cards = ", ".join(card_name.replace('.png', '') for card_name in card_names_for_message)
+#         return f"OK. {num_cards} tarot card(s) prepared for sending. Assistant, as a professional tarologist, must write to the user what such a spread means, the cards chosen are: " + msg_cards
+
+#     except Exception as e:
+#         # Capture full traceback for detailed logging in case of an unexpected error.
+#         traceback_error: str = traceback.format_exc()
+#         my_log.log_gemini_skills(
+#             f'send_tarot_cards: Unexpected error: {e}\n\n{traceback_error}\n\nchat_id: {chat_id}, num_cards: {num_cards}'
+#         )
+#         # Return a failure message with the encountered error.
+#         return f"FAIL: An unexpected error occurred while preparing tarot cards: {e}"
+
+
+def send_tarot_cards(chat_id: str, num_cards: int) -> str:
+    """Sends random tarot cards to the user.
+
+    This function retrieves the specified number of unique tarot cards and
+    send images to the specified Telegram user.
 
     Args:
         chat_id (str): The Telegram user chat ID where the card(s) should be sent.
                        The ID will be restored and validated internally.
-        num_cards (int): The number of cards to send. Valid values are 1 or 3.
+        num_cards (int): The number of cards to send (must be between 1 and 10 inclusive).
 
     Returns:
         str: 'OK' followed by a confirmation message if the card(s) were
              successfully prepared for sending. Returns 'FAIL' followed by an
-             error description if an issue occurred, such as an invalid
-             `num_cards` value, an unknown chat ID, or an error during card
-             retrieval or storage.
+             error description if an issue occurred.
     """
     try:
         # Log the request for auditing/debugging purposes.
@@ -98,86 +205,86 @@ def send_tarot_cards(chat_id: str, num_cards: int) -> str:
         if restored_chat_id == '[unknown]':
             return "FAIL: Unknown chat ID."
 
-        final_item_data: bytes
-        final_item_filename: str
-        card_names_for_message: List[str] = []
+        # Validate card count range (1-10 is standard for tarot spreads)
+        if num_cards < 1 or num_cards > 10:
+            return "FAIL: Number of cards must be between 1 and 10 inclusive. Traditional tarot spreads rarely exceed 10 cards for readability."
 
-        # Determine how many cards to retrieve based on num_cards.
-        if num_cards == 1:
-            # Retrieve a single random card.
-            card_data, card_name = my_tarot.get_single_tarot_card_data()
-            final_item_data = card_data
-            final_item_filename = card_name.replace('.webp', '')
-            card_names_for_message.append(card_name)
+        # Collect unique cards
+        cards_data = []
+        while len(cards_data) < num_cards:
+            card = my_tarot.get_single_tarot_card_data()
+            if card not in cards_data:
+                cards_data.append(card)
 
-        elif num_cards == 3:
-            # Retrieve three unique cards.
-            three_cards_data: List[Tuple[bytes, str]] = my_tarot.get_three_unique_tarot_card_data()
+        # Split cards into groups of 3 for storage
+        storage_items = []
+        group_messages = []
 
-            if len(three_cards_data) != 3:
-                return "FAIL: Could not retrieve three unique tarot cards."
+        for i in range(0, len(cards_data), 3):
+            chunk = cards_data[i:i+3]
+            chunk_size = len(chunk)
+            chunk_card_names = [name for _, name in chunk]
+            chunk_filenames = [name.replace('.webp', '') for name in chunk_card_names]
 
-            images: List[Image.Image] = []
-            total_width: int = 0
-            max_height: int = 0
+            # Process single-card group
+            if chunk_size == 1:
+                card_data, card_name = chunk[0]
+                item_data = card_data
+                item_filename = chunk_filenames[0]
+                group_msg = f"Group {i//3 + 1}: {chunk_filenames[0]}"
 
-            # Open each image and prepare for collage
-            for card_bytes, card_name in three_cards_data:
-                image: Image.Image = Image.open(io.BytesIO(card_bytes))
-                images.append(image)
-                total_width += image.width
-                max_height = max(max_height, image.height)
-                card_names_for_message.append(card_name)
+            # Process multi-card group (2-3 cards)
+            else:
+                images = []
+                total_width = 0
+                max_height = 0
 
-            # Create a new blank image with transparent background
-            collage_image = Image.new('RGBA', (total_width, max_height))
+                for card_bytes, card_name in chunk:
+                    image = Image.open(io.BytesIO(card_bytes))
+                    images.append(image)
+                    total_width += image.width
+                    max_height = max(max_height, image.height)
 
-            # Paste images onto the collage
-            x_offset: int = 0
-            for img in images:
-                collage_image.paste(img, (x_offset, 0))
-                x_offset += img.width
+                # Create horizontal collage
+                collage_image = Image.new('RGBA', (total_width, max_height))
+                x_offset = 0
+                for img in images:
+                    collage_image.paste(img, (x_offset, 0))
+                    x_offset += img.width
 
-            # Save the collage to bytes
-            byte_arr = io.BytesIO()
-            collage_image.save(byte_arr, format='PNG')
-            final_item_data = byte_arr.getvalue()
-            final_item_filename = f"{', '.join(name.replace('.webp', '') for name in card_names_for_message)}"
+                # Convert to PNG bytes
+                byte_arr = io.BytesIO()
+                collage_image.save(byte_arr, format='PNG')
+                item_data = byte_arr.getvalue()
+                item_filename = ', '.join(chunk_filenames)
+                group_msg = ', '.join(chunk_filenames)
 
-        else:
-            # Handle invalid num_cards input.
-            return "FAIL: Invalid number of cards specified. Please choose 1 or 3."
+            storage_items.append({
+                'type': 'image/png file',
+                'filename': item_filename,
+                'data': item_data,
+            })
+            group_messages.append(group_msg)
 
-        # Check if final item data was generated.
-        if not final_item_data:
-            return "FAIL: No tarot card image data was generated."
-
-        # Acquire a lock before modifying the shared storage to prevent race conditions.
+        # Store all groups in user-specific storage
         with my_skills_storage.STORAGE_LOCK:
-            # Ensure the chat_id exists in storage, if not, initialize it.
             if restored_chat_id not in my_skills_storage.STORAGE:
                 my_skills_storage.STORAGE[restored_chat_id] = []
+            my_skills_storage.STORAGE[restored_chat_id].extend(storage_items)
 
-            # Define the item structure for storing the image data.
-            item = {
-                'type': 'image/png file',
-                'filename': final_item_filename,
-                'data': final_item_data,
-            }
-            # Append the prepared item to the user's storage.
-            my_skills_storage.STORAGE[restored_chat_id].append(item)
-
-        # Return a success message.
-        msg_cards = ", ".join(card_name.replace('.png', '') for card_name in card_names_for_message)
-        return f"OK. {num_cards} tarot card(s) prepared for sending. Assistant, as a professional tarologist, must write to the user what such a spread means, the cards chosen are: " + msg_cards
+        # Generate response message
+        msg_cards = "; ".join(group_messages)
+        return (
+            f"Assistant, as a professional tarologist, must write to the user what such a spread means, "
+            f"the cards chosen are: {msg_cards}"
+        )
 
     except Exception as e:
-        # Capture full traceback for detailed logging in case of an unexpected error.
+        # Error handling with full traceback
         traceback_error: str = traceback.format_exc()
         my_log.log_gemini_skills(
             f'send_tarot_cards: Unexpected error: {e}\n\n{traceback_error}\n\nchat_id: {chat_id}, num_cards: {num_cards}'
         )
-        # Return a failure message with the encountered error.
         return f"FAIL: An unexpected error occurred while preparing tarot cards: {e}"
 
 

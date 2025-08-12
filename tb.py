@@ -1694,6 +1694,204 @@ def get_config_msg(chat_id_full: str, lang: str) -> str:
         return tr('ERROR', lang)
 
 
+
+
+# --- Helper functions for button creation ---
+
+def _create_selection_button(
+    text: str,
+    value: str,
+    current_value: str,
+    callback_prefix: str
+) -> telebot.types.InlineKeyboardButton:
+    """Creates a button with a checkmark if it's the selected item."""
+    prefix = '✅ ' if value == current_value else ''
+    callback_data = 'switch_do_nothing' if value == current_value else f"{callback_prefix}{value}"
+    return telebot.types.InlineKeyboardButton(f"{prefix}{text}", callback_data=callback_data)
+
+def _create_toggle_button(
+    text: str, # Expects pre-translated text
+    is_enabled: bool,
+    callback_base: str
+) -> telebot.types.InlineKeyboardButton:
+    """Creates a toggle button. Expects pre-translated text."""
+    prefix = '✅' if is_enabled else '☑️'
+    state_for_callback = 'disable' if is_enabled else 'enable'
+    return telebot.types.InlineKeyboardButton(f"{prefix} {text}", callback_data=f"{callback_base}_{state_for_callback}")
+
+
+# --- Builder functions for each config sub-menu (with translation context) ---
+
+def _build_config_main_menu(lang: str) -> telebot.types.InlineKeyboardMarkup:
+    """Builds the main config menu (Level 1)."""
+    # Pre-cache all translations for this menu with context
+    texts = {
+        'models': tr('Модели', lang, help="UI button text for 'Models'. Short. E.g., 'Models', 'Modelle'"),
+        'speech': tr('Речь', lang, help="UI button text for 'Speech' settings. Short. E.g., 'Speech', 'Sprache'"),
+        'behavior': tr('Поведение', lang, help="UI button text for 'Behavior' settings. Short. E.g., 'Behavior', 'Verhalten'"),
+        'close': tr('Закрыть', lang, help="UI button text for 'Close'. Short. E.g., 'Close', 'Schließen'"),
+    }
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    btn_models = telebot.types.InlineKeyboardButton(f"🧠 {texts['models']}", callback_data='config_models')
+    btn_speech = telebot.types.InlineKeyboardButton(f"🔊 {texts['speech']}", callback_data='config_speech')
+    btn_behavior = telebot.types.InlineKeyboardButton(f"⚙️ {texts['behavior']}", callback_data='config_behavior')
+    btn_close = telebot.types.InlineKeyboardButton(f"🙈 {texts['close']}", callback_data='erase_answer')
+    markup.row(btn_models, btn_speech)
+    markup.row(btn_behavior, btn_close)
+    return markup
+
+def _build_config_models_menu(chat_id_full: str, lang: str) -> telebot.types.InlineKeyboardMarkup:
+    """Builds the model selection menu (Level 2)."""
+    texts = {
+        'back': tr('Назад', lang, help="UI button text for 'Back'. Short. E.g., 'Back', 'Zurück'"),
+    }
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode') or cfg.chat_mode_default
+
+    # Model names are proper nouns, not translated
+    models = [
+        ("Gemini 2.5 Flash", "gemini25_flash"), ("Qwen 3", "qwen3"),
+        ("GPT OSS 120b", "gpt_oss"), ("Mistral", "mistral"),
+        ("Gemini 2.5 Pro", "gemini15"), ("Command A", "cohere"),
+        ("GPT-4o", "gpt-4o"), ("GPT 4.1", "gpt_41"),
+        ("DeepSeek V3", "deepseek_v3"), ("OpenRouter", "openrouter"),
+    ]
+
+    buttons = [_create_selection_button(name, val, chat_mode, 'select_') for name, val in models]
+    for i in range(0, len(buttons), 2):
+        markup.row(*buttons[i:i+2])
+
+    markup.add(telebot.types.InlineKeyboardButton(f"⬅️ {texts['back']}", callback_data='config'))
+    return markup
+
+def _build_config_speech_menu(lang: str) -> telebot.types.InlineKeyboardMarkup:
+    """Builds the speech settings navigation menu (Level 2)."""
+    texts = {
+        'tts': tr('Голос для ответа (TTS)', lang, help="UI button text. For 'Voice for response (TTS)'. Keep it clear."),
+        'stt': tr('Распознавание речи (STT)', lang, help="UI button text. For 'Speech recognition (STT)'. Keep it clear."),
+        'back': tr('Назад', lang, help="UI button text for 'Back'. Short. E.g., 'Back', 'Zurück'"),
+    }
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    btn_tts = telebot.types.InlineKeyboardButton(f"🗣️ {texts['tts']}", callback_data='config_tts')
+    btn_stt = telebot.types.InlineKeyboardButton(f"🎤 {texts['stt']}", callback_data='config_stt')
+    btn_back = telebot.types.InlineKeyboardButton(f"⬅️ {texts['back']}", callback_data='config')
+    markup.add(btn_tts, btn_stt, btn_back)
+    return markup
+
+def _build_config_stt_menu(chat_id_full: str, lang: str) -> telebot.types.InlineKeyboardMarkup:
+    """Builds the STT engine selection menu (Level 3)."""
+    texts = {
+        'back': tr('Назад', lang, help="UI button text for 'Back'. Short. E.g., 'Back', 'Zurück'"),
+    }
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=3)
+    current_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
+
+    # Engine names are proper nouns, not translated
+    engines = [
+        ("Auto", "auto"), ("Whisper", "whisper"), ("Gemini", "gemini"),
+        ("Voxtral", "voxtral"), ("Google", "google"), ("AssemblyAI", "assembly.ai"),
+        ("Deepgram", "deepgram_nova3")
+    ]
+
+    buttons = [_create_selection_button(name, val, current_engine, 'switch_speech_to_text_') for name, val in engines]
+    markup.row(*buttons[0:3])
+    markup.row(*buttons[3:6])
+    markup.row(buttons[6])
+    markup.add(telebot.types.InlineKeyboardButton(f"⬅️ {texts['back']}", callback_data='config_speech'))
+    return markup
+
+def _build_config_tts_menu(chat_id_full: str, lang: str) -> telebot.types.InlineKeyboardMarkup:
+    """Builds the complete TTS voice selection menu (Level 3)."""
+    # Pre-cache all translations for this menu
+    texts = {
+        'ms_female': tr('MS жен.', lang, help="UI button text. Very short, for 'Microsoft female voice'. E.g., 'MS fem.'"),
+        'ms_male': tr('MS муж.', lang, help="UI button text. Very short, for 'Microsoft male voice'. E.g., 'MS masc.'"),
+        'voice_prompt': tr('📢Голос:', lang, help="UI button label prefix for 'Voice:'. Keep it short. E.g., 'Voice:'"),
+        'voice_only': tr('Только голос', lang, help="UI button toggle for 'Voice only' mode. E.g., 'Voice only'"),
+        'back': tr('Назад', lang, help="UI button text for 'Back'. Short. E.g., 'Back', 'Zurück'"),
+    }
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=4)
+    current_voice_key = my_db.get_user_property(chat_id_full, 'tts_gender') or 'female'
+    current_voice_provider_cb = f'tts_{current_voice_key}'
+
+    gemini_voices_dict = {f"tts_gemini_{voice}": "Gemini" for voice in my_gemini_tts.POSSIBLE_VOICES}
+
+    voice_providers = {
+        'tts_female': texts['ms_female'],
+        'tts_male': texts['ms_male'],
+        'tts_google_female': 'Google',
+        **{f'tts_openai_{v}': 'OpenAI' for v in ['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'onyx', 'nova', 'sage', 'shimmer', 'verse']},
+        **gemini_voices_dict
+    }
+
+    voice_title = voice_providers.get(current_voice_provider_cb, texts['ms_female'])
+
+    btn_provider = telebot.types.InlineKeyboardButton(f"{texts['voice_prompt']} {voice_title}", callback_data=current_voice_provider_cb)
+    is_voice_only = my_db.get_user_property(chat_id_full, 'voice_only_mode')
+    # CORRECT CALL with 3 arguments
+    btn_voice_only = _create_toggle_button(texts['voice_only'], is_voice_only, 'voice_only_mode')
+    markup.row(btn_provider, btn_voice_only)
+
+    filler = telebot.types.InlineKeyboardButton("---", callback_data='switch_do_nothing')
+    markup.row(filler)
+
+    if voice_title == 'OpenAI':
+        openai_voices = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'onyx', 'nova', 'sage', 'shimmer', 'verse']
+        current_selection = current_voice_key.replace('openai_', '')
+        buttons = [_create_selection_button(v.capitalize(), v, current_selection, 'switch_openai_') for v in openai_voices]
+        for i in range(0, len(buttons), 4):
+            markup.row(*buttons[i:i+4])
+    elif voice_title == 'Gemini':
+        current_selection = current_voice_key.replace('gemini_', '')
+        buttons = [_create_selection_button(v, v, current_selection, 'switch_gemini_') for v in sorted(my_gemini_tts.POSSIBLE_VOICES)]
+        for i in range(0, len(buttons), 3):
+            markup.row(*buttons[i:i+3])
+
+    markup.add(telebot.types.InlineKeyboardButton(f"⬅️ {texts['back']}", callback_data='config_speech'))
+    return markup
+
+def _build_config_behavior_menu(message: telebot.types.Message, chat_id_full: str, lang: str) -> telebot.types.InlineKeyboardMarkup:
+    """Builds the bot behavior toggles menu (Level 2)."""
+    texts = {
+        'chat_buttons': tr('Чат-кнопки', lang, help="UI button toggle. For 'Chat buttons' visibility. E.g., 'Chat buttons'"),
+        'other_notification': tr('🔔 Other notification', lang, help="UI button toggle. For an alternative notification style. Keep concise."),
+        'voice_to_text': tr('📝 Voice to text mode', lang, help="UI button toggle. For 'Voice to text mode'. E.g., 'Transcription mode'"),
+        'do_not_reply': tr('↩️ Do not reply', lang, help="UI button toggle. For a mode where the bot doesn't reply. E.g., 'Do not reply'"),
+        'auto_reply': tr('🤖 Автоответы в чате', lang, help="UI button toggle. For 'Auto-replies in chat'. E.g., 'Auto-replies'"),
+        'back': tr('Назад', lang, help="UI button text for 'Back'. Short. E.g., 'Back', 'Zurück'"),
+    }
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+
+    # CORRECT CALLS with 3 arguments
+    is_kbd_enabled = not my_db.get_user_property(chat_id_full, 'disabled_kbd')
+    btn_kbd = _create_toggle_button(texts['chat_buttons'], is_kbd_enabled, 'chat_kbd')
+
+    action_style_enabled = bool(my_db.get_user_property(chat_id_full, 'action_style'))
+    btn_action = _create_toggle_button(texts['other_notification'], action_style_enabled, 'action_style')
+    markup.row(btn_kbd, btn_action)
+
+    is_transcribe_only = my_db.get_user_property(chat_id_full, 'transcribe_only')
+    btn_transcribe = _create_toggle_button(texts['voice_to_text'], is_transcribe_only, 'transcribe_only_chat')
+
+    is_no_reply = my_db.get_user_property(chat_id_full, 'send_message')
+    btn_reply = _create_toggle_button(texts['do_not_reply'], is_no_reply, 'send_message_chat_switch')
+    markup.row(btn_transcribe, btn_reply)
+
+    if message.chat.type != 'private' and is_admin_member(message):
+        is_superchat = bool(my_db.get_user_property(chat_id_full, 'superchat'))
+        btn_superchat = _create_toggle_button(texts['auto_reply'], is_superchat, 'admin_chat')
+        markup.add(btn_superchat)
+
+    markup.add(telebot.types.InlineKeyboardButton(f"⬅️ {texts['back']}", callback_data='config'))
+    return markup
+
+
 def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> telebot.types.InlineKeyboardMarkup:
     """создает и возвращает клавиатуру по текстовому описанию
     'chat' - клавиатура для чата
@@ -1902,338 +2100,22 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button4 = telebot.types.InlineKeyboardButton(lang, callback_data='translate_chat')
             markup.add(button0, button1, button2, button3, button4)
             return markup
+
+
         elif kbd == 'config':
-            if my_db.get_user_property(chat_id_full, 'tts_gender'):
-                voice = f'tts_{my_db.get_user_property(chat_id_full, "tts_gender")}'
-            else:
-                voice = 'tts_female'
-
-            sorted_possible_voices = my_gemini_tts.POSSIBLE_VOICES
-            # Создаем словарь для голосов Gemini динамически
-            gemini_voices_dict = {f"tts_gemini_{voice}": "Gemini" for voice in sorted_possible_voices}
-            voices = {
-                'tts_female': tr('MS жен.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft женский", тут имеется в виду женский голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
-                'tts_male': tr('MS муж.', lang, 'это сокращенный текст на кнопке, полный текст - "Microsoft мужской", тут имеется в виду мужской голос для TTS от микрософта, сделай перевод таким же коротким что бы уместится на кнопке'),
-                'tts_google_female': 'Google',
-
-                'tts_openai_alloy': 'OpenAI',
-                'tts_openai_ash': 'OpenAI',
-                'tts_openai_ballad': 'OpenAI',
-                'tts_openai_coral': 'OpenAI',
-                'tts_openai_echo': 'OpenAI',
-                'tts_openai_fable': 'OpenAI',
-                'tts_openai_onyx': 'OpenAI',
-                'tts_openai_nova': 'OpenAI',
-                'tts_openai_sage': 'OpenAI',
-                'tts_openai_shimmer': 'OpenAI',
-                'tts_openai_verse': 'OpenAI',
-
-                **gemini_voices_dict
-            }
-
-            if voice in voices:
-                voice_title = voices[voice]
-            else:
-                my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
-                voice_title = voices['tts_female']
-
-            chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
-
-            markup  = telebot.types.InlineKeyboardMarkup(row_width=1)
-
-            if chat_mode == 'gemini':
-                msg = '✅ Gemini 2.0 Flash '
-            else:
-                msg = 'Gemini 2.0 Flash'
-            button_gemini_flash20 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_flash')
-
-            if chat_mode == 'gemini25_flash':
-                msg = '✅ Gemini 2.5 Flash'
-            else:
-                msg = 'Gemini 2.5 Flash'
-            button_gemini_flash25 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini25_flash')
-
-            if chat_mode == 'gemini15':
-                msg = '✅ Gemini 2.5 Pro'
-            else:
-                msg = 'Gemini 2.5 Pro'
-            button_gemini_pro = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini_pro')
-
-            if chat_mode == 'gemini-exp':
-                msg = '✅ Gemini exp'
-            else:
-                msg = 'Gemini exp'
-            button_gemini_exp = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-exp')
-
-            if chat_mode == 'gemma3_27b':
-                msg = '✅ Gemma 3 27b'
-            else:
-                msg = 'Gemma 3 27b'
-            button_gemini_pro15 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemma3_27b')
-
-            if chat_mode == 'gemini-learn':
-                msg = '✅ Gemini LearnLM 2.0 Flash'
-            else:
-                msg = 'Gemini LearnLM 2.0 Flash'
-            button_gemini_learnlm = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-learn')
-
-            if chat_mode == 'gemini-lite':
-                msg = '✅ Gemini 2.5 Flash Lite'
-            else:
-                msg = 'Gemini 2.5 Flash Lite'
-            button_gemini_lite = telebot.types.InlineKeyboardButton(msg, callback_data='select_gemini-lite')
-
-            if chat_mode == 'mistral':
-                msg = '✅ Mistral'
-            else:
-                msg = 'Mistral'
-            button_mistral = telebot.types.InlineKeyboardButton(msg, callback_data='select_mistral')
-
-            if chat_mode == 'magistral':
-                msg = '✅ Magistral'
-            else:
-                msg = 'Magistral'
-            button_magistral = telebot.types.InlineKeyboardButton(msg, callback_data='select_magistral')
-
-            if chat_mode == 'gpt-4o':
-                msg = '✅ GPT-4o'
-            else:
-                msg = 'GPT-4o'
-            button_gpt_4o = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt-4o')
-
-            if chat_mode == 'gpt_41':
-                msg = '✅ GPT 4.1'
-            else:
-                msg = 'GPT 4.1'
-            button_gpt_41 = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt_41')
-
-            if chat_mode == 'gpt_41_mini':
-                msg = '✅ GPT 4.1 mini'
-            else:
-                msg = 'GPT 4.1 mini'
-            button_gpt_41_mini = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt_41_mini')
-
-            if chat_mode == 'deepseek_v3':
-                msg = '✅ DeepSeek V3'
-            else:
-                msg = 'DeepSeek V3'
-            button_deepseek_v3 = telebot.types.InlineKeyboardButton(msg, callback_data='select_deepseek_v3')
-
-            if chat_mode == 'deepseek_r1':
-                msg = '✅ DeepSeek R1'
-            else:
-                msg = 'DeepSeek R1'
-            button_deepseek_r1 = telebot.types.InlineKeyboardButton(msg, callback_data='select_deepseek_r1')
-
-            if chat_mode == 'cohere':
-                msg = '✅ Command A'
-            else:
-                msg = 'Command A'
-            button_cohere = telebot.types.InlineKeyboardButton(msg, callback_data='select_cohere')
-
-            if chat_mode == 'openrouter':
-                msg = '✅ OpenRouter'
-            else:
-                msg = 'OpenRouter'
-            button_openrouter = telebot.types.InlineKeyboardButton(msg, callback_data='select_openrouter')
-
-            if chat_mode == 'qwen3':
-                msg = '✅ Qwen 3'
-            else:
-                msg = 'Qwen 3'
-            button_qwen3 = telebot.types.InlineKeyboardButton(msg, callback_data='select_qwen3')
-
-            if chat_mode == 'gpt_oss':
-                msg = '✅ GPT OSS 120b'
-            else:
-                msg = 'GPT OSS 120b'
-            button_gpt_oss = telebot.types.InlineKeyboardButton(msg, callback_data='select_gpt_oss')
-
-            if chat_mode == 'llama4':
-                msg = '✅ Llama 4'
-            else:
-                msg = 'Llama 4'
-            button_llama4 = telebot.types.InlineKeyboardButton(msg, callback_data='select_llama4')
-
-            msg = '==='
-            button_filler1 = telebot.types.InlineKeyboardButton(msg, callback_data='switch_do_nothing')
-
-            markup.row(button_gemini_flash25, button_qwen3)
-            markup.row(button_mistral, button_cohere)
-            markup.row(button_gpt_4o, button_gpt_41)
-            markup.row(button_gemini_pro, button_gpt_oss) # button_gemini_lite) # button_gemini_flash20
-            markup.row(button_deepseek_v3, button_openrouter)
-
-            if voice_title in ('OpenAI', 'Gemini'):
-                markup.row(button_filler1)
-
-            button1 = telebot.types.InlineKeyboardButton(f"{tr('📢Голос:', lang)} {voice_title}", callback_data=voice)
-            if my_db.get_user_property(chat_id_full, 'voice_only_mode'):
-                button2 = telebot.types.InlineKeyboardButton(tr('✅ 🗣️ Только голос', lang), callback_data='voice_only_mode_disable')
-            else:
-                button2 = telebot.types.InlineKeyboardButton(tr('☑️ 🗣️ Только голос', lang), callback_data='voice_only_mode_enable')
-            markup.row(button1, button2)
-            if voice_title == 'OpenAI':
-                if 'alloy' in voice:
-                    button1 = telebot.types.InlineKeyboardButton('📢 Alloy', callback_data='switch_do_nothing')
-                else:
-                    button1 = telebot.types.InlineKeyboardButton('Alloy', callback_data='switch_openai_alloy')
-                if 'ash' in voice:
-                    button2 = telebot.types.InlineKeyboardButton('📢 Ash', callback_data='switch_do_nothing')
-                else:
-                    button2 = telebot.types.InlineKeyboardButton('Ash', callback_data='switch_openai_ash')
-                if 'ballad' in voice:
-                    button3 = telebot.types.InlineKeyboardButton('📢 Ballad', callback_data='switch_do_nothing')
-                else:
-                    button3 = telebot.types.InlineKeyboardButton('Ballad', callback_data='switch_openai_ballad')
-                if 'coral' in voice:
-                    button4 = telebot.types.InlineKeyboardButton('📢 Coral', callback_data='switch_do_nothing')
-                else:
-                    button4 = telebot.types.InlineKeyboardButton('Coral', callback_data='switch_openai_coral')
-                if 'echo' in voice:
-                    button5 = telebot.types.InlineKeyboardButton('📢 Echo', callback_data='switch_do_nothing')
-                else:
-                    button5 = telebot.types.InlineKeyboardButton('Echo', callback_data='switch_openai_echo')
-                if 'fable' in voice:
-                    button6 = telebot.types.InlineKeyboardButton('📢 Fable', callback_data='switch_do_nothing')
-                else:
-                    button6 = telebot.types.InlineKeyboardButton('Fable', callback_data='switch_openai_fable')
-                if 'onyx' in voice:
-                    button7 = telebot.types.InlineKeyboardButton('📢 Onyx', callback_data='switch_do_nothing')
-                else:
-                    button7 = telebot.types.InlineKeyboardButton('Onyx', callback_data='switch_openai_onyx')
-                if 'nova' in voice:
-                    button8 = telebot.types.InlineKeyboardButton('📢 Nova', callback_data='switch_do_nothing')
-                else:
-                    button8 = telebot.types.InlineKeyboardButton('Nova', callback_data='switch_openai_nova')
-                if 'sage' in voice:
-                    button9 = telebot.types.InlineKeyboardButton('📢 Sage', callback_data='switch_do_nothing')
-                else:
-                    button9 = telebot.types.InlineKeyboardButton('Sage', callback_data='switch_openai_sage')
-                if 'shimmer' in voice:
-                    button10 = telebot.types.InlineKeyboardButton('📢 Shimmer', callback_data='switch_do_nothing')
-                else:
-                    button10 = telebot.types.InlineKeyboardButton('Shimmer', callback_data='switch_openai_shimmer')
-                if 'verse' in voice:
-                    button11 = telebot.types.InlineKeyboardButton('📢 Verse', callback_data='switch_do_nothing')
-                else:
-                    button11 = telebot.types.InlineKeyboardButton('Verse', callback_data='switch_openai_verse')
-
-                markup.row(button1, button2, button3, button4)
-                markup.row(button5, button6, button7, button8)
-                markup.row(button9, button10, button11)
+            return _build_config_main_menu(lang)
+        elif kbd == 'config_models':
+            return _build_config_models_menu(chat_id_full, lang)
+        elif kbd == 'config_speech':
+            return _build_config_speech_menu(lang)
+        elif kbd == 'config_stt':
+            return _build_config_stt_menu(chat_id_full, lang)
+        elif kbd == 'config_tts':
+            return _build_config_tts_menu(chat_id_full, lang) # Note: The full logic for this is complex
+        elif kbd == 'config_behavior':
+            return _build_config_behavior_menu(message, chat_id_full, lang)
 
 
-            if voice_title == 'Gemini':
-                # Список для хранения кнопок текущей строки
-                current_row_buttons = []
-
-                for voice_name in sorted_possible_voices:
-                    # Определяем текст кнопки: '📢 VoiceName' если выбран, иначе 'VoiceName'
-                    # Условие 'voice_name in voice' работает, если 'voice' - это 'tts_gemini_VoiceName'
-                    if voice_name in voice:
-                        button_text = f'📢 {voice_name}'
-                        callback_data_value = 'switch_do_nothing' # Ничего не делать, если уже выбран
-                    else:
-                        button_text = voice_name
-                        callback_data_value = f'switch_gemini_{voice_name}' # Переключиться на этот голос
-
-                    button = telebot.types.InlineKeyboardButton(button_text, callback_data=callback_data_value)
-                    current_row_buttons.append(button)
-
-                    # Если в текущей строке 3 кнопки, добавляем их в разметку и очищаем список для следующей строки
-                    if len(current_row_buttons) == 3:
-                        markup.row(*current_row_buttons) # * распаковывает список в отдельные аргументы
-                        current_row_buttons = []
-
-                # Добавляем оставшиеся кнопки, если их количество не кратно 3
-                if current_row_buttons:
-                    markup.row(*current_row_buttons)
-
-            if voice_title in ('OpenAI', 'Gemini'):
-                markup.row(button_filler1)
-
-            if my_db.get_user_property(chat_id_full, 'disabled_kbd'):
-                button1 = telebot.types.InlineKeyboardButton(tr('☑️Чат-кнопки', lang), callback_data='disable_chat_kbd')
-            else:
-                button1 = telebot.types.InlineKeyboardButton(tr('✅Чат-кнопки', lang), callback_data='enable_chat_kbd')
-
-            other_notification = my_db.get_user_property(chat_id_full, 'action_style') or ''
-            if not other_notification:
-                button2 = telebot.types.InlineKeyboardButton(tr('☑️ 🔔 Other notification', lang), callback_data='switch_action_style')
-            else:
-                button2 = telebot.types.InlineKeyboardButton(tr('✅ 🔔 Other notification', lang), callback_data='switch_action_style')
-            markup.row(button1, button2)
-
-
-            if my_db.get_user_property(chat_id_full, 'transcribe_only'):
-                button1 = telebot.types.InlineKeyboardButton(tr('✅ 📝 Voice to text mode', lang), callback_data='transcribe_only_chat_disable')
-            else:
-                button1 = telebot.types.InlineKeyboardButton(tr('☑️ 📝 Voice to text mode', lang), callback_data='transcribe_only_chat_enable')
-            if my_db.get_user_property(chat_id_full, 'send_message'):
-                button2 = telebot.types.InlineKeyboardButton(tr('✅ ↩️ Do not reply', lang), callback_data='send_message_chat_switch')
-            else:
-                button2 = telebot.types.InlineKeyboardButton(tr('☑️ ↩️ Do not reply', lang), callback_data='send_message_chat_switch')
-            markup.row(button1, button2)
-
-            if voice_title in ('OpenAI', 'Gemini'):
-                markup.row(button_filler1)
-
-            speech_to_text_engine = my_db.get_user_property(chat_id_full, 'speech_to_text_engine') or my_stt.DEFAULT_STT_ENGINE
-            if speech_to_text_engine == 'auto':
-                button0 = telebot.types.InlineKeyboardButton('🎤Auto', callback_data='switch_do_nothing')
-            else:
-                button0 = telebot.types.InlineKeyboardButton('Auto', callback_data='switch_speech_to_text_auto')
-            if speech_to_text_engine == 'whisper':
-                button1 = telebot.types.InlineKeyboardButton('🎤Whisper', callback_data='switch_do_nothing')
-            else:
-                button1 = telebot.types.InlineKeyboardButton('Whisper', callback_data='switch_speech_to_text_whisper')
-            if speech_to_text_engine == 'gemini':
-                button2 = telebot.types.InlineKeyboardButton('🎤Gemini', callback_data='switch_do_nothing')
-            else:
-                button2 = telebot.types.InlineKeyboardButton('Gemini', callback_data='switch_speech_to_text_gemini')
-            if speech_to_text_engine == 'google':
-                button3 = telebot.types.InlineKeyboardButton('🎤Google', callback_data='switch_do_nothing')
-            else:
-                button3 = telebot.types.InlineKeyboardButton('Google', callback_data='switch_speech_to_text_google')
-            if speech_to_text_engine == 'assembly.ai':
-                button4 = telebot.types.InlineKeyboardButton('🎤AssemblyAI', callback_data='switch_do_nothing')
-            else:
-                button4 = telebot.types.InlineKeyboardButton('AssemblyAI', callback_data='switch_speech_to_text_assembly.ai')
-            if speech_to_text_engine == 'deepgram_nova3':
-                button5 = telebot.types.InlineKeyboardButton('🎤Deepgram', callback_data='switch_do_nothing')
-            else:
-                button5 = telebot.types.InlineKeyboardButton('Deepgram', callback_data='switch_speech_to_text_deepgram_nova3')
-            if speech_to_text_engine == 'voxtral':
-                button6 = telebot.types.InlineKeyboardButton('🎤Voxtral', callback_data='switch_do_nothing')
-            else:
-                button6 = telebot.types.InlineKeyboardButton('Voxtral', callback_data='switch_speech_to_text_voxtral')
-            markup.row(button0, button1, button2)
-            markup.row(button6, button3, button4)
-            markup.row(button5)
-
-            is_private = message.chat.type == 'private'
-            is_admin_of_group = False
-            if message.reply_to_message:
-                is_admin_of_group = is_admin_member(message.reply_to_message)
-                from_user = message.reply_to_message.from_user.id
-            else:
-                from_user = message.from_user.id
-                is_admin_of_group = is_admin_member(message)
-
-            if flag == 'admin' or is_admin_of_group or from_user in cfg.admins:
-                supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
-                if supch == 1:
-                    button = telebot.types.InlineKeyboardButton(tr('✅ 🤖 Автоответы в чате', lang), callback_data='admin_chat')
-                else:
-                    button = telebot.types.InlineKeyboardButton(tr('☑️ 🤖 Автоответы в чате', lang), callback_data='admin_chat')
-                if not is_private:
-                    markup.add(button)
-
-            button = telebot.types.InlineKeyboardButton(tr('🙈Закрыть меню', lang), callback_data='erase_answer')
-            markup.add(button)
-
-            return markup
         else:
             traceback_error = traceback.format_exc()
             raise Exception(f"Неизвестная клавиатура '{kbd}'\n\n{traceback_error}")
@@ -2290,6 +2172,18 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # обработка нажатия кнопки "Стереть историю"
             reset_(message)
             bot.delete_message(message.chat.id, message.message_id)
+
+
+        elif call.data == 'config' or call.data.startswith('config_'):
+            bot.edit_message_text(
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+                text=MSG_CONFIG,  # Use the pre-fetched config message text
+                parse_mode='HTML',
+                disable_web_page_preview=True,
+                reply_markup=get_keyboard(call.data, message) # Pass the callback data to get the right menu
+            )
+
 
         elif call.data == 'image_prompt_describe':
             COMMAND_MODE[chat_id_full] = ''
@@ -2518,159 +2412,96 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             COMMAND_MODE[chat_id_full] = ''
 
 
-        elif call.data == 'select_mistral':
-            _set_chat_mode('mistral')
-        elif call.data == 'select_magistral':
-            _set_chat_mode('magistral')
-        elif call.data == 'select_gpt-4o':
-            if my_subscription.github_models(chat_id_full):
-                _set_chat_mode('gpt-4o')
-            else:
-                bot_reply_tr(message, 'Insert your github key first. /keys')
-        elif call.data == 'select_gpt_41':
-            if my_subscription.github_models(chat_id_full):
-                _set_chat_mode('gpt_41')
-            else:
-                bot_reply_tr(message, 'Insert your github key first. /keys')
-        elif call.data == 'select_gpt_41_mini':
-            if my_subscription.github_models(chat_id_full):
-                _set_chat_mode('gpt_41_mini')
-            else:
-                bot_reply_tr(message, 'Insert your github key first. /keys')
-        elif call.data == 'select_deepseek_r1':
-            _set_chat_mode('deepseek_r1')
-        elif call.data == 'select_deepseek_v3':
-            _set_chat_mode('deepseek_v3')
-        elif call.data == 'select_cohere':
-            _set_chat_mode('cohere')
-        elif call.data == 'select_gemini_flash':
-            _set_chat_mode('gemini')
-        elif call.data == 'select_gemini25_flash':
-            _set_chat_mode('gemini25_flash')
-        elif call.data == 'select_gemini-lite':
-            _set_chat_mode('gemini-lite')
-        elif call.data == 'select_gemini-exp':
-            _set_chat_mode('gemini-exp')
-        elif call.data == 'select_gemini-learn':
-            _set_chat_mode('gemini-learn')
-        elif call.data == 'select_gemma3_27b':
-            _set_chat_mode('gemma3_27b')
-        elif call.data == 'select_gemini_pro':
-            _set_chat_mode('gemini15')
-        elif call.data == 'select_openrouter':
-            if chat_id_full in my_openrouter.KEYS:
-                _set_chat_mode('openrouter')
-            else:
-                bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать openrouter. Команда /openrouter')
-        elif call.data == 'select_qwen3':
-            _set_chat_mode('qwen3')
-        elif call.data == 'select_gpt_oss':
-            _set_chat_mode('gpt_oss')
-        elif call.data == 'select_llama4':
-            _set_chat_mode('llama4')
 
+        # --- Model Selection (Stays on Models menu) ---
+        elif call.data.startswith('select_'):
+            model_id = call.data[7:] # Extract model id from 'select_...'
 
-        # elif call.data == 'select_mistral':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'mistral')
-        # elif call.data == 'select_magistral':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'magistral')
-        # elif call.data == 'select_gpt-4o':
-        #     if my_subscription.github_models(chat_id_full):
-        #         my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt-4o')
-        #     else:
-        #         bot_reply_tr(message, 'Insert your github key first. /keys')
-        # elif call.data == 'select_gpt_41':
-        #     if my_subscription.github_models(chat_id_full):
-        #         my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_41')
-        #     else:
-        #         bot_reply_tr(message, 'Insert your github key first. /keys')
-        # elif call.data == 'select_gpt_41_mini':
-        #     if my_subscription.github_models(chat_id_full):
-        #         my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_41_mini')
-        #     else:
-        #         bot_reply_tr(message, 'Insert your github key first. /keys')
-        # elif call.data == 'select_deepseek_r1':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_r1')
-        # elif call.data == 'select_deepseek_v3':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'deepseek_v3')
-        # elif call.data == 'select_cohere':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'cohere')
-        # elif call.data == 'select_gemini_flash':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini')
-        # elif call.data == 'select_gemini25_flash':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini25_flash')
-        # elif call.data == 'select_gemini-lite':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-lite')
-        # elif call.data == 'select_gemini-exp':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-exp')
-        # elif call.data == 'select_gemini-learn':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini-learn')
-        # elif call.data == 'select_gemma3_27b':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemma3_27b')
-        # elif call.data == 'select_gemini_pro':
-        #     # SECONDS_IN_MONTH = 60 * 60 * 24 * 30
-        #     # last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
-        #     # donater = time.time() - last_donate_time < SECONDS_IN_MONTH
-        #     # if (chat_id_full in my_gemini_general.USER_KEYS and my_gemini_general.USER_KEYS[chat_id_full]) or donater:
-        #     #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
-        #     # else:
-        #     #     bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать PRO модель. Команда /keys')
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
-        # elif call.data == 'select_openrouter':
-        #     if chat_id_full in my_openrouter.KEYS:
-        #         my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
-        #     else:
-        #         bot_reply_tr(message, 'Надо вставить свои ключи что бы использовать openrouter. Команда /openrouter')
-        # elif call.data == 'select_qwen3':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen3')
+            # Map callback IDs to internal mode names if they differ
+            mode_map = {
+                'gemini15': 'gemini15',
+                'gemini_flash': 'gemini',
+            }
+            mode_to_set = mode_map.get(model_id, model_id)
 
-        # elif call.data == 'select_gpt_oss':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'gpt_oss')
+            # --- Handle models requiring keys ---
+            key_required = False
+            if mode_to_set in ('gpt-4o', 'gpt_41', 'gpt_41_mini'):
+                if not my_subscription.github_models(chat_id_full):
+                    bot.answer_callback_query(call.id, text=tr('Insert your github key first. /keys', lang), show_alert=True)
+                    key_required = True
+            elif mode_to_set == 'openrouter':
+                if chat_id_full not in my_openrouter.KEYS:
+                    bot.answer_callback_query(call.id, text=tr('Надо вставить свои ключи что бы использовать openrouter. Команда /openrouter', lang), show_alert=True)
+                    key_required = True
 
-        # elif call.data == 'select_llama4':
-        #     my_db.set_user_property(chat_id_full, 'chat_mode', 'llama4')
+            # If a key was required and missing, stop processing here.
+            if key_required:
+                return
+
+            # Set the new mode and transfer memory if needed
+            _set_chat_mode(mode_to_set)
+
+            # Redraw the model selection menu to show the updated checkmark
+            bot.edit_message_text(
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+                text=MSG_CONFIG,
+                parse_mode='HTML',
+                disable_web_page_preview=True,
+                reply_markup=get_keyboard('config_models', message)
+            )
 
 
 
         elif call.data == 'general_reset':
             reset_(message, say = True, chat_id_full = chat_id_full)
 
+
+
+
+        # --- TTS Voice Provider Cycling (Stays on TTS menu) ---
         elif call.data == 'tts_female' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'male')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
 
         elif call.data == 'tts_male' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'google_female')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
 
         elif call.data == 'tts_google_female' and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'gemini_Achernar')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
 
         elif call.data.startswith('tts_gemini') and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_alloy')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
 
         elif call.data.startswith('tts_openai') and is_admin_member(call):
             my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
 
+        # --- Specific Voice Selection (Stays on TTS menu) ---
         elif call.data.startswith('switch_openai_') and is_admin_member(call):
             voice = call.data.split('_')[-1]
             my_db.set_user_property(chat_id_full, 'tts_gender', f'openai_{voice}')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
 
         elif call.data.startswith('switch_gemini_') and is_admin_member(call):
             voice = call.data.split('_')[-1]
             my_db.set_user_property(chat_id_full, 'tts_gender', f'gemini_{voice}')
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
+
+
+
+
 
         elif call.data.startswith('switch_do_nothing') and is_admin_member(call):
             pass
@@ -2693,42 +2524,81 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
                     text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
-        elif call.data == 'voice_only_mode_disable' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'voice_only_mode', False)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-        elif call.data == 'voice_only_mode_enable'  and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'voice_only_mode', True)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-        elif call.data == 'transcribe_only_chat_disable' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'transcribe_only', False)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-        elif call.data == 'transcribe_only_chat_enable'  and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'transcribe_only', True)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
 
 
-        elif call.data.startswith('switch_speech_to_text_') and is_admin_member(call):
-            speech_to_text_engine = call.data.split('_')[-1]
-            if '_nova3' in call.data:
-                speech_to_text_engine = call.data.split('_')[-2] + '_' + call.data.split('_')[-1]
+        # --- Behavior Toggles (Stays on Behavior menu) ---
+        elif call.data in ('voice_only_mode_disable', 'voice_only_mode_enable'):
+            new_state = (call.data == 'voice_only_mode_enable')
+            my_db.set_user_property(chat_id_full, 'voice_only_mode', new_state)
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
+
+        elif call.data in ('transcribe_only_chat_disable', 'transcribe_only_chat_enable'):
+            new_state = (call.data == 'transcribe_only_chat_enable')
+            my_db.set_user_property(chat_id_full, 'transcribe_only', new_state)
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
+                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_behavior', message))
+
+
+
+        # --- STT Engine Selection (Stays on STT menu) ---
+        elif call.data.startswith('switch_speech_to_text_'):
+            # The prefix is 'switch_speech_to_text_', which is 22 characters long
+            speech_to_text_engine = call.data[22:]
+
             my_db.set_user_property(chat_id_full, 'speech_to_text_engine', speech_to_text_engine)
+
+            bot.edit_message_text(
+                chat_id=message.chat.id, 
+                message_id=message.message_id,
+                text=MSG_CONFIG, 
+                parse_mode='HTML', 
+                disable_web_page_preview=False, 
+                reply_markup=get_keyboard('config_stt', message)
+            )
+
+
+
+        # --- Behavior Toggles (All stay on Behavior menu) ---
+        elif call.data.startswith('chat_kbd_'):
+            # Note the logic inversion: enabling the button means 'disabled_kbd' is False.
+            new_state = (call.data == 'chat_kbd_disable')
+            my_db.set_user_property(chat_id_full, 'disabled_kbd', new_state)
             bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-        elif call.data == 'disable_chat_kbd' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'disabled_kbd', False)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-        elif call.data == 'enable_chat_kbd' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'disabled_kbd', True)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-        if call.data.startswith('select_'):
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                text = MSG_CONFIG, disable_web_page_preview = True, reply_markup=get_keyboard('config', message))
+                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
+
+        elif call.data.startswith('action_style_'):
+            new_state = 'message' if call.data == 'action_style_enable' else ''
+            my_db.set_user_property(chat_id_full, 'action_style', new_state)
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
+
+        elif call.data.startswith('voice_only_mode_'):
+            new_state = (call.data == 'voice_only_mode_enable')
+            my_db.set_user_property(chat_id_full, 'voice_only_mode', new_state)
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
+
+        elif call.data.startswith('transcribe_only_chat_'):
+            new_state = (call.data == 'transcribe_only_chat_enable')
+            my_db.set_user_property(chat_id_full, 'transcribe_only', new_state)
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
+
+        elif call.data.startswith('send_message_chat_switch_'):
+            new_state = (call.data == 'send_message_chat_switch_enable')
+            my_db.set_user_property(chat_id_full, 'send_message', new_state)
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
+
+        elif call.data.startswith('admin_chat_'):
+            new_state = 1 if call.data == 'admin_chat_enable' else 0
+            my_db.set_user_property(chat_id_full, 'superchat', new_state)
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
+
+
+
     except Exception as unexpected_error:
         if 'Bad Request: message is not modified' in str(unexpected_error) or \
            'Bad Request: message to be replied not found' in str(unexpected_error) or \
@@ -7826,216 +7696,6 @@ def purge_cmd_handler(message: telebot.types.Message):
     except Exception as unknown:
         error_traceback = traceback.format_exc()
         my_log.log2(f'tb:purge_cmd_handler: {unknown}\n\n{message.chat.id}\n\n{error_traceback}')
-
-
-# @bot.message_handler(commands=['id'], func = authorized_log)
-# @async_run
-# def id_cmd_handler(message: telebot.types.Message):
-#     """показывает id юзера и группы в которой сообщение отправлено"""
-#     try:
-#         chat_id_full = f'[{message.from_user.id}] [0]'
-#         group_id_full = f'[{message.chat.id}] [{message.message_thread_id or 0}]'
-#         gr_lang = get_lang(group_id_full, message)
-#         is_private = message.chat.type == 'private'
-
-#         if not is_private: # show only id in group
-#             activated = my_db.get_user_property(group_id_full, 'chat_enabled') or False
-#             activated = tr('Yes', gr_lang) if activated else tr('No', gr_lang)
-#             bot_name = my_db.get_user_property(group_id_full, 'bot_name') or BOT_NAME_DEFAULT
-#             chat_title = tr('Chat title:', gr_lang)
-#             bot_name_here = tr('Bot name here:', gr_lang)
-#             chat_activated = tr('Chat activated:', gr_lang)
-#             msg = utils.bot_markdown_to_html(f'{chat_title} `{message.chat.title or ""}`\n\nID: `{message.chat.id}`\n\n{tr("Thread:", gr_lang)} `{message.message_thread_id or 0}`\n\n{bot_name_here} `{bot_name}`\n\n{chat_activated} `{activated}`')
-#             bot_reply(message, msg, parse_mode='HTML')
-#             return
-
-#         if is_private:
-#             lang = get_lang(chat_id_full, message)
-#         else:
-#             lang = get_lang(group_id_full, message)
-
-#         COMMAND_MODE[chat_id_full] = ''
-
-#         is_admin = message.from_user.id in cfg.admins
-
-#         try:
-#             if is_admin:
-#                 arg = message.text.split(maxsplit=1)[1].strip()
-#                 if arg:
-#                     if '[' not in arg:
-#                         arg = f'[{arg}] [0]'
-#                     chat_id_full = arg
-#         except IndexError:
-#             pass
-
-#         user_id = message.from_user.id
-#         reported_language = message.from_user.language_code
-#         open_router_model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full] if chat_id_full in my_openrouter.PARAMS else my_openrouter.PARAMS_DEFAULT
-
-#         if is_private:
-#             user_model = my_db.get_user_property(chat_id_full, 'chat_mode') if my_db.get_user_property(chat_id_full, 'chat_mode') else cfg.chat_mode_default
-#         else:
-#             user_model = my_db.get_user_property(group_id_full, 'chat_mode') if my_db.get_user_property(group_id_full, 'chat_mode') else cfg.chat_mode_default
-#         models = {
-#             'gemini': cfg.gemini_flash_model,
-#             'gemini25_flash': cfg.gemini25_flash_model,
-#             'gemini15': cfg.gemini_pro_model,
-#             'gemini-lite': cfg.gemini_flash_light_model,
-#             'gemini-exp': cfg.gemini_exp_model,
-#             'gemini-learn': cfg.gemini_learn_model,
-#             'gemma3_27b': cfg.gemma3_27b_model,
-#             'mistral': my_mistral.DEFAULT_MODEL,
-#             'magistral': my_mistral.MAGISTRAL_MODEL,
-#             'gpt-4o': my_github.BIG_GPT_MODEL,
-#             'gpt_41': my_github.BIG_GPT_41_MODEL,
-#             'gpt_41_mini': my_github.DEFAULT_41_MINI_MODEL,
-#             'deepseek_r1': my_github.DEEPSEEK_R1_MODEL,
-#             'deepseek_v3': my_nebius.DEFAULT_V3_MODEL,
-#             'cohere': my_cohere.DEFAULT_MODEL,
-#             'openrouter': 'openrouter.ai',
-#             'qwen3': my_cerebras.MODEL_QWEN_3_235B_A22B_THINKING,
-#             'gpt_oss': my_cerebras.MODEL_GPT_OSS_120B,
-#             'llama4': my_cerebras.MODEL_LLAMA_4_MAVERICK_17B_128E_INSTRUCT,
-#             'bothub': 'bothub.chat',
-#         }
-#         if user_model == 'openrouter':
-#             if 'bothub' in (my_db.get_user_property(chat_id_full, 'base_api_url') or ''):
-#                 user_model = 'bothub'
-#         if user_model in models.keys():
-#             user_model = f'<b>{models[user_model]}</b>'
-
-#         telegram_stars: int = my_db.get_user_property(chat_id_full, 'telegram_stars') or 0
-
-#         total_msgs = my_db.get_total_msg_user(chat_id_full)
-#         # totals_pics = my_db.get_user_property(chat_id_full, 'image_generated_counter') or 0
-#         totals_pics = my_db.get_pics_msg_user(chat_id_full)
-
-#         first_meet = my_db.get_user_property(chat_id_full, 'first_meet') or 0
-#         first_meet_dt = pendulum.from_timestamp(first_meet)
-#         try:
-#             first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale=lang)
-#         except:
-#             first_meet_str = first_meet_dt.format('DD MMMM YYYY, dddd', locale='en')
-#         now = pendulum.now()
-#         diff = now - first_meet_dt
-
-#         try:
-#             delta_time_str = diff.in_words(locale=lang)
-#         except:
-#             delta_time_str = diff.in_words(locale='en')
-
-#         last_donate_time: float = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0.0
-#         if time.time() - last_donate_time > 60*60*24*30:
-#             last_donate_time = 0
-
-#         msg = ''
-#         if is_admin:
-#             msg += f'Uptime: {get_uptime()}\n\n'
-#             msg += f'''{tr("Дата встречи:", lang)} {first_meet_str}
-# {delta_time_str}\n\n'''
-#         msg += f'''{tr("ID пользователя:", lang)} {user_id}
-
-# {tr("Количество сообщений/изображений:", lang)} {total_msgs-totals_pics}/{totals_pics}
-
-# {tr("ID группы:", lang)} {group_id_full}
-
-# {tr("Язык телеграма/пользователя:", lang)} {reported_language}/{lang}
-
-# {tr("Выбранная чат модель:", lang)} {user_model}'''
-
-#         # if last_donate_time:
-#         #     msg += f'\n\n{tr("Подписка:", lang)} {utils.format_timestamp(last_donate_time)}'
-
-#         if my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
-#             msg += f' <b>{open_router_model}</b>'
-
-
-#         subscription_info = my_subscription.get_subscription_status_string(
-#             chat_id_full=chat_id_full,
-#             lang=lang,
-#             telegram_stars=telegram_stars,
-#             total_msgs=total_msgs,
-#             last_donate_time=last_donate_time,
-#             cfg=cfg,
-#             my_db=my_db,
-#             tr=tr,
-#             my_gemini_general=my_gemini_general,
-#             my_groq=my_groq,
-#             my_mistral=my_mistral,
-#             my_cohere=my_cohere,
-#             my_github=my_github
-#         )
-#         msg += f'\n\n{subscription_info}'
-
-
-#         gemini_keys = my_gemini_general.USER_KEYS[chat_id_full] if chat_id_full in my_gemini_general.USER_KEYS else []
-#         groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
-#         mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
-#         cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
-#         github_keys = [my_github.USER_KEYS[chat_id_full],] if chat_id_full in my_github.USER_KEYS else []
-#         openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
-
-#         if openrouter_keys:
-#             msg += '\n\n🔑️ OpenRouter\n'
-#         else:
-#             msg += '\n\n🔒 OpenRouter\n'
-#         if gemini_keys:
-#             msg += '🔑️ Gemini\n'
-#         else:
-#             msg += '🔒 Gemini\n'
-#         if groq_keys:
-#             msg += '🔑️ Groq\n'
-#         else:
-#             msg += '🔒 Groq\n'
-#         if mistral_keys:
-#             msg += '🔑️ Mistral\n'
-#         else:
-#             msg += '🔒 Mistral\n'
-#         if cohere_keys:
-#             msg += '🔑️ Cohere\n'
-#         else:
-#             msg += '🔒 Cohere\n'
-#         if github_keys:
-#             msg += '🔑️ Github\n'
-#         else:
-#             msg += '🔒 Github\n'
-
-#         if my_db.get_user_property(chat_id_full, 'blocked'):
-#             msg += f'\n{tr("User was banned.", lang)}\n'
-
-#         if my_db.get_user_property(chat_id_full, 'blocked_totally'):
-#             msg += f'\n{tr("User was banned totally.", lang)}\n'
-
-#         if my_db.get_user_property(chat_id_full, 'blocked_bing'):
-#             msg += f'\n{tr("User was banned in bing.com.", lang)}\n'
-
-#         if str(message.chat.id) in DDOS_BLOCKED_USERS and not my_db.get_user_property(chat_id_full, 'blocked'):
-#             msg += f'\n{tr("User was temporarily banned.", lang)}\n'
-
-#         if my_db.get_user_property(chat_id_full, 'persistant_memory'):
-#             msg += f'\n{tr("Что бот помнит о пользователе:", lang)}\n{my_db.get_user_property(chat_id_full, "persistant_memory")}'
-
-#         # показать имя бота, стиль, и мемо юзера админу
-#         if message.from_user.id in cfg.admins and chat_id_full != f'[{message.from_user.id}] [0]':
-#             style = utils.bot_markdown_to_html(my_db.get_user_property(chat_id_full, "role") or '').strip()
-#             bname = utils.bot_markdown_to_html(my_db.get_user_property(chat_id_full, "bot_name") or '').strip()
-#             memos = my_db.blob_to_obj(my_db.get_user_property(chat_id_full, 'memos')) or []
-#             memos_str = utils.bot_markdown_to_html('\n'.join(memos)).strip()
-#             temperature = my_db.get_user_property(chat_id_full, 'temperature')
-
-#             if bname:
-#                 msg += f'\n\n<b>{tr("Bot name:", lang)}</b> {bname}'
-#             if style:
-#                 msg += f'\n\n<b>{tr("Style:", lang)}</b> {style}'
-#             if memos_str:
-#                 msg += f'\n\n<b>{tr("User memo:", lang)}</b> {memos_str}'
-#             if temperature and temperature != GEMIMI_TEMP_DEFAULT:
-#                 msg += f'\n\n<b>{tr("Temperature:", lang)}</b> {temperature}'
-
-#         bot_reply(message, msg, parse_mode = 'HTML')
-#     except Exception as error:
-#         error_traceback = traceback.format_exc()
-#         my_log.log2(f'tb:id: {error}\n\n{error_traceback}\n\n{message}')
 
 
 @bot.message_handler(commands=['id'], func=authorized_log)

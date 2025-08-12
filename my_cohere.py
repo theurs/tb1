@@ -107,6 +107,7 @@ def ai(
     systems = (
         f'Current date and time: {now}',
         f'Telegram user id you are talking with: {user_id}',
+        'Assistant have many tools for serve better, it cat search, calculate, read web pages etc, see tools description',
         *SYSTEM_
     )
 
@@ -177,7 +178,8 @@ def ai(
                         tool_results.append({
                             "role": "tool",
                             "tool_call_id": tool_call.id,
-                            "content": [{"type": "document", "document": {"data": json.dumps(tool_output)}}]
+                            # "content": [{"type": "document", "document": {"data": json.dumps(tool_output)}}]
+                            "content": [{"type": "text", "text": str(tool_output)}]
                         })
 
                     mem.extend(tool_results)

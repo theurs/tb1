@@ -218,6 +218,8 @@ def ai(
                 if not key_: remove_key(api_key)
             elif 'timeout' in error_str or 'timed out' in error_str:
                 pass # just try next key
+            elif 'your request resulted in an invalid tool generation. Try updating the messages or tool definitions':
+                break
             else: # for other errors, just try next key
                 pass
 

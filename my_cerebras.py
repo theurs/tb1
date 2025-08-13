@@ -40,7 +40,7 @@ SYSTEM_ = my_skills_general.SYSTEM_
 # сколько запросов хранить
 MAX_MEM_LINES = 30
 
-DEFAULT_TIMEOUT = 90
+DEFAULT_TIMEOUT = 60
 
 # блокировка чатов что бы не испортить историю 
 # {id:lock}

@@ -241,9 +241,14 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
 
     Args:
         filename: str - The desired file name for the DOCX file (e.g., 'document').
-        text: str - The HTML string to convert to DOCX. It must be well-formed and use valid tags
-                    (e.g., proper <html>, <head>, <body> structure, correct nesting, closed tags).
-                    **Important note on styling and layout:** Do not use CSS except user asked for it. Use <s> tag for strikethrough.
+        text: str - The HTML string to convert to DOCX. It must be well-formed and include:
+                    - A proper <html>, <head>, and <body> structure.
+                    - Valid tags with correct nesting and closed tags.
+                    - A <title> tag inside <head> for document metadata.
+                    - A <meta charset="utf-8"> tag inside <head> to ensure correct text encoding.
+                    **Important note on styling and layout:**
+                    - Avoid CSS unless explicitly requested by the user.
+                    - Use <s> for strikethrough text.
         chat_id: str - The Telegram user chat ID where the file should be sent.
 
     Returns:
@@ -477,9 +482,14 @@ def save_to_pdf(filename: str, text: str, chat_id: str) -> str:
 
     Args:
         filename: str - The desired file name for the PDF file (e.g., 'document').
-        text: str - The HTML string to convert to PDF. It must be well-formed and use valid tags
-                    (e.g., proper <html>, <head>, <body> structure, correct nesting, closed tags).
-                    **Important note on styling and layout:** Do not use CSS except user asked for it. Use <s> tag for strikethrough.
+        text: str - The HTML string to convert to PDF. It must be well-formed and include:
+                    - A proper <html>, <head>, and <body> structure.
+                    - Valid tags with correct nesting and closed tags.
+                    - A <title> tag inside <head> for document metadata.
+                    - A <meta charset="utf-8"> tag inside <head> to ensure correct text encoding.
+                    **Important note on styling and layout:**
+                    - Avoid CSS unless explicitly requested by the user.
+                    - Use <s> for strikethrough text.
         chat_id: str - The Telegram user chat ID where the file should be sent.
 
     Returns:

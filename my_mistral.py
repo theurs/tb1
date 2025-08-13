@@ -59,7 +59,7 @@ USER_KEYS = SqliteDict('db/mistral_user_keys.db', autocommit=True)
 USER_KEYS_LOCK = threading.Lock()
 CURRENT_KEYS_SET_LOCK = threading.Lock()
 
-MAX_TOOL_OUTPUT_LEN = 40000
+MAX_TOOL_OUTPUT_LEN = 60000
 
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 40000

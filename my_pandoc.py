@@ -8,6 +8,9 @@ import subprocess
 import tempfile
 import time
 import traceback
+import xml.etree.ElementTree as ET
+import zipfile
+from typing import List, Union
 
 import my_mistral
 import PyPDF2
@@ -17,6 +20,7 @@ from pptx import Presentation
 
 
 import my_log
+import my_gemini
 import utils
 
 
@@ -61,7 +65,11 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
     elif 'rtf' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'rtf', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'doc' in book_type:
-        proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
+        try:
+            proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
+        except FileNotFoundError as e:
+            my_log.log2(f'my_pandoc:fb2_to_text: {e}')
+            proc = None
     elif 'pdf' in book_type or 'djvu' in book_type:
         if 'djvu' in book_type:
             input_file = convert_djvu2pdf(input_file)
@@ -103,7 +111,26 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
 
     utils.remove_file(input_file)
 
-    output = proc.stdout.decode('utf-8', errors='replace')
+    try:
+        output = proc.stdout.decode('utf-8', errors='replace').strip()
+    except AttributeError:
+        output = ''
+
+
+    # в doc файле нет текста, но может есть картинки?
+    if 'doc' in book_type and len(output) < 100:
+        # try to read images
+        images = extract_images_from_doc(data)
+        if images:
+            result = ''
+            for image in images:
+                text = my_gemini.ocr_page(image)
+                if 'EMPTY' in text and len(text) < 20:
+                    text = ''
+                result += text + '\n\n'
+            if len(result) > len(output):
+                output = result
+
 
     return output
 
@@ -900,6 +927,122 @@ def convert_numbers_to_csv(numbers_data: bytes) -> str:
     return "".join(csv_content_all_sheets)
 
 
+def extract_images_from_doc(doc_data: Union[bytes, str]) -> List[bytes]:
+    """
+    Extracts images from a .doc file in their original order.
+
+    The process involves:
+    1. Converting the .doc file to .docx using LibreOffice.
+    2. Reading the resulting .docx file (which is a zip archive).
+    3. Parsing word/_rels/document.xml.rels to map relationship IDs to image files.
+    4. Parsing word/document.xml to find image references in their sequential order.
+    5. Extracting the image bytes from the archive based on the ordered references.
+
+    Args:
+        doc_data: The content of the .doc file as bytes or a path to the file as a string.
+
+    Returns:
+        A list of bytes, where each item is the binary content of an image,
+        sorted in the order of their appearance in the document. Returns an empty
+        list if conversion or extraction fails.
+    """
+    temp_dir = tempfile.mkdtemp()
+    temp_doc_path = os.path.join(temp_dir, "input.doc")
+    images_bytes: List[bytes] = []
+
+    try:
+        # Step 1: Write input data to a temporary .doc file
+        if isinstance(doc_data, str):
+            with open(doc_data, 'rb') as f:
+                doc_content = f.read()
+        else:
+            doc_content = doc_data
+
+        with open(temp_doc_path, 'wb') as f:
+            f.write(doc_content)
+
+        # Step 2: Convert .doc to .docx using LibreOffice
+        exe = 'soffice.exe' if 'windows' in utils.platform().lower() else 'libreoffice'
+        libreoffice_cmd = [
+            exe,
+            "--headless",
+            "--convert-to", "docx",
+            "--outdir", temp_dir,
+            temp_doc_path
+        ]
+
+        result = subprocess.run(
+            libreoffice_cmd, capture_output=True, text=True, check=False
+        )
+
+        if result.returncode != 0:
+            my_log.log2(f"my_pandoc:extract_images_from_doc: LibreOffice failed: {result.stderr}")
+            return []
+
+        temp_docx_path = os.path.join(temp_dir, "input.docx")
+        if not os.path.exists(temp_docx_path):
+            my_log.log2("my_pandoc:extract_images_from_doc: DOCX output file not found after conversion.")
+            return []
+
+        # Step 3: Open the .docx as a zip archive and parse XMLs to get ordered images
+        with zipfile.ZipFile(temp_docx_path, 'r') as docx_zip:
+            # XML Namespace mapping
+            ns = {
+                'rel': 'http://schemas.openxmlformats.org/package/2006/relationships',
+                'doc': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+                'draw': 'http://schemas.openxmlformats.org/drawingml/2006/main',
+                'pic': 'http://schemas.openxmlformats.org/drawingml/2006/picture',
+                'r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+            }
+
+            # Map Relationship IDs (rId) to image file paths (e.g., 'media/image1.png')
+            id_to_target = {}
+            try:
+                rels_xml_content = docx_zip.read('word/_rels/document.xml.rels')
+                rels_root = ET.fromstring(rels_xml_content)
+                for rel in rels_root.findall('rel:Relationship', ns):
+                    r_id = rel.get('Id')
+                    target = rel.get('Target')
+                    if r_id and target:
+                        id_to_target[r_id] = target
+            except KeyError:
+                my_log.log2("my_pandoc:extract_images_from_doc: word/_rels/document.xml.rels not found.")
+                return []
+
+            # Find all image references ('r:embed' attributes) in the main document, preserving order
+            ordered_rids = []
+            try:
+                doc_xml_content = docx_zip.read('word/document.xml')
+                doc_root = ET.fromstring(doc_xml_content)
+                # Find all 'blip' elements which contain the image embed reference
+                for blip in doc_root.findall('.//draw:blip', ns):
+                    embed_rid = blip.get(f'{{{ns["r"]}}}embed')
+                    if embed_rid:
+                        ordered_rids.append(embed_rid)
+            except KeyError:
+                my_log.log2("my_pandoc:extract_images_from_doc: word/document.xml not found.")
+                return []
+
+            # Extract image bytes from the archive using the ordered list of rIds
+            for rid in ordered_rids:
+                image_target = id_to_target.get(rid)
+                if image_target and image_target.startswith('media/'):
+                    image_path_in_zip = f'word/{image_target}'
+                    try:
+                        image_data = docx_zip.read(image_path_in_zip)
+                        images_bytes.append(image_data)
+                    except KeyError:
+                        my_log.log2(f"my_pandoc:extract_images_from_doc: Image file not found in zip: {image_path_in_zip}")
+
+    except Exception as e:
+        my_log.log2(f"my_pandoc:extract_images_from_doc: An unexpected error occurred: {e}")
+    finally:
+        # Step 4: Clean up temporary directory and all its contents
+        utils.remove_dir(temp_dir)
+
+    return images_bytes
+
+
 if __name__ == '__main__':
     pass
     # result = fb2_to_text(open('c:/Users/user/Downloads/1.xlsx', 'rb').read(), '.xlsx')
@@ -920,6 +1063,7 @@ if __name__ == '__main__':
     # t = '''Громаш, словно обезумев, начал колотить кулаками по каменной стене, словно он пытался разбить её в щепки, словно он пытался вырваться из этой тюрьмы. &quot;Я найду тебя, Максимус, и я заставлю тебя страдать! - ревел он, и его голос разносился по всему залу, - я отплачу тебе за все мои страдания, и я не успокоюсь, пока не увижу твою смерть! <i>А было это так… Я буду мучить тебя так, как ты мучил моих братьев, я буду терзать тебя до тех пор, пока не вырву твою душу, и я буду наслаждаться твоими страданиями, словно это самый вкусный нектар. Я хочу видеть боль в твоих глазах, я хочу слышать твои крики, и это будет моей местью, это будет моим искуплением, и я не отступлю, пока я не добьюсь своего!</i>&quot; Он посмотрел на своих соплеменников, и его глаза горели адским огнем, словно он был одержим демоном. &quot;Мы покажем всему миру, что такое сила орков, и мы заставим всех бояться нас, и мы будем править этим миром, и все будут подчиняться нам, и все будут преклоняться перед нами!&quot; Орки, слыша его слова, начали вопить и стучать оружием, готовясь к битве, словно стая диких зверей, готовых разорвать свою жертву на куски. Максимус, слушая его крики, повернулся к своим товарищам и сказал: &quot;Мы все пали, но мы не должны сдаваться, мы не должны позволить этой ненависти сломить нас. Мы должны сражаться вместе, чтобы выжить, и мы должны помнить, что мы не одни.&quot; Его голос был тихим, но в нем чувствовалась решимость и готовность бороться до конца, словно он знал, что они смогут справиться со всеми испытаниями. &quot;Я не верю в шансы,&quot; - сказала Лираэль, и ее голос был полон цинизма, - &quot;но я готова сражаться, если это будет нужно для достижения моих целей, я готова убивать, если это поможет мне выжить, но я не верю в то, что у нас есть шанс, я не верю в то, что мы сможем изменить свою судьбу. <i>А было это так… Я всегда сражалась в одиночку, я не доверяла никому, и я всегда полагалась только на себя, но сейчас я чувствую, что что-то меняется, словно я становлюсь частью чего-то большего, и я не понимаю, что это значит. Я вспоминаю свои прошлые победы, как я достигала всего самостоятельно, но сейчас всё по-другому, и я не знаю, что будет дальше.</i>&quot; Она посмотрела на остальных, и в её глазах можно было заметить искорку надежды, словно она хотела верить, что у них есть шанс. Борд, вздохнув, проговорил: &quot;Я создал много мечей, но ни один из них не спас меня от предательства, и я не знаю, почему я должен сражаться, зачем я должен помогать другим, когда никто не помог мне, я просто устал, и я не знаю, что делать дальше. *А было это так… Я вспоминаю свою кузницу, я её так любил, я отдавал ей всю свою жизнь, но судьба забрала у меня всё, и я не знаю, почему это случилось со мной.'''
     # print(convert_html_to_plain(t))
 
-
     # r = convert_numbers_to_csv(r'c:\users\user\downloads\2.numbers')
     # print(r)
+
+    # print(extract_images_from_doc(r'C:\Users\user\Downloads\Экзотическое_и_Громоздкое_оружие_1.doc'))

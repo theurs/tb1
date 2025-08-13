@@ -52,6 +52,7 @@ USER_KEYS_LOCK = threading.Lock()
 CURRENT_KEYS_SET_LOCK = threading.Lock()
 CURRENT_KEYS_SET = []
 
+MAX_TOOL_OUTPUT_LEN = 40000
 
 SYSTEM_ = []
 
@@ -169,6 +170,9 @@ def ai(
                             try:
                                 args = json.loads(tool_call.function.arguments)
                                 tool_output = function_to_call(**args)
+                                if isinstance(tool_output, str) and len(tool_output) > MAX_TOOL_OUTPUT_LEN:
+                                    pass # my_log.log_cohere(f'Tool output from {function_name} is too long ({len(tool_output)} chars), cutting to {MAX_TOOL_OUTPUT_LEN}')
+                                    tool_output = tool_output[:MAX_TOOL_OUTPUT_LEN]
                             except Exception as e:
                                 tool_output = f"Error executing tool: {e}"
                                 my_log.log_cohere(f'ai tool error: {e}')

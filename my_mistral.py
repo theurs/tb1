@@ -59,6 +59,8 @@ USER_KEYS = SqliteDict('db/mistral_user_keys.db', autocommit=True)
 USER_KEYS_LOCK = threading.Lock()
 CURRENT_KEYS_SET_LOCK = threading.Lock()
 
+MAX_TOOL_OUTPUT_LEN = 40000
+
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 40000
 
@@ -221,6 +223,9 @@ def ai(
                             try:
                                 function_args = json.loads(tool_call.function.arguments)
                                 tool_output = function_to_call(**function_args)
+                                if isinstance(tool_output, str) and len(tool_output) > MAX_TOOL_OUTPUT_LEN:
+                                    pass # my_log.log_mistral(f'Tool output from {function_name} is too long ({len(tool_output)} chars), cutting to {MAX_TOOL_OUTPUT_LEN}')
+                                    tool_output = tool_output[:MAX_TOOL_OUTPUT_LEN]
                             except Exception as e:
                                 error_msg = f"Error executing tool {function_name}: {e}"
                                 my_log.log_mistral(error_msg)

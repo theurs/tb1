@@ -51,6 +51,8 @@ MAX_REQUEST = 40000
 MAX_SUM_REQUEST = 100000
 maxhistchars = 60000
 
+MAX_TOOL_OUTPUT_LEN = 40000
+
 # каждый юзер дает свои ключи и они используются совместно со всеми
 # каждый ключ дает всего 1000000 токенов в час и день так что чем больше тем лучше
 # {full_chat_id as str: key}
@@ -267,6 +269,9 @@ def ai(
                         try:
                             args = json.loads(tool_call.function.arguments)
                             tool_output = function_to_call(**args)
+                            if isinstance(tool_output, str) and len(tool_output) > MAX_TOOL_OUTPUT_LEN:
+                                pass # my_log.log_cerebras(f'Tool output from {function_name} is too long ({len(tool_output)} chars), cutting to {MAX_TOOL_OUTPUT_LEN}')
+                                tool_output = tool_output[:MAX_TOOL_OUTPUT_LEN]
                         except Exception as e:
                             tool_output = f"Error executing tool: {e}"
                             my_log.log_cerebras(f'Error executing tool: {e}')

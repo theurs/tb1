@@ -1239,6 +1239,7 @@ def search_google_fast(query: str, lang: str, user_id: str) -> str:
         return f'ERROR {error}'
 
 
+LIMIT_ANSWER_LEN = 60000
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
 def search_google_deep(query: str, lang: str, user_id: str) -> str:
     """
@@ -1267,7 +1268,7 @@ def search_google_deep(query: str, lang: str, user_id: str) -> str:
             download_only=True
         )
         my_log.log_gemini_skills_search(f'Deep Google search: {r[:2000]}')
-        return r
+        return r[:LIMIT_ANSWER_LEN]
     except Exception as error:
         my_log.log_gemini_skills_search(f'search_google_deep:Error: {error}')
         return f'ERROR {error}'

@@ -202,7 +202,7 @@ default_bot_name = 'бот'
 # 'mistral', 'magistral'
 # 'cohere'
 # 'deepseek_r1', 'deepseek_v3'
-# 'qwen3'
+# 'qwen3', 'qwen3coder'
 # 'llama4'
 # 'gpt-4o', 'gpt_41', 'gpt_41_mini', 'gpt_oss'
 

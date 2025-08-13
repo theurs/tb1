@@ -510,6 +510,8 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_openrouter.update_mem(query, resp, chat_id_full)
         elif 'qwen3' in mode:
             my_openrouter_free.update_mem(query, resp, chat_id_full)
+        elif 'qwen3coder' in mode:
+            my_openrouter_free.update_mem(query, resp, chat_id_full)
         elif 'llama4' in mode:
             my_cerebras.update_mem(query, resp, chat_id_full)
         elif 'gpt_oss' in mode:
@@ -1757,6 +1759,7 @@ def _build_config_models_menu(chat_id_full: str, lang: str) -> telebot.types.Inl
         ("GPT OSS 120b", "gpt_oss"), ("Qwen 3", "qwen3"),
         ("Gemini 2.5 Pro", "gemini15"), ("Command A", "cohere"),
         ("GPT-4o", "gpt-4o"), ("GPT 4.1", "gpt_41"),
+        ("Qwen 3 Coder 480b", "qwen3coder"), ("Gemini 2.0 flash", "gemini"),
         ("DeepSeek V3", "deepseek_v3"), ("OpenRouter", "openrouter"),
     ]
 
@@ -5247,6 +5250,8 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_openrouter.force(chat_id_full, text)
         elif mode == 'qwen3':
             my_openrouter_free.force(chat_id_full, text)
+        elif mode == 'qwen3coder':
+            my_openrouter_free.force(chat_id_full, text)
         elif mode == 'gpt_oss':
             my_cerebras.force(chat_id_full, text)
         elif mode == 'llama4':
@@ -5304,6 +5309,8 @@ def undo_cmd(message: telebot.types.Message, show_message: bool = True):
             my_openrouter.undo(chat_id_full)
         elif mode == 'qwen3':
             my_openrouter_free.undo(chat_id_full)
+        elif mode == 'qwen3coder':
+            my_openrouter_free.undo(chat_id_full)
         elif mode == 'gpt_oss':
             my_cerebras.undo(chat_id_full)
         elif mode == 'llama4':
@@ -5350,6 +5357,8 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
             elif mode == 'openrouter':
                 my_openrouter.reset(chat_id_full)
             elif mode == 'qwen3':
+                my_openrouter_free.reset(chat_id_full)
+            elif mode == 'qwen3coder':
                 my_openrouter_free.reset(chat_id_full)
             elif mode == 'gpt_oss':
                 my_cerebras.reset(chat_id_full)
@@ -5458,6 +5467,8 @@ def save_history(message: telebot.types.Message):
             prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
         if mode == 'qwen3':
             prompt = my_openrouter_free.get_mem_as_string(chat_id_full, md = True) or ''
+        if mode == 'qwen3coder':
+            prompt = my_openrouter_free.get_mem_as_string(chat_id_full, md = True) or ''
         if mode == 'gpt_oss':
             prompt = my_cerebras.get_mem_as_string(chat_id_full, md = True) or ''
         if mode == 'llama4':
@@ -5529,6 +5540,9 @@ def send_debug_history(message: telebot.types.Message):
             prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen3':
             prompt = 'Qwen 3 235b a22b\n\n'
+            prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen3coder':
+            prompt = 'Qwen 3 Coder 480b\n\n'
             prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt_oss':
             prompt = 'GPT OSS 120b\n\n'
@@ -5628,6 +5642,8 @@ def load_memory_handler(message: telebot.types.Message):
         elif target_chat_mode == 'openrouter':
             target_mem_string = my_openrouter.get_mem_as_string(target_user_id_str)
         elif target_chat_mode == 'qwen3':
+            target_mem_string = my_openrouter_free.get_mem_as_string(target_user_id_str)
+        elif target_chat_mode == 'qwen3coder':
             target_mem_string = my_openrouter_free.get_mem_as_string(target_user_id_str)
         elif target_chat_mode == 'gpt_oss':
             target_mem_string = my_cerebras.get_mem_as_string(target_user_id_str)
@@ -7765,6 +7781,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'cohere': my_cohere.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
             'qwen3': my_cerebras.MODEL_QWEN_3_235B_A22B_THINKING,
+            'qwen3coder': my_cerebras.MODEL_QWEN_3_CODER_480B,
             'gpt_oss': my_cerebras.MODEL_GPT_OSS_120B,
             'llama4': my_cerebras.MODEL_LLAMA_4_MAVERICK_17B_128E_INSTRUCT,
             'bothub': 'bothub.chat',
@@ -10484,6 +10501,103 @@ def do_task(message, custom_prompt: str = ''):
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:qwen3 {error3}\n{error_traceback}')
+
+
+                # если активирован режим общения с Qwen 3 Coder 480b
+                elif chat_mode_ == 'qwen3coder':
+                    if len(msg) > my_cerebras.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Qwen 3 Coder 480b, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_cerebras.MAX_REQUEST}')
+                        return
+
+                    with ShowAction(message, action):
+                        try:
+                            TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs_coder)
+                            answer = my_cerebras.chat(
+                                message.text,
+                                chat_id_full,
+                                temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                system=hidden_text,
+                                model = my_cerebras.MODEL_QWEN_3_CODER_480B,
+                                tools = TOOLS_SCHEMA,
+                                available_tools = AVAILABLE_TOOLS
+                            )
+
+                            WHO_ANSWERED[chat_id_full] = 'Qwen 3 Coder 480b'
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            thoughts, answer = utils_llm.split_thoughts(answer)
+                            thoughts = utils.bot_markdown_to_html(thoughts)
+
+                            if utils.edit_image_detect(answer, lang, tr):
+                                if chat_id_full in WHO_ANSWERED:
+                                    del WHO_ANSWERED[chat_id_full]
+                                # отменяем ответ
+                                my_cerebras.undo(chat_id_full)
+
+                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
+                                query = message.text
+                                if not last_image:
+                                    r = ''
+                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
+                                else:
+                                    r = img2img(
+                                        text=last_image,
+                                        lang=lang,
+                                        chat_id_full=chat_id_full,
+                                        query=query,
+                                        # model=gmodel,
+                                        temperature=temp,
+                                        system_message=hidden_text,
+                                    )
+                                if r and isinstance(r, bytes):
+                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+                                    m = send_photo(
+                                        message,
+                                        message.chat.id,
+                                        r,
+                                        disable_notification=True,
+                                        reply_to_message_id=message.message_id,
+                                        reply_markup=get_keyboard('hide', message),
+                                    )
+                                    log_message(m)
+                                else:
+                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+                                    bot_reply_tr(message, 'Failed to edit image.')
+                                return
+
+                            if answer.startswith('The bot successfully generated images on the external services'):
+                                undo_cmd(message, show_message=False)
+                                message.text = f'/img {message.text}'
+                                image_gen(message)
+                                return
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            answer = answer.strip()
+                            if not answer:
+                                answer = 'Qwen 3 Coder 480b ' + tr('did not answered, try to /reset and start again.', lang)
+
+                            my_log.log_echo(message, f'[Qwen 3 Coder 480b] {answer}')
+
+                            # отправляем файлы если они были сгенерированы в скилах
+                            send_all_files_from_storage(message, chat_id_full)
+
+                            try:
+                                if command_in_answer(answer, message):
+                                    return
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:qwen3coder {error3}\n{error_traceback}')
 
 
                 # если активирован режим общения с GPT OSS 120b

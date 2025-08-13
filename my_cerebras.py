@@ -96,6 +96,39 @@ funcs = [
 ]
 
 
+# кодеру не нужны лишние функции
+funcs_coder = [
+    my_skills.calc,
+    my_skills.search_google_fast,
+    my_skills.search_google_deep,
+    my_skills.download_text_from_url,
+    # my_skills_general.get_time_in_timezone,
+    # my_skills.get_weather,
+    # my_skills.get_currency_rates,
+    # my_skills.tts,
+    # my_skills.speech_to_text,
+    # my_skills.edit_image,
+    # my_skills.translate_text,
+    # my_skills.translate_documents,
+    # my_skills.text_to_image,
+    my_skills.text_to_qrcode,
+    my_skills_general.save_to_txt,
+    # my_skills_general.save_to_excel,
+    # my_skills_general.save_to_docx,
+    # my_skills_general.save_to_pdf,
+    # my_skills_general.save_diagram_to_image,
+    # my_skills.save_chart_and_graphs_to_image,
+    my_skills.save_html_to_image,
+    # my_skills.save_html_to_animation,
+    # my_skills.save_natal_chart_to_image,
+    # my_skills.send_tarot_cards,
+    my_skills.query_user_file,
+    my_skills.query_user_logs,
+    # my_skills_general.get_location_name,
+    # my_skills.help,
+]
+
+
 def ai(
     prompt: str = '',
     mem: Optional[List[Dict[str, str]]] = None,

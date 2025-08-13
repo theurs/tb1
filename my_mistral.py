@@ -964,37 +964,6 @@ def get_mem_as_string(chat_id: str, md: bool = False) -> str:
         return ''
 
 
-# def remove_key(key: str):
-#     '''Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.'''
-#     try:
-#         if not key:
-#             return
-#         if key in ALL_KEYS:
-#             try:
-#                 ALL_KEYS.remove(key)
-#             except ValueError:
-#                 my_log.log_keys(f'remove_key: Invalid key {key} not found in ALL_KEYS list')
-
-#         keys_to_delete = []
-#         with USER_KEYS_LOCK:
-#             # remove key from USER_KEYS
-#             for user in USER_KEYS:
-#                 if USER_KEYS[user] == key:
-#                     keys_to_delete.append(user)
-
-#             for user_key in keys_to_delete:
-#                 del USER_KEYS[user_key]
-
-#             if keys_to_delete:
-#                 my_log.log_keys(f'mistral: Invalid key {key} removed from users {keys_to_delete}')
-#             else:
-#                 my_log.log_keys(f'mistral: Invalid key {key} was not associated with any user in USER_KEYS')
-
-#     except Exception as error:
-#         error_traceback = traceback.format_exc()
-#         my_log.log_mistral(f'mistral: Failed to remove key {key}: {error}\n\n{error_traceback}')
-
-
 def remove_key(key: str):
     '''Removes a given key from the ALL_KEYS list and from the USER_KEYS dictionary.'''
     try:
@@ -1028,19 +997,6 @@ def remove_key(key: str):
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_mistral(f'mistral: Failed to remove key {key}: {error}\n\n{error_traceback}')
-
-
-# def load_users_keys():
-#     """
-#     Load users' keys into memory and update the list of all keys available.
-#     """
-#     with USER_KEYS_LOCK:
-#         global USER_KEYS, ALL_KEYS
-#         ALL_KEYS = cfg.MISTRALAI_KEYS if hasattr(cfg, 'MISTRALAI_KEYS') and cfg.MISTRALAI_KEYS else []
-#         for user in USER_KEYS:
-#             key = USER_KEYS[user]
-#             if key not in ALL_KEYS:
-#                 ALL_KEYS.append(key)
 
 
 def load_users_keys():
@@ -1113,7 +1069,7 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
     result = ai(
         prompt,
         temperature=1.5,
-        json_output=True,
+        response_format={"type": "json_object"},
         model=DEFAULT_MODEL,
         user_id=chat_id,
         )
@@ -1215,6 +1171,36 @@ if __name__ == '__main__':
     # with open('C:/Users/user/Downloads/1.txt', 'w', encoding='utf-8') as f:
     #     f.write(r)
 
-    # print(get_reprompt_for_image(''))
+
+#     prompt = 'синий шарик'
+#     conversation_history = ''
+#     query = f'''
+# User want to create image with text to image generator.
+# Repromt user's PROMPT for image generation.
+# Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
+# Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
+# A negative prompt in image generation lets you specify what you DON'T want to see in the picture. It helps exclude unwanted objects, styles, colors, or other characteristics, giving you more control over the result and speeding up the generation process.
+
+# Example:
+
+# Prompt: "Cat in a wizard hat"
+
+# Negative prompt: "sad, angry, blurry, cartoon"
+
+# Result: The AI will generate an image of a cat in a wizard hat that looks realistic, rather joyful or neutral, not sad or angry, and the image will be sharp, not blurry.
+
+# Start your prompt with word Generate.
+
+
+# User's PROMPT: {prompt}
+
+# Dialog history: {conversation_history}
+
+# Using this JSON schema:
+#   reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str, "moderation_sexual": bool, "moderation_hate": bool}}
+# Return a `reprompt`
+# '''
+#     print(get_reprompt_for_image(query))
+
 
     my_db.close()

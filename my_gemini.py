@@ -876,14 +876,15 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
         or None if an error occurred.
     """
 
-    result = chat(prompt,
-                  temperature=1.5,
-                  json_output=True,
-                  model=cfg.gemini25_flash_model,
-                  chat_id=chat_id,
-                  do_not_update_history=True,
-                  do_not_use_users_memory=True
-                  )
+    result = chat(
+        prompt,
+        temperature=1.5,
+        json_output=True,
+        model=cfg.gemini25_flash_model,
+        chat_id=chat_id,
+        do_not_update_history=True,
+        do_not_use_users_memory=True
+    )
     result_dict = utils.string_to_dict(result)
     if result_dict:
         reprompt = ''

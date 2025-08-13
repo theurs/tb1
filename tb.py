@@ -11026,27 +11026,58 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
+                            TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs)
                             answer = my_nebius.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=hidden_text,
                                 model = my_nebius.DEFAULT_MODEL,
+                                tools = TOOLS_SCHEMA,
+                                available_tools = AVAILABLE_TOOLS
                             )
-                            if not answer:
-                                answer = my_nebius.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                    system=hidden_text,
-                                    model = my_nebius.DEFAULT_MODEL_FALLBACK,
-                                    max_tokens = 4000,
-                                )
-                                WHO_ANSWERED[chat_id_full] = 'DeepSeek V3+R1'
-                            else:
-                                WHO_ANSWERED[chat_id_full] = 'DeepSeek V3'
 
+                            WHO_ANSWERED[chat_id_full] = 'DeepSeek V3'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+
+                            if utils.edit_image_detect(answer, lang, tr):
+                                if chat_id_full in WHO_ANSWERED:
+                                    del WHO_ANSWERED[chat_id_full]
+                                # отменяем ответ
+                                my_cerebras.undo(chat_id_full)
+
+                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
+                                query = message.text
+                                if not last_image:
+                                    r = ''
+                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
+                                else:
+                                    r = img2img(
+                                        text=last_image,
+                                        lang=lang,
+                                        chat_id_full=chat_id_full,
+                                        query=query,
+                                        # model=gmodel,
+                                        temperature=temp,
+                                        system_message=hidden_text,
+                                    )
+                                if r and isinstance(r, bytes):
+                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+                                    m = send_photo(
+                                        message,
+                                        message.chat.id,
+                                        r,
+                                        disable_notification=True,
+                                        reply_to_message_id=message.message_id,
+                                        reply_markup=get_keyboard('hide', message),
+                                    )
+                                    log_message(m)
+                                else:
+                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+                                    bot_reply_tr(message, 'Failed to edit image.')
+                                return
+
 
                             answer = answer.strip()
                             if not answer:
@@ -11069,6 +11100,9 @@ def do_task(message, custom_prompt: str = ''):
                             # answer = utils_llm.reconstruct_html_answer_with_thoughts(thoughts, answer)
 
                             my_log.log_echo(message, f'[DeepSeek V3] {answer}')
+
+                            # отправляем файлы если они были сгенерированы в скилах
+                            send_all_files_from_storage(message, chat_id_full)
 
                             try:
                                 if command_in_answer(answer, message):

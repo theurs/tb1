@@ -10394,7 +10394,7 @@ def do_task(message, custom_prompt: str = ''):
                                 available_tools = AVAILABLE_TOOLS
                             )
 
-                            WHO_ANSWERED[chat_id_full] = 'Qwen 3 235b a22b'
+                            WHO_ANSWERED[chat_id_full] = 'Qwen 3 235b a22b thinking'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             if not answer:
@@ -10408,7 +10408,7 @@ def do_task(message, custom_prompt: str = ''):
                                     available_tools = AVAILABLE_TOOLS
                                 )
 
-                                WHO_ANSWERED[chat_id_full] = 'Qwen 3 Coder 480b'
+                                WHO_ANSWERED[chat_id_full] = 'Qwen 3 235b a22b instruct'
                                 WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)

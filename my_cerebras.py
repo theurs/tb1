@@ -245,7 +245,6 @@ def ai(
 
     RETRY_MAX = 1 if key_ else 3
     api_key = ''
-    # [ИЗМЕНЕНИЕ] Добавляем индекс для проверки, нужно ли делать sleep
     for attempt in range(RETRY_MAX):
         api_key = key_ if key_ else get_next_key()
         if not api_key:
@@ -255,7 +254,7 @@ def ai(
             client = Cerebras(api_key=api_key)
 
             # Base parameters for all API calls
-            sdk_params = {
+            sdk_params: Dict[str, Any] = {
                 'model': model,
                 'messages': mem_,
                 'temperature': temperature,
@@ -293,31 +292,38 @@ def ai(
                     if not message.tool_calls:
                         return message.content or ""
 
+                    # Append the assistant's response to memory, which contains the tool calls.
                     mem_.append(message.model_dump())
-                    tool_call = message.tool_calls[0]
-                    function_name = tool_call.function.name
 
-                    if function_name in available_tools:
-                        function_to_call = available_tools[function_name]
-                        try:
-                            args = json.loads(tool_call.function.arguments)
-                            tool_output = function_to_call(**args)
-                            if isinstance(tool_output, str) and len(tool_output) > MAX_TOOL_OUTPUT_LEN:
-                                pass # my_log.log_cerebras(f'Tool output from {function_name} is too long ({len(tool_output)} chars), cutting to {MAX_TOOL_OUTPUT_LEN}')
-                                tool_output = tool_output[:MAX_TOOL_OUTPUT_LEN]
-                        except Exception as e:
-                            tool_output = f"Error executing tool: {e}"
-                            my_log.log_cerebras(f'Error executing tool: {e}')
-                    else:
-                        tool_output = f"Error: Tool '{function_name}' not found."
+                    # Iterate over each tool call requested by the model.
+                    for tool_call in message.tool_calls:
+                        function_name = tool_call.function.name
+                        tool_output = ""
 
-                    mem_.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": tool_output,
-                    })
+                        if function_name in available_tools:
+                            function_to_call = available_tools[function_name]
+                            try:
+                                # Arguments are a JSON string, so they must be parsed.
+                                args = json.loads(tool_call.function.arguments)
+                                tool_output = function_to_call(**args)
+                                # Truncate long outputs to avoid context overflow.
+                                if isinstance(tool_output, str) and len(tool_output) > MAX_TOOL_OUTPUT_LEN:
+                                    tool_output = tool_output[:MAX_TOOL_OUTPUT_LEN]
+                            except Exception as e:
+                                tool_output = f"Error executing tool '{function_name}': {e}"
+                                my_log.log_cerebras(f"Error executing tool: {e}\n{traceback.format_exc()}")
+                        else:
+                            tool_output = f"Error: Tool '{function_name}' not found."
 
-                mem_.append({"role": "user", "content": "Tool call limit reached. Summarize your findings."})
+                        # Append the result of the tool call back to the message history.
+                        mem_.append({
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
+                            "content": str(tool_output),
+                        })
+
+                # After the loop, if the tool limit is reached, ask the model to summarize.
+                mem_.append({"role": "user", "content": "Tool call limit reached. Summarize your findings based on the tools used."})
 
                 final_params = sdk_params.copy()
                 final_params.pop('tools', None)
@@ -344,7 +350,7 @@ def ai(
                     return result.strip()
 
         except Exception as error:
-            # Логируем ошибку
+            # Log the error
             my_log.log_cerebras(f'ai: attempt {attempt + 1}/{RETRY_MAX} failed with error: {error} [user_id: {user_id}]')
             if 'Please try again soon.' in str(error):
                 return ''
@@ -355,12 +361,11 @@ def ai(
                     remove_key(api_key)
             if 'Please reduce the length of the messages or completion' in str(error):
                 return ''
-            # [НОВОЕ] Добавляем паузу перед следующей попыткой, если это не последняя попытка
+            # Add a pause before the next attempt, if it's not the last one.
             if attempt < RETRY_MAX - 1:
                 time.sleep(1)
 
     return ''
-
 
 def clear_mem(mem, user_id: str = '') -> List[Dict[str, str]]:
     while 1:
@@ -377,7 +382,7 @@ def clear_mem(mem, user_id: str = '') -> List[Dict[str, str]]:
 
 
 def count_tokens(mem) -> int:
-    return sum([len(m['content']) for m in mem])
+    return sum(len(m.get('content', '')) for m in mem if isinstance(m.get('content'), str))
 
 
 def update_mem(query: str, resp: str, chat_id: str):
@@ -542,24 +547,37 @@ def get_mem_as_string(chat_id: str, md: bool = False) -> str:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
         result = ''
         for x in mem:
-            role = x['role']
-            if role == 'user': role = '𝐔𝐒𝐄𝐑'
-            if role == 'assistant': role = '𝐁𝐎𝐓'
-            if role == 'system': role = '𝐒𝐘𝐒𝐓𝐄𝐌'
-            text = x['content']
-            if text.startswith('[Info to help you answer'):
-                end = text.find(']') + 1
-                text = text[end:].strip()
-            if md:
-                result += f'{role}:\n\n{text}\n\n'
-            else:
-                result += f'{role}: {text}\n'
-            if role == '𝐁𝐎𝐓':
-                if md:
-                    result += '\n\n'
+            role = x.get('role', 'unknown')
+            content = x.get('content')
+            tool_calls = x.get('tool_calls')
+
+            if role == 'user': role_display = '𝐔𝐒𝐄𝐑'
+            elif role == 'assistant': role_display = '𝐁𝐎𝐓'
+            elif role == 'system': role_display = '𝐒𝐘𝐒𝐓𝐄𝐌'
+            elif role == 'tool': role_display = '𝐓𝐎𝐎𝐋'
+            else: role_display = role.upper()
+
+            text_to_display = ""
+            if isinstance(content, str):
+                if content.startswith('[Info to help you answer'):
+                    end = content.find(']') + 1
+                    text_to_display = content[end:].strip()
                 else:
-                    result += '\n'
-        return result 
+                    text_to_display = content
+            elif tool_calls:
+                # Format tool calls for readability
+                calls = [f"Call to `{tc.get('function', {}).get('name')}` with args `{tc.get('function', {}).get('arguments')}`" for tc in tool_calls]
+                text_to_display = "\n".join(calls)
+
+            if md:
+                result += f'**{role_display}:**\n\n{text_to_display}\n\n'
+            else:
+                result += f'{role_display}: {text_to_display}\n'
+
+            if role_display in ('𝐁𝐎𝐓', '𝐓𝐎𝐎𝐋'):
+                result += '\n' if md else ''
+
+        return result
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_cerebras(f'get_mem_as_string: {error}\n\n{error_traceback}')

@@ -912,14 +912,21 @@ def summ_url(
         return r, text
 
 
-def is_valid_url(url: str) -> bool:
-    """Функция is_valid_url() принимает строку url и возвращает True, если эта строка является веб-ссылкой,
-    и False в противном случае."""
-    try:
-        result = urlparse(url)
-        return all([result.scheme, result.netloc])
-    except ValueError:
+def is_valid_url(text: str) -> bool:
+    """Возвращает True, если текст содержит только корректную веб-ссылку."""
+    if not text:
         return False
+    # Более простое регулярное выражение для поиска URL
+    url_pattern = re.compile(r'https?://\S+')
+    match = url_pattern.fullmatch(text) # fullmatch требует совпадения всей строки
+
+    if match:
+        try:
+            result = urlparse(text)
+            return all([result.scheme, result.netloc])
+        except ValueError:
+            return False
+    return False
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)

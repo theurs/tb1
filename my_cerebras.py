@@ -276,7 +276,7 @@ def ai(
                 'model': model,
                 'messages': mem_,
                 'temperature': temperature,
-                'timeout': timeout, 
+                'timeout': timeout,
             }
 
             # Add conditional parameters that apply to both tool and non-tool paths
@@ -322,6 +322,19 @@ def ai(
                         tool_output = ""
 
                         if function_name in available_tools:
+                            # --- Start of dynamic context logic ---
+                            # If a new heavy search is requested, find and shrink the last large tool output in memory.
+                            if function_name in ('search_google_deep', 'download_text_from_url'):
+                                for msg in reversed(mem_):
+                                    if msg.get("role") == "tool":
+                                        content = msg.get("content", "")
+                                        # Shrink large, un-shrunk content
+                                        if isinstance(content, str) and len(content) > 1000 and not content.startswith("[Content truncated"):
+                                            msg["content"] = f"[Content truncated to save space for new search]:\n{content[:500]}..."
+                                            # We only shrink the most recent large result to make space.
+                                            break
+                            # --- End of new dynamic context logic ---
+
                             function_to_call = available_tools[function_name]
                             try:
                                 # Arguments are a JSON string, so they must be parsed.
@@ -342,6 +355,10 @@ def ai(
                             "tool_call_id": tool_call.id,
                             "content": str(tool_output),
                         })
+
+                    # Add a cooldown to prevent hitting the rate limit on rapid tool use
+                    time.sleep(1)
+
 
                 # After the loop, if the tool limit is reached, ask the model to summarize.
                 mem_.append({"role": "user", "content": "Tool call limit reached. Summarize your findings based on the tools used."})

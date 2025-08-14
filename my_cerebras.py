@@ -391,18 +391,35 @@ def ai(
 
 def clear_mem(mem: List[Dict[str, Any]], user_id: str = '') -> List[Dict[str, Any]]:
     """
-    Trims conversation history to stay within token and line limits.
+    Trims conversation history, ensuring tool call sequences are not broken.
+    It prioritizes removing older user/assistant pairs and cleans up any
+    orphaned tool messages that might result from aggressive trimming.
     """
-    # Trim based on character count (a proxy for tokens)
+    # Continue trimming until the size is within the acceptable limit
     while count_tokens(mem) > maxhistchars:
-        if len(mem) >= 2:
-            # Remove the oldest user/assistant pair to preserve conversation flow
+        # Find the index of the first 'user' message to remove it and its subsequent response
+        user_msg_idx = -1
+        for i, msg in enumerate(mem):
+            if msg.get("role") == "user":
+                user_msg_idx = i
+                break
+
+        # If a user message is found and it's not the last message, remove the pair
+        if user_msg_idx != -1 and user_msg_idx + 1 < len(mem):
+            del mem[user_msg_idx : user_msg_idx + 2]
+        # Fallback for histories without user messages or single remaining messages
+        elif len(mem) >= 2:
             del mem[:2]
         else:
-            # Cannot trim further, break to prevent an infinite loop
+            # Cannot trim further
             break
 
-    # Also enforce the hard limit on the number of messages
+    # Final safety check: an orphaned 'tool' message cannot be the first in the list.
+    # This cleans up any invalid state created by trimming.
+    while mem and mem[0].get("role") == "tool":
+        del mem[0]
+
+    # Also enforce the hard limit on the number of messages as a final pass
     if len(mem) > MAX_MEM_LINES * 2:
         mem = mem[-(MAX_MEM_LINES * 2):]
 

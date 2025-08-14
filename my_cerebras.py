@@ -391,39 +391,43 @@ def ai(
 
 def clear_mem(mem: List[Dict[str, Any]], user_id: str = '') -> List[Dict[str, Any]]:
     """
-    Trims conversation history, ensuring tool call sequences are not broken.
-    It prioritizes removing older user/assistant pairs and cleans up any
-    orphaned tool messages that might result from aggressive trimming.
+    Trims conversation history by preserving the most recent messages that fit
+    within the size and line limits. Prevents invalid states like empty lists
+    or histories starting with a 'tool' message.
     """
-    # Continue trimming until the size is within the acceptable limit
-    while count_tokens(mem) > maxhistchars:
-        # Find the index of the first 'user' message to remove it and its subsequent response
-        user_msg_idx = -1
-        for i, msg in enumerate(mem):
-            if msg.get("role") == "user":
-                user_msg_idx = i
-                break
+    # Quick exit if already compliant
+    if count_tokens(mem) <= maxhistchars and len(mem) <= MAX_MEM_LINES * 2:
+        return mem
 
-        # If a user message is found and it's not the last message, remove the pair
-        if user_msg_idx != -1 and user_msg_idx + 1 < len(mem):
-            del mem[user_msg_idx : user_msg_idx + 2]
-        # Fallback for histories without user messages or single remaining messages
-        elif len(mem) >= 2:
-            del mem[:2]
-        else:
-            # Cannot trim further
+    # Build the new memory list from the end backwards
+    new_mem = []
+    current_size = 0
+    max_lines = MAX_MEM_LINES * 2
+
+    for msg in reversed(mem):
+        # Estimate message size before adding
+        # Using a raw string length as a quick proxy to avoid repeated json.dumps
+        msg_size = len(str(msg))
+
+        if (current_size + msg_size) > maxhistchars or len(new_mem) >= max_lines:
             break
 
-    # Final safety check: an orphaned 'tool' message cannot be the first in the list.
-    # This cleans up any invalid state created by trimming.
-    while mem and mem[0].get("role") == "tool":
-        del mem[0]
+        new_mem.append(msg)
+        current_size += msg_size
 
-    # Also enforce the hard limit on the number of messages as a final pass
-    if len(mem) > MAX_MEM_LINES * 2:
-        mem = mem[-(MAX_MEM_LINES * 2):]
+    # The list is built in reverse, so correct the order
+    trimmed_mem = list(reversed(new_mem))
 
-    return mem
+    # A valid history cannot start with a 'tool' message. Trim until it's valid.
+    while trimmed_mem and trimmed_mem[0].get("role") == "tool":
+        del trimmed_mem[0]
+
+    # Failsafe: if trimming left the list empty, return the single most recent message.
+    # It's better to fail on size than to send an empty request.
+    if not trimmed_mem and mem:
+        return [mem[-1]]
+
+    return trimmed_mem
 
 
 def count_tokens(mem: List[Dict[str, Any]]) -> int:

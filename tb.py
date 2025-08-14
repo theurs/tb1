@@ -3673,6 +3673,11 @@ def transcribe(message: telebot.types.Message):
         my_log.log2(f'tb:transcribe: {unknown}\n{traceback_error}')
 
 
+
+
+### Openrouter ################################################################
+
+
 @bot.message_handler(commands=['model','Model'], func=authorized_owner)
 @async_run
 def model(message: telebot.types.Message):
@@ -3941,63 +3946,96 @@ def reasoningeffort(message: telebot.types.Message):
         my_log.log2(f'tb:reasoningeffort: {unknown}\n{traceback_error}')
 
 
-@bot.message_handler(commands=['openrouter', 'bothub'], func=authorized_owner)
+@bot.message_handler(commands=['tool_use', 'tools'], func=authorized_owner)
 @async_run
-def openrouter(message: telebot.types.Message):
-    """Юзеры могут добавить свои ключи для openrouter.ai и пользоваться платным сервисом через моего бота"""
+def tool_use(message: telebot.types.Message) -> None:
+    """
+    Sets the tool usage level for the user. Arguments are English-only.
+    """
+    # define the canonical, English-only options for the command
+    VALID_OPTIONS: set[str] = {'off', 'min', 'medium', 'max'}
+
     try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
+        chat_id_full: str = get_topic_id(message)
+        lang: str = get_lang(chat_id_full, message)
         COMMAND_MODE[chat_id_full] = ''
 
-        key = ''
-        args = message.text.split(maxsplit=1)
-        if len(args) > 1:
-            key = args[1].strip()
-        if chat_id_full not in my_openrouter.PARAMS:
-            my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
-        if key:
-            if (key.startswith('sk-or-v1-') and len(key) == 73) or (len(key) == 212):
-                my_openrouter.KEYS[chat_id_full] = key
-                bot_reply_tr(message, 'Key added successfully!')
-                if len(key) == 212: # bothub
-                    my_db.set_user_property(chat_id_full, 'base_api_url', my_openrouter.BASE_URL_BH)
-                elif (key.startswith('sk-or-v1-') and len(key) == 73):
-                    my_db.set_user_property(chat_id_full, 'base_api_url', my_openrouter.BASE_URL)
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+        # --- Localized strings for bot responses ---
+        # help text for the AI translator is provided for context
+        texts: dict[str, str] = {
+            'level_updated': tr('Tool use level updated.', lang),
+            'usage_help': tr(
+                'Usage: /tool_use [off|min|medium|max]\n\n'
+
+                'Where the levels mean:\n'
+
+                '• `off` - All tools are disabled (default).\n'
+
+                '• `min` - Minimum: calculator & simple web search.\n'
+
+                '• `medium` - Medium: advanced search types & file saving.\n'
+
+                '• `max` - Maximum: all available functions.',
+                lang,
+                help="A help text explaining the arguments for the /tool_use command. 'min', 'medium', 'max' refer to levels of functionality."
+            )
+        }
+        # --- End of localized strings ---
+
+        try:
+            # extract the chosen level from the message
+            level_arg: str = message.text.split(maxsplit=1)[1].strip().lower()
+
+            if level_arg in VALID_OPTIONS:
+                # persist the setting in the database; the argument is the value
+                my_db.set_user_property(chat_id_full, 'tool_use_level', level_arg)
+                bot_reply(message, texts['level_updated'])
                 return
-            elif key.startswith('https://'): # change base api url
-                bot_reply_tr(message, 'Base API URL changed!')
-                my_db.set_user_property(chat_id_full, 'base_api_url', key)
-                return
-            elif key.startswith('ghp_') and len(key) == 40: # GitHub PAT (https://github.com/settings/tokens)
-                my_openrouter.KEYS[chat_id_full] = key
-                my_db.set_user_property(chat_id_full, 'base_api_url', my_github.BASE_URL)
-                bot_reply_tr(message, 'Key added successfully!')
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
-                return
-            else: # treat as a key
-                my_openrouter.KEYS[chat_id_full] = key
-                bot_reply_tr(message, 'Key added successfully!')
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
-                return
-        else:
-            msg = tr('You can use your own key from https://openrouter.ai/keys or https://bothub.chat/profile/for-developers to access all AI supported.', lang)
-            if chat_id_full in my_openrouter.KEYS and my_openrouter.KEYS[chat_id_full]:
-                key = my_openrouter.KEYS[chat_id_full]
-            if key:
-                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
-                your_url = my_db.get_user_property(chat_id_full, 'base_api_url') or my_openrouter.BASE_URL
-                msg = f'{tr("Your base api url:", lang)} [{your_url}]\n'
-                msg += f'{tr("Your key:", lang)} [{key[:12]}...]\n'
-                currency = my_db.get_user_property(chat_id_full, 'openrouter_currency') or '$'
-                msg += f'{tr("Model price:", lang)} in {my_db.get_user_property(chat_id_full, "openrouter_in_price") or 0}{currency} / out {my_db.get_user_property(chat_id_full, "openrouter_out_price") or 0}{currency} /model_price'
-            model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
-            timeout_ = my_db.get_user_property(chat_id_full, 'openrouter_timeout') or my_openrouter.DEFAULT_TIMEOUT
-            reasoning_effort_value = my_db.get_user_property(chat_id_full, 'openrouter_reasoning_effort') or 'none'
-            msg += '\n\n'+ tr('Current settings: ', lang) + f'\n[model {model}]\n[temp {temperature}]\n[max tokens {max_tokens}]\n[maxhistlines {maxhistlines}]\n[maxhistchars {maxhistchars}]\n[timeout {timeout_}]\n'
-            msg += f'[reasoning effort {reasoning_effort_value if reasoning_effort_value is not None else "none"}]'
-            msg += '\n\n' + tr('''/model <model> see available models at https://openrouter.ai/models or https://bothub.chat/models
+            else:
+                # if the option is not valid, fall through to show usage
+                raise ValueError("Invalid tool use level")
+
+        except (IndexError, ValueError):
+            # handle case where no argument is provided or argument is invalid
+            # fall through to show the detailed help message
+            pass
+        except Exception as e:
+            # log other specific errors during processing
+            my_log.log2(f"tb:tool_use:argument_error:{e}\n{traceback.format_exc()}")
+
+        # provide detailed usage instructions
+        bot_reply(message, utils.bot_markdown_to_html(texts['usage_help']), parse_mode='HTML')
+
+    except Exception as unknown:
+        # catch-all for any other unexpected errors
+        traceback_error: str = traceback.format_exc()
+        my_log.log2(f'tb:tool_use:unknown_error: {unknown}\n{traceback_error}')
+
+
+@bot.message_handler(commands=['openrouter', 'bothub'], func=authorized_owner)
+@async_run
+def openrouter(message: telebot.types.Message) -> None:
+    """
+    Manages user settings for OpenRouter.ai and other compatible services.
+    Allows users to set their API key, base URL, and view current parameters.
+    """
+    try:
+        chat_id_full: str = get_topic_id(message)
+        lang: str = get_lang(chat_id_full, message)
+        COMMAND_MODE[chat_id_full] = ''
+
+        # --- Localized strings with detailed hints for the translator ---
+        texts: dict[str, str] = {
+            'your_base_url': tr("Your base api url:", lang, help="Refers to the base URL of an API endpoint, a technical term. For example: https://api.openai.com/v1"),
+            'your_key': tr("Your key:", lang, help="Refers to a secret API key for authentication. For example: sk-or-v1-abc...xyz"),
+            'model_price': tr("Model price:", lang, help="Refers to the cost of using an AI model. For example: 'Model price: $0.01 / 1k tokens'"),
+            'current_settings': tr('Current settings: ', lang, help="A title for a list of current configuration parameters."),
+            'key_added': tr('Key added successfully!', lang),
+            'base_url_changed': tr('Base API URL changed!', lang),
+            'main_help': tr('You can use your own key from https://openrouter.ai/keys or https://bothub.chat/profile/for-developers to access all AI supported.', lang, help="An introductory help message. Do not translate URLs."),
+            'reasoning_effort': tr("reasoning effort", lang, help="The name of a parameter for an AI model that controls how much 'thinking' it does. The values are like 'low', 'medium', 'high'."),
+            'tool_use': tr("tool use", lang, help="The name of a parameter for an AI model that controls its ability to use external tools like a calculator or web search. The values are like 'off', 'min', 'max'."),
+            'commands_help': tr('''/model <model> see available models at https://openrouter.ai/models or https://bothub.chat/models
 /list_models - show all models scanned
 /temp <temperature> - 0.1 ... 2.0
 /maxtokens <max_tokens> - maximum response size, see model details
@@ -4005,6 +4043,7 @@ def openrouter(message: telebot.types.Message):
 /maxhistchars <maxhistchars> - how many chars in history
 /set_timeout <timeout> - 2-1000 seconds
 /reasoningeffort [none|low|medium|high|minimal|custom_value]
+/tool_use [off|min|medium|max]
 
 Usage: /openrouter <api key> or <api base url>
 /openrouter https://openrouter.ai/api/v1 (ok)
@@ -4014,11 +4053,101 @@ https://api.mistral.ai/v1 (ok)
 https://api.x.ai/v1 (ok)
 https://api.openai.com/v1 (ok)
 /help2 for more info
-''', lang)
+''', lang, help='''This is a help text listing available bot commands. 
+IMPORTANT: Translate the descriptive text ONLY.
+DO NOT TRANSLATE:
+1. Commands (e.g., /model, /list_models, /temp).
+2. Arguments in angle brackets (e.g., <model>, <temperature>).
+3. Specific keywords (e.g., none, low, off, min, max, ok).
+4. URLs (e.g., https://openrouter.ai/models).
+Example for a Russian translation:
+'/temp <temperature> - 0.1 ... 2.0' should become '/temp <temperature> - 0.1 ... 2.0'
+'see available models at' should become 'смотрите доступные модели на'
+'''
+            ),
+        }
+        # --- End of localized strings ---
+
+        key: str = ''
+        args: list[str] = message.text.split(maxsplit=1)
+        if len(args) > 1:
+            key = args[1].strip()
+
+        # ensure user params are initialized
+        if chat_id_full not in my_openrouter.PARAMS:
+            my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
+
+        # handle if a key or URL is provided as an argument
+        if key:
+            if (key.startswith('sk-or-v1-') and len(key) == 73) or (len(key) == 212):
+                my_openrouter.KEYS[chat_id_full] = key
+                bot_reply(message, texts['key_added'])
+                if len(key) == 212: # bothub key
+                    my_db.set_user_property(chat_id_full, 'base_api_url', my_openrouter.BASE_URL_BH)
+                elif (key.startswith('sk-or-v1-') and len(key) == 73): # openrouter key
+                    my_db.set_user_property(chat_id_full, 'base_api_url', my_openrouter.BASE_URL)
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+                return
+            elif key.startswith('https://'): # base api url
+                bot_reply(message, texts['base_url_changed'])
+                my_db.set_user_property(chat_id_full, 'base_api_url', key)
+                return
+            elif key.startswith('ghp_') and len(key) == 40: # GitHub PAT
+                my_openrouter.KEYS[chat_id_full] = key
+                my_db.set_user_property(chat_id_full, 'base_api_url', my_github.BASE_URL)
+                bot_reply(message, texts['key_added'])
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+                return
+            else: # treat as a generic key
+                my_openrouter.KEYS[chat_id_full] = key
+                bot_reply(message, texts['key_added'])
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+                return
+        else:
+            # display current status and help message if no argument is provided
+            msg: str = texts['main_help']
+            if chat_id_full in my_openrouter.KEYS and my_openrouter.KEYS[chat_id_full]:
+                key = my_openrouter.KEYS[chat_id_full]
+
+            if key:
+                my_db.set_user_property(chat_id_full, 'chat_mode', 'openrouter')
+                your_url: str = my_db.get_user_property(chat_id_full, 'base_api_url') or my_openrouter.BASE_URL
+                msg = f"{texts['your_base_url']} [{your_url}]\n"
+                msg += f"{texts['your_key']} [{key[:12]}...]\n"
+                currency: str = my_db.get_user_property(chat_id_full, 'openrouter_currency') or '$'
+                msg += f'{texts["model_price"]} in {my_db.get_user_property(chat_id_full, "openrouter_in_price") or 0}{currency} / out {my_db.get_user_property(chat_id_full, "openrouter_out_price") or 0}{currency} /model_price'
+
+            # retrieve and format current settings
+            model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full]
+            timeout_: int = my_db.get_user_property(chat_id_full, 'openrouter_timeout') or my_openrouter.DEFAULT_TIMEOUT
+            reasoning_effort_value: str = my_db.get_user_property(chat_id_full, 'openrouter_reasoning_effort') or 'none'
+            tool_use_level: str = my_db.get_user_property(chat_id_full, 'tool_use_level') or 'off'
+
+            # build the settings string
+            settings_lines: list[str] = [
+                f'[model {model}]',
+                f'[temp {temperature}]',
+                f'[max tokens {max_tokens}]',
+                f'[maxhistlines {maxhistlines}]',
+                f'[maxhistchars {maxhistchars}]',
+                f'[timeout {timeout_}]',
+                f'[{texts["reasoning_effort"]} {reasoning_effort_value if reasoning_effort_value is not None else "none"}]',
+                f'[{texts["tool_use"]} {tool_use_level}]'
+            ]
+
+            msg += '\n\n' + texts['current_settings'] + '\n' + '\n'.join(settings_lines)
+            msg += '\n\n' + texts['commands_help']
+
             bot_reply(message, msg, disable_web_page_preview=True)
+
     except Exception as error:
-        error_tr = traceback.format_exc()
+        error_tr: str = traceback.format_exc()
         my_log.log2(f'tb:openrouter:{error}\n\n{error_tr}')
+
+
+### Openrouter ################################################################
+
+
 
 
 @bot.message_handler(commands=['tgui'], func=authorized_admin)
@@ -10159,34 +10288,109 @@ def do_task(message, custom_prompt: str = ''):
                 elif chat_mode_ == 'openrouter':
                     with ShowAction(message, action):
                         try:
+                            tool_use_level: str = my_db.get_user_property(chat_id_full, 'tool_use_level') or 'off'
+                            if tool_use_level == 'off':
+                                TOOLS = AVAILABLE_TOOLS = None
+                            elif tool_use_level == 'min':
+                                TOOLS, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs_min)
+                            elif tool_use_level == 'medium':
+                                TOOLS, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs_medium)
+                            elif tool_use_level == 'max':
+                                TOOLS, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs)
+
                             timeout_ = my_db.get_user_property(chat_id_full, 'openrouter_timeout') or my_openrouter.DEFAULT_TIMEOUT
-                            status, answer = my_openrouter.chat(
+                            answer = my_openrouter.chat(
                                 message.text,
                                 chat_id_full,
                                 system=hidden_text,
-                                timeout = timeout_)
+                                timeout = timeout_,
+                                tools=TOOLS,
+                                available_tools=AVAILABLE_TOOLS
+                            )
+
                             if answer:
                                 def float_to_string(num):
-                                    getcontext().prec = 8  # устанавливаем точность
-                                    num = Decimal(str(num))  # преобразуем в Decimal
-                                    num = num.quantize(Decimal('1e-7')) # округляем до 7 знаков
-                                    return str(num).rstrip('0').rstrip('.') #удаляем нули и точку
+                                    # This helper function ensures price is formatted cleanly.
+                                    getcontext().prec = 8  # Set precision
+                                    num = Decimal(str(num))  # Convert to Decimal
+                                    num = num.quantize(Decimal('1e-7')) # Round to 7 decimal places
+                                    return str(num).rstrip('0').rstrip('.') # Remove trailing zeros and dot
+
                                 if chat_id_full in my_openrouter.PRICE:
                                     price_in = my_db.get_user_property(chat_id_full, 'openrouter_in_price')
                                     price_out = my_db.get_user_property(chat_id_full, 'openrouter_out_price')
                                     if price_in or price_out:
+                                        # Convert stored prices (integers) to per-token cost.
                                         price_in = Decimal(str(price_in)) / 1000000
                                         price_out = Decimal(str(price_out)) / 1000000
+
+                                        # Get token counts from the latest API call.
                                         t_in = my_openrouter.PRICE[chat_id_full][0]
                                         t_out = my_openrouter.PRICE[chat_id_full][1]
+
+                                        # Calculate cost for this specific request.
                                         p_in = t_in * price_in
                                         p_out = t_out * price_out
+                                        total_cost = p_in + p_out
+
                                         currency = my_db.get_user_property(chat_id_full, 'openrouter_currency') or '$'
-                                        s = f'\n\n`[IN ({t_in}) {float_to_string(p_in)} + OUT ({t_out}) {float_to_string(p_out)} = {float_to_string(p_in+p_out)} {currency}]`'
+
+                                        # --- PATCHED LINE ---
+                                        # This is the new, clean format for displaying cost.
+                                        s = f'\n\n`💰 In: {t_in}, Out: {t_out} | Total: {float_to_string(total_cost)} {currency}`'
+
                                         answer += s
                                     del my_openrouter.PRICE[chat_id_full]
+
                             WHO_ANSWERED[chat_id_full] = 'openrouter ' + my_openrouter.PARAMS[chat_id_full][0]
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+
+                            thoughts, answer = utils_llm.split_thoughts(answer)
+                            thoughts = utils.bot_markdown_to_html(thoughts)
+
+
+                            if utils.edit_image_detect(answer, lang, tr):
+                                if chat_id_full in WHO_ANSWERED:
+                                    del WHO_ANSWERED[chat_id_full]
+                                # отменяем ответ
+                                my_mistral.undo(chat_id_full)
+
+                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
+                                query = message.text
+                                if not last_image:
+                                    r = ''
+                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
+                                else:
+                                    r = img2img(
+                                        text=last_image,
+                                        lang=lang,
+                                        chat_id_full=chat_id_full,
+                                        query=query,
+                                        # model=gmodel,
+                                        temperature=temp,
+                                        system_message=hidden_text,
+                                    )
+                                if r and isinstance(r, bytes):
+                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+                                    m = send_photo(
+                                        message,
+                                        message.chat.id,
+                                        r,
+                                        disable_notification=True,
+                                        reply_to_message_id=message.message_id,
+                                        reply_markup=get_keyboard('hide', message),
+                                    )
+                                    log_message(m)
+                                else:
+                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+                                    bot_reply_tr(message, 'Failed to edit image.')
+                                return
+
+
+                            # отправляем файлы если они были сгенерированы в скилах
+                            send_all_files_from_storage(message, chat_id_full)
+
 
                             if not answer:
                                 answer = 'Openrouter ' + tr('did not answered, try to /reset and start again. Check your balance or /help2', lang)
@@ -10279,20 +10483,6 @@ def do_task(message, custom_prompt: str = ''):
                                     bot_reply_tr(message, 'Failed to edit image.')
                                 return
 
-
-                            # if not answer:
-                            #     answer = my_mistral.chat(
-                            #         message.text,
-                            #         chat_id_full,
-                            #         temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                            #         system=hidden_text,
-                            #         model = my_mistral.FALLBACK_MODEL,
-                            #         tools=TOOLS,
-                            #         available_tools=AVAILABLE_TOOLS
-                            #     )
-                            #     WHO_ANSWERED[chat_id_full] = my_mistral.FALLBACK_MODEL
-                            #     autor = WHO_ANSWERED[chat_id_full]
-                            #     WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             # отправляем файлы если они были сгенерированы в скилах
                             send_all_files_from_storage(message, chat_id_full)

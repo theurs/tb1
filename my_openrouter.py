@@ -7,7 +7,7 @@ import requests
 import time
 import threading
 import traceback
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import langcodes
 from openai import OpenAI
@@ -89,23 +89,35 @@ def clear_mem(mem, user_id: str):
     #return mem[-MAX_MEM_LINES*2:]
 
 
-def count_tokens(mem) -> int:
-    return sum([len(m['content']) for m in mem])
+def count_tokens(mem: List[Dict[str, Any]]) -> int:
+    return sum([len(str(m.get('content', ''))) for m in mem])
 
 
-def ai(prompt: str = '',
-       mem = None,
-       user_id: str = '',
-       system: str = '',
-       model = '',
-       temperature: float = 1,
-       max_tokens: int = 8000,
-       timeout: int = DEFAULT_TIMEOUT,
-       reasoning_effort_value_: str = 'none'
-       ) -> str:
-
+def ai(
+    prompt: str = '',
+    mem: Optional[List[Dict[str, Any]]] = None,
+    user_id: str = '',
+    system: str = '',
+    model: str = '',
+    temperature: float = 1.0,
+    max_tokens: int = 8000,
+    timeout: int = DEFAULT_TIMEOUT,
+    response_format: str = 'text',
+    json_schema: Optional[Dict] = None,
+    reasoning_effort_value_: str = 'none',
+    tools: Optional[List[Dict]] = None,
+    available_tools: Optional[Dict] = None,
+    max_tools_use: int = 10,
+) -> str:
+    """
+    Core AI call function. Returns the response string or the error message from the API.
+    Accumulates token usage across multiple API calls (e.g., tool use).
+    """
     if not prompt and not mem:
-        return 0, ''
+        return ''
+
+    # CRITICAL: Initialize or reset the token counter for this specific user and call.
+    PRICE[user_id] = (0, 0)
 
     if hasattr(cfg, 'OPEN_ROUTER_KEY') and cfg.OPEN_ROUTER_KEY and user_id == 'test':
         key = cfg.OPEN_ROUTER_KEY
@@ -113,16 +125,21 @@ def ai(prompt: str = '',
         if model == DEFAULT_FREE_MODEL:
             key = cfg.OPEN_ROUTER_KEY
         else:
-            return 0, ''
+            return ''
     else:
         key = KEYS[user_id]
+
+    start_time = time.monotonic()
+    effective_timeout = timeout * 2 if tools and available_tools else timeout
 
     if user_id not in PARAMS:
         PARAMS[user_id] = PARAMS_DEFAULT
     if user_id != 'test':
-        model_, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[user_id]
+        model_, temp_, max_tokens_, _, _ = PARAMS[user_id]
         if not model:
             model = model_
+        if max_tokens == 8000: # Use user default if not overridden
+            max_tokens = max_tokens_
     else:
         if not model:
             model = DEFAULT_FREE_MODEL
@@ -130,141 +147,190 @@ def ai(prompt: str = '',
     if 'llama' in model.lower() and temperature > 0:
         temperature = temperature / 2
 
-    # некоторые модели не поддерживают system
-    if model in SYSTEMLESS_MODELS:
-        system = ''
-
     mem_ = mem[:] if mem else []
 
-    # некоторые модели не поддерживают system так что оставляем всё на откуп юзеру
-    if system:
-        mem_.insert(0, {"role": "system", "content": system})
-    if prompt:
-        mem_ = mem_ + [{'role': 'user', 'content': prompt}]
+    # --- System Prompt Injection ---
+    # Prepare a list of system prompts to be added.
+    system_prompts_to_add = []
 
-    YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
-    YOUR_APP_NAME = 'kun4sun_bot'
+    # 1. Add the main system prompt if provided and supported by the model.
+    if system and model not in SYSTEMLESS_MODELS:
+        system_prompts_to_add.append({"role": "system", "content": system})
+
+    # 2. PATCH: Add user_id to system context if tools are being used.
+    # This is crucial for functions that need to know the user's context,
+    # mimicking the behavior of my_cerebras.py.
+    if tools and available_tools and user_id:
+        user_id_prompt = f"Use this telegram chat id (user id) for API function calls: {user_id}"
+        system_prompts_to_add.append({"role": "system", "content": user_id_prompt})
+
+    # Prepend all system prompts to the message history in reverse order
+    # to maintain their intended sequence (e.g., general system prompt first).
+    for sp in reversed(system_prompts_to_add):
+        mem_.insert(0, sp)
+
+    if prompt:
+        mem_.append({"role": "user", "content": prompt})
+    # --- End of System Prompt Injection ---
 
     URL = my_db.get_user_property(user_id, 'base_api_url') or BASE_URL
+    is_openai_compatible = not ('openrouter' in URL or 'cerebras' in URL)
 
-    reasoning_effort_value = 'none'
-    if user_id:
-        reasoning_effort_value = my_db.get_user_property(user_id, 'openrouter_reasoning_effort') or 'none'
+    # --- Parameter Preparation ---
+    sdk_params: Dict[str, Any] = {
+        'model': model,
+        'messages': mem_,
+        'temperature': temperature,
+    }
+
+    reasoning_effort = my_db.get_user_property(user_id, 'openrouter_reasoning_effort') or 'none'
     if reasoning_effort_value_ != 'none':
-        reasoning_effort_value = reasoning_effort_value_
+        reasoning_effort = reasoning_effort_value_
 
-    if not 'openrouter' in URL and not 'cerebras' in URL:
-        try:
-            client = OpenAI(
-                api_key = key,
-                base_url = URL,
-                )
-            if reasoning_effort_value != 'none':
-                client.chat.completions.create(
-                    messages = mem_,
-                    model = model,
-                    max_tokens = max_tokens,
-                    temperature = temperature,
-                    reasoning_effort = reasoning_effort_value,
-                    timeout = timeout,
-                )
-            else:
-                response = client.chat.completions.create(
-                    messages = mem_,
-                    model = model,
-                    max_tokens = max_tokens,
-                    temperature = temperature,
-                    timeout = timeout,
-                )
-        except Exception as error_other:
-            if 'filtered' in str(error_other).lower():
-                return 0, FILTERED_SIGN
-            my_log.log_openrouter(f'ai:1: {error_other} [user_id: {user_id}]')
-            return 0, ''
-    else:
-        if not URL.endswith('/chat/completions'):
-            URL += '/chat/completions'
-            URL = re.sub(r'(?<!:)//', '/', URL)
-        data = {
-                "model": model, # Optional
-                "messages": mem_,
-                "max_tokens": max_tokens,
-                "temperature": temperature
-            }
-        if reasoning_effort_value != 'none':
-            if not 'cerebras' in URL:
-                data['reasoning'] = {
-                    "effort": reasoning_effort_value
-                }
-            else:
-                data['reasoning_effort'] = reasoning_effort_value
+    if reasoning_effort and reasoning_effort != 'none':
+        if 'cerebras' in URL:
+            # Cerebras expects 'reasoning_effort' at the top level
+            sdk_params['reasoning_effort'] = reasoning_effort
+        elif not is_openai_compatible:
+            # OpenRouter expects a 'reasoning' object
+            sdk_params['reasoning'] = {"effort": reasoning_effort}
+        # For other standard OpenAI-compatible APIs, do not add the parameter to avoid errors.
 
-        response = requests.post(
-            url = URL,
-            headers={
-                "Authorization": f"Bearer {key}",
+    if response_format == 'json' or json_schema:
+        sdk_params['response_format'] = {'type': 'json_object'}
 
-            },
-            data=json.dumps(data),
-            timeout = timeout,
-        )
-    if not 'openrouter' in URL and not 'cerebras' in URL:
-        try:
+    # --- Tool-use path ---
+    if tools and available_tools:
+        sdk_params['tools'] = tools
+        sdk_params['tool_choice'] = "auto"
+        sdk_params['max_tokens'] = 4096
+
+        for call_count in range(max_tools_use):
+            if time.monotonic() - start_time > effective_timeout:
+                return "Global timeout exceeded in tool-use loop."
+
+            sdk_params['messages'] = mem_
+
+            try:
+                if is_openai_compatible:
+                    client = OpenAI(api_key=key, base_url=URL)
+                    response = client.chat.completions.create(**sdk_params, timeout=timeout)
+                    message = response.choices[0].message
+                    if response.usage:
+                        in_t, out_t = PRICE.get(user_id, (0, 0))
+                        PRICE[user_id] = (in_t + response.usage.prompt_tokens, out_t + response.usage.completion_tokens)
+                    message_to_append_to_mem = json.loads(message.model_dump_json())
+                else:
+                    post_url = URL if URL.endswith('/chat/completions') else URL + '/chat/completions'
+                    post_url = re.sub(r'(?<!:)//', '/', post_url)
+                    http_response = requests.post(
+                        url=post_url, headers={"Authorization": f"Bearer {key}"}, json=sdk_params, timeout=timeout
+                    )
+
+                    if http_response.status_code != 200:
+                        error_text = http_response.text
+                        my_log.log_openrouter(f'ai:tool-loop: HTTP {http_response.status_code} - {error_text}')
+                        if 'tool' in error_text.lower() and ('not found' in error_text.lower() or 'support' in error_text.lower()):
+                            break
+                        return error_text
+
+                    response_data = http_response.json()
+                    if 'usage' in response_data:
+                        in_t, out_t = PRICE.get(user_id, (0, 0))
+                        prompt_tokens = response_data['usage'].get('prompt_tokens', 0)
+                        completion_tokens = response_data['usage'].get('completion_tokens', 0)
+                        PRICE[user_id] = (in_t + prompt_tokens, out_t + completion_tokens)
+
+                    message_to_append_to_mem = response_data['choices'][0]['message']
+                    from types import SimpleNamespace
+                    message = json.loads(json.dumps(message_to_append_to_mem), object_hook=lambda d: SimpleNamespace(**d))
+
+                if not hasattr(message, 'tool_calls') or not message.tool_calls:
+                    return message.content or ""
+
+
+                # FIX: Sanitize the assistant message before appending to history.
+                # The API response contains extra fields ('refusal', 'id', etc.) that are invalid
+                # when sent back as part of the message history, causing a 422 error.
+                # We construct a clean dictionary with only the allowed fields.
+                assistant_message_for_history: Dict[str, Any] = {"role": "assistant"}
+                if message_to_append_to_mem.get("content"):
+                    assistant_message_for_history["content"] = message_to_append_to_mem["content"]
+                if message_to_append_to_mem.get("tool_calls"):
+                    assistant_message_for_history["tool_calls"] = message_to_append_to_mem["tool_calls"]
+                mem_.append(assistant_message_for_history)
+
+
+                for tool_call in message.tool_calls:
+                    function_name = tool_call.function.name
+                    tool_output = ""
+                    if function_name in available_tools:
+                        function_to_call = available_tools[function_name]
+                        try:
+                            MAX_TOOL_OUTPUT_LEN = 60000
+                            args = json.loads(tool_call.function.arguments)
+                            tool_output = function_to_call(**args)
+                            if isinstance(tool_output, str) and len(tool_output) > MAX_TOOL_OUTPUT_LEN:
+                                tool_output = tool_output[:MAX_TOOL_OUTPUT_LEN]
+                        except Exception as e:
+                            tool_output = f"Error executing tool '{function_name}': {e}"
+                            my_log.log_openrouter(f"Error executing tool: {e}\n{traceback.format_exc()}")
+                    else:
+                        tool_output = f"Error: Tool '{function_name}' not found."
+
+                    mem_.append({"role": "tool", "tool_call_id": tool_call.id, "content": str(tool_output)})
+
+            except Exception as e:
+                error_str = str(e)
+                if 'filtered' in error_str.lower(): return FILTERED_SIGN
+                my_log.log_openrouter(f'ai:tool-loop: {e} [user_id: {user_id}]')
+                return error_str
+
+        if call_count == max_tools_use - 1:
+            mem_.append({"role": "user", "content": "Tool call limit reached. Summarize your findings."})
+
+    # --- Final response generation ---
+    final_params = sdk_params.copy()
+    final_params.pop('tools', None)
+    final_params.pop('tool_choice', None)
+    final_params['messages'] = mem_
+    final_params['max_tokens'] = max_tokens
+
+    try:
+        if is_openai_compatible:
+            client = OpenAI(api_key=key, base_url=URL)
+            response = client.chat.completions.create(**final_params, timeout=timeout)
             text = response.choices[0].message.content
-            try:
-                in_t = response.usage.prompt_tokens
-                out_t = response.usage.completion_tokens
-            except:
-                in_t = 0
-                out_t = 0
-            PRICE[user_id] = (in_t, out_t)
-        except TypeError:
-            try:
-                text = str(response.model_extra) or ''
-            except:
-                text = 'UNKNOWN ERROR'
-        return 200, text
-    else:
-        status = response.status_code
-        response_str = response.content.decode('utf-8').strip()
-        try:
-            response_data = json.loads(response_str)  # Преобразуем строку JSON в словарь Python
-            try:
-                in_t = response_data['usage']['prompt_tokens']
-                out_t = response_data['usage']['completion_tokens']
-            except:
-                in_t = 0
-                out_t = 0
-            PRICE[user_id] = (in_t, out_t)
-        except (KeyError, json.JSONDecodeError) as error_ct:
-
-            my_log.log_openrouter(f'ai:count tokens: {error_ct}')
-
-        if status == 200:
-            try:
-                text = response.json()['choices'][0]['message']['content'].strip()
-            except Exception as error:
-                my_log.log_openrouter(f'ai:Failed to parse response: {error}\n\n{str(response)}')
-                if model == 'google/gemini-pro-1.5-exp':
-                    model = 'google/gemini-flash-1.5-exp'
-                    return ai(prompt, mem, user_id, system, model, temperature, max_tokens, timeout)
-                if model == 'nousresearch/hermes-3-llama-3.1-405b:free':
-                    model == 'meta-llama/llama-3.2-11b-vision-instruct:free'
-                    return ai(prompt, mem, user_id, system, model, temperature*2, max_tokens, timeout)
-                text = ''
+            if response.usage:
+                in_t, out_t = PRICE.get(user_id, (0, 0))
+                PRICE[user_id] = (in_t + response.usage.prompt_tokens, out_t + response.usage.completion_tokens)
+            return text or ''
         else:
-            if model == 'google/gemini-pro-1.5-exp':
-                model = 'google/gemini-flash-1.5-exp'
-                return ai(prompt, mem, user_id, system, model, temperature, max_tokens, timeout)
-            if model == 'nousresearch/hermes-3-llama-3.1-405b:free':
-                model == 'meta-llama/llama-3.2-11b-vision-instruct:free'
-                return ai(prompt, mem, user_id, system, model, temperature*2, max_tokens, timeout)
-            text = ''
+            post_url = URL if URL.endswith('/chat/completions') else URL + '/chat/completions'
+            post_url = re.sub(r'(?<!:)//', '/', post_url)
+            http_response = requests.post(
+                url=post_url, headers={"Authorization": f"Bearer {key}"}, json=final_params, timeout=timeout
+            )
 
-        if not text:
-            if response_str:
-                text = response_str
-        return status, text
+            if http_response.status_code == 200:
+                response_data = http_response.json()
+                text = response_data['choices'][0]['message']['content'].strip()
+                if 'usage' in response_data:
+                    in_t, out_t = PRICE.get(user_id, (0, 0))
+                    prompt_tokens = response_data['usage'].get('prompt_tokens', 0)
+                    completion_tokens = response_data['usage'].get('completion_tokens', 0)
+                    PRICE[user_id] = (in_t + prompt_tokens, out_t + completion_tokens)
+                return text
+            else:
+                error_text = http_response.text
+                my_log.log_openrouter(f'ai:final-call: HTTP {http_response.status_code} - {error_text}')
+                return error_text
+
+    except Exception as e:
+        error_str = str(e)
+        if 'filtered' in error_str.lower(): return FILTERED_SIGN
+        my_log.log_openrouter(f'ai:final-call: {e} [user_id: {user_id}]')
+        return error_str
 
 
 def update_mem(query: str, resp: str, chat_id: str):
@@ -287,31 +353,58 @@ def update_mem(query: str, resp: str, chat_id: str):
     my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem__))
 
 
-def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = '', model: str = '', timeout: int = DEFAULT_TIMEOUT) -> str:
+def chat(
+    query: str,
+    chat_id: str = '',
+    temperature: float = 1,
+    system: str = '',
+    model: str = '',
+    timeout: int = DEFAULT_TIMEOUT,
+    json_schema: Optional[Dict] = None,
+    reasoning_effort_value_: str = 'none',
+    tools: Optional[List[Dict]] = None,
+    available_tools: Optional[Dict] = None
+) -> str:
+
     global LOCKS
+
     if chat_id in LOCKS:
         lock = LOCKS[chat_id]
     else:
         lock = threading.Lock()
         LOCKS[chat_id] = lock
+
     with lock:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
 
-        status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
+        text = ai(
+            query,
+            mem,
+            user_id=chat_id,
+            temperature = temperature,
+            system=system,
+            model=model,
+            timeout=timeout,
+            json_schema=json_schema,
+            reasoning_effort_value_=reasoning_effort_value_,
+            tools=tools,
+            available_tools=available_tools
+        )
+
         if text == FILTERED_SIGN:
-            return 0, ''
+            return ''
 
         if not text:
             time.sleep(2)
-            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
+            text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
 
         if not text:
             time.sleep(2)
-            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
+            text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
 
         if not text:
             time.sleep(2)
-            status_code, text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
+            text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
 
         if text:
             my_db.add_msg(chat_id, 'openrouter')
@@ -319,7 +412,7 @@ def chat(query: str, chat_id: str = '', temperature: float = 1, system: str = ''
             mem += [{'role': 'assistant', 'content': text}]
             mem = clear_mem(mem, chat_id)
             my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem))
-        return status_code, text
+        return text
 
 
 def chat_cli(model: str = ''):
@@ -329,7 +422,7 @@ def chat_cli(model: str = ''):
         if q == 'mem':
             print(get_mem_as_string('test'))
             continue
-        s, r = chat(q, 'test', model = model, system='отвечай всегда на языке')
+        r = chat(q, 'test', model = model, system='отвечай всегда на языке')
         print(r)
 
 
@@ -408,23 +501,35 @@ def get_mem_as_string(chat_id: str, md: bool = False) -> str:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
         result = ''
         for x in mem:
-            role = x['role']
-            if role == 'user': role = '𝐔𝐒𝐄𝐑'
-            if role == 'assistant': role = '𝐁𝐎𝐓'
-            if role == 'system': role = '𝐒𝐘𝐒𝐓𝐄𝐌'
-            text = x['content']
-            if text.startswith('[Info to help you answer'):
-                end = text.find(']') + 1
-                text = text[end:].strip()
-            if md:
-                result += f'{role}:\n\n{text}\n\n'
-            else:
-                result += f'{role}: {text}\n'
-            if role == '𝐁𝐎𝐓':
-                if md:
-                    result += '\n\n'
+            role = x.get('role', 'unknown')
+            content = x.get('content')
+            tool_calls = x.get('tool_calls')
+
+            if role == 'user': role_display = '𝐔𝐒𝐄𝐑'
+            elif role == 'assistant': role_display = '𝐁𝐎𝐓'
+            elif role == 'system': role_display = '𝐒𝐘𝐒𝐓𝐄𝐌'
+            elif role == 'tool': role_display = '𝐓𝐎𝐎𝐋'
+            else: role_display = role.upper()
+
+            text_to_display = ""
+            if isinstance(content, str):
+                if content.startswith('[Info to help you answer'):
+                    end = content.find(']') + 1
+                    text_to_display = content[end:].strip()
                 else:
-                    result += '\n'
+                    text_to_display = content
+            elif tool_calls:
+                # Format tool calls for readability
+                calls = [f"Call to `{tc.get('function', {}).get('name')}` with args `{tc.get('function', {}).get('arguments')}`" for tc in tool_calls]
+                text_to_display = "\n".join(calls)
+
+            if md:
+                result += f'**{role_display}:**\n\n{text_to_display}\n\n'
+            else:
+                result += f'{role_display}: {text_to_display}\n'
+
+            if role_display in ('𝐁𝐎𝐓', '𝐓𝐎𝐎𝐋'):
+                result += '\n' if md else ''
         return result 
     except Exception as error:
         error_traceback = traceback.format_exc()
@@ -446,7 +551,7 @@ def sum_big_text(text:str, query: str, temperature: float = 1, model: str = '', 
         str: The generated response from the AI model.
     """
     query = f'''{query}\n\n{text[:max_size or MAX_SUM_REQUEST]}'''
-    s, r = ai(query, user_id='test', temperature=temperature, model=model)
+    r = ai(query, user_id='test', temperature=temperature, model=model)
     return r
 
 

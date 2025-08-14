@@ -96,6 +96,24 @@ funcs = [
 ]
 
 
+funcs_min = [
+    my_skills.calc,
+    my_skills.search_google_fast,
+    my_skills.download_text_from_url,
+]
+
+
+funcs_medium = [
+    my_skills.calc,
+    my_skills.search_google_fast,
+    my_skills.search_google_deep,
+    my_skills.download_text_from_url,
+    my_skills_general.save_to_txt,
+    my_skills.query_user_file,
+    my_skills.query_user_logs,
+]
+
+
 # кодеру не нужны лишние функции
 funcs_coder = [
     my_skills.calc,

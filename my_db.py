@@ -282,6 +282,7 @@ def init(backup: bool = True, vacuum: bool = False):
             bot_name TEXT,
             openrouter_timeout INTEGER,
             openrouter_reasoning_effort TEXT,
+            tool_use_level TEXT,
             action_style TEXT,
             send_message INTEGER,
 

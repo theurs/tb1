@@ -391,41 +391,45 @@ def ai(
 
 def clear_mem(mem: List[Dict[str, Any]], user_id: str = '') -> List[Dict[str, Any]]:
     """
-    Trims conversation history by preserving the most recent messages that fit
-    within the size and line limits. Prevents invalid states like empty lists
-    or histories starting with a 'tool' message.
+    Trims conversation history from the end, ensuring that tool call sequences
+    at the start of the trimmed history are not broken.
     """
-    # Quick exit if already compliant
     if count_tokens(mem) <= maxhistchars and len(mem) <= MAX_MEM_LINES * 2:
         return mem
 
-    # Build the new memory list from the end backwards
     new_mem = []
     current_size = 0
     max_lines = MAX_MEM_LINES * 2
 
+    # Build a candidate memory list from the most recent messages
     for msg in reversed(mem):
-        # Estimate message size before adding
-        # Using a raw string length as a quick proxy to avoid repeated json.dumps
-        msg_size = len(str(msg))
-
+        # A more accurate size estimate for the message
+        msg_size = len(json.dumps(msg))
         if (current_size + msg_size) > maxhistchars or len(new_mem) >= max_lines:
             break
-
         new_mem.append(msg)
         current_size += msg_size
 
     # The list is built in reverse, so correct the order
     trimmed_mem = list(reversed(new_mem))
 
-    # A valid history cannot start with a 'tool' message. Trim until it's valid.
+    # --- Sanitize the start of the trimmed history ---
+    # A history segment cannot start with a tool response, as its parent call is missing.
     while trimmed_mem and trimmed_mem[0].get("role") == "tool":
         del trimmed_mem[0]
 
-    # Failsafe: if trimming left the list empty, return the single most recent message.
-    # It's better to fail on size than to send an empty request.
+    # Also, if the new history starts with an assistant message that was supposed
+    # to have tool calls, it's now an invalid state because we've just removed its responses.
+    if (trimmed_mem and
+            trimmed_mem[0].get("role") == "assistant" and
+            trimmed_mem[0].get("tool_calls")):
+        del trimmed_mem[0]
+
+    # Failsafe to prevent sending an empty list, which the API rejects.
+    # If sanitization wiped everything, send the last user message as a last resort.
     if not trimmed_mem and mem:
-        return [mem[-1]]
+        last_user_msg = next((m for m in reversed(mem) if m.get("role") == "user"), None)
+        return [last_user_msg] if last_user_msg else [mem[-1]]
 
     return trimmed_mem
 

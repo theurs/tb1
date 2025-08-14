@@ -49,9 +49,9 @@ LOCKS = {}
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 40000
 MAX_SUM_REQUEST = 100000
-maxhistchars = 60000
+maxhistchars = 50000
 
-MAX_TOOL_OUTPUT_LEN = 60000
+MAX_TOOL_OUTPUT_LEN = 50000
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
 # каждый ключ дает всего 1000000 токенов в час и день так что чем больше тем лучше
@@ -300,6 +300,9 @@ def ai(
 
                 max_calls = max_tools_use
                 for call_count in range(max_calls):
+                    # Trim history on each iteration to prevent context overflow
+                    mem_ = clear_mem(mem_, user_id)
+
                     if time.monotonic() - start_time > effective_timeout:
                         raise TimeoutError(f"Global timeout of {effective_timeout}s exceeded in tool-use loop.")
 
@@ -385,22 +388,41 @@ def ai(
 
     return ''
 
-def clear_mem(mem, user_id: str = '') -> List[Dict[str, str]]:
-    while 1:
-        sizeofmem = count_tokens(mem)
-        if sizeofmem <= maxhistchars:
+
+def clear_mem(mem: List[Dict[str, Any]], user_id: str = '') -> List[Dict[str, Any]]:
+    """
+    Trims conversation history to stay within token and line limits.
+    """
+    # Trim based on character count (a proxy for tokens)
+    while count_tokens(mem) > maxhistchars:
+        if len(mem) >= 2:
+            # Remove the oldest user/assistant pair to preserve conversation flow
+            del mem[:2]
+        else:
+            # Cannot trim further, break to prevent an infinite loop
             break
-        try:
-            mem = mem[2:]
-        except IndexError:
-            mem = []
-            break
 
-    return mem[-MAX_MEM_LINES*2:]
+    # Also enforce the hard limit on the number of messages
+    if len(mem) > MAX_MEM_LINES * 2:
+        mem = mem[-(MAX_MEM_LINES * 2):]
+
+    return mem
 
 
-def count_tokens(mem) -> int:
-    return sum(len(m.get('content', '')) for m in mem if isinstance(m.get('content'), str))
+def count_tokens(mem: List[Dict[str, Any]]) -> int:
+    """
+    Estimates token count by counting characters in a JSON representation.
+    This is more accurate than just counting content characters.
+    """
+    if not mem:
+        return 0
+    try:
+        # A simple character count of the JSON representation is a better proxy for token count
+        # than just counting characters of the 'content' field, as it includes roles, tool calls, etc.
+        return len(json.dumps(mem))
+    except (TypeError, OverflowError):
+        # Fallback for complex, non-serializable objects if they ever appear.
+        return sum(len(str(m.get('content', ''))) for m in mem if m.get('content'))
 
 
 def update_mem(query: str, resp: str, chat_id: str):

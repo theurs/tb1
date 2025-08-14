@@ -51,7 +51,7 @@ MAX_REQUEST = 40000
 MAX_SUM_REQUEST = 100000
 maxhistchars = 50000
 
-MAX_TOOL_OUTPUT_LEN = 40000
+MAX_TOOL_OUTPUT_LEN = 30000
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
 # каждый ключ дает всего 1000000 токенов в час и день так что чем больше тем лучше
@@ -300,9 +300,6 @@ def ai(
 
                 max_calls = max_tools_use
                 for call_count in range(max_calls):
-                    # Trim history on each iteration to prevent context overflow
-                    mem_ = clear_mem(mem_, user_id)
-
                     if time.monotonic() - start_time > effective_timeout:
                         raise TimeoutError(f"Global timeout of {effective_timeout}s exceeded in tool-use loop.")
 
@@ -388,66 +385,22 @@ def ai(
 
     return ''
 
-
-def clear_mem(mem: List[Dict[str, Any]], user_id: str = '') -> List[Dict[str, Any]]:
-    """
-    Trims conversation history from the end, ensuring that tool call sequences
-    at the start of the trimmed history are not broken.
-    """
-    if count_tokens(mem) <= maxhistchars and len(mem) <= MAX_MEM_LINES * 2:
-        return mem
-
-    new_mem = []
-    current_size = 0
-    max_lines = MAX_MEM_LINES * 2
-
-    # Build a candidate memory list from the most recent messages
-    for msg in reversed(mem):
-        # A more accurate size estimate for the message
-        msg_size = len(json.dumps(msg))
-        if (current_size + msg_size) > maxhistchars or len(new_mem) >= max_lines:
+def clear_mem(mem, user_id: str = '') -> List[Dict[str, str]]:
+    while 1:
+        sizeofmem = count_tokens(mem)
+        if sizeofmem <= maxhistchars:
             break
-        new_mem.append(msg)
-        current_size += msg_size
+        try:
+            mem = mem[2:]
+        except IndexError:
+            mem = []
+            break
 
-    # The list is built in reverse, so correct the order
-    trimmed_mem = list(reversed(new_mem))
-
-    # --- Sanitize the start of the trimmed history ---
-    # A history segment cannot start with a tool response, as its parent call is missing.
-    while trimmed_mem and trimmed_mem[0].get("role") == "tool":
-        del trimmed_mem[0]
-
-    # Also, if the new history starts with an assistant message that was supposed
-    # to have tool calls, it's now an invalid state because we've just removed its responses.
-    if (trimmed_mem and
-            trimmed_mem[0].get("role") == "assistant" and
-            trimmed_mem[0].get("tool_calls")):
-        del trimmed_mem[0]
-
-    # Failsafe to prevent sending an empty list, which the API rejects.
-    # If sanitization wiped everything, send the last user message as a last resort.
-    if not trimmed_mem and mem:
-        last_user_msg = next((m for m in reversed(mem) if m.get("role") == "user"), None)
-        return [last_user_msg] if last_user_msg else [mem[-1]]
-
-    return trimmed_mem
+    return mem[-MAX_MEM_LINES*2:]
 
 
-def count_tokens(mem: List[Dict[str, Any]]) -> int:
-    """
-    Estimates token count by counting characters in a JSON representation.
-    This is more accurate than just counting content characters.
-    """
-    if not mem:
-        return 0
-    try:
-        # A simple character count of the JSON representation is a better proxy for token count
-        # than just counting characters of the 'content' field, as it includes roles, tool calls, etc.
-        return len(json.dumps(mem))
-    except (TypeError, OverflowError):
-        # Fallback for complex, non-serializable objects if they ever appear.
-        return sum(len(str(m.get('content', ''))) for m in mem if m.get('content'))
+def count_tokens(mem) -> int:
+    return sum(len(m.get('content', '')) for m in mem if isinstance(m.get('content'), str))
 
 
 def update_mem(query: str, resp: str, chat_id: str):

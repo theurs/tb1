@@ -236,7 +236,7 @@ def ai(
 
     mem_ = mem[:] if mem else []
 
-    now = time.strftime('%Y-%m-%d %H:%M:%S')
+    now = utils.get_full_time()
     systems = (
         f'Current date and time: {now}\n',
         f'Use this telegram chat id (user id) for API function calls: {user_id}',

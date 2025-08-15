@@ -7,7 +7,7 @@ import requests
 import time
 import threading
 import traceback
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import langcodes
 from openai import OpenAI
@@ -16,6 +16,7 @@ from sqlitedict import SqliteDict
 import cfg
 import my_db
 import my_log
+import utils
 
 
 # модели не поддерживающие системный промпт
@@ -34,6 +35,7 @@ MAX_MEM_LINES = 10
 
 
 DEFAULT_TIMEOUT = 120
+MAX_TOOL_OUTPUT_LEN = 40000
 
 
 # блокировка чатов что бы не испортить историю 
@@ -55,6 +57,9 @@ FILTERED_SIGN = '_______________________________________________________________
 
 # {user_id: (tokens_in, tokens_out)}
 PRICE = {}
+
+
+SYSTEM_ = []
 
 
 # {user_id:bool} в каких чатах добавлять разблокировку цензуры
@@ -110,8 +115,32 @@ def ai(
     max_tools_use: int = 10,
 ) -> str:
     """
-    Core AI call function. Returns the response string or the error message from the API.
-    Accumulates token usage across multiple API calls (e.g., tool use).
+    Core entry point for LLM interaction, orchestrating API calls and tool usage.
+
+    This function manages the entire request lifecycle: it retrieves API keys,
+    injects system prompts, handles multi-step tool execution loops, and makes
+    the final generation call. It also tracks token usage for the given user_id
+    in the global `PRICE` dictionary.
+
+    Args:
+        prompt: The user's current input string.
+        mem: The preceding conversation history.
+        user_id: Unique identifier for the user, used for keys, params, and logging.
+        system: A system-level instruction for the model's behavior.
+        model: The specific model ID to use. If empty, uses the user's default.
+        temperature: Controls the randomness of the output. Adjusted for some models.
+        max_tokens: The maximum number of tokens for the *final* generated response.
+        timeout: Timeout in seconds for each individual API request.
+        response_format: The desired output format, e.g., 'text' or 'json'.
+        json_schema: A specific JSON schema to enforce if response_format is 'json'.
+        reasoning_effort_value_: Overrides the user's default reasoning effort setting.
+        tools: A list of tool schemas available for the model to call.
+        available_tools: A dictionary mapping tool names to their callable functions.
+        max_tools_use: The maximum number of tool calls allowed in a single turn.
+
+    Returns:
+        The AI's generated text response. Can also return an error message string,
+        a specific sign for content filtering, or an empty string on failure.
     """
     if not prompt and not mem:
         return ''
@@ -119,15 +148,11 @@ def ai(
     # CRITICAL: Initialize or reset the token counter for this specific user and call.
     PRICE[user_id] = (0, 0)
 
-    if hasattr(cfg, 'OPEN_ROUTER_KEY') and cfg.OPEN_ROUTER_KEY and user_id == 'test':
-        key = cfg.OPEN_ROUTER_KEY
-    elif user_id not in KEYS or not KEYS[user_id]:
-        if model == DEFAULT_FREE_MODEL:
-            key = cfg.OPEN_ROUTER_KEY
-        else:
-            return ''
-    else:
-        key = KEYS[user_id]
+
+    key = _get_api_key(user_id, model)
+    if not key:
+        return ''
+
 
     start_time = time.monotonic()
     effective_timeout = timeout * 2 if tools and available_tools else timeout
@@ -150,31 +175,33 @@ def ai(
     mem_ = mem[:] if mem else []
 
     # --- System Prompt Injection ---
-    # Prepare a list of system prompts to be added.
-    system_prompts_to_add = []
+    if model not in SYSTEMLESS_MODELS:
+        now = utils.get_full_time()
+        # Prepare a list of standard system prompts
+        _get_system_prompt()
+        standard_systems = [
+            f'Current date and time: {now}',
+            *SYSTEM_
+        ]
+        # Add user_id prompt if available, crucial for tools
+        if user_id:
+            standard_systems.insert(1, f'Use this telegram chat id (user id) for API function calls: {user_id}')
 
-    # 1. Add the main system prompt if provided and supported by the model.
-    if system and model not in SYSTEMLESS_MODELS:
-        system_prompts_to_add.append({"role": "system", "content": system})
+        # Insert user-provided custom system prompt first to give it priority
+        if system:
+            mem_.insert(0, {"role": "system", "content": system})
 
-    # 2. PATCH: Add user_id to system context if tools are being used.
-    # This is crucial for functions that need to know the user's context,
-    # mimicking the behavior of my_cerebras.py.
-    if tools and available_tools and user_id:
-        user_id_prompt = f"Use this telegram chat id (user id) for API function calls: {user_id}"
-        system_prompts_to_add.append({"role": "system", "content": user_id_prompt})
+        # Insert standard system prompts in reverse to maintain order at the top
+        for s_prompt in reversed(standard_systems):
+            mem_.insert(0, {"role": "system", "content": s_prompt})
 
-    # Prepend all system prompts to the message history in reverse order
-    # to maintain their intended sequence (e.g., general system prompt first).
-    for sp in reversed(system_prompts_to_add):
-        mem_.insert(0, sp)
 
     if prompt:
         mem_.append({"role": "user", "content": prompt})
     # --- End of System Prompt Injection ---
 
+
     URL = my_db.get_user_property(user_id, 'base_api_url') or BASE_URL
-    is_openai_compatible = not ('openrouter' in URL or 'cerebras' in URL)
 
     # --- Parameter Preparation ---
     sdk_params: Dict[str, Any] = {
@@ -188,13 +215,11 @@ def ai(
         reasoning_effort = reasoning_effort_value_
 
     if reasoning_effort and reasoning_effort != 'none':
+        is_openai_compatible = not ('openrouter' in URL or 'cerebras' in URL)
         if 'cerebras' in URL:
-            # Cerebras expects 'reasoning_effort' at the top level
             sdk_params['reasoning_effort'] = reasoning_effort
         elif not is_openai_compatible:
-            # OpenRouter expects a 'reasoning' object
             sdk_params['reasoning'] = {"effort": reasoning_effort}
-        # For other standard OpenAI-compatible APIs, do not add the parameter to avoid errors.
 
     if response_format == 'json' or json_schema:
         sdk_params['response_format'] = {'type': 'json_object'}
@@ -209,66 +234,38 @@ def ai(
             if time.monotonic() - start_time > effective_timeout:
                 return "Global timeout exceeded in tool-use loop."
 
-            sdk_params['messages'] = mem_
-
             try:
-                if is_openai_compatible:
-                    client = OpenAI(api_key=key, base_url=URL)
-                    response = client.chat.completions.create(**sdk_params, timeout=timeout)
-                    message = response.choices[0].message
-                    if response.usage:
-                        in_t, out_t = PRICE.get(user_id, (0, 0))
-                        PRICE[user_id] = (in_t + response.usage.prompt_tokens, out_t + response.usage.completion_tokens)
-                    message_to_append_to_mem = json.loads(message.model_dump_json())
-                else:
-                    post_url = URL if URL.endswith('/chat/completions') else URL + '/chat/completions'
-                    post_url = re.sub(r'(?<!:)//', '/', post_url)
-                    http_response = requests.post(
-                        url=post_url, headers={"Authorization": f"Bearer {key}"}, json=sdk_params, timeout=timeout
-                    )
+                sdk_params['messages'] = mem_
+                message_dict = _execute_chat_completion(sdk_params, key, URL, timeout, user_id)
 
-                    if http_response.status_code != 200:
-                        error_text = http_response.text
-                        my_log.log_openrouter(f'ai:tool-loop: HTTP {http_response.status_code} - {error_text}')
-                        if 'tool' in error_text.lower() and ('not found' in error_text.lower() or 'support' in error_text.lower()):
-                            break
-                        return error_text
+                if not message_dict:
+                    # If helper returns None, it means a non-recoverable error occurred
+                    return "API call failed in tool-use loop."
 
-                    response_data = http_response.json()
-                    if 'usage' in response_data:
-                        in_t, out_t = PRICE.get(user_id, (0, 0))
-                        prompt_tokens = response_data['usage'].get('prompt_tokens', 0)
-                        completion_tokens = response_data['usage'].get('completion_tokens', 0)
-                        PRICE[user_id] = (in_t + prompt_tokens, out_t + completion_tokens)
+                # If the model decides to respond directly without using a tool
+                if not message_dict.get('tool_calls'):
+                    return message_dict.get('content') or ""
 
-                    message_to_append_to_mem = response_data['choices'][0]['message']
-                    from types import SimpleNamespace
-                    message = json.loads(json.dumps(message_to_append_to_mem), object_hook=lambda d: SimpleNamespace(**d))
+                # The helper returns a clean dict, which can be directly appended to history
 
-                if not hasattr(message, 'tool_calls') or not message.tool_calls:
-                    return message.content or ""
+                # Sanitize the message object to include only standard fields before appending.
+                # This prevents 422 errors from APIs that reject extra keys.
+                sanitized_message: Dict[str, Any] = {"role": "assistant"}
+                if message_dict.get("content"):
+                    sanitized_message["content"] = message_dict["content"]
+                if message_dict.get("tool_calls"):
+                    sanitized_message["tool_calls"] = message_dict["tool_calls"]
+                mem_.append(sanitized_message)
 
 
-                # FIX: Sanitize the assistant message before appending to history.
-                # The API response contains extra fields ('refusal', 'id', etc.) that are invalid
-                # when sent back as part of the message history, causing a 422 error.
-                # We construct a clean dictionary with only the allowed fields.
-                assistant_message_for_history: Dict[str, Any] = {"role": "assistant"}
-                if message_to_append_to_mem.get("content"):
-                    assistant_message_for_history["content"] = message_to_append_to_mem["content"]
-                if message_to_append_to_mem.get("tool_calls"):
-                    assistant_message_for_history["tool_calls"] = message_to_append_to_mem["tool_calls"]
-                mem_.append(assistant_message_for_history)
-
-
-                for tool_call in message.tool_calls:
-                    function_name = tool_call.function.name
+                for tool_call in message_dict['tool_calls']:
+                    # NOTE: Accessing elements as dict keys ['...'] instead of attributes .
+                    function_name = tool_call['function']['name']
                     tool_output = ""
                     if function_name in available_tools:
                         function_to_call = available_tools[function_name]
                         try:
-                            MAX_TOOL_OUTPUT_LEN = 60000
-                            args = json.loads(tool_call.function.arguments)
+                            args = json.loads(tool_call['function']['arguments'])
                             tool_output = function_to_call(**args)
                             if isinstance(tool_output, str) and len(tool_output) > MAX_TOOL_OUTPUT_LEN:
                                 tool_output = tool_output[:MAX_TOOL_OUTPUT_LEN]
@@ -278,8 +275,11 @@ def ai(
                     else:
                         tool_output = f"Error: Tool '{function_name}' not found."
 
-                    mem_.append({"role": "tool", "tool_call_id": tool_call.id, "content": str(tool_output)})
+                    mem_.append({"role": "tool", "tool_call_id": tool_call['id'], "content": str(tool_output)})
 
+            except ValueError:
+                # This specific error is raised by the helper if the model doesn't support tools
+                break # Exit loop and proceed to final generation
             except Exception as e:
                 error_str = str(e)
                 if 'filtered' in error_str.lower(): return FILTERED_SIGN
@@ -297,40 +297,98 @@ def ai(
     final_params['max_tokens'] = max_tokens
 
     try:
-        if is_openai_compatible:
-            client = OpenAI(api_key=key, base_url=URL)
-            response = client.chat.completions.create(**final_params, timeout=timeout)
-            text = response.choices[0].message.content
-            if response.usage:
-                in_t, out_t = PRICE.get(user_id, (0, 0))
-                PRICE[user_id] = (in_t + response.usage.prompt_tokens, out_t + response.usage.completion_tokens)
-            return text or ''
-        else:
-            post_url = URL if URL.endswith('/chat/completions') else URL + '/chat/completions'
-            post_url = re.sub(r'(?<!:)//', '/', post_url)
-            http_response = requests.post(
-                url=post_url, headers={"Authorization": f"Bearer {key}"}, json=final_params, timeout=timeout
-            )
-
-            if http_response.status_code == 200:
-                response_data = http_response.json()
-                text = response_data['choices'][0]['message']['content'].strip()
-                if 'usage' in response_data:
-                    in_t, out_t = PRICE.get(user_id, (0, 0))
-                    prompt_tokens = response_data['usage'].get('prompt_tokens', 0)
-                    completion_tokens = response_data['usage'].get('completion_tokens', 0)
-                    PRICE[user_id] = (in_t + prompt_tokens, out_t + completion_tokens)
-                return text
-            else:
-                error_text = http_response.text
-                my_log.log_openrouter(f'ai:final-call: HTTP {http_response.status_code} - {error_text}')
-                return error_text
+        final_message = _execute_chat_completion(final_params, key, URL, timeout, user_id)
+        if final_message:
+            return final_message.get('content') or ''
+        return '' # Return empty string on failure
 
     except Exception as e:
         error_str = str(e)
         if 'filtered' in error_str.lower(): return FILTERED_SIGN
         my_log.log_openrouter(f'ai:final-call: {e} [user_id: {user_id}]')
         return error_str
+
+
+def _execute_chat_completion(
+    sdk_params: Dict[str, Any],
+    key: str,
+    url: str,
+    timeout: int,
+    user_id: str
+) -> Optional[Dict[str, Any]]:
+    """
+    Executes the chat completion call using either OpenAI client or requests.
+    Handles response parsing and token counting.
+    Returns the 'message' part of the response dictionary, or None on failure.
+    """
+    is_openai_compatible = not ('openrouter' in url or 'cerebras' in url)
+
+    try:
+        if is_openai_compatible:
+            client = OpenAI(api_key=key, base_url=url)
+            response = client.chat.completions.create(**sdk_params, timeout=timeout)
+
+            if response.usage:
+                in_t, out_t = PRICE.get(user_id, (0, 0))
+                PRICE[user_id] = (in_t + response.usage.prompt_tokens, out_t + response.usage.completion_tokens)
+
+            # Return the message object as a dictionary
+            return response.choices[0].message.model_dump()
+        else:
+            post_url = url if url.endswith('/chat/completions') else url + '/chat/completions'
+            post_url = re.sub(r'(?<!:)//', '/', post_url)
+            http_response = requests.post(
+                url=post_url, headers={"Authorization": f"Bearer {key}"}, json=sdk_params, timeout=timeout
+            )
+
+            if http_response.status_code != 200:
+                error_text = http_response.text
+                my_log.log_openrouter(f'_execute_chat_completion: HTTP {http_response.status_code} - {error_text}')
+                # Propagate specific, actionable errors
+                if 'tool' in error_text.lower() and ('not found' in error_text.lower() or 'support' in error_text.lower()):
+                    raise ValueError("Tool not supported by model")
+                raise ConnectionError(error_text)
+
+            response_data = http_response.json()
+            if 'usage' in response_data:
+                in_t, out_t = PRICE.get(user_id, (0, 0))
+                prompt_tokens = response_data['usage'].get('prompt_tokens', 0)
+                completion_tokens = response_data['usage'].get('completion_tokens', 0)
+                PRICE[user_id] = (in_t + prompt_tokens, out_t + completion_tokens)
+
+            return response_data['choices'][0]['message']
+
+    except Exception as e:
+        # Re-raise specific errors, log and suppress others
+        if isinstance(e, (ValueError, ConnectionError)):
+            raise
+        my_log.log_openrouter(f'_execute_chat_completion: Exception: {e}')
+        return None
+
+
+def _get_api_key(user_id: str, model: str = '') -> Optional[str]:
+    """
+    Retrieves the appropriate API key based on user_id and model.
+    Handles test user, user-specific keys, and default free model keys.
+
+    Returns:
+        The API key as a string, or None if no valid key is found.
+    """
+    # Case 1: Test user with a global key in config
+    if user_id == 'test' and hasattr(cfg, 'OPEN_ROUTER_KEY') and cfg.OPEN_ROUTER_KEY:
+        return cfg.OPEN_ROUTER_KEY
+
+    # Case 2: User has a specific key stored
+    if user_id in KEYS and KEYS[user_id]:
+        return KEYS[user_id]
+
+    # Case 3: User has no key, but is using a default free model
+    if model == DEFAULT_FREE_MODEL and hasattr(cfg, 'OPEN_ROUTER_KEY'):
+        return cfg.OPEN_ROUTER_KEY
+
+    # Case 4: No valid key found
+    my_log.log_openrouter(f'_get_api_key: No valid key found for user_id: {user_id}, model: {model}')
+    return None
 
 
 def update_mem(query: str, resp: str, chat_id: str):
@@ -351,6 +409,37 @@ def update_mem(query: str, resp: str, chat_id: str):
         my_log.log_openrouter(f'update_mem: {error}\n\n{error_traceback}\n\n{query}\n\n{resp}\n\n{mem}')
 
     my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem__))
+
+
+def _call_ai_with_retry(
+    *args: Any,
+    retries: int = 3,
+    delay: int = 2,
+    **kwargs: Any
+) -> str:
+    """
+    Calls the ai function with a retry mechanism.
+
+    Args:
+        *args: Positional arguments to pass to the ai function.
+        retries (int): The number of retries if the call returns an empty string.
+        delay (int): The delay in seconds between retries.
+        **kwargs: Keyword arguments to pass to the ai function.
+
+    Returns:
+        The response from the ai function, or an empty string if all retries fail.
+    """
+    # The first attempt is made outside the loop of retries
+    text = ai(*args, **kwargs)
+    if text and text != FILTERED_SIGN:
+        return text
+
+    for _ in range(retries):
+        time.sleep(delay)
+        text = ai(*args, **kwargs)
+        if text and text != FILTERED_SIGN:
+            return text
+    return ''
 
 
 def chat(
@@ -377,11 +466,11 @@ def chat(
     with lock:
         mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
 
-        text = ai(
+        text = _call_ai_with_retry(
             query,
             mem,
             user_id=chat_id,
-            temperature = temperature,
+            temperature=temperature,
             system=system,
             model=model,
             timeout=timeout,
@@ -393,18 +482,6 @@ def chat(
 
         if text == FILTERED_SIGN:
             return ''
-
-        if not text:
-            time.sleep(2)
-            text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
-
-        if not text:
-            time.sleep(2)
-            text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
-
-        if not text:
-            time.sleep(2)
-            text = ai(query, mem, user_id=chat_id, temperature = temperature, system=system, model=model, timeout=timeout)
 
         if text:
             my_db.add_msg(chat_id, 'openrouter')
@@ -678,69 +755,231 @@ def format_models_for_telegram(models: List[str]) -> str:
     return output
 
 
+# def img2txt(
+#     image_data: bytes,
+#     prompt: str = 'Describe picture',
+#     model = '',
+#     temperature: float = 1,
+#     max_tokens: int = 4000,
+#     timeout: int = DEFAULT_TIMEOUT,
+#     chat_id: str = '',
+#     system: str = '',
+#     reasoning_effort_value_: str = 'none'
+#     ) -> str:
+#     """
+#     Describes an image using the specified model and parameters.
+
+#     Args:
+#         image_data: The image data as bytes, or the path to the image file.
+#         prompt: The prompt to guide the description. Defaults to 'Describe picture'.
+#         model: The model to use for generating the description.
+#         temperature: The temperature parameter for controlling the randomness of the output. Defaults to 1.
+#         max_tokens: The maximum number of tokens to generate. Defaults to 4000.
+#         timeout: The timeout for the request in seconds. Defaults to DEFAULT_TIMEOUT.
+
+#     Returns:
+#         A string containing the description of the image, or an empty string if an error occurs.
+#     """
+
+#     if isinstance(image_data, str):
+#         with open(image_data, 'rb') as f:
+#             image_data = f.read()
+
+#     if not chat_id:
+#         key = cfg.OPEN_ROUTER_KEY
+#     else:
+#         key = KEYS[chat_id]
+
+
+#     if chat_id not in PARAMS:
+#         PARAMS[chat_id] = PARAMS_DEFAULT
+
+#     model_, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[chat_id]
+
+#     if model:
+#         model_ = model
+
+#     if 'llama' in model_ and temperature > 0:
+#         temperature = temperature / 2
+
+#     # некоторые модели не поддерживают system
+#     if model in SYSTEMLESS_MODELS:
+#         system = ''
+
+#     URL = my_db.get_user_property(chat_id, 'base_api_url') or BASE_URL
+
+#     reasoning_effort_value = 'none'
+#     if chat_id:
+#         reasoning_effort_value = my_db.get_user_property(chat_id, 'openrouter_reasoning_effort') or 'none'
+#     if reasoning_effort_value_ != 'none':
+#         reasoning_effort_value = reasoning_effort_value_
+
+#     img_b64_str = base64.b64encode(image_data).decode('utf-8')
+#     img_type = 'image/png'
+
+#     mem = [
+#         {
+#             "role": "user",
+#             "content": [
+#                 {"type": "text", "text": prompt},
+#                 {
+#                     "type": "image_url",
+#                     "image_url": {"url": f"data:{img_type};base64,{img_b64_str}"},
+#                 },
+#             ],
+#         }
+#     ]
+#     if system:
+#         mem.insert(0, {'role': 'system', 'content': system})
+
+#     if not 'openrouter' in URL and not 'cerebras' in URL:
+#         try:
+#             client = OpenAI(
+#                 api_key = key,
+#                 base_url = URL,
+#                 )
+
+#             if reasoning_effort_value != 'none':
+#                 response = client.chat.completions.create(
+#                     messages = mem,
+#                     model = model_,
+#                     max_tokens = max_tokens,
+#                     temperature = temperature,
+#                     reasoning_effort = reasoning_effort_value,
+#                     timeout = timeout,
+#                     )
+#             else:
+#                 response = client.chat.completions.create(
+#                     messages = mem,
+#                     model = model_,
+#                     max_tokens = max_tokens,
+#                     temperature = temperature,
+#                     timeout = timeout,
+#                     )
+
+#         except Exception as error_other:
+#             my_log.log_openrouter(f'ai: {error_other}')
+#             return ''
+#     else:
+#         if not URL.endswith('/chat/completions'):
+#             URL += '/chat/completions'
+#         URL = re.sub(r'(?<!:)//', '/', URL)
+
+#         data = {
+#             "model": model_,
+#             "messages": mem,
+#             "max_tokens": max_tokens,
+#             "temperature": temperature,
+#         }
+#         if reasoning_effort_value != 'none':
+#             if not 'cerebras' in URL:
+#                 data['reasoning'] = {
+#                     "effort": reasoning_effort_value
+#                 }
+#             else:
+#                 data['reasoning_effort'] = reasoning_effort_value
+
+#         response = requests.post(
+#             url = URL,
+#             headers={
+#                 "Authorization": f"Bearer {key}",
+
+#             },
+#             data=json.dumps({
+#                 "model": model_, # Optional
+#                 "messages": mem,
+#                 "max_tokens": max_tokens,
+#                 "temperature": temperature,
+#             }),
+#             timeout = timeout,
+#         )
+#     if not 'openrouter' in URL and not 'cerebras' in URL:
+#         try:
+#             text = response.choices[0].message.content
+#             try:
+#                 in_t = response.usage.prompt_tokens
+#                 out_t = response.usage.completion_tokens
+#             except:
+#                 in_t = 0
+#                 out_t = 0
+#             PRICE[chat_id] = (in_t, out_t)
+#         except TypeError:
+#             try:
+#                 text = str(response.model_extra) or ''
+#             except:
+#                 text = 'UNKNOWN ERROR'
+#         return text
+#     else:
+#         status = response.status_code
+#         response_str = response.content.decode('utf-8').strip()
+#         try:
+#             response_data = json.loads(response_str)  # Преобразуем строку JSON в словарь Python
+#             try:
+#                 in_t = response_data['usage']['prompt_tokens']
+#                 out_t = response_data['usage']['completion_tokens']
+#             except:
+#                 in_t = 0
+#                 out_t = 0
+#             PRICE[chat_id] = (in_t, out_t)
+#         except (KeyError, json.JSONDecodeError) as error_ct:
+
+#             my_log.log_openrouter(f'ai:count tokens: {error_ct}')
+
+#         if status == 200:
+#             try:
+#                 text = response.json()['choices'][0]['message']['content'].strip()
+#             except Exception as error:
+#                 my_log.log_openrouter(f'img2txt:Failed to parse response: {error}\n\n{str(response)}')
+#                 text = ''
+#         else:
+#             text = ''
+
+#         return text
+
+
 def img2txt(
-    image_data: bytes,
+    image_data: bytes | str,
     prompt: str = 'Describe picture',
-    model = '',
+    model: str = '',
     temperature: float = 1,
     max_tokens: int = 4000,
     timeout: int = DEFAULT_TIMEOUT,
     chat_id: str = '',
     system: str = '',
     reasoning_effort_value_: str = 'none'
-    ) -> str:
+) -> str:
     """
-    Describes an image using the specified model and parameters.
+    Describes an image by preparing a multimodal payload and calling the main ai function.
 
     Args:
         image_data: The image data as bytes, or the path to the image file.
         prompt: The prompt to guide the description. Defaults to 'Describe picture'.
         model: The model to use for generating the description.
-        temperature: The temperature parameter for controlling the randomness of the output. Defaults to 1.
-        max_tokens: The maximum number of tokens to generate. Defaults to 4000.
-        timeout: The timeout for the request in seconds. Defaults to DEFAULT_TIMEOUT.
+        temperature: The temperature for the generation 0-2.
+        max_tokens: The maximum number of tokens to generate.
+        timeout: The request timeout in seconds.
+        chat_id: The user ID for fetching specific configurations.
+        system: An optional system prompt.
+        reasoning_effort_value_: Overrides the user's reasoning effort setting.
 
     Returns:
         A string containing the description of the image, or an empty string if an error occurs.
     """
-
+    # handle if image_data is a path to a file
     if isinstance(image_data, str):
-        with open(image_data, 'rb') as f:
-            image_data = f.read()
+        try:
+            with open(image_data, 'rb') as f:
+                image_data = f.read()
+        except FileNotFoundError:
+            my_log.log_openrouter(f'img2txt: File not found at path: {image_data}')
+            return ''
 
-    if not chat_id:
-        key = cfg.OPEN_ROUTER_KEY
-    else:
-        key = KEYS[chat_id]
-
-
-    if chat_id not in PARAMS:
-        PARAMS[chat_id] = PARAMS_DEFAULT
-
-    model_, temperature, max_tokens, maxhistlines, maxhistchars = PARAMS[chat_id]
-
-    if model:
-        model_ = model
-
-    if 'llama' in model_ and temperature > 0:
-        temperature = temperature / 2
-
-    # некоторые модели не поддерживают system
-    if model in SYSTEMLESS_MODELS:
-        system = ''
-
-    URL = my_db.get_user_property(chat_id, 'base_api_url') or BASE_URL
-
-    reasoning_effort_value = 'none'
-    if chat_id:
-        reasoning_effort_value = my_db.get_user_property(chat_id, 'openrouter_reasoning_effort') or 'none'
-    if reasoning_effort_value_ != 'none':
-        reasoning_effort_value = reasoning_effort_value_
-
+    # encode image to base64
     img_b64_str = base64.b64encode(image_data).decode('utf-8')
-    img_type = 'image/png'
+    img_type = 'image/png'  # assuming png, other formats might work
 
-    mem = [
+    # construct the payload for a multimodal request
+    messages = [
         {
             "role": "user",
             "content": [
@@ -752,112 +991,18 @@ def img2txt(
             ],
         }
     ]
-    if system:
-        mem.insert(0, {'role': 'system', 'content': system})
 
-    if not 'openrouter' in URL and not 'cerebras' in URL:
-        try:
-            client = OpenAI(
-                api_key = key,
-                base_url = URL,
-                )
-
-            if reasoning_effort_value != 'none':
-                response = client.chat.completions.create(
-                    messages = mem,
-                    model = model_,
-                    max_tokens = max_tokens,
-                    temperature = temperature,
-                    reasoning_effort = reasoning_effort_value,
-                    timeout = timeout,
-                    )
-            else:
-                response = client.chat.completions.create(
-                    messages = mem,
-                    model = model_,
-                    max_tokens = max_tokens,
-                    temperature = temperature,
-                    timeout = timeout,
-                    )
-
-        except Exception as error_other:
-            my_log.log_openrouter(f'ai: {error_other}')
-            return ''
-    else:
-        if not URL.endswith('/chat/completions'):
-            URL += '/chat/completions'
-        URL = re.sub(r'(?<!:)//', '/', URL)
-
-        data = {
-            "model": model_,
-            "messages": mem,
-            "max_tokens": max_tokens,
-            "temperature": temperature,
-        }
-        if reasoning_effort_value != 'none':
-            if not 'cerebras' in URL:
-                data['reasoning'] = {
-                    "effort": reasoning_effort_value
-                }
-            else:
-                data['reasoning_effort'] = reasoning_effort_value
-
-        response = requests.post(
-            url = URL,
-            headers={
-                "Authorization": f"Bearer {key}",
-
-            },
-            data=json.dumps({
-                "model": model_, # Optional
-                "messages": mem,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-            }),
-            timeout = timeout,
-        )
-    if not 'openrouter' in URL and not 'cerebras' in URL:
-        try:
-            text = response.choices[0].message.content
-            try:
-                in_t = response.usage.prompt_tokens
-                out_t = response.usage.completion_tokens
-            except:
-                in_t = 0
-                out_t = 0
-            PRICE[chat_id] = (in_t, out_t)
-        except TypeError:
-            try:
-                text = str(response.model_extra) or ''
-            except:
-                text = 'UNKNOWN ERROR'
-        return text
-    else:
-        status = response.status_code
-        response_str = response.content.decode('utf-8').strip()
-        try:
-            response_data = json.loads(response_str)  # Преобразуем строку JSON в словарь Python
-            try:
-                in_t = response_data['usage']['prompt_tokens']
-                out_t = response_data['usage']['completion_tokens']
-            except:
-                in_t = 0
-                out_t = 0
-            PRICE[chat_id] = (in_t, out_t)
-        except (KeyError, json.JSONDecodeError) as error_ct:
-
-            my_log.log_openrouter(f'ai:count tokens: {error_ct}')
-
-        if status == 200:
-            try:
-                text = response.json()['choices'][0]['message']['content'].strip()
-            except Exception as error:
-                my_log.log_openrouter(f'img2txt:Failed to parse response: {error}\n\n{str(response)}')
-                text = ''
-        else:
-            text = ''
-
-        return text
+    # Delegate the actual API call to the centralized 'ai' function
+    return ai(
+        mem=messages,
+        user_id=chat_id,
+        system=system,
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        timeout=timeout,
+        reasoning_effort_value_=reasoning_effort_value_
+    )
 
 
 def txt2img(
@@ -898,11 +1043,22 @@ def txt2img(
     print(image_url)
 
 
+def _get_system_prompt() -> str:
+    global SYSTEM_
+
+    if not SYSTEM_:
+        import my_skills_general
+        SYSTEM_ = my_skills_general.SYSTEM_
+
+    return SYSTEM_
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
 
-    # print(img2txt(r'C:\Users\user\Downloads\samples for ai\большая фотография.jpg', 'извлеки весь текст с картинки, сохрани форматирование', model = 'qwen/qwen2.5-vl-32b-instruct:free'))
+
+    print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи 3.jpg', 'извлеки весь текст с картинки, сохрани форматирование', model = 'qwen/qwen2.5-vl-32b-instruct:free', chat_id='test'))
 
     chat_cli(model='openai/gpt-5-nano')
 

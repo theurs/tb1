@@ -720,6 +720,7 @@ def chat(
                     return ''
                 elif """400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Please ensure that function response turn comes immediately after a function call turn.'""" in str(error):
                     my_log.log_gemini(f'my_gemini3:chat:4: {str(error)} {model} {key}')
+                    my_log.log_gemini(f'my_gemini3:chat:4: Invalid history state. mem dump: {mem}')
                     new_mem = []
                     i = 0
                     while i < len(mem):
@@ -842,7 +843,7 @@ def chat(
             elif 'Request contains an invalid argument.' in str(error):
                 my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: {error}')
             else:
-                my_log.log_gemini(f'my_gemini5:chat:unknown_error:4: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}')
+                my_log.log_gemini(f'my_gemini5:chat:unknown_error:4: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}\nMem: {str(mem)[:1000]}')
         return ''
     finally:
         if chat_id in my_skills_storage.STORAGE_ALLOWED_IDS:

@@ -383,6 +383,36 @@ def _execute_chat_completion(
                 reasoning_effort_value = None # Prevent re-adding it on the next loop
                 continue # Go to the next attempt
 
+            # Handle rate limit error by respecting the X-RateLimit-Reset header
+            elif attempt == 0 and ('"code":429' in error_text or 'rate limit exceeded' in error_text):
+                try:
+                    # Extract the JSON part of the error string
+                    json_str = re.search(r'{.*}', str(e))
+                    if not json_str:
+                        raise ValueError("No JSON found in error string")
+
+                    error_data = json.loads(json_str.group(0))
+                    # Navigate to the reset timestamp (it's in milliseconds)
+                    reset_timestamp_ms = int(error_data['error']['metadata']['headers']['X-RateLimit-Reset'])
+
+                    # Calculate how long to wait in seconds
+                    wait_duration = (reset_timestamp_ms / 1000) - time.time() + 0.1 # Add a 100ms buffer
+
+                    # Don't wait forever, cap at ~1 minute. Also handles negative wait time.
+                    if 0 < wait_duration < 61:
+                        my_log.log_openrouter(f'[{user_id}] Rate limit hit. Waiting for {wait_duration:.2f}s.')
+                        time.sleep(wait_duration)
+                        continue # Retry the request
+                    else:
+                        # If wait time is invalid (e.g., in the past or too far in the future), use fallback
+                        raise ValueError(f"[{user_id}] Unreasonable wait duration calculated: {wait_duration:.2f}s")
+
+                except (json.JSONDecodeError, KeyError, AttributeError, ValueError, TypeError):
+                    # Fallback if parsing fails or header is missing
+                    my_log.log_openrouter(f'[{user_id}] Rate limit hit. Could not parse reset time. Retrying after 10s fallback.')
+                    time.sleep(10)
+                    continue
+
             # Case 2 (NEW): Model does not support system prompts.
             elif attempt == 0 and ('system' in error_text and 'role' in error_text):
                 # This error indicates the model rejected the 'system' role.
@@ -395,7 +425,7 @@ def _execute_chat_completion(
 
             # Case 3: Model doesn't support tools. Signal the caller to stop trying.
             if 'tool' in error_text and ('support' in error_text or 'endpoints' in error_text):
-                raise ValueError("Model does not support tools.") from e
+                raise ValueError(f"Model does not support tools." ) from e
 
             # If it's a different error or the retry failed, log it and raise.
             my_log.log_openrouter(f'_execute_chat_completion: Unrecoverable API Error on attempt {attempt+1}: {e}')

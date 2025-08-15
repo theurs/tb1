@@ -16,6 +16,7 @@ import cfg
 import my_cerebras_tools
 import my_db
 import my_log
+import my_skills_storage
 import utils
 
 
@@ -170,6 +171,11 @@ def ai(
 
             # --- Tool-use path ---
             if tools and available_tools:
+
+                # сохраняем маркер для проверки валидности chat_id в модуле my_skills*
+                if user_id:
+                    my_skills_storage.STORAGE_ALLOWED_IDS[user_id] = user_id
+
                 sdk_params['tools'] = tools
                 sdk_params['tool_choice'] = "auto"
 

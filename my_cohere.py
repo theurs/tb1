@@ -20,6 +20,7 @@ from sqlitedict import SqliteDict
 import cfg
 import my_db
 import my_log
+import my_skills_storage
 import utils
 
 
@@ -126,6 +127,10 @@ def ai(
 
     while count_tokens(mem) > MAX_QUERY_LENGTH + 100:
         mem = mem[2:]
+
+    # сохраняем маркер для проверки валидности chat_id в модуле my_skills*
+    if user_id:
+        my_skills_storage.STORAGE_ALLOWED_IDS[user_id] = user_id
 
     RETRY_MAX = 1 if key_ else 4
     api_key = ''

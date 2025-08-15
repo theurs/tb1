@@ -22,6 +22,7 @@ import my_db
 import my_log
 import my_skills
 import my_skills_general
+import my_skills_storage
 import utils
 
 
@@ -260,6 +261,10 @@ def ai(
         reasoning_effort = None
     elif reasoning_effort == 'minimal':
         reasoning_effort = 'low'
+
+    # сохраняем маркер для проверки валидности chat_id в модуле my_skills*
+    if user_id:
+        my_skills_storage.STORAGE_ALLOWED_IDS[user_id] = user_id
 
     RETRY_MAX = 1 if key_ else 3
     api_key = ''

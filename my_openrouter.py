@@ -16,6 +16,7 @@ from sqlitedict import SqliteDict
 import cfg
 import my_db
 import my_log
+import my_skills_storage
 import utils
 
 
@@ -199,7 +200,7 @@ def ai(
     reasoning_effort = my_db.get_user_property(user_id, 'openrouter_reasoning_effort') or 'none'
     if reasoning_effort_value_ != 'none':
         reasoning_effort = reasoning_effort_value_
-    
+
     if reasoning_effort and reasoning_effort != 'none':
         sdk_params['reasoning_effort_value'] = reasoning_effort
 
@@ -209,6 +210,11 @@ def ai(
 
     # --- Tool-use path ---
     if tools and available_tools:
+
+        # сохраняем маркер для проверки валидности chat_id в модуле my_skills*
+        if user_id:
+            my_skills_storage.STORAGE_ALLOWED_IDS[user_id] = user_id
+
         sdk_params['tools'] = tools
         sdk_params['tool_choice'] = "auto"
         sdk_params['max_tokens'] = 4096
@@ -322,7 +328,7 @@ def _execute_chat_completion(
         ConnectionError: For actual network or severe, unrecoverable API errors.
     """
     current_params = sdk_params.copy()
-    
+
     # Extract the abstract reasoning effort value. It will be formatted below.
     reasoning_effort_value = current_params.pop('reasoning_effort_value', None)
 
@@ -337,7 +343,7 @@ def _execute_chat_completion(
                 elif not is_openai_compatible:
                     current_params['reasoning'] = {"effort": reasoning_effort_value}
                 # For standard OpenAI compatible APIs, no parameter is added as it's not supported.
-            
+
             # --- API Call ---
             is_openai_compatible = not ('openrouter' in url or 'cerebras' in url)
             if is_openai_compatible:

@@ -26,6 +26,7 @@ import my_db
 import my_log
 import my_cerebras_tools
 import my_split_audio
+import my_skills_storage
 import utils
 
 
@@ -166,6 +167,10 @@ def ai(
     # Add user prompt if provided
     if prompt:
         messages.append({"role": "user", "content": prompt})
+
+    # сохраняем маркер для проверки валидности chat_id в модуле my_skills*
+    if user_id:
+        my_skills_storage.STORAGE_ALLOWED_IDS[user_id] = user_id
 
     text = ''
     api_key = ''

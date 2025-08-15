@@ -531,6 +531,7 @@ def chat(
                 if mem and mem[0].role == 'user' and hasattr(mem[0].parts[0], 'text') and not mem[0].parts[0].text:
                     mem = mem[2:]
                 validate_mem(mem)
+                mem = validate_and_sanitize_mem(mem)
             else:
                 mem = []
             if mem:
@@ -680,6 +681,7 @@ def chat(
                         # прошка и сама может стихи написать
                         if model != cfg.gemini_pro_model:
                             SKILLS.append(compose_creative_text)
+                    mem = validate_and_sanitize_mem(mem)
                     chat = client.chats.create(
                         model=model,
                         config=get_config(
@@ -691,6 +693,7 @@ def chat(
                         history=mem,
                     )
                 else:
+                    mem = validate_and_sanitize_mem(mem)
                     chat = client.chats.create(
                         model=model,
                         config=get_config(

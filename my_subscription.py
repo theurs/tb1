@@ -114,43 +114,43 @@ def get_subscription_status_string(chat_id_full: str, lang: str, telegram_stars:
             return msg
 
 
-def cache_positive_by_user_id(maxsize: int = 1000, ttl: int = 10*60):
-    """
-    Декоратор для кеширования результатов функции.
-    Кеширует только положительные (True) результаты, используя chat_id_full в качестве ключа.
-    """
-    _cache = cachetools.TTLCache(maxsize=maxsize, ttl=ttl)
-    _cache_lock = threading.Lock()
+# def cache_positive_by_user_id(maxsize: int = 1000, ttl: int = 10*60):
+#     """
+#     Декоратор для кеширования результатов функции.
+#     Кеширует только положительные (True) результаты, используя chat_id_full в качестве ключа.
+#     """
+#     _cache = cachetools.TTLCache(maxsize=maxsize, ttl=ttl)
+#     _cache_lock = threading.Lock()
 
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            # Предполагаем, что chat_id_full всегда второй позиционный аргумент
-            # или передается как именованный
-            user_id = kwargs.get('chat_id_full')
-            if user_id is None and len(args) > 1:
-                user_id = args[1]
+#     def decorator(func):
+#         @functools.wraps(func)
+#         def wrapper(*args, **kwargs):
+#             # Предполагаем, что chat_id_full всегда второй позиционный аргумент
+#             # или передается как именованный
+#             user_id = kwargs.get('chat_id_full')
+#             if user_id is None and len(args) > 1:
+#                 user_id = args[1]
 
-            if user_id is None:
-                # Если user_id не найден, кеширование не применимо, просто вызываем функцию
-                return func(*args, **kwargs)
+#             if user_id is None:
+#                 # Если user_id не найден, кеширование не применимо, просто вызываем функцию
+#                 return func(*args, **kwargs)
 
-            # Проверяем кеш
-            with _cache_lock:
-                if user_id in _cache:
-                    return _cache[user_id] # Возвращаем True, так как кешируем только его
+#             # Проверяем кеш
+#             with _cache_lock:
+#                 if user_id in _cache:
+#                     return _cache[user_id] # Возвращаем True, так как кешируем только его
 
-            # Вызываем оригинальную функцию
-            result = func(*args, **kwargs)
+#             # Вызываем оригинальную функцию
+#             result = func(*args, **kwargs)
 
-            # Кешируем только если результат True
-            if result is True:
-                with _cache_lock:
-                    _cache[user_id] = True
+#             # Кешируем только если результат True
+#             if result is True:
+#                 with _cache_lock:
+#                     _cache[user_id] = True
 
-            return result
-        return wrapper
-    return decorator
+#             return result
+#         return wrapper
+#     return decorator
 
 
 _GLOBAL_CHECK_DONATE_LOCKS_ACCESS_LOCK = threading.Lock()

@@ -10200,7 +10200,7 @@ def do_task(message, custom_prompt: str = ''):
                                         chat_id_full=chat_id_full,
                                         query=query,
                                         model=gmodel,
-                                        temperature=temp,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                         system_message=hidden_text,
                                     )
                                 if r and isinstance(r, bytes):
@@ -10228,7 +10228,7 @@ def do_task(message, custom_prompt: str = ''):
                                     mem = mem__,
                                     user_id=chat_id_full,
                                     system=hidden_text,
-                                    temperature=temp)
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1)
 
                                 cohere_used = False
                                 if not answer:
@@ -10237,7 +10237,7 @@ def do_task(message, custom_prompt: str = ''):
                                         mem_ = mem__,
                                         user_id=chat_id_full,
                                         system=hidden_text,
-                                        temperature=temp)
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1)
                                     cohere_used = True
 
                                 flag_gpt_help = True
@@ -10368,7 +10368,7 @@ def do_task(message, custom_prompt: str = ''):
                                         chat_id_full=chat_id_full,
                                         query=query,
                                         # model=gmodel,
-                                        temperature=temp,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                         system_message=hidden_text,
                                     )
                                 if r and isinstance(r, bytes):
@@ -10464,7 +10464,7 @@ def do_task(message, custom_prompt: str = ''):
                                         chat_id_full=chat_id_full,
                                         query=query,
                                         # model=gmodel,
-                                        temperature=temp,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                         system_message=hidden_text,
                                     )
                                 if r and isinstance(r, bytes):
@@ -10639,7 +10639,7 @@ def do_task(message, custom_prompt: str = ''):
                                         chat_id_full=chat_id_full,
                                         query=query,
                                         # model=gmodel,
-                                        temperature=temp,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                         system_message=hidden_text,
                                     )
                                 if r and isinstance(r, bytes):
@@ -10736,7 +10736,7 @@ def do_task(message, custom_prompt: str = ''):
                                         chat_id_full=chat_id_full,
                                         query=query,
                                         # model=gmodel,
-                                        temperature=temp,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                         system_message=hidden_text,
                                     )
                                 if r and isinstance(r, bytes):
@@ -10833,7 +10833,7 @@ def do_task(message, custom_prompt: str = ''):
                                         chat_id_full=chat_id_full,
                                         query=query,
                                         # model=gmodel,
-                                        temperature=temp,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                         system_message=hidden_text,
                                     )
                                 if r and isinstance(r, bytes):
@@ -11249,7 +11249,7 @@ def do_task(message, custom_prompt: str = ''):
                                         chat_id_full=chat_id_full,
                                         query=query,
                                         # model=gmodel,
-                                        temperature=temp,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                         system_message=hidden_text,
                                     )
                                 if r and isinstance(r, bytes):
@@ -11359,7 +11359,7 @@ def do_task(message, custom_prompt: str = ''):
                                         chat_id_full=chat_id_full,
                                         query=query,
                                         # model=gmodel,
-                                        temperature=temp,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                         system_message=hidden_text,
                                     )
                                 if r and isinstance(r, bytes):

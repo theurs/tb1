@@ -23,6 +23,7 @@ from google.genai.types import (
     Tool,
     UserContent
 )
+from google.ai.generativelanguage import FunctionCall
 
 import cfg
 import my_db
@@ -530,6 +531,7 @@ def chat(
                 if mem and mem[0].role == 'user' and hasattr(mem[0].parts[0], 'text') and not mem[0].parts[0].text:
                     mem = mem[2:]
                 validate_mem(mem)
+                mem = validate_and_sanitize_mem(mem)
             else:
                 mem = []
             if mem:
@@ -837,6 +839,93 @@ def chat(
     finally:
         if chat_id in my_skills_storage.STORAGE_ALLOWED_IDS:
             del my_skills_storage.STORAGE_ALLOWED_IDS[chat_id]
+
+
+def _has_function_call(entry: Content) -> bool:
+    """
+    Checks if a model's Content entry contains a function call.
+    """
+    if not isinstance(entry, Content) or entry.role != 'model' or not entry.parts:
+        return False
+    # A function call is stored in the parts list
+    return any(isinstance(part, FunctionCall) for part in entry.parts)
+
+
+def validate_and_sanitize_mem(
+    mem: List[Union[Content, UserContent]]
+) -> List[Union[Content, UserContent]]:
+    """
+    Validates and sanitizes a Gemini conversation history to prevent API errors.
+
+    This function enforces the required turn-based order:
+    - The history must start with a 'user' turn.
+    - 'user' is followed by 'model'.
+    - 'model' (with function call) is followed by 'tool'.
+    - 'tool' is followed by 'model'.
+    - The history cannot end with an incomplete turn (e.g., a 'user' turn
+      or a 'model' turn with a function call waiting for a 'tool' response).
+
+    Args:
+        mem: The original conversation history list.
+
+    Returns:
+        A new list containing the sanitized conversation history.
+    """
+    if not mem:
+        return []
+
+    # 1. Find the first 'user' turn and discard anything before it.
+    try:
+        first_user_index = next(i for i, entry in enumerate(mem) if entry.role == 'user')
+        processing_list = mem[first_user_index:]
+    except StopIteration:
+        # No user turns in history, it's invalid.
+        return []
+
+    sanitized_mem: List[Union[Content, UserContent]] = []
+    i = 0
+    while i < len(processing_list):
+        current_entry = processing_list[i]
+        current_role = current_entry.role
+
+        # Determine the role of the last valid entry in our sanitized list
+        last_sanitized_role = sanitized_mem[-1].role if sanitized_mem else None
+
+        if current_role == 'user':
+            # A user turn is valid if it's the first turn or follows a model turn.
+            if last_sanitized_role is None or last_sanitized_role == 'model':
+                sanitized_mem.append(current_entry)
+            # If we see user -> user, the second user starts a new valid sequence,
+            # so we replace the previous one.
+            elif last_sanitized_role == 'user':
+                sanitized_mem[-1] = current_entry
+            i += 1
+        elif current_role == 'model':
+            # A model turn is valid if it follows a user or a tool turn.
+            if last_sanitized_role == 'user' or last_sanitized_role == 'tool':
+                sanitized_mem.append(current_entry)
+            i += 1
+        elif current_role == 'tool':
+            # A tool turn is valid ONLY if it follows a model turn that had a function call.
+            if last_sanitized_role == 'model' and _has_function_call(sanitized_mem[-1]):
+                sanitized_mem.append(current_entry)
+            # Otherwise, it's an orphan tool response, so we skip it.
+            i += 1
+        else:
+            # Skip any other unexpected role types.
+            i += 1
+
+    # 2. Final cleanup: Ensure the history doesn't end on an incomplete turn.
+    if sanitized_mem:
+        last_entry = sanitized_mem[-1]
+        # If it ends on a user turn, the model has nothing to respond to.
+        if last_entry.role == 'user':
+            sanitized_mem.pop()
+        # If it ends on a model turn that expects a tool response, it's an incomplete thought.
+        elif last_entry.role == 'model' and _has_function_call(last_entry):
+            sanitized_mem.pop()
+
+    return sanitized_mem
 
 
 def count_chars(mem) -> int:

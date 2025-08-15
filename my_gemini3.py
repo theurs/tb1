@@ -531,7 +531,6 @@ def chat(
                 if mem and mem[0].role == 'user' and hasattr(mem[0].parts[0], 'text') and not mem[0].parts[0].text:
                     mem = mem[2:]
                 validate_mem(mem)
-                mem = validate_and_sanitize_mem(mem)
             else:
                 mem = []
             if mem:
@@ -742,9 +741,18 @@ def chat(
                     raise error
 
             if response:
-                resp = response.text or ''
+                try:
+                    # Safely attempt to access the text attribute.
+                    # This will raise a ValueError if no valid text part exists (e.g., blocked by safety filters).
+                    resp = response.text or ''
+                except ValueError:
+                    # Handle the case where the response was blocked or is otherwise empty.
+                    if response.candidates:
+                        my_log.log_gemini(f'my_gemini3:chat: response has no valid text part. Finish reason: {response.candidates[0].finish_reason}')
+                    resp = ''
             else:
                 resp = ''
+
 
             resp_full = parse_content_response(response)
 

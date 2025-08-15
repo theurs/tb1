@@ -496,7 +496,7 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
 
 def query_user_file(query: str, user_id: str) -> str:
     '''
-    Query saved user file (do not ask for full text, just answer the question)
+    Query saved user file (do not ask for full text, do not ask about images, it will only answer about saved text)
 
     Args:
         query: str - user query
@@ -507,10 +507,10 @@ def query_user_file(query: str, user_id: str) -> str:
     '''
     user_id = my_skills_general.restore_id(user_id)
     if user_id not in my_skills_storage.STORAGE_ALLOWED_IDS or my_skills_storage.STORAGE_ALLOWED_IDS[user_id] != user_id:
-        my_log.log_gemini_skills_query_file(f'/query_last_file "{query}" "{user_id}" - Unauthorized access detected.')
+        my_log.log_gemini_skills_query_file(f'/query_user_file "{query}" "{user_id}" - Unauthorized access detected.')
         return 'Unauthorized access detected. Did you send the correct user id?'
 
-    my_log.log_gemini_skills_query_file(f'/query_last_file "{query}" "{user_id}"')
+    my_log.log_gemini_skills_query_file(f'/query_user_file "{query}" "{user_id}"')
 
     saved_file_name = my_db.get_user_property(user_id, 'saved_file_name') or ''
     if saved_file_name:

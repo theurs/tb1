@@ -154,7 +154,7 @@ def cache_positive_by_user_id(maxsize: int = 1000, ttl: int = 10*60):
 
 
 _GLOBAL_CHECK_DONATE_LOCKS_ACCESS_LOCK = threading.Lock()
-@cache_positive_by_user_id(maxsize=1000, ttl=10*60)
+# @cache_positive_by_user_id(maxsize=1000, ttl=10*60)
 def check_donate(
     message: telebot.types.Message,
     chat_id_full: str,

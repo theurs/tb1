@@ -19,10 +19,6 @@ import my_log
 import utils
 
 
-# модели не поддерживающие системный промпт
-SYSTEMLESS_MODELS = ('google/gemma-3n-e4b-it:free', )
-
-
 # keys {user_id(str):key(str)}
 KEYS = SqliteDict('db/open_router_keys.db', autocommit=True)
 # {user_id(str):list(model, temperature, max_tokens, maxhistlines, maxhistchars)}
@@ -164,25 +160,24 @@ def ai(
     mem_ = mem[:] if mem else []
 
     # --- System Prompt Injection ---
-    if model not in SYSTEMLESS_MODELS:
-        now = utils.get_full_time()
-        # Prepare a list of standard system prompts
-        _get_system_prompt()
-        standard_systems = [
-            f'Current date and time: {now}',
-            *SYSTEM_
-        ]
-        # Add user_id prompt if available, crucial for tools
-        if user_id:
-            standard_systems.insert(1, f'Use this telegram chat id (user id) for API function calls: {user_id}')
+    now = utils.get_full_time()
+    # Prepare a list of standard system prompts
+    _get_system_prompt()
+    standard_systems = [
+        f'Current date and time: {now}',
+        *SYSTEM_
+    ]
+    # Add user_id prompt if available, crucial for tools
+    if user_id:
+        standard_systems.insert(1, f'Use this telegram chat id (user id) for API function calls: {user_id}')
 
-        # Insert user-provided custom system prompt first to give it priority
-        if system:
-            mem_.insert(0, {"role": "system", "content": system})
+    # Insert user-provided custom system prompt first to give it priority
+    if system:
+        mem_.insert(0, {"role": "system", "content": system})
 
-        # Insert standard system prompts in reverse to maintain order at the top
-        for s_prompt in reversed(standard_systems):
-            mem_.insert(0, {"role": "system", "content": s_prompt})
+    # Insert standard system prompts in reverse to maintain order at the top
+    for s_prompt in reversed(standard_systems):
+        mem_.insert(0, {"role": "system", "content": s_prompt})
 
 
     if prompt:
@@ -199,16 +194,15 @@ def ai(
         'temperature': temperature,
     }
 
+    # Determine the reasoning effort value but DON'T format it for the API.
+    # The helper function will handle the provider-specific formatting.
     reasoning_effort = my_db.get_user_property(user_id, 'openrouter_reasoning_effort') or 'none'
     if reasoning_effort_value_ != 'none':
         reasoning_effort = reasoning_effort_value_
-
+    
     if reasoning_effort and reasoning_effort != 'none':
-        is_openai_compatible = not ('openrouter' in URL or 'cerebras' in URL)
-        if 'cerebras' in URL:
-            sdk_params['reasoning_effort'] = reasoning_effort
-        elif not is_openai_compatible:
-            sdk_params['reasoning'] = {"effort": reasoning_effort}
+        sdk_params['reasoning_effort_value'] = reasoning_effort
+
 
     if response_format == 'json' or json_schema:
         sdk_params['response_format'] = {'type': 'json_object'}
@@ -229,16 +223,14 @@ def ai(
 
                 if not message_dict:
                     # If helper returns None, it means a non-recoverable error occurred
-                    return "API call failed in tool-use loop."
+                    my_log.log_openrouter(f'ai:tool-loop: API call failed for user {user_id}')
+                    break
 
                 # If the model decides to respond directly without using a tool
                 if not message_dict.get('tool_calls'):
                     return message_dict.get('content') or ""
 
-                # The helper returns a clean dict, which can be directly appended to history
-
-                # Sanitize the message object to include only standard fields before appending.
-                # This prevents 422 errors from APIs that reject extra keys.
+                # Sanitize and append the assistant's response to history
                 sanitized_message: Dict[str, Any] = {"role": "assistant"}
                 if message_dict.get("content"):
                     sanitized_message["content"] = message_dict["content"]
@@ -248,7 +240,6 @@ def ai(
 
 
                 for tool_call in message_dict['tool_calls']:
-                    # NOTE: Accessing elements as dict keys ['...'] instead of attributes .
                     function_name = tool_call['function']['name']
                     tool_output = ""
                     if function_name in available_tools:
@@ -267,13 +258,15 @@ def ai(
                     mem_.append({"role": "tool", "tool_call_id": tool_call['id'], "content": str(tool_output)})
 
             except ValueError:
-                # This specific error is raised by the helper if the model doesn't support tools
-                break # Exit loop and proceed to final generation
+                # This is the controlled signal that the model doesn't support tools.
+                # Silently break the loop and proceed to the final non-tool response.
+                break
             except Exception as e:
                 error_str = str(e)
                 if 'filtered' in error_str.lower(): return FILTERED_SIGN
-                my_log.log_openrouter(f'ai:tool-loop: {e} [user_id: {user_id}]')
-                return error_str
+                my_log.log_openrouter(f'ai:tool-loop: unhandled error: {e} [user_id: {user_id}]')
+                # For unexpected errors, it's better to break and try a final response
+                break
 
         if call_count == max_tools_use - 1:
             mem_.append({"role": "user", "content": "Tool call limit reached. Summarize your findings."})
@@ -306,16 +299,46 @@ def _execute_chat_completion(
     user_id: str
 ) -> Optional[Dict[str, Any]]:
     """
-    Executes the chat completion call with built-in retry logic for specific,
-    recoverable API errors like unsupported features.
+    Executes the chat completion call with built-in retry logic and
+    provider-specific parameter formatting.
 
-    Returns the 'message' dictionary on success. Returns None on fatal errors.
-    Raises specific, handled exceptions (ValueError, ConnectionError) for the caller.
+    This helper function handles the low-level details of making the API call.
+    It formats parameters like 'reasoning_effort' based on the target provider's
+    requirements and silently retries if a model doesn't support a specific feature
+    like system prompts or developer instructions.
+
+    Args:
+        sdk_params: Parameters for the API call, including an abstract 'reasoning_effort_value'.
+        key: The API key.
+        url: The base URL for the API.
+        timeout: The request timeout in seconds.
+        user_id: The user's identifier for token tracking.
+
+    Returns:
+        The 'message' part of the response dictionary on success, or None on fatal errors.
+
+    Raises:
+        ValueError: If the model signals it doesn't support a feature like tools.
+        ConnectionError: For actual network or severe, unrecoverable API errors.
     """
     current_params = sdk_params.copy()
+    
+    # Extract the abstract reasoning effort value. It will be formatted below.
+    reasoning_effort_value = current_params.pop('reasoning_effort_value', None)
 
-    for attempt in range(2): # Allow one retry
+    for attempt in range(2): # Allow one retry for recoverable errors
         try:
+            # --- Provider-specific formatting logic ---
+            # This block adds the correct reasoning parameter only on the first attempt.
+            if reasoning_effort_value and attempt == 0:
+                is_openai_compatible = not ('openrouter' in url or 'cerebras' in url)
+                if 'cerebras' in url:
+                    current_params['reasoning_effort'] = reasoning_effort_value
+                elif not is_openai_compatible:
+                    current_params['reasoning'] = {"effort": reasoning_effort_value}
+                # For standard OpenAI compatible APIs, no parameter is added as it's not supported.
+            
+            # --- API Call ---
             is_openai_compatible = not ('openrouter' in url or 'cerebras' in url)
             if is_openai_compatible:
                 client = OpenAI(api_key=key, base_url=url)
@@ -335,28 +358,38 @@ def _execute_chat_completion(
                     response_data = http_response.json()
                     if 'usage' in response_data:
                         in_t, out_t = PRICE.get(user_id, (0, 0))
-                        PRICE[user_id] = (in_t + response_data['usage'].get('prompt_tokens', 0), out_t + response_data['usage'].get('completion_tokens', 0))
+                        prompt_tokens = response_data['usage'].get('prompt_tokens', 0)
+                        completion_tokens = response_data['usage'].get('completion_tokens', 0)
+                        PRICE[user_id] = (in_t + prompt_tokens, out_t + completion_tokens)
                     return response_data['choices'][0]['message']
                 else:
-                    # Raise a generic ConnectionError to be caught by the exception block below
                     raise ConnectionError(http_response.text)
 
         except (ConnectionError, APIStatusError) as e:
             error_text = str(e).lower()
 
-            # --- Start of specific error handling for retry ---
+            # --- Specific error handling for retry ---
             # Case 1: Model doesn't support reasoning/developer instruction.
             if attempt == 0 and 'developer instruction is not enabled' in error_text:
-                # Silently remove the unsupported parameter and retry.
+                # Silently remove the unsupported parameters and retry.
                 current_params.pop('reasoning_effort', None)
                 current_params.pop('reasoning', None)
-                continue # Go to the next attempt in the for loop
+                reasoning_effort_value = None # Prevent re-adding it on the next loop
+                continue # Go to the next attempt
 
-            # Case 2: Model doesn't support tools. Signal the caller to stop trying.
+            # Case 2 (NEW): Model does not support system prompts.
+            elif attempt == 0 and ('system' in error_text and 'role' in error_text):
+                # This error indicates the model rejected the 'system' role.
+                # We log it and strip system messages for a retry.
+                my_log.log_openrouter(f'_execute_chat_completion: Model {sdk_params["model"]} may not support system prompts. Retrying without them.')
+                current_params['messages'] = [
+                    msg for msg in current_params['messages'] if msg.get('role') != 'system'
+                ]
+                continue # Go to the next attempt
+
+            # Case 3: Model doesn't support tools. Signal the caller to stop trying.
             if 'tool' in error_text and ('support' in error_text or 'endpoints' in error_text):
                 raise ValueError("Model does not support tools.") from e
-
-            # --- End of specific error handling ---
 
             # If it's a different error or the retry failed, log it and raise.
             my_log.log_openrouter(f'_execute_chat_completion: Unrecoverable API Error on attempt {attempt+1}: {e}')
@@ -366,7 +399,7 @@ def _execute_chat_completion(
             my_log.log_openrouter(f'_execute_chat_completion: Unhandled Exception: {e}\n{traceback.format_exc()}')
             return None # Return None for completely unexpected errors
 
-    return None # Should not be reached if loop completes, but as a fallback.
+    return None # Fallback if the retry loop finishes without returning
 
 
 def _get_api_key(user_id: str, model: str = '') -> Optional[str]:

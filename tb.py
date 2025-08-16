@@ -2152,13 +2152,11 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # from gemini to openai-like
             if 'gemini' in prev_mode and 'gemini' not in new_mode:
                 new_mem = my_gemini3.gemini_to_openai_mem(user_id)
-                if new_mem:
-                    my_db.set_user_property(user_id, 'dialog_openrouter', my_db.obj_to_blob(new_mem))
+                my_db.set_user_property(user_id, 'dialog_openrouter', my_db.obj_to_blob(new_mem))
             # from openai-like to gemini
             elif 'gemini' not in prev_mode and 'gemini' in new_mode:
                 new_mem = my_gemini3.openai_to_gemini_mem(user_id)
-                if new_mem:
-                    my_db.set_user_property(user_id, 'dialog_gemini3', my_db.obj_to_blob(new_mem))
+                my_db.set_user_property(user_id, 'dialog_gemini3', my_db.obj_to_blob(new_mem))
 
         def _set_chat_mode(new_mode: str) -> None:
             """
@@ -2424,7 +2422,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
             # Map callback IDs to internal mode names if they differ
             mode_map = {
                 'gemini15': 'gemini15',
-                'gemini_flash': 'gemini',
+                'gemini': 'gemini25_flash',
             }
             mode_to_set = mode_map.get(model_id, model_id)
 

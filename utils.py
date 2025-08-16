@@ -1294,15 +1294,18 @@ def html_to_markdown(html: str) -> str:
 # гребаный маркдаун ###################################################################
 
 
-def get_tmp_fname() -> str:
+def get_tmp_fname(ext: str = '') -> str:
     """
     Generate a temporary file name.
+
+    Args:
+        ext (str): The suffix to append to the file name.
 
     Returns:
         str: The name of the temporary file.
     """
     with tempfile.NamedTemporaryFile(delete=True) as temp_file:
-        return temp_file.name
+        return temp_file.name+ext
 
 
 def is_image_link(url: str) -> bool:
@@ -2251,10 +2254,10 @@ def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 200
         if jpg_data:
             return jpg_data
         my_log.log2(f'utils:resize_and_convert_to_jpg: {e}')
-        return b''  # Возвращаем пустые байты в случае ошибки
+        return b''
     except Exception as e:
         my_log.log2(f'utils:resize_and_convert_to_jpg: {e}')
-        return b''  # Возвращаем пустые байты в случае ошибки
+        return b''
 
 
 def heic2jpg(data: Union[bytes, str]) -> bytes:

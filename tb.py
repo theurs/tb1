@@ -2893,6 +2893,59 @@ def handle_voice(message: telebot.types.Message):
 
             full_transcription_text = full_transcription_text.strip()
 
+            msg = messages_to_process[0] if messages_to_process else None
+            # если это видео и в нем нет текста то пробуем обработать как видео
+            is_video = msg and (msg.video or msg.video_note or msg.document)
+            many_text = len(full_transcription_text) > 100
+            if is_video and not many_text:
+                try:
+                    if msg.video: file_id = msg.video.file_id
+                    elif msg.video_note: file_id = msg.video_note.file_id
+                    elif msg.document: file_id = msg.document.file_id
+                    file_info = bot.get_file(file_id)
+                    if file_info:
+                        video_bytes = bot.download_file(file_info.file_path)
+                        query = msg.caption or tr('Describe this video, make text transcription on user language:', lang) + ' [' + lang + ']'
+                        system_prompt = my_db.get_user_property(chat_id_full, 'role') or ''
+                        temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1
+                        description = my_gemini3.video2txt(
+                            video_data=video_bytes,
+                            prompt=query,
+                            system=system_prompt,
+                            chat_id=chat_id_full,
+                            temperature=temperature,
+                            timeout=300
+                        )
+
+                    # if not msg.caption:
+                    #     # Отправляем читаемый текст пользователю на экран
+                    #     bot_reply(
+                    #         msg,
+                    #         utils.bot_markdown_to_html(description),
+                    #         parse_mode='HTML',
+                    #         reply_markup=get_keyboard('chat', msg)
+                    #     )
+
+                    # Создаем "фейковое" сообщение для передачи в основной обработчик
+                    fake_message = msg
+
+                    # Формируем XML-подобную запись для памяти
+                    xml_memory_entry = "User sent a video:\n\n<video_analysis_result>\n"
+                    xml_memory_entry += f"    <user_query>\n        {query}\n    </user_query>\n"
+                    xml_memory_entry += f"    <system_response>\n        {utils.html.escape(description)}\n    </system_response>\n"
+                    xml_memory_entry += "</video_analysis_result>"
+
+                    fake_message.text = xml_memory_entry
+                    fake_message.entities = []
+
+                    # Передаем "фейковое" сообщение с читаемым текстом в основной обработчик
+                    echo_all(fake_message)
+                    return
+
+                except Exception as video_as_img_error:
+                    my_log.log2(f'tb:handle_voice:video_as_image_fallback: {video_as_img_error}')
+
+
             # Отправляем, если есть что отправлять, и если это не режим "только голос"
             if full_transcription_text and not is_voice_only_mode:
                 bot_reply(messages_to_process[0], full_transcription_text,

@@ -13,11 +13,15 @@ from typing import List, Dict, Union
 
 from google import genai
 from google.genai.types import (
+    Blob,
     Content,
+    File,
+    FileData,
     GenerateContentConfig,
     GenerateContentResponse,
     HttpOptions,
     ModelContent,
+    Part,
     SafetySetting,
     ThinkingConfig,
     Tool,
@@ -1762,9 +1766,209 @@ def openai_to_gemini_mem(
     return gemini_mem
 
 
+def _wait_for_file_active(client: genai.Client, file_obj: File, timeout_sec: int = 180) -> File | None:
+    """
+    Waits for a file to become ACTIVE, polling its state.
+    The key used in the client must be the one that uploaded the file.
+    """
+    start_time = time.time()
+    file_name = file_obj.name
+    while True:
+        try:
+            # Re-fetch the file object to get the latest state
+            file_obj = client.files.get(name=file_name)
+        except Exception as e:
+            my_log.log_gemini(f'my_gemini3:_wait_for_file_active: Failed to get file state for {file_name}: {e}')
+            time.sleep(5)
+            continue # Retry getting state
+
+        if file_obj.state.name == 'ACTIVE':
+            return file_obj
+        if file_obj.state.name == 'FAILED':
+            my_log.log_gemini(f"my_gemini3:_wait_for_file_active: File {file_name} processing failed.")
+            return None
+        if time.time() - start_time > timeout_sec:
+            my_log.log_gemini(f"my_gemini3:_wait_for_file_active: File {file_name} did not become active in {timeout_sec} seconds.")
+            return None
+        time.sleep(3)
+
+
+@utils.async_run
+def _robust_delete_file(client: genai.Client, file_name: str, attempts: int = 5, delay_sec: int = 30):
+    """
+    Tries to delete a file multiple times with delays.
+    The key used in the client must be the one that uploaded the file.
+    """
+    for attempt in range(attempts):
+        try:
+            client.files.delete(name=file_name)
+            # my_log.log_gemini(f'my_gemini3:_robust_delete_file: Successfully deleted file {file_name} on attempt {attempt + 1}.')
+            return
+        except Exception as e:
+            # my_log.log_gemini(f'my_gemini3:_robust_delete_file: Attempt {attempt + 1}/{attempts} failed to delete {file_name}: {e}')
+            if attempt < attempts - 1:
+                time.sleep(delay_sec)
+    my_log.log_gemini(f'my_gemini3:_robust_delete_file: Failed to delete file {file_name} after {attempts} attempts.')
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl = 10 * 60)
+def video2txt(
+    video_data: bytes|str,
+    prompt: str = "Опиши это видео.",
+    system: str = '',
+    model: str = cfg.gemini25_flash_model,
+    chat_id: str = '',
+    timeout: int = my_gemini_general.TIMEOUT,
+    max_tokens: int = 8000,
+    temperature: float = 1,
+) -> str:
+    """
+    Analyzes a video file or URL and generates a text description based on a user prompt.
+
+    This function is designed to be robust. It handles different input types:
+    - Raw bytes: For files under 20MB, it sends data inline. For larger files,
+      it uploads to temporary storage before analysis.
+    - String path: A local file path, which is read into bytes.
+    - URL: A web URL (e.g., YouTube), which is passed directly to the model.
+
+    The entire process respects an overall timeout and is wrapped in a retry loop.
+    If an API key is invalid, expired, or has exhausted its quota, the function
+    will automatically discard the key, clean up resources, and retry with a new key.
+
+    Args:
+        video_data (bytes | str): The video content, provided as raw bytes,
+                                  a string path to a local file, or a URL.
+        prompt (str, optional): The instruction for the model based on the video.
+                                Defaults to "Опиши это видео.".
+        system (str, optional): A system-level instruction to guide the model's behavior.
+        model (str, optional): The specific Gemini model to use for the analysis.
+                               Defaults to `cfg.gemini25_flash_model`.
+        chat_id (str, optional): An identifier for the chat session for logging.
+        timeout (int, optional): The total timeout in seconds for the entire operation.
+                                 Defaults to `my_gemini_general.TIMEOUT`.
+        max_tokens (int, optional): The maximum number of tokens for the response.
+        temperature (float, optional): Controls the randomness of the output (0 to 2).
+
+    Returns:
+        str: The generated text description of the video. Returns an empty string
+             if the analysis fails or times out.
+    """
+    # Determine input type
+    is_url = False
+    if isinstance(video_data, str):
+        if video_data.startswith(('https://', 'http://')):
+            is_url = True
+        else:  # It's a file path, read it into bytes
+            with open(video_data, 'rb') as f:
+                video_data = f.read()
+
+    deadline = time.time() + timeout  # Overall deadline
+
+    # Main retry loop for API keys
+    tries = 3
+    for _ in range(tries):
+        key = ''
+        client = None
+        uploaded_file = None
+        temp_file_path = ''
+
+        remaining_time = deadline - time.time()
+        if remaining_time <= 0:
+            my_log.log_gemini('my_gemini3:video2txt: Overall timeout exceeded before new attempt.')
+            break
+
+        try:
+            key = my_gemini_general.get_next_key()
+            client = genai.Client(api_key=key, http_options={'timeout': remaining_time * 1000})
+            contents = None
+
+            if is_url:
+                # Handle URL input
+                video_part = Part(file_data=FileData(file_uri=video_data))
+                contents = [video_part, Part(text=prompt)]
+            else:
+                # Handle bytes input (from file or direct)
+                MAX_VIDEO_SIZE_INLINE = 20 * 1024 * 1024
+                if len(video_data) > MAX_VIDEO_SIZE_INLINE:
+                    # Large file: upload it
+                    temp_file_path = utils.get_tmp_fname(ext='.mp4')
+                    with open(temp_file_path, 'wb') as f:
+                        f.write(video_data)
+
+                    initial_file_obj = client.files.upload(file=temp_file_path)
+
+                    remaining_wait_time = int(deadline - time.time())
+                    if remaining_wait_time <= 0:
+                        my_log.log_gemini('my_gemini3:video2txt: Timeout exceeded before file could be processed.')
+                        continue
+
+                    uploaded_file = _wait_for_file_active(client, initial_file_obj, timeout_sec=remaining_wait_time)
+                    if not uploaded_file:
+                        my_log.log_gemini(f'my_gemini3:video2txt: File processing failed or timed out for key {key}.')
+                        continue
+
+                    contents = [uploaded_file, prompt]
+                else:
+                    # Small file: send inline
+                    video_part = Part(inline_data=Blob(data=video_data, mime_type='video/mp4'))
+                    contents = Content(parts=[video_part, Part(text=prompt)])
+
+            remaining_gen_time = deadline - time.time()
+            if remaining_gen_time <= 0:
+                my_log.log_gemini('my_gemini3:video2txt: Timeout exceeded before content generation.')
+                break
+
+            # Generate content
+            response = client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=get_config(
+                    system_instruction=system,
+                    max_output_tokens=max_tokens,
+                    temperature=temperature,
+                    timeout=int(remaining_gen_time),
+                ),
+            )
+
+            resp = ''
+            if response:
+                try:
+                    resp = response.text or ''
+                except ValueError:
+                    if response.candidates:
+                        my_log.log_gemini(f'my_gemini3:video2txt: Response blocked. Finish reason: {response.candidates[0].finish_reason}')
+
+            if resp:
+                if chat_id and model:
+                    my_db.add_msg(chat_id, model)
+                return resp.strip()
+
+        except Exception as error:
+            traceback_error = traceback.format_exc()
+            err_str = str(error)
+            if 'API key' in err_str or 'Quota exceeded' in err_str or 'RESOURCE_EXHAUSTED' in err_str:
+                my_log.log_gemini(f'my_gemini3:video2txt: Key-related error with key {key}. Removing and retrying.')
+                my_gemini_general.remove_key(key)
+                continue
+            else:
+                my_log.log_gemini(f'my_gemini3:video2txt: Non-key error: {error}\n{traceback_error}')
+                break
+        finally:
+            if uploaded_file and client:
+                _robust_delete_file(client, uploaded_file.name)
+            if temp_file_path:
+                utils.remove_file(temp_file_path)
+
+    my_log.log_gemini('my_gemini3:video2txt: Failed to get response after all retries or timeout.')
+    return ''
+
+
 if __name__ == "__main__":
     my_db.init(backup=False, vacuum=False)
     my_gemini_general.load_users_keys()
+
+    # print(video2txt(r'C:\Users\user\Downloads\samples for ai\видео\без слов.webm', 'что за самолет'))
+    print(video2txt(r'C:\Users\user\Downloads\samples for ai\видео\видеоклип с песней.webm', 'сделай транскрипцию текста, исправь очевидные ошибки распознавания запиши красиво текст удобно для чтения с разбиением на абзацы'))
 
     # mem2 = gemini_to_openai_mem('[123] [0]')
     # mem3 = openai_to_gemini_mem('[123] [0]')
@@ -1779,8 +1983,8 @@ if __name__ == "__main__":
     # print(list_models(include_context=True))
 
     reset('test')
-
     chat_cli(model = 'gemini-2.5-flash')
+
     # chat_cli(model = 'gemini-2.5-flash', THINKING_BUDGET=10000, use_skills=True)
     # chat_cli(model = 'gemini-2.0-flash', THINKING_BUDGET=10000, use_skills=True)
 

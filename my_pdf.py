@@ -20,6 +20,7 @@ from typing import List, Tuple, Union
 import cfg
 import my_log
 import my_gemini
+import my_gemini3
 import my_gemini_general
 from utils import async_run_with_limit, get_codepage, platform, get_tmp_fname, remove_file, remove_dir
 
@@ -139,6 +140,25 @@ def process_image_ocr(image: bytes, index: int, results) -> Tuple[str, int]:
         results[index] = 'EMPTY MARKER 4975934685'
     else:
         results[index] = text
+
+
+# def get_text(data: bytes) -> str:
+#     """
+#     Extract text from pdf
+#     if no text, OCR images with gemini
+#     """
+#     text = ''
+
+#     try:
+#         text = extract_text_from_pdf_bytes(data)
+#         text_ = text
+#         if len(text) < 300:
+#             text_ = my_gemini3.doc2txt(data)
+#     except Exception as error:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f"my_pdf:get_text: Error processing PDF: {error}\n\n{traceback_error}")
+
+#     return text if len(text) > len(text_) else text_
 
 
 def get_text(data: bytes) -> str:

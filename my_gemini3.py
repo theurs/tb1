@@ -1,16 +1,16 @@
 # https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/getting-started/intro_gemini_chat.ipynb
 
 
-import cachetools.func
+import httpx
 import io
 import PIL
 import re
 import time
 import threading
 import traceback
-
 from typing import List, Dict, Union
 
+import cachetools.func
 from google import genai
 from google.genai.types import (
     Blob,
@@ -1879,7 +1879,7 @@ def video2txt(
 
         try:
             key = my_gemini_general.get_next_key()
-            client = genai.Client(api_key=key, http_options={'timeout': remaining_time * 1000})
+            client = genai.Client(api_key=key, http_options={'timeout': int(remaining_time * 1000)})
             contents = None
 
             if is_url:
@@ -1963,12 +1963,192 @@ def video2txt(
     return ''
 
 
+@cachetools.func.ttl_cache(maxsize=10, ttl = 10 * 60)
+def doc2txt(
+    doc_data: bytes | str,
+    prompt: str = "",
+    system: str = '',
+    model: str = cfg.gemini25_flash_model,
+    chat_id: str = '',
+    timeout: int = my_gemini_general.TIMEOUT,
+    max_tokens: int = 8000,
+    temperature: float = 1,
+    mime_type: str = 'application/pdf',
+) -> str:
+    """
+    Analyzes a document and generates text based on a prompt.
+
+    Handles different input types: raw bytes, local file path, or URL.
+    For documents over 20MB, it uses the File API for uploading and
+    cleans up the uploaded file afterward. Automatically retries with a new
+    API key on key-related failures.
+
+    Args:
+        doc_data (bytes | str): The document content as raw bytes, a local
+                                file path, or a URL.
+        prompt (str, optional): The instruction for the model.
+        system (str, optional): System-level instruction for the model.
+        model (str, optional): The Gemini model to use.
+        chat_id (str, optional): Chat session identifier for logging.
+        timeout (int, optional): Overall timeout for the operation in seconds.
+        max_tokens (int, optional): Maximum tokens for the response.
+        temperature (float, optional): Controls output randomness (0 to 2).
+        mime_type (str, optional): The MIME type of the document.
+                                   Defaults to 'application/pdf'.
+
+    Returns:
+        str: The generated text description. Returns an empty string on
+             failure or timeout.
+    """
+
+    PROMPT_OCR_ADVANCED = """
+Your role is an AI-powered document processing and restoration expert. Your mission is to transcribe the provided document into clean, readable, and well-structured Markdown text. Your goal is not just to extract characters, but to restore the document's original intent and improve its readability.
+
+Follow these instructions meticulously:
+
+**Phase 1: Full Content Extraction**
+1.  **Transcribe Everything:** Extract 100% of the textual content from all pages. This includes main body text, headers, footers, page numbers, table content, footnotes, and text within images or diagrams. Do not omit any information.
+
+**Phase 2: Intelligent Correction and Refinement**
+2.  **Correct Obvious OCR Errors:** Use your language understanding to identify and fix common OCR mistakes.
+    -   Example: `rec0gnize` should become `recognize`.
+    -   Example: `rn` might be `m` (e.g., `rnodern` -> `modern`).
+    -   Example: `l` might be `i` or `1` and vice-versa.
+    -   Correct typos and spelling errors that are clearly artifacts of the scanning process, but preserve the original wording and grammar.
+3.  **Merge Broken Lines and Words (De-hyphenation):** Reconstruct the natural flow of text.
+    -   Merge words that are broken by a hyphen at the end of a line (e.g., "contin-" on one line and "uation" on the next should become "continuation").
+    -   Join lines that form a single sentence but were split due to the original document's layout. Create coherent paragraphs.
+
+**Phase 3: Structural Reconstruction (Formatting)**
+4.  **Recreate Document Structure using Markdown:** Do not just output a wall of text. Replicate the original hierarchy and formatting.
+    -   **Headings:** Use Markdown headings (`#`, `##`, `###`) for titles and subtitles, matching the original's hierarchy.
+    -   **Emphasis:** Preserve **bold** text using `**text**` and *italic* text using `*text*`.
+    -   **Lists:** Format bulleted lists using (`-` or `*`) and numbered lists using (`1.`, `2.`).
+    -   **Tables:** Recreate tables using Markdown table syntax. Ensure columns and rows are correctly aligned.
+    -   **Paragraphs:** Maintain paragraph breaks as they appear in the original document. Add a blank line between paragraphs.
+    -   **Quotes:** Use blockquote syntax (`>`) for quoted text.
+
+**Phase 4: Final Output Rules (Crucial)**
+5.  **No Interpretation or Summarization:** Your task is transcription and restoration, NOT analysis. DO NOT summarize, explain, or add your own thoughts.
+6.  **No Extra Text:** The output must contain ONLY the restored document text in Markdown. DO NOT include any introductory phrases like "Here is the transcribed document:", conversational filler, or concluding remarks.
+7.  **Preserve Original Language:** The output must be in the same language as the source document. DO NOT translate any part of it.
+
+Your final output is a single block of clean, corrected, and well-formatted Markdown text.
+"""
+
+    if not prompt:
+        prompt = PROMPT_OCR_ADVANCED
+
+    deadline = time.time() + timeout  # Overall deadline
+
+    # Handle different input types
+    if isinstance(doc_data, str):
+        if doc_data.startswith(('https://', 'http://')):
+            try:
+                # Download URL content, respecting a portion of the timeout
+                with httpx.Client(timeout=timeout*0.8) as client:
+                    response = client.get(doc_data)
+                    response.raise_for_status()
+                    doc_data = response.content
+            except Exception as e:
+                my_log.log_gemini(f'my_gemini3:doc2txt: Failed to download URL {doc_data}: {e}')
+                return ''
+        else:  # It's a file path
+            with open(doc_data, 'rb') as f:
+                doc_data = f.read()
+
+    # Main retry loop for API keys
+    tries = 3
+    for _ in range(tries):
+        key = ''
+        client = None
+        uploaded_file = None
+        temp_file_path = ''
+
+        remaining_time = deadline - time.time()
+        if remaining_time <= 0:
+            my_log.log_gemini('my_gemini3:doc2txt: Overall timeout exceeded.')
+            break
+
+        try:
+            key = my_gemini_general.get_next_key()
+            client = genai.Client(api_key=key, http_options={'timeout': int(remaining_time * 1000)})
+            contents = None
+
+            MAX_DOC_SIZE_INLINE = 20 * 1024 * 1024
+            if len(doc_data) > MAX_DOC_SIZE_INLINE:
+                # Upload large document via File API
+                temp_file_path = utils.get_tmp_fname(ext='.pdf')
+                with open(temp_file_path, 'wb') as f:
+                    f.write(doc_data)
+
+                # Use a specific config for mime_type
+                upload_config = FileData(mime_type=mime_type)
+                initial_file_obj = client.files.upload(file=temp_file_path, file_data=upload_config)
+
+                wait_timeout = int(deadline - time.time())
+                if wait_timeout <= 0: continue
+
+                uploaded_file = _wait_for_file_active(client, initial_file_obj, timeout_sec=wait_timeout)
+                if not uploaded_file:
+                    my_log.log_gemini(f'my_gemini3:doc2txt: File processing failed or timed out for key {key}.')
+                    continue
+
+                contents = [uploaded_file, prompt]
+            else:
+                # Send smaller document inline
+                doc_part = Part.from_bytes(data=doc_data, mime_type=mime_type)
+                contents = [doc_part, Part(text=prompt)]
+
+            gen_timeout = deadline - time.time()
+            if gen_timeout <= 0: break
+
+            # Generate content
+            response = client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=get_config(
+                    system_instruction=system,
+                    max_output_tokens=max_tokens,
+                    temperature=temperature,
+                    timeout=int(gen_timeout),
+                ),
+            )
+
+            resp = response.text or ''
+            if resp:
+                if chat_id and model:
+                    my_db.add_msg(chat_id, model)
+                return resp.strip()
+
+        except Exception as error:
+            err_str = str(error)
+            if 'API key' in err_str or 'Quota exceeded' in err_str or 'RESOURCE_EXHAUSTED' in err_str:
+                my_log.log_gemini(f'my_gemini3:doc2txt: Key error with {key}. Retrying.')
+                my_gemini_general.remove_key(key)
+                continue # Retry with a new key
+            else:
+                traceback_error = traceback.format_exc()
+                my_log.log_gemini(f'my_gemini3:doc2txt: Non-key error: {error}\n{traceback_error}')
+                break # Break on other errors
+        finally:
+            if uploaded_file and client:
+                _robust_delete_file(client, uploaded_file.name)
+            if temp_file_path:
+                utils.remove_file(temp_file_path)
+
+    my_log.log_gemini('my_gemini3:doc2txt: Failed after all retries or timeout.')
+    return ''
+
+
 if __name__ == "__main__":
     my_db.init(backup=False, vacuum=False)
     my_gemini_general.load_users_keys()
 
     # print(video2txt(r'C:\Users\user\Downloads\samples for ai\видео\без слов.webm', 'что за самолет'))
-    print(video2txt(r'C:\Users\user\Downloads\samples for ai\видео\видеоклип с песней.webm', 'сделай транскрипцию текста, исправь очевидные ошибки распознавания запиши красиво текст удобно для чтения с разбиением на абзацы'))
+    # print(video2txt(r'C:\Users\user\Downloads\samples for ai\видео\видеоклип с песней.webm', 'сделай транскрипцию текста, исправь очевидные ошибки распознавания запиши красиво текст удобно для чтения с разбиением на абзацы'))
+
+    # print(doc2txt(r'C:\Users\user\Downloads\samples for ai\20220816043638.pdf'))
 
     # mem2 = gemini_to_openai_mem('[123] [0]')
     # mem3 = openai_to_gemini_mem('[123] [0]')

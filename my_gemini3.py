@@ -988,10 +988,10 @@ def validate_and_sanitize_mem(
             # A model turn is valid after a user message (normal or function response).
             if last_sanitized_role == 'user':
                 sanitized_mem.append(current_entry)
-        
+
         # We silently skip invalid turns (e.g., model -> model)
         i += 1
-    
+
     # Final cleanup: ensure the history doesn't end on an incomplete turn.
     if sanitized_mem:
         last_entry = sanitized_mem[-1]
@@ -1165,7 +1165,7 @@ def force(chat_id: str, text: str, model: str = ''):
                 if entry.role == 'user' and not _has_function_response(entry):
                     last_turn_start_index = i
                     break
-            
+
             if last_turn_start_index != -1:
                 # The turn starts with a user query. We keep it.
                 user_query_entry = mem[last_turn_start_index]

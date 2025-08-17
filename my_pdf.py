@@ -7,98 +7,16 @@
 # <policy domain="coder" rights="read|write" pattern="PDF" />
 
 
-import fitz
 import io
-import os
-import PyPDF2
-import re
-import time
 import traceback
-import subprocess
-from typing import List, Tuple, Union
+from typing import List, Union
 
-import cfg
-import my_log
-import my_gemini
+import PyPDF2
+import pymupdf as fitz
+
 import my_gemini3
 import my_gemini_general
-from utils import async_run_with_limit, get_codepage, platform, get_tmp_fname, remove_file, remove_dir
-
-
-def extract_images_from_pdf_with_imagemagick(data: bytes) -> List[bytes]:
-    '''
-    Extracts all images from a PDF using ImageMagick.
-
-    Args:
-        data: The content of the PDF file as bytes.
-
-    Returns:
-        A list of bytes, where each element is the byte content of an image found in the PDF.
-    '''
-    source = get_tmp_fname() + '.pdf'
-    target = get_tmp_fname()
-    images = []
-    try:
-        with open(source, 'wb') as f:
-            f.write(data)
-        os.mkdir(target)
-
-        CMD = 'magick' if 'windows' in platform().lower() else 'convert'
-        path_separator = '\\' if 'windows' in platform().lower() else '/'
-
-        cmd = f"{CMD} -density 150 {source} {target}{path_separator}%003d.jpg"
-
-        with subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding = get_codepage()) as proc:
-            stdout, stderr = proc.communicate()
-        if stderr:
-            my_log.log2(f"my_pdf:extract_images_from_pdf_with_imagemagick: Error processing PDF: {stderr}")
-
-        files = os.listdir(target)
-        # Sort files based on the page number in the filename
-        files.sort(key=lambda filename: int(re.search(r'\d+', filename).group(0)) if re.search(r'\d+', filename) else 0)
-
-        for file in files:
-            with open(os.path.join(target, file), 'rb') as f:
-                images.append(f.read())
-
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f"my_pdf:extract_images_from_pdf_with_imagemagick: Error processing PDF: {error}\n\n{traceback_error}")
-
-    remove_dir(target)
-    remove_file(source)
-
-    return images
-
-
-def extract_images_from_pdf_bytes(pdf_bytes: bytes) -> List[bytes]:
-    """
-    Extracts all images from a PDF given as bytes.
-
-    Args:
-        pdf_bytes: The content of the PDF file as bytes.
-
-    Returns:
-        A list of bytes, where each element is the byte content of an image found in the PDF.
-    """
-    # try to extract images from pdf with imagemagick
-    image_list_bytes = extract_images_from_pdf_with_imagemagick(pdf_bytes)
-    if image_list_bytes:
-        return image_list_bytes
-
-    try:
-        pdf_file = fitz.open(stream=pdf_bytes, filetype="pdf")
-        for page_index in range(len(pdf_file)):
-            page = pdf_file.load_page(page_index)
-            images_on_page = page.get_images(full=True)
-            for image_info in images_on_page:
-                xref = image_info[0]
-                base_image = pdf_file.extract_image(xref)
-                image_bytes = base_image["image"]
-                image_list_bytes.append(image_bytes)
-    except Exception as error:
-        my_log.log2(f"my_pdf:extract_images_from_pdf_bytes: Error processing PDF: {error}")
-    return image_list_bytes
+import my_log
 
 
 def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
@@ -125,40 +43,33 @@ def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
     return text_content
 
 
-@async_run_with_limit(2)
-def process_image_ocr(image: bytes, index: int, results) -> Tuple[str, int]:
+def _split_pdf(pdf_bytes: bytes, chunk_size: int = 5) -> List[bytes]:
     """
-    Performs OCR on a single image using my_gemini.ocr_page.
+    Splits a PDF into smaller PDF chunks based on a specified number of pages.
 
     Args:
-        image: The image data as bytes.
-        index: The index of the image in the original list.
+        pdf_bytes: The content of the PDF file as bytes.
+        chunk_size: The number of pages for each smaller PDF chunk.
+
+    Returns:
+        A list of bytes, where each element is a smaller PDF file.
     """
-    text = my_gemini.ocr_page(image)
+    # open the source document
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    pdf_chunks = []
 
-    if 'EMPTY' in text and len(text) < 20:
-        results[index] = 'EMPTY MARKER 4975934685'
-    else:
-        results[index] = text
+    # iterate through the document in chunks of pages
+    for i in range(0, doc.page_count, chunk_size):
+        # create a new empty PDF
+        new_doc = fitz.open()
+        # copy the page range from the source to the new document
+        new_doc.insert_pdf(doc, from_page=i, to_page=min(i + chunk_size - 1, doc.page_count - 1))
+        # save the new document to bytes
+        pdf_chunks.append(new_doc.tobytes(garbage=4, deflate=True))
+        new_doc.close()
 
-
-# def get_text(data: bytes) -> str:
-#     """
-#     Extract text from pdf
-#     if no text, OCR images with gemini
-#     """
-#     text = ''
-
-#     try:
-#         text = extract_text_from_pdf_bytes(data)
-#         text_ = text
-#         if len(text) < 300:
-#             text_ = my_gemini3.doc2txt(data)
-#     except Exception as error:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f"my_pdf:get_text: Error processing PDF: {error}\n\n{traceback_error}")
-
-#     return text if len(text) > len(text_) else text_
+    doc.close()
+    return pdf_chunks
 
 
 def get_text(data: bytes) -> str:
@@ -167,34 +78,28 @@ def get_text(data: bytes) -> str:
     if no text, OCR images with gemini
     """
     text = ''
-
     try:
+        # First, try the fast native text extraction
+        text_ = extract_text_from_pdf_bytes(data)
 
-        text = extract_text_from_pdf_bytes(data)
-        text_ = text
-        if len(text) < 300:
-            images = extract_images_from_pdf_bytes(data)
-            results = {}
-            index = 0
-            LIMIT = cfg.LIMIT_PDF_OCR if hasattr(cfg, 'LIMIT_PDF_OCR') else 20
-            for image in images[:LIMIT]:
-                process_image_ocr(image, index, results)
-                index += 1
+        # If native text is insufficient, use advanced OCR
+        if len(text_) < 300:
+            CHUNK_SIZE = 5  # Number of pages per chunk
+            pdf_chunks = _split_pdf(data, chunk_size=CHUNK_SIZE)
 
-            while len(results) != len(images[:LIMIT]):
-                time.sleep(1)
+            ocr_results = []
+            for chunk in pdf_chunks:
+                # Process each chunk with the powerful doc2txt function
+                chunk_text = my_gemini3.doc2txt(chunk)
+                ocr_results.append(chunk_text)
 
-            # remove empty markers
-            results = {k: v for k, v in results.items() if v != 'EMPTY MARKER 4975934685'}
+            text = "\n\n".join(ocr_results)
 
-            # convert to list sorted ny index
-            results = sorted(results.items(), key=lambda x: x[0])
-
-            text = '\n'.join([v for _, v in results])
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log2(f"my_pdf:get_text: Error processing PDF: {error}\n\n{traceback_error}")
 
+    # Return the result with the most content
     return text if len(text) > len(text_) else text_
 
 
@@ -216,20 +121,12 @@ def count_pages_in_pdf(file_path: Union[str, bytes]) -> int:
         return len(reader.pages)
     except Exception as unknown:
         my_log.log2(f"my_pdf:count_pages_in_pdf: Error processing PDF: {unknown}")
-        return None
-
-
-def test_count_pages_in_pdf():
-    p = r'C:\Users\user\Downloads\samples for ai\20220816043638.pdf'
-    pages = 9
-    assert count_pages_in_pdf(open(p, 'rb').read()) == pages
-    assert count_pages_in_pdf(p) == pages
+        return 0
 
 
 if __name__ == "__main__":
     my_gemini_general.load_users_keys()
+
     # with open(r"C:\Users\user\Downloads\samples for ai\скан документа.pdf", "rb") as f:
     #     data = f.read()
     #     print(get_text(data))
-
-    # test_count_pages_in_pdf()

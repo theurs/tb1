@@ -3410,7 +3410,7 @@ def handle_document(message: telebot.types.Message):
                             text = my_pdf.get_text(downloaded_file)
                         else:
                             LIMIT = cfg.LIMIT_PDF_OCR if hasattr(cfg, 'LIMIT_PDF_OCR') else 20
-                            amount_of_pages = my_pdf.count_pages_in_pdf(downloaded_file) or 0
+                            amount_of_pages = my_pdf.count_pages_in_pdf(downloaded_file)
                             if amount_of_pages > LIMIT:
                                 text = my_mistral.ocr_pdf(downloaded_file, timeout=300)
                             else:

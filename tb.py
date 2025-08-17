@@ -2915,17 +2915,8 @@ def handle_voice(message: telebot.types.Message):
                             timeout=300
                         )
 
-                    # if not msg.caption:
-                    #     # Отправляем читаемый текст пользователю на экран
-                    #     bot_reply(
-                    #         msg,
-                    #         utils.bot_markdown_to_html(description),
-                    #         parse_mode='HTML',
-                    #         reply_markup=get_keyboard('chat', msg)
-                    #     )
-
                     # Создаем "фейковое" сообщение для передачи в основной обработчик
-                    fake_message = msg
+                    fake_message = msg # тут должно было быть копирование но похоже происходит только присвоение
 
                     # Формируем XML-подобную запись для памяти
                     xml_memory_entry = "User sent a video:\n\n<video_analysis_result>\n"

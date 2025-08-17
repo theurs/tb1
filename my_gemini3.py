@@ -422,6 +422,7 @@ def clear_non_text_parts(mem: list) -> list:
 
 def _count_chars_in_slice(mem_slice: List[Union[Content, UserContent]]) -> int:
     """Counts the total characters of text parts in a slice of memory."""
+    # Counts the total characters of text parts in a slice of memory.
     count = 0
     for message in mem_slice:
         if hasattr(message, 'parts') and message.parts:
@@ -431,55 +432,13 @@ def _count_chars_in_slice(mem_slice: List[Union[Content, UserContent]]) -> int:
     return count
 
 
-# def trim_mem(mem: list, max_chat_mem_chars: int, clear: bool = False):
-#     """
-#     Обрезает историю диалога, если её объём превышает max_chat_mem_chars.
-#     Реализовано через поиск индекса, с которого нужно сохранить историю, 
-#     и последующую обрезку списка.
-#     clear = True - удалить сначала все Parts в которых не текст а вызов функций итп
-#     """
-#     if clear:
-#         mem = clear_non_text_parts(mem)
-
-#     total_chars = 0
-#     # Индекс, с которого мы будем сохранять историю.
-#     # Если вся история помещается в лимит, он останется равен 0.
-#     keep_from_index = 0
-
-#     # Идём с конца списка парами (user, model), чтобы найти точку отсечения.
-#     # `(len(mem) & ~1)` округляет длину списка до ближайшего чётного снизу,
-#     # чтобы безопасно брать пары.
-#     start_iter = (len(mem) & ~1) - 2
-#     for i in range(start_iter, -1, -2):
-#         pair_chars = 0
-#         # Считаем символы в паре сообщений
-#         for message in mem[i:i+2]:
-#             if hasattr(message, 'parts') and message.parts:
-#                 for part in message.parts:
-#                     if hasattr(part, 'text') and part.text:
-#                         pair_chars += len(part.text)
-
-#         # Если накопленный размер + размер текущей пары превышает лимит...
-#         if total_chars + pair_chars > max_chat_mem_chars:
-#             # ...то эта пара уже не влезает. Значит, сохранять нужно
-#             # всё, что было *после* неё. Индекс начала следующей пары — i + 2.
-#             keep_from_index = i + 2
-#             break  # Точку отсечения нашли, выходим из цикла.
-
-#         # Если пара помещается, добавляем её размер к общему и продолжаем.
-#         total_chars += pair_chars
-
-#     # Если был найден индекс для обрезки (он будет больше 0),
-#     # то модифицируем список "на месте", оставляя только нужную часть.
-#     if keep_from_index > 0:
-#         mem[:] = mem[keep_from_index:]
-
-
-def trim_mem(mem: list, max_chat_mem_chars: int, clear: bool = False):
+def trim_mem(mem: list, max_chat_mem_chars: int, clear: bool = False) -> None:
     """
     Trims the chat history if its size exceeds max_chat_mem_chars,
     respecting logical turn boundaries (including function call sequences).
     """
+    # Trims the chat history if its size exceeds max_chat_mem_chars,
+    # respecting logical turn boundaries (including function call sequences).
     if clear:
         # This function should be safe as it only removes non-text parts
         mem[:] = clear_non_text_parts(mem)
@@ -788,8 +747,10 @@ def chat(
                     my_log.log_gemini(f'my_gemini3:chat:3: {str(error)} {model} {key}')
                     return ''
                 elif """400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Please ensure that function response turn comes immediately after a function call turn.'""" in str(error):
+                    traceback_error = traceback.format_exc()
                     my_log.log_gemini(f'my_gemini3:chat:4: {str(error)} {model} {key}')
                     my_log.log_gemini(f'my_gemini3:chat:4: Invalid history state. mem dump: {mem}')
+                    my_log.log_gemini(f'my_gemini3:chat:4: {traceback_error}')
                     new_mem = []
                     i = 0
                     while i < len(mem):
@@ -925,6 +886,7 @@ def _has_function_call(entry: Content) -> bool:
     """
     Checks if a model's Content entry contains a function call.
     """
+    # Checks if a model's Content entry contains a function call.
     if not isinstance(entry, Content) or entry.role != 'model' or not entry.parts:
         return False
     # A function call is stored in the parts list
@@ -936,6 +898,7 @@ def _has_function_response(entry: Content) -> bool:
     Checks if a user's Content entry contains a function response.
     """
     # Check if entry is a Content object with role 'user' and has parts
+    # Checks if a user's Content entry contains a function response.
     if not isinstance(entry, Content) or entry.role != 'user' or not entry.parts:
         return False
     # A function response is stored in the parts list
@@ -949,6 +912,8 @@ def validate_and_sanitize_mem(
     Validates and sanitizes a Gemini conversation history to prevent API errors.
     This version correctly handles function responses wrapped in the 'user' role.
     """
+    # Validates and sanitizes a Gemini conversation history to prevent API errors.
+    # This version correctly handles function responses wrapped in the 'user' role.
     if not mem:
         return []
 
@@ -1005,83 +970,6 @@ def validate_and_sanitize_mem(
     return sanitized_mem
 
 
-def validate_and_sanitize_mem(
-    mem: List[Union[Content, UserContent]]
-) -> List[Union[Content, UserContent]]:
-    """
-    Validates and sanitizes a Gemini conversation history to prevent API errors.
-
-    This function enforces the required turn-based order:
-    - The history must start with a 'user' turn.
-    - 'user' is followed by 'model'.
-    - 'model' (with function call) is followed by 'tool'.
-    - 'tool' is followed by 'model'.
-    - The history cannot end with an incomplete turn (e.g., a 'user' turn
-      or a 'model' turn with a function call waiting for a 'tool' response).
-
-    Args:
-        mem: The original conversation history list.
-
-    Returns:
-        A new list containing the sanitized conversation history.
-    """
-    if not mem:
-        return []
-
-    # 1. Find the first 'user' turn and discard anything before it.
-    try:
-        first_user_index = next(i for i, entry in enumerate(mem) if entry.role == 'user')
-        processing_list = mem[first_user_index:]
-    except StopIteration:
-        # No user turns in history, it's invalid.
-        return []
-
-    sanitized_mem: List[Union[Content, UserContent]] = []
-    i = 0
-    while i < len(processing_list):
-        current_entry = processing_list[i]
-        current_role = current_entry.role
-
-        # Determine the role of the last valid entry in our sanitized list
-        last_sanitized_role = sanitized_mem[-1].role if sanitized_mem else None
-
-        if current_role == 'user':
-            # A user turn is valid if it's the first turn or follows a model turn.
-            if last_sanitized_role is None or last_sanitized_role == 'model':
-                sanitized_mem.append(current_entry)
-            # If we see user -> user, the second user starts a new valid sequence,
-            # so we replace the previous one.
-            elif last_sanitized_role == 'user':
-                sanitized_mem[-1] = current_entry
-            i += 1
-        elif current_role == 'model':
-            # A model turn is valid if it follows a user or a tool turn.
-            if last_sanitized_role == 'user' or last_sanitized_role == 'tool':
-                sanitized_mem.append(current_entry)
-            i += 1
-        elif current_role == 'tool':
-            # A tool turn is valid ONLY if it follows a model turn that had a function call.
-            if last_sanitized_role == 'model' and _has_function_call(sanitized_mem[-1]):
-                sanitized_mem.append(current_entry)
-            # Otherwise, it's an orphan tool response, so we skip it.
-            i += 1
-        else:
-            # Skip any other unexpected role types.
-            i += 1
-
-    # 2. Final cleanup: Ensure the history doesn't end on an incomplete turn.
-    if sanitized_mem:
-        last_entry = sanitized_mem[-1]
-        # If it ends on a user turn, the model has nothing to respond to.
-        if last_entry.role == 'user':
-            sanitized_mem.pop()
-        # If it ends on a model turn that expects a tool response, it's an incomplete thought.
-        elif last_entry.role == 'model' and _has_function_call(last_entry):
-            sanitized_mem.pop()
-
-    return sanitized_mem
-
-
 def count_chars(mem) -> int:
     '''считает количество символов в чате'''
     total = 0
@@ -1125,26 +1013,6 @@ def update_mem(query: str, resp: str, mem, model: str = ''):
     return mem
 
 
-# def force(chat_id: str, text: str, model: str = ''):
-#     '''update last bot answer with given text'''
-#     try:
-#         if chat_id in my_gemini_general.LOCKS:
-#             lock = my_gemini_general.LOCKS[chat_id]
-#         else:
-#             lock = threading.Lock()
-#             my_gemini_general.LOCKS[chat_id] = lock
-#         with lock:
-#             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
-#             # remove last bot answer and append new
-#             if len(mem) > 1:
-#                 m = ModelContent(text)
-#                 mem[-1] = m
-#                 my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(mem))
-#     except Exception as error:
-#         error_traceback = traceback.format_exc()
-#         my_log.log_gemini(f'my_gemini3:force: Failed to force text in chat {chat_id}: {error}\n\n{error_traceback}\n\n{text}')
-
-
 def force(chat_id: str, text: str, model: str = ''):
     '''
     Updates the last bot answer with the given text, handling complex function call chains.
@@ -1186,36 +1054,6 @@ def force(chat_id: str, text: str, model: str = ''):
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_gemini(f'my_gemini3:force: Failed to force text in chat {chat_id}: {error}\n\n{error_traceback}\n\n{text}')
-
-
-# def undo(chat_id: str, model: str = ''):
-#     """
-#     Undo the last two lines of chat history for a given chat ID.
-
-#     Args:
-#         chat_id (str): The ID of the chat.
-#         model (str): The model name.
-
-#     Raises:
-#         Exception: If there is an error while undoing the chat history.
-
-#     Returns:
-#         None
-#     """
-#     try:
-#         if chat_id in my_gemini_general.LOCKS:
-#             lock = my_gemini_general.LOCKS[chat_id]
-#         else:
-#             lock = threading.Lock()
-#             my_gemini_general.LOCKS[chat_id] = lock
-#         with lock:
-#             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
-#             # remove 2 last lines from mem
-#             mem = mem[:-2]
-#             my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(mem))
-#     except Exception as error:
-#         error_traceback = traceback.format_exc()
-#         my_log.log_gemini(f'my_gemini3:undo:Failed to undo chat {chat_id}: {error}\n\n{error_traceback}')
 
 
 def undo(chat_id: str, model: str = ''):

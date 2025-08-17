@@ -23,6 +23,7 @@ import my_gemini_genimg
 import my_groq
 import my_log
 import my_mistral
+import my_pollinations
 import utils
 from my_nebius import txt2img as flux_nebius
 
@@ -36,6 +37,28 @@ BING_LOCK = threading.Lock()
 # 0 - main, 1 - second instance
 # если есть второй инстанс с бингом то переключаться между ними циклично
 BING_SWITCH = 0
+
+
+def pollinations_gen(prompt: str, width: int = 1024, height: int = 1024, model: str = "fluxxx") -> list[bytes]:
+    """
+    Wrapper for my_pollinations.fetch_image_bytes to align with ThreadPool usage.
+
+    Args:
+        prompt: The text prompt for the image.
+        width: Image width.
+        height: Image height.
+
+    Returns:
+        A list containing the image bytes, or an empty list on failure.
+    """
+    # Attempt to fetch the image data
+    data: bytes | None = my_pollinations.fetch_image_bytes(prompt, width, height, model)
+    if data:
+        # If successful, register the author and return data in a list
+        WHO_AUTOR[utils.fast_hash(data)] = 'pollinations.ai flux'
+        return [data]
+    # Return an empty list if fetching failed
+    return []
 
 
 def gemini_flash(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, negative_prompt: str = "", user_id: str = ''):
@@ -427,10 +450,13 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         async_result10 = pool.apply_async(gemini_flash, (prompt, 1024, 1024, 2, negative, user_id))
 
+        async_result_pollinations = pool.apply_async(pollinations_gen, (prompt,))
+
         result = (async_result1.get() or []) + \
                 (async_result2.get() or []) + \
                 (async_result3.get() or []) + \
-                (async_result10.get() or [])
+                (async_result10.get() or []) + \
+                (async_result_pollinations.get() or [])
     else:
         async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
         async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
@@ -439,7 +465,8 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
         result = (async_result2.get() or []) + \
                 (async_result3.get() or []) + \
-                (async_result10.get() or [])
+                (async_result10.get() or []) + \
+                (async_result_pollinations.get() or [])
 
     return result
 

@@ -1006,11 +1006,16 @@ if __name__ == '__main__':
     # print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи 3.jpg', 'извлеки весь текст с картинки, сохрани форматирование', model = 'qwen/qwen2.5-vl-32b-instruct:free', chat_id='test'))
 
 
-    print(translate('привет дурында, сказала Кагги-Кар', from_lang='ru', to_lang='en'))
+    # print(translate('привет дурында, сказала Кагги-Кар', from_lang='ru', to_lang='en'))
+
+
+    # q='''Дана задача по геометрии.Условие:На горизонтальной линии расположены два касающихся друг друга круга. Каждый круг имеет радиус 5 см и касается этой горизонтальной линии. Между этими двумя кругами расположен квадрат таким образом, что его нижняя сторона лежит на той же горизонтальной линии, а две верхние вершины касаются соответствующих окружностей.Задача:Найдите площадь этого квадрата. Ответ запиши одним словом.'''
+    # print(ai(q, model='openai/gpt-oss-20b:free', reasoning_effort_value_='high', user_id='test'))
 
 
     reset('test')
     chat_cli(model='openai/gpt-5-nano')
+
 
     # txt2img(
     #     'Girl, portrait, European appearance, long black messy straight hair, dark red sunglasses with a faint red glow coming out from behind it, thin lips, cheekbones, frowning, cyberpunk style, realistic style, dark style, cyberpunk, wearing a red satin waistcoat vest and a necktie over a white satin shirt',

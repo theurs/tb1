@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
 # pip install -U PyMuPDF
 # install https://imagemagick.org/index.php (for windows install also https://ghostscript.com/releases/gsdnld.html)
-# in linux /etc/ImageMagick-6/policy.xml change 
+# in linux /etc/ImageMagick-6/policy.xml change
 # <policy domain="coder" rights="none" pattern="PDF" />
 #  to
 # <policy domain="coder" rights="read|write" pattern="PDF" />
 
-
 import io
 import traceback
 from typing import List, Union
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import PyPDF2
 import pymupdf as fitz
 
+import cfg
 import my_gemini3
 import my_gemini_general
 import my_log
+
+
+# количество параллельных потоков для doc2txt
+MAX_THREADS = 2
 
 
 def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
@@ -72,26 +77,42 @@ def _split_pdf(pdf_bytes: bytes, chunk_size: int = 5) -> List[bytes]:
     return pdf_chunks
 
 
-def get_text(data: bytes) -> str:
+def get_text(data: bytes, max_threads: int = MAX_THREADS) -> str:
     """
-    Extract text from pdf
-    if no text, OCR images with gemini
+    Extracts text from a PDF document.
+
+    First, it attempts a fast native text extraction. If the extracted text is less than 300 characters,
+    it assumes the document is a scan and performs OCR using the gemini AI model. The OCR is done in
+    parallel, processing the document in chunks of 5 pages. The number of concurrent threads is
+    controlled by the `max_threads` parameter.
+
+    Args:
+        data (bytes): The byte content of the PDF file.
+        max_threads (int, optional): The maximum number of threads for parallel OCR processing.
+                                     Defaults to the MAX_THREADS constant.
+
+    Returns:
+        str: The text extracted from the PDF. Returns an empty string if both extraction methods fail.
     """
     text = ''
     try:
-        # First, try the fast native text extraction
         text_ = extract_text_from_pdf_bytes(data)
 
-        # If native text is insufficient, use advanced OCR
         if len(text_) < 300:
-            CHUNK_SIZE = 5  # Number of pages per chunk
+            CHUNK_SIZE = 5
             pdf_chunks = _split_pdf(data, chunk_size=CHUNK_SIZE)
 
-            ocr_results = []
-            for chunk in pdf_chunks:
-                # Process each chunk with the powerful doc2txt function
-                chunk_text = my_gemini3.doc2txt(chunk)
-                ocr_results.append(chunk_text)
+            ocr_results = [None] * len(pdf_chunks)
+            with ThreadPoolExecutor(max_workers=max_threads) as executor:
+                future_to_index = {executor.submit(my_gemini3.doc2txt, chunk, model=cfg.gemini_flash_model): i for i, chunk in enumerate(pdf_chunks)}
+                for future in as_completed(future_to_index):
+                    index = future_to_index[future]
+                    try:
+                        chunk_text = future.result()
+                        ocr_results[index] = chunk_text
+                    except Exception as error:
+                        my_log.log2(f"my_pdf:get_text: Error processing PDF chunk with doc2txt: {error}")
+                        ocr_results[index] = "" 
 
             text = "\n\n".join(ocr_results)
 
@@ -99,7 +120,6 @@ def get_text(data: bytes) -> str:
         traceback_error = traceback.format_exc()
         my_log.log2(f"my_pdf:get_text: Error processing PDF: {error}\n\n{traceback_error}")
 
-    # Return the result with the most content
     return text if len(text) > len(text_) else text_
 
 
@@ -116,7 +136,6 @@ def count_pages_in_pdf(file_path: Union[str, bytes]) -> int:
     try:
         if isinstance(file_path, bytes):
             file_path = io.BytesIO(file_path)
-
         reader = PyPDF2.PdfReader(file_path)
         return len(reader.pages)
     except Exception as unknown:

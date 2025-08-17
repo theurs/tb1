@@ -10,7 +10,7 @@ import time
 import traceback
 import xml.etree.ElementTree as ET
 import zipfile
-from typing import List, Union
+# from typing import List, Union
 
 import my_mistral
 import PyPDF2
@@ -20,7 +20,8 @@ from pptx import Presentation
 
 
 import my_log
-import my_gemini
+# import my_gemini
+import my_pdf
 import utils
 
 
@@ -57,13 +58,25 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
         utils.remove_file(input_file)
         return text
     elif 'docx' in book_type or 'dotx' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'docx', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        try:
+            proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'docx', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        except FileNotFoundError as e:
+            my_log.log2(f'my_pandoc:fb2_to_text: {e}')
+            proc = None
     elif 'html' in book_type:
         proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'html', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
     elif 'odt' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'odt', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        try:
+            proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'odt', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        except FileNotFoundError as e:
+            my_log.log2(f'my_pandoc:fb2_to_text: {e}')
+            proc = None
     elif 'rtf' in book_type:
-        proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'rtf', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        try:
+            proc = subprocess.run([pandoc_cmd, '-f', '+RTS', '-M256M', '-RTS', 'rtf', '-t', 'gfm', input_file], stdout=subprocess.PIPE)
+        except FileNotFoundError as e:
+            my_log.log2(f'my_pandoc:fb2_to_text: {e}')
+            proc = None
     elif 'doc' in book_type:
         try:
             proc = subprocess.run([catdoc_cmd, input_file], stdout=subprocess.PIPE)
@@ -118,18 +131,11 @@ def fb2_to_text(data: bytes, ext: str = '', lang: str = '') -> str:
 
 
     # в doc файле нет текста, но может есть картинки?
-    if 'doc' in book_type and len(output) < 100:
+    if ('doc' in book_type or 'docx' in book_type or 'odt' in book_type or 'rtf' in book_type) and len(output) < 100:
         # try to read images
-        images = extract_images_from_doc(data)
+        images = extract_images_from_document(data, ext)
         if images:
-            result = ''
-            for image in images:
-                text = my_gemini.ocr_page(image)
-                if 'EMPTY' in text and len(text) < 20:
-                    text = ''
-                result += text + '\n\n'
-            if len(result) > len(output):
-                output = result
+            output = my_pdf.get_text_from_images(images)
 
 
     return output
@@ -927,117 +933,97 @@ def convert_numbers_to_csv(numbers_data: bytes) -> str:
     return "".join(csv_content_all_sheets)
 
 
-def extract_images_from_doc(doc_data: Union[bytes, str]) -> List[bytes]:
+def extract_images_from_document(data: bytes, file_ext: str) -> list[bytes]:
     """
-    Extracts images from a .doc file in their original order.
-
-    The process involves:
-    1. Converting the .doc file to .docx using LibreOffice.
-    2. Reading the resulting .docx file (which is a zip archive).
-    3. Parsing word/_rels/document.xml.rels to map relationship IDs to image files.
-    4. Parsing word/document.xml to find image references in their sequential order.
-    5. Extracting the image bytes from the archive based on the ordered references.
-
-    Args:
-        doc_data: The content of the .doc file as bytes or a path to the file as a string.
-
-    Returns:
-        A list of bytes, where each item is the binary content of an image,
-        sorted in the order of their appearance in the document. Returns an empty
-        list if conversion or extraction fails.
+    Extracts images from various document types (docx, doc, odt, rtf) in order.
+    Converts non-docx formats to docx using LibreOffice first.
     """
     temp_dir = tempfile.mkdtemp()
-    temp_doc_path = os.path.join(temp_dir, "input.doc")
-    images_bytes: List[bytes] = []
+    images_bytes: list[bytes] = []
+    docx_to_process: str | None = None
 
     try:
-        # Step 1: Write input data to a temporary .doc file
-        if isinstance(doc_data, str):
-            with open(doc_data, 'rb') as f:
-                doc_content = f.read()
+        ext = file_ext.lower().lstrip('.')
+
+        if ext == 'docx':
+            # If it's already docx, no conversion needed. Just write to a temp file.
+            docx_to_process = os.path.join(temp_dir, "input.docx")
+            with open(docx_to_process, 'wb') as f:
+                f.write(data)
+        elif ext in ('doc', 'rtf', 'odt'):
+            # These formats need conversion to docx via LibreOffice.
+            input_filename = f"input.{ext}"
+            temp_input_path = os.path.join(temp_dir, input_filename)
+            with open(temp_input_path, 'wb') as f:
+                f.write(data)
+
+            exe = 'soffice.exe' if 'windows' in utils.platform().lower() else 'libreoffice'
+            lo_cmd = [exe, "--headless", "--convert-to", "docx", "--outdir", temp_dir, temp_input_path]
+
+            result = subprocess.run(lo_cmd, capture_output=True, text=True, check=False)
+
+            if result.returncode != 0:
+                my_log.log2(f"my_pandoc:extract_images: LibreOffice failed to convert {ext}: {result.stderr}")
+                return []
+
+            docx_to_process = os.path.join(temp_dir, "input.docx")
+            if not os.path.exists(docx_to_process):
+                my_log.log2(f"my_pandoc:extract_images: DOCX output not found after converting {ext}.")
+                return []
         else:
-            doc_content = doc_data
-
-        with open(temp_doc_path, 'wb') as f:
-            f.write(doc_content)
-
-        # Step 2: Convert .doc to .docx using LibreOffice
-        exe = 'soffice.exe' if 'windows' in utils.platform().lower() else 'libreoffice'
-        libreoffice_cmd = [
-            exe,
-            "--headless",
-            "--convert-to", "docx",
-            "--outdir", temp_dir,
-            temp_doc_path
-        ]
-
-        result = subprocess.run(
-            libreoffice_cmd, capture_output=True, text=True, check=False
-        )
-
-        if result.returncode != 0:
-            my_log.log2(f"my_pandoc:extract_images_from_doc: LibreOffice failed: {result.stderr}")
+            my_log.log2(f"my_pandoc:extract_images: Unsupported file type for image extraction: {ext}")
             return []
 
-        temp_docx_path = os.path.join(temp_dir, "input.docx")
-        if not os.path.exists(temp_docx_path):
-            my_log.log2("my_pandoc:extract_images_from_doc: DOCX output file not found after conversion.")
-            return []
-
-        # Step 3: Open the .docx as a zip archive and parse XMLs to get ordered images
-        with zipfile.ZipFile(temp_docx_path, 'r') as docx_zip:
-            # XML Namespace mapping
+        # At this point, docx_to_process should point to a valid .docx file.
+        # Proceed with unzipping and parsing to extract images in order.
+        with zipfile.ZipFile(docx_to_process, 'r') as docx_zip:
             ns = {
                 'rel': 'http://schemas.openxmlformats.org/package/2006/relationships',
                 'doc': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
                 'draw': 'http://schemas.openxmlformats.org/drawingml/2006/main',
-                'pic': 'http://schemas.openxmlformats.org/drawingml/2006/picture',
                 'r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
             }
 
-            # Map Relationship IDs (rId) to image file paths (e.g., 'media/image1.png')
             id_to_target = {}
             try:
-                rels_xml_content = docx_zip.read('word/_rels/document.xml.rels')
-                rels_root = ET.fromstring(rels_xml_content)
+                # Map relationship IDs to image file targets (e.g., 'media/image1.png')
+                rels_xml = docx_zip.read('word/_rels/document.xml.rels')
+                rels_root = ET.fromstring(rels_xml)
                 for rel in rels_root.findall('rel:Relationship', ns):
-                    r_id = rel.get('Id')
-                    target = rel.get('Target')
-                    if r_id and target:
+                    r_id, target = rel.get('Id'), rel.get('Target')
+                    if r_id and target and 'image' in rel.get('Type', ''):
                         id_to_target[r_id] = target
             except KeyError:
-                my_log.log2("my_pandoc:extract_images_from_doc: word/_rels/document.xml.rels not found.")
+                my_log.log2("my_pandoc:extract_images: word/_rels/document.xml.rels not found.")
                 return []
 
-            # Find all image references ('r:embed' attributes) in the main document, preserving order
             ordered_rids = []
             try:
-                doc_xml_content = docx_zip.read('word/document.xml')
-                doc_root = ET.fromstring(doc_xml_content)
-                # Find all 'blip' elements which contain the image embed reference
+                # Find all image references in the main document xml to preserve order
+                doc_xml = docx_zip.read('word/document.xml')
+                doc_root = ET.fromstring(doc_xml)
                 for blip in doc_root.findall('.//draw:blip', ns):
                     embed_rid = blip.get(f'{{{ns["r"]}}}embed')
                     if embed_rid:
                         ordered_rids.append(embed_rid)
             except KeyError:
-                my_log.log2("my_pandoc:extract_images_from_doc: word/document.xml not found.")
+                my_log.log2("my_pandoc:extract_images: word/document.xml not found.")
                 return []
 
-            # Extract image bytes from the archive using the ordered list of rIds
+            # Extract image bytes from the archive using the ordered list of IDs
             for rid in ordered_rids:
                 image_target = id_to_target.get(rid)
-                if image_target and image_target.startswith('media/'):
+                if image_target:
                     image_path_in_zip = f'word/{image_target}'
                     try:
                         image_data = docx_zip.read(image_path_in_zip)
                         images_bytes.append(image_data)
                     except KeyError:
-                        my_log.log2(f"my_pandoc:extract_images_from_doc: Image file not found in zip: {image_path_in_zip}")
+                        my_log.log2(f"my_pandoc:extract_images: Image file not in zip: {image_path_in_zip}")
 
     except Exception as e:
-        my_log.log2(f"my_pandoc:extract_images_from_doc: An unexpected error occurred: {e}")
+        my_log.log2(f"my_pandoc:extract_images: Unexpected error: {e}\n{traceback.format_exc()}")
     finally:
-        # Step 4: Clean up temporary directory and all its contents
         utils.remove_dir(temp_dir)
 
     return images_bytes

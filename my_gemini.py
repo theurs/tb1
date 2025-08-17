@@ -836,9 +836,6 @@ def retranscribe(text: str, prompt: str = '') -> str:
     return result
 
 
-
-
-
 def test_all_keys():
     '''
     Tests all keys in the my_gemini_general.ALL_KEYS list.

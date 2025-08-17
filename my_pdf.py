@@ -143,6 +143,46 @@ def count_pages_in_pdf(file_path: Union[str, bytes]) -> int:
         return 0
 
 
+def get_text_from_images(images: list[bytes], max_threads: int = MAX_THREADS) -> str:
+    """
+    Extracts text from a list of image bytes by first converting them into a single PDF.
+
+    Args:
+        images (List[bytes]): A list of image bytes.
+        max_threads (int, optional): The maximum number of threads for parallel OCR.
+                                     Defaults to the MAX_THREADS constant.
+
+    Returns:
+        str: The extracted text from the images. Returns an empty string on failure.
+    """
+    if not images:
+        return ""
+
+    doc = None
+    try:
+        # Create a new PDF document in memory
+        doc = fitz.open()
+
+        # Iterate through each image and add it to a new page
+        for image_data in images:
+            page = doc.new_page()
+            # Insert the image, making it fill the entire page rectangle
+            page.insert_image(page.rect, stream=image_data)
+
+        # Get the complete PDF as bytes
+        pdf_bytes = doc.tobytes(garbage=4, deflate=True)
+
+        # Use the existing get_text function to perform OCR on the generated PDF
+        return get_text(pdf_bytes, max_threads=max_threads)
+    except Exception as e:
+        my_log.log2(f"my_pdf:get_text_from_images: Failed to process images into PDF: {e}")
+        return ""
+    finally:
+        # Ensure the document is closed
+        if doc:
+            doc.close()
+
+
 if __name__ == "__main__":
     my_gemini_general.load_users_keys()
 

@@ -54,6 +54,8 @@ def fetch_image_bytes(
                 return None
             image_bytes = response.content
     except requests.exceptions.RequestException as e:
+        if 'Details: 502 Server Error: Bad Gateway for url:' in str(e):
+            return None
         my_log.log2(f"Error: Request failed for URL {url}. Details: {e}")
         return None
 

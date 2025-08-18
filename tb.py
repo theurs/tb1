@@ -2932,7 +2932,11 @@ def handle_voice(message: telebot.types.Message):
                     return
 
                 except Exception as video_as_img_error:
-                    my_log.log2(f'tb:handle_voice:video_as_image_fallback: {video_as_img_error}')
+                    if 'file is too big' in str(video_as_img_error):
+                        bot_reply_tr(message, 'Too big file')
+                        return
+                    traceback_error = traceback.format_exc()
+                    my_log.log2(f'tb:handle_voice:video_as_image_fallback: {video_as_img_error}\n\n{traceback_error}')
 
 
             # Отправляем, если есть что отправлять, и если это не режим "только голос"

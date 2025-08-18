@@ -226,5 +226,5 @@ def chat_cli(
 
 
 if __name__ == "__main__":
-
+    my_db.init(backup=False)
     chat_cli()

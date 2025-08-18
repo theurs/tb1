@@ -938,7 +938,7 @@ def img2txt(
     ]
 
     # Delegate the actual API call to the centralized 'ai' function
-    return ai(
+    r = ai(
         mem=messages,
         user_id=chat_id,
         system=system,
@@ -948,6 +948,10 @@ def img2txt(
         timeout=timeout,
         reasoning_effort_value_=reasoning_effort_value_
     )
+    if r.startswith('API Error: '):
+        return ''
+
+    return r
 
 
 def txt2img(

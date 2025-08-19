@@ -734,70 +734,73 @@ def remove_dimatorzok(text: str) -> str:
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
 def stt(
-    data: bytes = None,
-    lang: str = '',
+    data: bytes | str,
+    lang: str = 'ru',
     key_: str = '',
     prompt: str = '',
-    last_try: bool = False,
     model: str = 'whisper-large-v3-turbo',
-    retry: int = 4,
+    retries: int = 4,
+    timeout: int = 120,
 ) -> str:
-    """Speech to text function. Uses Groq API for speech recognition.
+    """
+    Speech to text function. Uses Groq API for speech recognition.
 
     Args:
-        data (bytes, optional): Audio data or filename. Defaults to None.
-        lang (str, optional): Language code. Defaults to '' = 'ru'.
-        key_ (str, optional): API key. Defaults to '' = random.choice(ALL_KEYS).
-        prompt (str, optional): Prompt for the speech recognition model. Example: 'Распознай и исправь ошибки. Разбей на абзацы что бы легко было прочитать.'.
-        retry (int, optional): Number of retries. Defaults to 4.
+        data (bytes | str): Audio data as bytes or a string path to an audio file.
+        lang (str, optional): Language code. Defaults to 'ru'.
+        key_ (str, optional): API key. If not provided, one is fetched from the pool.
+        prompt (str, optional): Prompt for the speech recognition model.
+            Example: 'Распознай и исправь ошибки. Разбей на абзацы что бы легко было прочитать.'
+        model (str, optional): The model to use for transcription.
+        retries (int, optional): Number of retries on failure. Defaults to 4.
+        timeout (int, optional): Request timeout in seconds. Defaults to 120.
 
     Returns:
-        str: Transcribed text.
+        str: Transcribed text, or an empty string if it fails.
     """
-    key = ''
-    retry -= 1
-    if retry < 0:
-        return ''
-    try:
-        if not data:
-            with open('1.ogg', 'rb') as f:
-                data = f.read()
-        if isinstance(data, str):
+    if isinstance(data, str):
+        # Read file if a path is provided
+        try:
             with open(data, 'rb') as f:
-                data = f.read()
-        if not lang:
-            lang = 'ru'
+                audio_data = f.read()
+        except FileNotFoundError:
+            my_log.log_groq(f'my_groq:stt: File not found: {data}')
+            return ''
+    else:
+        audio_data = data
 
-        if key_:
-            key = key_
-        else:
-            key = get_next_key()
+    for attempt in range(retries):
+        key = key_ or get_next_key()
+        try:
+            client_params = {'api_key': key, 'timeout': timeout}
+            if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
+                # Add proxy if configured
+                proxy_client = httpx.Client(proxy=random.choice(cfg.GROQ_PROXIES))
+                client_params['http_client'] = proxy_client
 
-        if hasattr(cfg, 'GROQ_PROXIES') and cfg.GROQ_PROXIES:
-            client = Groq(
-                api_key=key,
-                http_client = httpx.Client(proxy = random.choice(cfg.GROQ_PROXIES)),
-                timeout = 120,
+            client = Groq(**client_params)
+
+            transcription = client.audio.transcriptions.create(
+                file=("audio.mp3", audio_data),
+                model=model,
+                language=lang,
+                prompt=prompt,
+                timeout=timeout,
             )
-        else:
-            client = Groq(api_key=key, timeout = 120,)
-        transcription = client.audio.transcriptions.create(
-            file=("123.mp3", data),
-            model = model,
-            # language=lang,
-            prompt=prompt,
-            timeout=120,
-            )
-        return remove_dimatorzok(transcription.text)
-    except Exception as error:
-        if 'invalid_api_key' in str(error) or 'Organization has been restricted. Please reach out to support if you believe this was in error.' in str(error):
-            remove_key(key)
-            return stt(data, lang, key_, prompt, last_try, model, retry-1)
-        error_traceback = traceback.format_exc()
-        my_log.log_groq(f'my_groq:stt: {error}\n\n{error_traceback}\n\n{lang}\n{model}\n{key}')
-        if not last_try and "'type': 'internal_server_error'" in str(error):
-            time.sleep(4)
-            return stt(data, lang, key_, prompt, True, model)
+            return remove_dimatorzok(transcription.text)
+
+        except Exception as error:
+            error_str = str(error).lower()
+            if 'invalid' in error_str and 'api key' in error_str or 'restricted' in error_str:
+                # Handle invalid key and stop retrying with it
+                remove_key(key)
+                if key_: # If the provided key was bad, no point in retrying
+                    return ''
+                continue 
+
+            error_traceback = traceback.format_exc()
+            my_log.log_groq(f'my_groq:stt: Attempt {attempt + 1}/{retries} failed. Error: {error}\n{error_traceback}')
+            time.sleep(2) # Wait before retrying
 
     return ''
 

@@ -465,7 +465,8 @@ def chat(query: str,
         return ''
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl = 10 * 60)
+# @cachetools.func.ttl_cache(maxsize=10, ttl = 10 * 60)
+@utils.memory_safe_ttl_cache(maxsize=100, ttl=300)
 def img2txt(
     data_: bytes,
     prompt: str = "Что на картинке?",

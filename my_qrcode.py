@@ -6,9 +6,11 @@ import cv2
 import numpy as np
 
 import my_log
+import utils
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=60)
+# @cachetools.func.ttl_cache(maxsize=10, ttl=60)
+@utils.memory_safe_ttl_cache(maxsize=100, ttl=300)
 def get_text(image_bytes: bytes):
     """
     Extracts text from a QR code in an image using OpenCV.

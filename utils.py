@@ -27,6 +27,8 @@ import time
 import traceback
 import platform as platform_module
 from typing import Any, Callable, List, Tuple, Union
+from cachetools import TTLCache
+from functools import wraps
 
 import cachetools.func
 import json_repair
@@ -48,6 +50,55 @@ register_heif_opener()
 
 
 LOCK_TRANSCODE = threading.Lock()
+
+
+def memory_safe_ttl_cache(maxsize: int = 128, ttl: int = 600) -> Callable:
+    """
+    A memory-safe TTL cache decorator, a drop-in replacement for cachetools.func.ttl_cache.
+    It uses a SHA256 hash for bytes objects to avoid storing them as keys.
+    """
+    cache = TTLCache(maxsize=maxsize, ttl=ttl)
+    lock = threading.Lock()
+
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            key_parts = []
+            for arg in args:
+                if isinstance(arg, (bytes, bytearray)):
+                    key_parts.append(hashlib.sha256(arg).hexdigest())
+                else:
+                    key_parts.append(arg)
+
+            if kwargs:
+                for k, v in sorted(kwargs.items()):
+                    key_parts.append(k)
+                    if isinstance(v, (bytes, bytearray)):
+                        key_parts.append(hashlib.sha256(v).hexdigest())
+                    else:
+                        key_parts.append(v)
+
+            key = tuple(key_parts)
+
+            with lock:
+                if key in cache:
+                    return cache[key]
+
+            result = func(*args, **kwargs)
+
+            with lock:
+                cache[key] = result
+
+            return result
+
+        def cache_clear() -> None:
+            with lock:
+                cache.clear()
+
+        wrapper.cache_clear = cache_clear
+        wrapper.cache = cache
+        return wrapper
+    return decorator
 
 
 def async_run(func):

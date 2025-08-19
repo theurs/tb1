@@ -95,7 +95,8 @@ def _stt_cache_key_generator(input_file: str|bytes, lang: str = 'ru', chat_id: s
     elif isinstance(input_file, bytes):
         file_content_hash = _get_file_hash(input_file[:1024*1024])
     speech_to_text_engine = my_db.get_user_property(chat_id, 'speech_to_text_engine') or DEFAULT_STT_ENGINE
-    return (file_content_hash, lang, prompt, speech_to_text_engine, chat_id)
+    # return (file_content_hash, lang, prompt, speech_to_text_engine, chat_id)
+    return (file_content_hash, lang, prompt, speech_to_text_engine)
 
 
 def convert_to_ogg_with_ffmpeg(audio_file: str|bytes) -> str:

@@ -3592,13 +3592,12 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
 def download_image_from_messages(MESSAGES: list) -> list:
     '''Download images from message list'''
     try:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            # executor.map сохранит порядок результатов
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
             images = list(executor.map(download_image_from_message, MESSAGES))
         return images
     except Exception as unexpected_error:
-        # traceback_error = traceback.format_exc() # Раскомментируйте, если нужны детали ошибки в логе
-        # my_log.log2(f'tb:download_image_from_messages:{unexpected_error}\n\n{traceback_error}')
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:download_image_from_messages:{unexpected_error}\n\n{traceback_error}')
         return []
 
 

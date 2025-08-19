@@ -53,7 +53,7 @@ def fetch_image_bytes(
                 my_log.log2(f"Error: Content-Length {content_length} exceeds limit.")
                 return None
             image_bytes = response.content
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         if 'Details: 502 Server Error: Bad Gateway for url:' in str(e):
             return None
         my_log.log2(f"Error: Request failed for URL {url}. Details: {e}")
@@ -85,7 +85,7 @@ def fetch_image_bytes(
 
         return buffer.getvalue()
 
-    except (UnidentifiedImageError, IOError) as e:
+    except Exception as e:
         my_log.log2(f"Error: Invalid image data from {url}. Details: {e}")
         return None
 

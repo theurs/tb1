@@ -733,23 +733,22 @@ def remove_dimatorzok(text: str) -> str:
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
-def stt(data: bytes = None,
-        lang: str = '',
-        key_: str = '',
-        prompt: str = '',
-        last_try: bool = False,
-        model: str = 'whisper-large-v3-turbo',
-        retry: int = 4,
-        ) -> str:
+def stt(
+    data: bytes = None,
+    lang: str = '',
+    key_: str = '',
+    prompt: str = '',
+    last_try: bool = False,
+    model: str = 'whisper-large-v3-turbo',
+    retry: int = 4,
+) -> str:
     """Speech to text function. Uses Groq API for speech recognition.
-    Caches the results to avoid redundant API calls.
-    The cache can store up to 10 results and they expire after 10 minutes.
 
     Args:
         data (bytes, optional): Audio data or filename. Defaults to None.
         lang (str, optional): Language code. Defaults to '' = 'ru'.
         key_ (str, optional): API key. Defaults to '' = random.choice(ALL_KEYS).
-        prompt (str, optional): Prompt for the speech recognition model. Defaults to 'Распознай и исправь ошибки. Разбей на абзацы что бы легко было прочитать.'.
+        prompt (str, optional): Prompt for the speech recognition model. Example: 'Распознай и исправь ошибки. Разбей на абзацы что бы легко было прочитать.'.
         retry (int, optional): Number of retries. Defaults to 4.
 
     Returns:

@@ -2872,16 +2872,12 @@ def handle_voice(message: telebot.types.Message):
                         my_log.log2(f'tb:handle_voice:transcribe_in_parallel_error: {e}')
                 return {'filename': 'error_file', 'transcription': '[ERROR: Processing failed]'}
 
-            # Запускаем транскрипцию в потоках
+            # Запускаем транскрипцию в потоках, сохраняя порядок
             transcribed_data = []
             with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                futures = [executor.submit(transcribe_in_parallel, msg) for msg in messages_to_process]
-                for future in concurrent.futures.as_completed(futures):
-                    transcribed_data.append(future.result())
+                results_iterator = executor.map(transcribe_in_parallel, messages_to_process)
+                transcribed_data = list(results_iterator) # Преобразуем генератор в список
 
-
-            # Показываем транскрипцию пользователю ---
-            # Собираем весь распознанный текст в одно сообщение
             full_transcription_text = ""
             for item in transcribed_data:
                 # Добавляем имя файла, если файлов больше одного
@@ -3596,17 +3592,13 @@ def download_image_from_message(message: telebot.types.Message) -> bytes:
 def download_image_from_messages(MESSAGES: list) -> list:
     '''Download images from message list'''
     try:
-        images = []
-
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = [executor.submit(download_image_from_message, message) for message in MESSAGES]
-            for f in concurrent.futures.as_completed(results):
-                images.append(f.result())
-
+            # executor.map сохранит порядок результатов
+            images = list(executor.map(download_image_from_message, MESSAGES))
         return images
     except Exception as unexpected_error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:download_image_from_messages:{unexpected_error}\n\n{traceback_error}')
+        # traceback_error = traceback.format_exc() # Раскомментируйте, если нужны детали ошибки в логе
+        # my_log.log2(f'tb:download_image_from_messages:{unexpected_error}\n\n{traceback_error}')
         return []
 
 

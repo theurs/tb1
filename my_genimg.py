@@ -462,6 +462,7 @@ def gen_images(prompt: str, moderation_flag: bool = False,
         async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
 
         async_result10 = pool.apply_async(gemini_flash, (prompt, 1024, 1024, 2, negative, user_id))
+        async_result_pollinations = pool.apply_async(pollinations_gen, (prompt,))
 
         result = (async_result2.get() or []) + \
                 (async_result3.get() or []) + \

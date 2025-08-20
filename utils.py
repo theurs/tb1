@@ -26,7 +26,7 @@ import threading
 import time
 import traceback
 import platform as platform_module
-from typing import Any, Callable, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from cachetools import TTLCache
 from functools import wraps
 
@@ -2120,25 +2120,40 @@ def get_image_size(data: bytes) -> tuple[int, int]:
         return 0, 0
 
 
-def string_to_dict(input_string: str):
+def string_to_dict(input_string: str) -> Optional[Dict[str, Any]]:
     """
-    Преобразует строку в словарь.
+    Safely repairs and decodes a JSON string into a dictionary.
+
+    It attempts to find and parse a JSON object from the input string,
+    even if it's malformed or surrounded by other text.
 
     Args:
-        input_string: Строка, которую нужно преобразовать в словарь.
+        input_string: The string potentially containing a JSON object.
 
     Returns:
-        Словарь, полученный из строки, или None, если возникли ошибки.
+        A dictionary if a valid JSON object is found, otherwise None.
     """
+    if not isinstance(input_string, str):
+        return None
+
     try:
+        # Use json_repair to fix and load the string.
         decoded_object = json_repair.loads(input_string)
-        if decoded_object:
+
+        # Ensure the final object is a dictionary, as the function name implies.
+        if isinstance(decoded_object, dict):
             return decoded_object
+
+        # Log if a valid JSON was found, but it wasn't the expected type.
+        my_log.log2(f'utils:string_to_dict: Repaired JSON is not a dict ({type(decoded_object)}).')
+        return None
+
     except Exception as error:
+        # Log parsing failures for debugging.
         my_log.log2(f'utils:string_to_dict: {error}')
-    if input_string:
-        my_log.log2(f'utils:string_to_dict: {input_string}')
-    return None
+        if input_string:
+            my_log.log2(f'utils:string_to_dict: Failed on input: {input_string[:200]}')
+        return None
 
 
 def extract_frames_as_bytes(input_bytes: bytes) -> bytes | None:
@@ -2826,6 +2841,9 @@ def edit_image_detect(text: str, lang: str, tr: Callable) -> bool:
 
 if __name__ == '__main__':
     pass
+
+    # print(string_to_dict("Конечно, вот ваш JSON:\n\n```json\n{\"reprompt\": \"...\"}\n```"))
+
 
     t = r'''
 Окей, понял тебя. Каждую строку отдельно, вот так:

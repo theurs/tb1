@@ -25,7 +25,7 @@ from pydub.silence import split_on_silence
 
 
 import cfg
-import my_gemini
+import my_gemini3
 import my_gemini_general
 import my_groq
 import my_log
@@ -179,7 +179,7 @@ def stt_google_pydub(audio_bytes: bytes|str,
             ordered_results = [results[i] for i in sorted(results)]
             result = ' '.join(ordered_results)
 
-            result2 = my_gemini.retranscribe(result)
+            result2 = my_gemini3.retranscribe(result)
             if not result2 or detect_repetitiveness(result2):
                 return result
             else:

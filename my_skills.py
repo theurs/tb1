@@ -40,7 +40,7 @@ import cfg
 import my_cohere
 import my_db
 import my_google
-import my_gemini
+import my_gemini3
 import my_gemini_general
 import my_gemini_google
 import my_groq
@@ -530,9 +530,9 @@ Saved text: {saved_file}
     temperature = my_db.get_user_property(user_id, 'temperature') or 1
     role = my_db.get_user_property(user_id, 'role') or ''
 
-    result = my_gemini.ai(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini25_flash_model, system=role)
+    result = my_gemini3.chat(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, model = cfg.gemini25_flash_model, system=role, do_not_update_history=True, empty_memory=True, chat_id=user_id)
     if not result:
-        result = my_gemini.ai(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
+        result = my_gemini3.chat(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, model = cfg.gemini_flash_model, system=role, do_not_update_history=True, empty_memory=True, chat_id=user_id)
     if not result:
         result = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST], system=role)
     if not result:
@@ -559,41 +559,46 @@ def query_user_logs(query: str, user_id: str) -> str:
     Returns:
         str
     '''
-    user_id = my_skills_general.restore_id(user_id)
+    try:
+        user_id = my_skills_general.restore_id(user_id)
 
-    if user_id not in my_skills_storage.STORAGE_ALLOWED_IDS or my_skills_storage.STORAGE_ALLOWED_IDS[user_id] != user_id:
-        my_log.log_gemini_skills_query_file(f'/query_user_log "{query}" "{user_id}" - Unauthorized access detected.')
-        return 'Unauthorized access detected. Did you send the correct user id?'
+        if user_id not in my_skills_storage.STORAGE_ALLOWED_IDS or my_skills_storage.STORAGE_ALLOWED_IDS[user_id] != user_id:
+            my_log.log_gemini_skills_query_file(f'/query_user_log "{query}" "{user_id}" - Unauthorized access detected.')
+            return 'Unauthorized access detected. Did you send the correct user id?'
 
-    my_log.log_gemini_skills_query_logs(f'/query_user_log "{query}" "{user_id}"')
+        my_log.log_gemini_skills_query_logs(f'/query_user_log "{query}" "{user_id}"')
 
-    logs = my_log.get_user_logs(user_id)
+        logs = my_log.get_user_logs(user_id)
 
-    q = f'''Answer the user`s query using saved text(chat log) and your own mind, answer plain text with fancy markdown formatting, do not use code block for answer.
+        q = f'''Answer the user`s query using saved text(chat log) and your own mind, answer plain text with fancy markdown formatting, do not use code block for answer.
 
 User query: {query}
 
 Saved text: {logs}
 '''
 
-    temperature = my_db.get_user_property(user_id, 'temperature') or 1
-    role = my_db.get_user_property(user_id, 'role') or ''
+        temperature = my_db.get_user_property(user_id, 'temperature') or 1
+        role = my_db.get_user_property(user_id, 'role') or ''
 
-    result = my_gemini.ai(q[-my_gemini_general.MAX_SUM_REQUEST:], temperature=temperature, tokens_limit=8000, model = cfg.gemini25_flash_model, system=role)
-    if not result:
-        result = my_gemini.ai(q[-my_gemini_general.MAX_SUM_REQUEST:], temperature=temperature, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
-    if not result:
-        result = my_cohere.ai(q[-my_cohere.MAX_SUM_REQUEST:], system=role)
-    if not result:
-        result = my_mistral.ai(q[-my_mistral.MAX_SUM_REQUEST:], system=role)
-    if not result:
-        result = my_groq.ai(q[-my_groq.MAX_SUM_REQUEST:], temperature=temperature, max_tokens_ = 4000, system=role)
+        result = my_gemini3.chat(q[-my_gemini_general.MAX_SUM_REQUEST:], temperature=temperature, model = cfg.gemini25_flash_model, system=role)
+        if not result:
+            result = my_gemini3.chat(q[-my_gemini_general.MAX_SUM_REQUEST:], temperature=temperature, model = cfg.gemini_flash_model, system=role)
+        if not result:
+            result = my_cohere.ai(q[-my_cohere.MAX_SUM_REQUEST:], system=role)
+        if not result:
+            result = my_mistral.ai(q[-my_mistral.MAX_SUM_REQUEST:], system=role)
+        if not result:
+            result = my_groq.ai(q[-my_groq.MAX_SUM_REQUEST:], temperature=temperature, max_tokens_ = 4000, system=role)
 
-    if result:
-        my_log.log_gemini_skills_query_logs(result)
-        return result
-    else:
-        return 'No result was given.'
+        if result:
+            my_log.log_gemini_skills_query_logs(result)
+            return result
+        else:
+            return 'No result was given.'
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills_query_logs(f'/query_user_log "{query}" "{user_id}" - Exception: {e}\n\n{traceback_error}')
+        return f"FAIL: An unexpected error occurred: {e}"
 
 
 @cachetools.func.ttl_cache(maxsize=5, ttl=10*60)

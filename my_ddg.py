@@ -10,7 +10,7 @@ from PIL import Image
 from duckduckgo_search import DDGS
 
 import cfg
-import my_gemini
+import my_gemini3
 import my_log
 import utils
 
@@ -90,7 +90,7 @@ def check_image_against_query(image) -> bool:
 Decided if it is relevant to the query.
 Answer supershot, your answer should be "yes" or "no" or "other".
 '''
-    result = my_gemini.img2txt(image[0], query)
+    result = my_gemini3.img2txt(image[0], query)
     return True if 'yes' in result.lower() else False
 
 

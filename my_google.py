@@ -8,7 +8,7 @@ import googlesearch
 
 import my_log
 import my_cohere
-import my_gemini
+import my_gemini3
 import my_gemini_general
 import my_gemini_google
 import my_ddg
@@ -147,7 +147,7 @@ Search results:
     r = ''
 
     if not r:
-        r =  my_gemini.sum_big_text(q[:my_gemini_general.MAX_SUM_REQUEST], query, role=role)
+        r =  my_gemini3.sum_big_text(q[:my_gemini_general.MAX_SUM_REQUEST], query, role=role)
         if r:
             r += '\n\n--\n[Gemini Flash]'
 

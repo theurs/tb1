@@ -20,7 +20,6 @@ from pptx import Presentation
 
 
 import my_log
-# import my_gemini
 import my_pdf
 import utils
 

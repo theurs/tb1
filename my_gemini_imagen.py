@@ -9,7 +9,7 @@ from google import genai
 from google.genai import types
 from PIL import Image
 
-from my_gemini import get_next_key, load_users_keys
+from my_gemini_general import get_next_key, load_users_keys
 from my_log import log_gemini
 
 

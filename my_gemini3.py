@@ -41,6 +41,10 @@ import my_skills_storage
 import utils
 
 
+# не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
+MAX_REQUEST = 40000 # 20000
+
+
 # системная инструкция для чат бота
 SYSTEM_ = my_skills_general.SYSTEM_
 
@@ -514,6 +518,7 @@ def chat(
     do_not_update_history: bool = False,
     key__: str = '',
     telegram_user_name: str = '',
+    empty_memory: bool = False
     ) -> str:
     """Interacts with a generative AI model (presumably Gemini) to process a user query.
 
@@ -537,6 +542,7 @@ def chat(
         do_not_update_history: A boolean flag indicating whether to update the conversation history.
         key__: The API key to use for the request.
         telegram_user_name: The user's Telegram username.
+        empty_memory: A boolean flag indicating whether to clear the conversation history.
 
     Returns:
         A string containing the model's response, or an empty string if an error occurs or the response is empty.
@@ -656,6 +662,11 @@ def chat(
         if 'gemma-3-27b-it' in model:
             system_ = None
 
+
+        if empty_memory:
+            mem = []
+
+
         for _ in range(3):
             response = None
 
@@ -767,7 +778,6 @@ def chat(
                             new_mem.append(mem[i])
                             i += 1
 
-                    # my_log.log_gemini(f'my_gemini:chat2:2:3__: mem: {mem}\n\nnew_mem: {new_mem}')
                     mem = new_mem # Переприсваиваем
                 else:
                     raise error
@@ -872,9 +882,9 @@ def chat(
             elif 'User location is not supported for the API use.' in str(error):
                 my_log.log_gemini(f'my_gemini3:chat:unknown_error:3: {error}')
             elif 'Request contains an invalid argument.' in str(error):
-                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: {error}')
+                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}] {error}')
             elif 'Server disconnected without sending a response' or 'Попытка установить соединение была безуспешной' in str(error):
-                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: {error}')
+                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}] {error}')
             else:
                 my_log.log_gemini(f'my_gemini5:chat:unknown_error:4: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}\nMem: {str(mem)[:1000]}')
         return ''
@@ -2208,6 +2218,105 @@ Your final output is a single block of clean, corrected, and well-formatted Mark
 
     my_log.log_gemini('my_gemini3:doc2txt: Failed after all retries or timeout.')
     return ''
+
+
+def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bool, bool] | None:
+    """
+    Executes a pre-formatted prompt to get a detailed image generation prompt.
+
+    It takes a fully-formed query string, sends it to the model, and parses the
+    expected JSON response.
+
+    Args:
+        prompt: A complete, pre-formatted query string containing all instructions for the model.
+        chat_id: The user's chat ID for logging and context.
+
+    Returns:
+        A tuple containing (positive_prompt, negative_prompt, moderation_sexual, moderation_hate)
+        if successful, otherwise None.
+    """
+    result = chat(
+        query=prompt,
+        chat_id=chat_id,
+        temperature=1.5,
+        model=cfg.gemini25_flash_model,
+        json_output=True,
+        do_not_update_history=True,
+        empty_memory=True
+    )
+
+    if not result:
+        return None
+
+    result_dict = utils.string_to_dict(result)
+    if not result_dict:
+        my_log.log_gemini(f'my_gemini3:get_reprompt: Failed to parse JSON response for prompt: "{prompt[:150]}..."')
+        return None
+
+    # Extract values based on the keys defined in the external prompt's JSON schema
+    reprompt = result_dict.get('reprompt', '')
+    negative_prompt = result_dict.get('negative_reprompt', '')
+    moderation_sexual = result_dict.get('moderation_sexual', False)
+    moderation_hate = result_dict.get('moderation_hate', False)
+
+    if moderation_sexual or moderation_hate:
+        my_log.log_reprompt_moderation(
+            f'MODERATION (my_gemini3) triggered: Sexual={moderation_sexual}, Hate={moderation_hate}. '
+            f'Prompt: "{prompt}..."'
+        )
+
+    # Return the values if the essential parts are present
+    if reprompt and negative_prompt:
+        return reprompt, negative_prompt, moderation_sexual, moderation_hate
+
+    return None
+
+
+@utils.memory_safe_ttl_cache(maxsize=100, ttl=300)
+def sum_big_text(
+    text:str,
+    query: str,
+    temperature: float = 1,
+    role: str = '',
+    model1: str = '',
+    model2: str = '',
+    chat_id: str = '',
+) -> str:
+    """
+    Generates a response from an AI model based on a given text,
+    query, and temperature.
+
+    Args:
+        text (str): The complete text to be used as input.
+        query (str): The query to be used for generating the response.
+        temperature (float, optional): The temperature parameter for controlling the randomness of the response. Defaults to 0.1.
+        role (str, optional): System prompt. Defaults to ''.
+        model (str, optional): The name of the model to be used for generating the response.
+        model2 (str, optional): The name of the fallback model to be used for generating the response.
+        chat_id (str, optional): The user's chat ID for logging and context.
+
+    Returns:
+        str: The generated response from the AI model.
+    """
+    if not model1:
+        model1 = cfg.gemini25_flash_model
+    if not model2:
+        model2 = cfg.gemini25_flash_model_fallback
+    query = f'''{query}\n\n{text[:my_gemini_general.MAX_SUM_REQUEST]}'''
+    r = chat(query, temperature=temperature, model=model1, system=role, chat_id=chat_id, do_not_update_history=True, empty_memory=True)
+    if not r:
+        r = chat(query, temperature=temperature, model=model2, system=role, chat_id=chat_id, do_not_update_history=True, empty_memory=True)
+    return r
+
+
+def retranscribe(text: str, prompt: str = '', chat_id: str = '') -> str:
+    '''исправить текст после транскрипции выполненной гуглом'''
+    if prompt:
+        query = f'{prompt}:\n\n{text}'
+    else:
+        query = f'Fix errors, make a fine text of the transcription, keep original language:\n\n{text}'
+    result = chat(query, temperature=0.1, model=cfg.gemini25_flash_model, chat_id=chat_id, do_not_update_history=True, empty_memory=True)
+    return result
 
 
 if __name__ == "__main__":

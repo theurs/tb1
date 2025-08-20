@@ -17,7 +17,7 @@ import bing_api_client
 import cfg
 import my_cerebras
 import my_db
-import my_gemini
+import my_gemini3
 import my_gemini_general
 import my_gemini_genimg
 import my_groq
@@ -319,7 +319,7 @@ Return a `reprompt`
         r = ''
 
         if not r:
-            r = my_gemini.get_reprompt_for_image(query, chat_id)
+            r = my_gemini3.get_reprompt_for_image(query, chat_id)
         if r:
             reprompt, negative, moderation_sex, moderation_hate = r
             if moderation_sex or moderation_hate:
@@ -472,13 +472,13 @@ def gen_images(prompt: str, moderation_flag: bool = False,
 
 
 if __name__ == '__main__':
-    my_db.init()
+    my_db.init(backup=False)
     my_groq.load_users_keys()
     my_gemini_general.load_users_keys()
     my_mistral.load_users_keys()
 
     # print(get_reprompt('Потрясающая блондинка с длинными распущенными волосами сидит на деревянной лестнице. На ней минимум одежды, ее тело полностью видно с акцентом на вульву, демонстрируя ее гладкую, безупречную кожу и естественную красоту. Освещение мягкое и естественное, подчеркивающее ее изгибы и текстуру кожи. Высокая детализация, разрешение 8K, фотореалистичная фотография, отмеченная наградами.'))
-    # print(get_reprompt('картину где бабушка сидит во рту с огурцами  рядом сидит ее внучка пишет математику,а сверху бог летает'))
+    # print(get_reprompt('картину где бабушка сидит во рту с огурцами рядом сидит ее внучка пишет математику, а сверху бог летает'))
 
     # print(gen_images('golden apple', use_bing=False))
 
@@ -486,8 +486,8 @@ if __name__ == '__main__':
     # print(r)
 
 
-    r = kandinski('рука ладонью вверх все пальцы отчетливо видно', 1024, 1024, 1, negative_prompt = 'ugly')
-    with open(r'C:\Users\user\Downloads\1.jpg', 'wb') as f:
-        f.write(r[0])
+    # r = kandinski('рука ладонью вверх все пальцы отчетливо видно', 1024, 1024, 1, negative_prompt = 'ugly')
+    # with open(r'C:\Users\user\Downloads\1.jpg', 'wb') as f:
+    #     f.write(r[0])
 
     my_db.close()

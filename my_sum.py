@@ -25,7 +25,7 @@ import webvtt
 
 import cfg
 import my_cohere
-import my_gemini
+import my_gemini3
 import my_gemini_general
 import my_gemini_ytb
 import my_db
@@ -695,7 +695,7 @@ Text:
         try:
             if query:
                 qq = query
-            r = my_gemini.sum_big_text(text[:my_gemini_general.MAX_SUM_REQUEST], qq, role=role)
+            r = my_gemini3.sum_big_text(text[:my_gemini_general.MAX_SUM_REQUEST], qq, role=role)
             if r:
                 result = f'{r}\n\n--\nGoogle Gemini [{len(text[:my_gemini_general.MAX_SUM_REQUEST])}]'
         except Exception as error:
@@ -706,7 +706,7 @@ Text:
         try:
             if query:
                 qq = query
-            r = my_gemini.sum_big_text(text[:my_gemini_general.MAX_SUM_REQUEST], qq, role=role)
+            r = my_gemini3.sum_big_text(text[:my_gemini_general.MAX_SUM_REQUEST], qq, role=role)
             if r:
                 result = f'{r}\n\n--\nGemini Flash [{len(text[:my_gemini_general.MAX_SUM_REQUEST])}]'
         except Exception as error:

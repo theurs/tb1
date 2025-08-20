@@ -39,7 +39,6 @@ import my_ddg
 import my_doc_translate
 import my_github
 import my_google
-import my_gemini
 # import my_gemini_embedding
 import my_gemini_general
 import my_gemini3
@@ -7391,9 +7390,9 @@ def ask_file(message: telebot.types.Message):
 {tr('Saved text:', lang)} {my_db.get_user_property(chat_id_full, 'saved_file')}
 '''
                 temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1
-                result = my_gemini.ai(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini25_flash_model, system=role)
+                result = my_gemini3.chat(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, model = cfg.gemini25_flash_model, system=role, do_not_update_history=True, empty_memory=True, chat_id=chat_id_full)
                 if not result:
-                    result = my_gemini.ai(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, tokens_limit=8000, model = cfg.gemini_flash_model, system=role)
+                    result = my_gemini3.chat(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, model = cfg.gemini_flash_model, system=role, do_not_update_history=True, empty_memory=True, chat_id=chat_id_full)
                 if not result:
                     result = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST], system=role)
                 if not result:
@@ -8122,7 +8121,7 @@ def reload_module(message: telebot.types.Message):
             importlib.reload(module)
 
             # реинициализация модуля
-            if module_name in ('my_gemini', 'my_gemini3'):
+            if module_name == 'my_gemini3':
                 my_gemini_general.load_users_keys()
                 my_skills.init()
             elif module_name == 'my_groq':
@@ -10141,8 +10140,8 @@ def do_task(message, custom_prompt: str = ''):
 
                 # если активирован режим общения с Gemini
                 if chat_mode_.startswith(('gemini', 'gemma')):
-                    if len(msg) > my_gemini.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_gemini.MAX_REQUEST}')
+                    if len(msg) > my_gemini3.MAX_REQUEST:
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Gemini, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_gemini3.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):

@@ -138,7 +138,8 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
                     else:
                         pass
             except Exception as e:
-                my_log.log_gemini(f'my_gemini_genimg: [error genimg] {str(e)}')
+                traceback_error = traceback.format_exc()
+                my_log.log_gemini(f'my_gemini_genimg: [error genimg] {str(e)}\n{prompt}\n{traceback_error}')
                 if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e) or 'SSL: UNEXPECTED_EOF_WHILE_READING' in str(e):
                     time.sleep(20)
                     continue

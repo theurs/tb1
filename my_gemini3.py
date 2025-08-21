@@ -617,8 +617,7 @@ def chat(
             mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
         else:
             mem = []
-        if do_not_update_history:
-            mem = []
+
 
         # Удаляем старые картинки, остается только последняя если она не была дольше чем 5 запросов назад
         remove_old_pics(mem)
@@ -863,9 +862,9 @@ def chat(
             history = chat.get_history()
             if history:
                 history = history[-max_chat_lines*2:]
-                my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(history))
                 if chat_id:
                     if not do_not_update_history:
+                        my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(history))
                         my_db.add_msg(chat_id, model)
 
         return resp.strip()

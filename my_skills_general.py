@@ -692,31 +692,66 @@ def edit_image(user_id: str) -> str:
     return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Answer to user codeword <<EDIT IMAGE>> to indicate you understood this query was a request to edit image, dont add any other text."
 
 
-def text_to_image(prompt: str) -> str:
+def text_to_image(user_id: str) -> str:
     '''
-    Generate and send image message from text to user.
-    Use it only if asked by user to generate image from text.
-    Avoid using text_to_image for precise mathematical expressions, structured diagrams,
-    or data-driven charts; instead, use save_diagram_to_image or save_chart_and_graphs_to_image
-    for those specific tasks. Use save_html_to_image for drawing mostly textual content.
+    Generate image from text.
 
     Args:
-        prompt: str - text to generate image from
-
+        user_id: str - telegram user id
     '''
-    my_log.log_gemini_skills_img(f'/img "{prompt}"')
-    return (
-        "The function itself does not return an image. It returns a string containing "
-        "instructions for the assistant. The assistant must send a new message, starting "
-        "with the /img command, followed by a space, and then the prompt provided, up to "
-        "100 words. This specific message format will be automatically recognized by an "
-        "external system as a request to generate and send an image to the user. "
-        "You can also use the commands /flux <prompt> and /gem <1-4> <prompt> and /bing <prompt> for image generation. "
-        "Flux draws one picture using the flux-dev model, gem draws several pictures using the Gemini model, "
-        "bing draws 1-4 pictures using the DALL·E 3 model. /img draws 4 pictures with Bing + 2 with Gemini, "
-        "and if none could be drawn, it tries to draw one with Flux. Gemini is the only one that "
-        "can properly draw text and celebrities, Flux is the most uninhibited and accurate. Bing is the best but most restricted."
-    )
+
+    user_id = restore_id(user_id)
+    my_log.log_gemini_skills_img(f'/text_to_image {user_id}')
+    return "The function itself does not return an created images. It returns a string containing instructions for the assistant. Answer to user codeword <<CREATE IMAGE>> to indicate you understood this query was a request to create image, dont add any other text."
+
+
+    # my_log.log_gemini_skills_img(f'/text_to_image')
+    # return (
+    #     "The function itself does not return an image. It returns a string containing\n"
+    #     "instructions for the assistant. The assistant must answer to user with special format string containing only 2 parts: command and image prompt.\n"
+    #     "No any other in asnwer but command followed by image prompt.\n\n"
+    #     "**Good example:** /img draw an apple on the big tree.\n"
+    #     "**Good example:** /gem 2 draw an apple on the big tree.\n"
+    #     "**Bad example:** Okey here is your image: /img draw an apple on the big tree. - **there are a some words before command, it will be ignored by a drawing system.**\n"
+    #     "**Bad example:** I was send you an image, it will be ready in a few seconds.- **there are no command and promt, it will be ignored by a drawing system.**\n\n"
+    #     "**Bad example:** Im start drawing.- **there are no command and promt, it will be ignored by a drawing system.**\n\n"
+    #     "/img command, followed by a space, and then the prompt provided, up to\n"
+    #     "100 words. This specific message format will be automatically recognized by an\n"
+    #     "external system as a request to generate and send an image to the user.\n"
+    #     "You can also use the commands /flux <prompt> and /gem <1-4> <prompt> and /bing <prompt> for image generation.\n"
+    #     "Flux draws one picture using the flux-dev model, gem draws several pictures using the Gemini model,\n"
+    #     "bing draws 1-4 pictures using the DALL·E 3 model. /img draws 4 pictures with Bing + 2 with Gemini,\n"
+    #     "and if none could be drawn, it tries to draw one with Flux. Gemini is the only one that\n"
+    #     "can properly draw text and celebrities, Flux is the most uninhibited and accurate. Bing is the best but most restricted."
+    # )
+
+#     return('''**INSTRUCTION FOR IMAGE GENERATION CALLS**
+
+# **Rule #1:** When an image creation request is made, your SOLE and MANDATORY response MUST be in the `command prompt` format.
+
+# **Format:**
+# `/img <prompt text>`
+# `/gem <1-4> <prompt text>`
+# `/flux <prompt text>`
+# `/bing <prompt text>`
+
+# **FORBIDDEN:**
+# - Adding any text before or after the command.
+# - Including explanations, apologies, or confirmations.
+# - Using any other response format.
+
+# **Examples:**
+# - **User request:** Draw a red ball.
+# - **YOUR RESPONSE:** `/img Draw a red ball.`
+
+# - **User request:** Make 2 images of a cat in a hat using gemini.
+# - **YOUR RESPONSE:** `/gem 2 cat in a hat.`
+
+# - **User request:** I want an image from flux.
+# - **YOUR RESPONSE:** ask for a prompt
+
+# **Any deviation from this format will result in failure.** Your task is to generate ONLY the command.
+# ''')
 
 
 def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:

@@ -9458,7 +9458,10 @@ def detect_img_answer(message: telebot.types.Message, answer: str) -> bool:
         elif msg.startswith('```') and msg.endswith('```'):
             msg = msg[3:-3].strip()
             answer = answer[3:-3].strip()
-            
+
+        if 'create image' in msg and len(msg) < 20:
+            result = True
+            reprompt = message.text
 
         if msg.startswith('The bot successfully generated images on the external services'):
             result = True
@@ -9491,6 +9494,94 @@ def detect_img_answer(message: telebot.types.Message, answer: str) -> bool:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:detect_img_answer: {unknown}\n{traceback_error}')
         return False
+
+
+def edit_image_detect(text: str, lang: str, chat_id_full: str, message: telebot.types.Message, hidden_text: str, gemini_mem: bool = False) -> bool:
+    '''
+    Пытается определить есть ли в строке маркер EDIT IMAGE
+    '''
+    result = False
+
+    try:
+        if text and text.strip():
+            text = text.strip()
+        else:
+            result = False
+        if "EDIT IMAGE" in text and len(text) < 30:
+            result = True
+        elif text.lower() == 'edit_image':
+            result = True
+        elif "EDIT IMAGE" in text and len(text) > 30 and 'edit_image(' in text:
+            result = True
+        elif text == tr('Changed image successfully.', lang):
+            result = True
+        elif text in ('Изображение создается.',):
+            result = True
+        # elif text.startswith(('<<GENERATE IMAGE>>','<<CREATE IMAGE>>')):
+        #     result = True
+        else:
+            result = False
+
+        if result:
+            if chat_id_full in WHO_ANSWERED:
+                del WHO_ANSWERED[chat_id_full]
+            # отменяем ответ
+            if gemini_mem:
+                my_gemini3.undo(chat_id_full)
+            else:
+                my_openrouter.undo(chat_id_full)
+
+            last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
+            query = message.text
+            r = ''
+            if not last_image:
+                undo_cmd(message, show_message=False)
+                message.text = f'/img {message.text}'
+                image_gen(message)
+            else:
+                if gemini_mem:
+                    r = img2img(
+                        text=last_image,
+                        lang=lang,
+                        chat_id_full=chat_id_full,
+                        query=query,
+                        model=gmodel,
+                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                        system_message=hidden_text,
+                    )
+                else:
+                    r = img2img(
+                        text=last_image,
+                        lang=lang,
+                        chat_id_full=chat_id_full,
+                        query=query,
+                        # model=gmodel,
+                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                        system_message=hidden_text,
+                    )
+            if r and isinstance(r, bytes):
+                add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
+                m = send_photo(
+                    message,
+                    message.chat.id,
+                    r,
+                    disable_notification=True,
+                    reply_to_message_id=message.message_id,
+                    reply_markup=get_keyboard('hide', message),
+                )
+                log_message(m)
+            else:
+                add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
+                bot_reply_tr(message, 'Failed to edit image.')
+
+
+    except Exception as e:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:edit_image_detect: {e}\n{traceback_error}')
+        return False
+    finally:
+        return result
+
 
 
 @bot.message_handler(content_types = ['photo', 'sticker', 'animation'], func=authorized)
@@ -10268,42 +10359,9 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
 
-                            if utils.edit_image_detect(answer, lang, tr):
-                                if chat_id_full in WHO_ANSWERED:
-                                    del WHO_ANSWERED[chat_id_full]
-                                # отменяем ответ
-                                my_gemini3.undo(chat_id_full)
-
-                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
-                                query = message.text
-                                if not last_image:
-                                    r = ''
-                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
-                                else:
-                                    r = img2img(
-                                        text=last_image,
-                                        lang=lang,
-                                        chat_id_full=chat_id_full,
-                                        query=query,
-                                        model=gmodel,
-                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                        system_message=hidden_text,
-                                    )
-                                if r and isinstance(r, bytes):
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-                                    m = send_photo(
-                                        message,
-                                        message.chat.id,
-                                        r,
-                                        disable_notification=True,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message),
-                                    )
-                                    log_message(m)
-                                else:
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-                                    bot_reply_tr(message, 'Failed to edit image.')
+                            if edit_image_detect(answer, lang, chat_id_full, message, hidden_text, gemini_mem = True):
                                 return
+
 
                             flag_gpt_help = False
                             if not answer:
@@ -10436,43 +10494,8 @@ def do_task(message, custom_prompt: str = ''):
                             if detect_img_answer(message, answer):
                                 return
 
-                            if utils.edit_image_detect(answer, lang, tr):
-                                if chat_id_full in WHO_ANSWERED:
-                                    del WHO_ANSWERED[chat_id_full]
-                                # отменяем ответ
-                                my_mistral.undo(chat_id_full)
-
-                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
-                                query = message.text
-                                if not last_image:
-                                    r = ''
-                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
-                                else:
-                                    r = img2img(
-                                        text=last_image,
-                                        lang=lang,
-                                        chat_id_full=chat_id_full,
-                                        query=query,
-                                        # model=gmodel,
-                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                        system_message=hidden_text,
-                                    )
-                                if r and isinstance(r, bytes):
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-                                    m = send_photo(
-                                        message,
-                                        message.chat.id,
-                                        r,
-                                        disable_notification=True,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message),
-                                    )
-                                    log_message(m)
-                                else:
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-                                    bot_reply_tr(message, 'Failed to edit image.')
+                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
                                 return
-
 
                             # отправляем файлы если они были сгенерированы в скилах
                             send_all_files_from_storage(message, chat_id_full)
@@ -10532,41 +10555,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
 
-                            if utils.edit_image_detect(answer, lang, tr):
-                                if chat_id_full in WHO_ANSWERED:
-                                    del WHO_ANSWERED[chat_id_full]
-                                # отменяем ответ
-                                my_mistral.undo(chat_id_full)
-
-                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
-                                query = message.text
-                                if not last_image:
-                                    r = ''
-                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
-                                else:
-                                    r = img2img(
-                                        text=last_image,
-                                        lang=lang,
-                                        chat_id_full=chat_id_full,
-                                        query=query,
-                                        # model=gmodel,
-                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                        system_message=hidden_text,
-                                    )
-                                if r and isinstance(r, bytes):
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-                                    m = send_photo(
-                                        message,
-                                        message.chat.id,
-                                        r,
-                                        disable_notification=True,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message),
-                                    )
-                                    log_message(m)
-                                else:
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-                                    bot_reply_tr(message, 'Failed to edit image.')
+                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
                                 return
 
 
@@ -10701,42 +10690,10 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
-                            if utils.edit_image_detect(answer, lang, tr):
-                                if chat_id_full in WHO_ANSWERED:
-                                    del WHO_ANSWERED[chat_id_full]
-                                # отменяем ответ
-                                my_cerebras.undo(chat_id_full)
 
-                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
-                                query = message.text
-                                if not last_image:
-                                    r = ''
-                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
-                                else:
-                                    r = img2img(
-                                        text=last_image,
-                                        lang=lang,
-                                        chat_id_full=chat_id_full,
-                                        query=query,
-                                        # model=gmodel,
-                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                        system_message=hidden_text,
-                                    )
-                                if r and isinstance(r, bytes):
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-                                    m = send_photo(
-                                        message,
-                                        message.chat.id,
-                                        r,
-                                        disable_notification=True,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message),
-                                    )
-                                    log_message(m)
-                                else:
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-                                    bot_reply_tr(message, 'Failed to edit image.')
+                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
                                 return
+
 
                             if detect_img_answer(message, answer):
                                 return
@@ -10795,42 +10752,10 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
-                            if utils.edit_image_detect(answer, lang, tr):
-                                if chat_id_full in WHO_ANSWERED:
-                                    del WHO_ANSWERED[chat_id_full]
-                                # отменяем ответ
-                                my_cerebras.undo(chat_id_full)
 
-                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
-                                query = message.text
-                                if not last_image:
-                                    r = ''
-                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
-                                else:
-                                    r = img2img(
-                                        text=last_image,
-                                        lang=lang,
-                                        chat_id_full=chat_id_full,
-                                        query=query,
-                                        # model=gmodel,
-                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                        system_message=hidden_text,
-                                    )
-                                if r and isinstance(r, bytes):
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-                                    m = send_photo(
-                                        message,
-                                        message.chat.id,
-                                        r,
-                                        disable_notification=True,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message),
-                                    )
-                                    log_message(m)
-                                else:
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-                                    bot_reply_tr(message, 'Failed to edit image.')
+                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
                                 return
+
 
                             if detect_img_answer(message, answer):
                                 return
@@ -10889,42 +10814,10 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
-                            if utils.edit_image_detect(answer, lang, tr):
-                                if chat_id_full in WHO_ANSWERED:
-                                    del WHO_ANSWERED[chat_id_full]
-                                # отменяем ответ
-                                my_cerebras.undo(chat_id_full)
 
-                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
-                                query = message.text
-                                if not last_image:
-                                    r = ''
-                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
-                                else:
-                                    r = img2img(
-                                        text=last_image,
-                                        lang=lang,
-                                        chat_id_full=chat_id_full,
-                                        query=query,
-                                        # model=gmodel,
-                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                        system_message=hidden_text,
-                                    )
-                                if r and isinstance(r, bytes):
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-                                    m = send_photo(
-                                        message,
-                                        message.chat.id,
-                                        r,
-                                        disable_notification=True,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message),
-                                    )
-                                    log_message(m)
-                                else:
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-                                    bot_reply_tr(message, 'Failed to edit image.')
+                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
                                 return
+
 
                             if detect_img_answer(message, answer):
                                 return
@@ -11287,41 +11180,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
 
-                            if utils.edit_image_detect(answer, lang, tr):
-                                if chat_id_full in WHO_ANSWERED:
-                                    del WHO_ANSWERED[chat_id_full]
-                                # отменяем ответ
-                                my_cerebras.undo(chat_id_full)
-
-                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
-                                query = message.text
-                                if not last_image:
-                                    r = ''
-                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
-                                else:
-                                    r = img2img(
-                                        text=last_image,
-                                        lang=lang,
-                                        chat_id_full=chat_id_full,
-                                        query=query,
-                                        # model=gmodel,
-                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                        system_message=hidden_text,
-                                    )
-                                if r and isinstance(r, bytes):
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-                                    m = send_photo(
-                                        message,
-                                        message.chat.id,
-                                        r,
-                                        disable_notification=True,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message),
-                                    )
-                                    log_message(m)
-                                else:
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-                                    bot_reply_tr(message, 'Failed to edit image.')
+                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
                                 return
 
 
@@ -11394,41 +11253,8 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = 'Command A'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
-                            if utils.edit_image_detect(answer, lang, tr):
-                                if chat_id_full in WHO_ANSWERED:
-                                    del WHO_ANSWERED[chat_id_full]
-                                # отменяем ответ
-                                my_cohere.undo(chat_id_full)
 
-                                last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
-                                query = message.text
-                                if not last_image:
-                                    r = ''
-                                    bot_reply_tr(message, 'There is no uncaptioned image to edit.')
-                                else:
-                                    r = img2img(
-                                        text=last_image,
-                                        lang=lang,
-                                        chat_id_full=chat_id_full,
-                                        query=query,
-                                        # model=gmodel,
-                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
-                                        system_message=hidden_text,
-                                    )
-                                if r and isinstance(r, bytes):
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-                                    m = send_photo(
-                                        message,
-                                        message.chat.id,
-                                        r,
-                                        disable_notification=True,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message),
-                                    )
-                                    log_message(m)
-                                else:
-                                    add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-                                    bot_reply_tr(message, 'Failed to edit image.')
+                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
                                 return
 
 

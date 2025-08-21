@@ -413,12 +413,14 @@ def flux_nebius_gen1(prompt: str, negative_prompt: str, model: str = None):
         return []
 
 
-def gen_images(prompt: str, moderation_flag: bool = False,
-               user_id: str = '',
-               conversation_history: str = '',
-               use_bing: bool = True) -> list:
+def gen_images(
+    prompt: str,
+    moderation_flag: bool = False,
+    user_id: str = '',
+    conversation_history: str = '',
+    use_bing: bool = True
+) -> list:
     """рисует одновременно всеми доступными способами"""
-
     if not user_id:
         user_id = 'test'
 

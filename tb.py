@@ -10494,7 +10494,7 @@ def do_task(message, custom_prompt: str = ''):
                             if detect_img_answer(message, answer):
                                 return
 
-                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
+                            if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
 
                             # отправляем файлы если они были сгенерированы в скилах
@@ -10555,7 +10555,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
 
-                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
+                            if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
 
 
@@ -10691,7 +10691,7 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
 
-                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
+                            if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
 
 
@@ -10753,7 +10753,7 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
 
-                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
+                            if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
 
 
@@ -10815,7 +10815,7 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
 
-                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
+                            if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
 
 
@@ -11180,7 +11180,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
 
-                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
+                            if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
 
 
@@ -11254,7 +11254,7 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
 
-                            if edit_image_detect(answer, lang, chat_id_full, hidden_text, message):
+                            if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
 
 

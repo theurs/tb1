@@ -488,9 +488,6 @@ def ocr_pdf(
             }
         )
 
-        client.files.delete(file_id=uploaded_pdf.id, timeout_ms = 30 * 1000)
-        utils.remove_file(tmp_fname)
-
         resp = ''
         for page in ocr_response.pages:
             resp += page.markdown.strip()
@@ -499,10 +496,6 @@ def ocr_pdf(
         return _clear_ocred_text(resp)
 
     except Exception as error:
-        if tmp_fname:
-            utils.remove_file(tmp_fname)
-        if client and uploaded_pdf:
-            client.files.delete(file_id=uploaded_pdf.id, timeout_ms = timeout * 1000)
 
         if 'Unauthorized' in str(error):
             remove_key(api_key)
@@ -510,6 +503,14 @@ def ocr_pdf(
 
         my_log.log_mistral(f'ocr_image:ocr_pdf: {error}')
         return ''
+    finally:
+        if client and uploaded_pdf:
+            try:
+                client.files.delete(file_id=uploaded_pdf.id, timeout_ms = timeout * 1000)
+            except Exception as error:
+                my_log.log_mistral(f'ocr_image:ocr_pdf:remove_file: {error}')
+        if tmp_fname:
+            utils.remove_file(tmp_fname)
 
 
 def format_to_srt(transcription_result: dict) -> str:

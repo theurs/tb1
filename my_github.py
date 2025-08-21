@@ -537,7 +537,7 @@ def img2txt(
             if 'Bad credentials' in str(error_other) or 'Your account type is not currently supported' in str(error_other):
                 remove_key(key)
                 continue
-            my_log.log_github(f'ai:2: {error_other}')
+            my_log.log_github(f'ai:2: [{chat_id}] {error_other}')
             return ''
 
         try:

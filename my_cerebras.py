@@ -238,11 +238,14 @@ def ai(
     mem_ = mem[:] if mem else []
 
     now = utils.get_full_time()
-    systems = (
+    systems = [
         f'Current date and time: {now}\n',
         f'Use this telegram chat id (user id) for API function calls: {user_id}',
         *SYSTEM_
-    )
+    ]
+    # if 'gpt-oss' in model:
+    #     systems.append('**IMPORTANT** Do not use table formatting in your answer unless the user explicitly requested it.')
+
     if system:
         mem_.insert(0, {"role": "system", "content": system})
     for s in reversed(systems):

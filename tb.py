@@ -5693,50 +5693,51 @@ def send_debug_history(message: telebot.types.Message):
         COMMAND_MODE[chat_id_full] = ''
 
         chat_id_full = get_id_parameters_for_function(message, chat_id_full)
+        chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode') or ''
 
-        if 'gemini' in my_db.get_user_property(chat_id_full, 'chat_mode') or 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-            if 'gemma' in my_db.get_user_property(chat_id_full, 'chat_mode'):
-                prompt = my_db.get_user_property(chat_id_full, 'chat_mode') + '\n\n'
+        if 'gemini' in chat_mode or 'gemma' in chat_mode:
+            if 'gemma' in chat_mode:
+                prompt = chat_mode + '\n\n'
             else:
-                prompt = 'Gemini ' + my_db.get_user_property(chat_id_full, 'chat_mode') + '\n\n'
-            prompt += my_gemini3.get_mem_as_string(chat_id_full, model=my_db.get_user_property(chat_id_full, 'chat_mode')) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'openrouter':
+                prompt = 'Gemini ' + chat_mode + '\n\n'
+            prompt += my_gemini3.get_mem_as_string(chat_id_full, model=chat_mode) or tr('Empty', lang)
+        elif chat_mode == 'openrouter':
             prompt = 'Openrouter\n\n'
             prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen3':
+        elif chat_mode == 'qwen3':
             prompt = 'Qwen 3 235b a22b\n\n'
             prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'qwen3coder':
+        elif chat_mode == 'qwen3coder':
             prompt = 'Qwen 3 Coder 480b\n\n'
             prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt_oss':
+        elif chat_mode == 'gpt_oss':
             prompt = 'GPT OSS 120b\n\n'
             prompt += my_cerebras.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'llama4':
+        elif chat_mode == 'llama4':
             prompt = 'Llama 4\n\n'
             prompt += my_cerebras.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'mistral':
+        elif chat_mode == 'mistral':
             prompt = 'Mistral Large\n\n'
             prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'magistral':
+        elif chat_mode == 'magistral':
             prompt = 'Magistral Medium\n\n'
             prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt-4o':
+        elif chat_mode == 'gpt-4o':
             prompt = 'GPT-4o\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt_41':
+        elif chat_mode == 'gpt_41':
             prompt = 'GPT 4.1\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'gpt_41_mini':
+        elif chat_mode == 'gpt_41_mini':
             prompt = 'GPT 4.1 mini\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'deepseek_r1':
+        elif chat_mode == 'deepseek_r1':
             prompt = 'DeepSeek R1\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'deepseek_v3':
+        elif chat_mode == 'deepseek_v3':
             prompt = 'DeepSeek V3\n\n'
             prompt += my_github.get_mem_as_string(chat_id_full) or tr('Empty', lang)
-        elif my_db.get_user_property(chat_id_full, 'chat_mode') == 'cohere':
+        elif chat_mode == 'cohere':
             prompt = 'Command A\n\n'
             prompt += my_cohere.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         else:

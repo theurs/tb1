@@ -594,7 +594,7 @@ def chat(
 
         if isinstance(query, str):
             query = query[:my_gemini_general.MAX_SUM_REQUEST]
-        if isinstance(query, list):
+        elif isinstance(query, list):
             query[0] = query[0][:my_gemini_general.MAX_SUM_REQUEST]
 
         if temperature < 0:

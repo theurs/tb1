@@ -9443,6 +9443,56 @@ def handle_photo_and_text(message: telebot.types.Message):
         my_log.log2(f'tb:handle_photo_and_text_unknown: {unknown}\n{traceback_error}')
 
 
+def detect_img_answer(message: telebot.types.Message, answer: str) -> bool:
+    '''
+    Если в ответе есть признаки того что бот обнаружил запрос на рисование но вернул неадекватный ответ
+    рисуем принудительно
+    '''
+    try:
+        result = False
+
+        msg = answer.lower().strip()
+        if msg.startswith('```json') and msg.endswith('```'):
+            msg = msg[7:-3].strip()
+            answer = answer[7:-3].strip()
+        elif msg.startswith('```') and msg.endswith('```'):
+            msg = msg[3:-3].strip()
+            answer = answer[3:-3].strip()
+            
+
+        if msg.startswith('The bot successfully generated images on the external services'):
+            result = True
+            reprompt = message.text
+
+        if not result:
+            if msg.startswith('{') and msg.endswith('}'):
+                try:
+                    dict_ = utils.string_to_dict(answer)
+                except Exception as e:
+                    dict_ = None
+                    my_log.log2(f'tb:detect_img_answer: {e}')
+                if dict_ and isinstance(dict_, dict):
+                    reprompt = dict_.get('reprompt', '')
+                    was_translated = dict_.get('was_translated', '')
+                    lang_from = dict_.get('lang_from', '')
+                    moderation_sexual = dict_.get('moderation_sexual', '')
+                    moderation_hate = dict_.get('moderation_hate', '')
+                    if reprompt and was_translated and lang_from and moderation_sexual!='' and moderation_hate!='':
+                        result = True
+
+        if result:
+            undo_cmd(message, show_message=False)
+            message.text = f'/img {reprompt}'
+            image_gen(message)
+
+        return result
+
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:detect_img_answer: {unknown}\n{traceback_error}')
+        return False
+
+
 @bot.message_handler(content_types = ['photo', 'sticker', 'animation'], func=authorized)
 @async_run
 def handle_photo(message: telebot.types.Message):
@@ -10282,10 +10332,7 @@ def do_task(message, custom_prompt: str = ''):
 
                                 my_gemini3.update_mem(message.text, answer, chat_id_full, model = my_db.get_user_property(chat_id_full, 'chat_mode'))
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -10344,6 +10391,7 @@ def do_task(message, custom_prompt: str = ''):
                                 available_tools=AVAILABLE_TOOLS
                             )
 
+
                             if answer:
                                 def float_to_string(num):
                                     # This helper function ensures price is formatted cleanly.
@@ -10385,6 +10433,8 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
+                            if detect_img_answer(message, answer):
+                                return
 
                             if utils.edit_image_detect(answer, lang, tr):
                                 if chat_id_full in WHO_ANSWERED:
@@ -10523,10 +10573,7 @@ def do_task(message, custom_prompt: str = ''):
                             # отправляем файлы если они были сгенерированы в скилах
                             send_all_files_from_storage(message, chat_id_full)
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -10583,14 +10630,11 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = 'Magistral Medium'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
-                                return
-
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
+
+                            if detect_img_answer(message, answer):
+                                return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
                                 answer_ = utils.bot_markdown_to_html(answer)
@@ -10694,10 +10738,7 @@ def do_task(message, custom_prompt: str = ''):
                                     bot_reply_tr(message, 'Failed to edit image.')
                                 return
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -10791,10 +10832,7 @@ def do_task(message, custom_prompt: str = ''):
                                     bot_reply_tr(message, 'Failed to edit image.')
                                 return
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -10888,10 +10926,7 @@ def do_task(message, custom_prompt: str = ''):
                                     bot_reply_tr(message, 'Failed to edit image.')
                                 return
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -10962,10 +10997,7 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -11023,10 +11055,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -11084,10 +11113,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -11145,10 +11171,7 @@ def do_task(message, custom_prompt: str = ''):
 
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -11214,10 +11237,7 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -11312,10 +11332,7 @@ def do_task(message, custom_prompt: str = ''):
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
@@ -11415,10 +11432,7 @@ def do_task(message, custom_prompt: str = ''):
                                 return
 
 
-                            if answer.startswith('The bot successfully generated images on the external services'):
-                                undo_cmd(message, show_message=False)
-                                message.text = f'/img {message.text}'
-                                image_gen(message)
+                            if detect_img_answer(message, answer):
                                 return
 
                             if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):

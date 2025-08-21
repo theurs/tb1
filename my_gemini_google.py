@@ -159,7 +159,10 @@ def calc(query: str, chat_id: str = '') -> Tuple[str, str]:
                         else:
                             my_skills_storage.STORAGE[chat_id] = [item,]
 
-            return response.candidates[0].content.parts[-1].text, underground
+            if response and response.candidates and response.candidates[0].content.parts and response.candidates[0].content.parts[-1].text:
+                return response.candidates[0].content.parts[-1].text, underground
+            else:
+                return '', ''
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log_gemini_google(f'calc: error: {error}\n{traceback_error}')

@@ -294,7 +294,30 @@ def save_to_excel(filename: str, data: str, chat_id: str) -> str:
         data (str): A JSON formatted string representing the sheets. The root must be an object where keys
                     are sheet names. Each value is an object for the sheet's content, which can be
                     simple data (e.g., {"ColA": [1, 2]}) or a complex object with 'data' and 'formulas' keys.
+
+                    **Important:** When defining formulas, ensure that cell references (e.g., 'A1', 'Sheet1!B2')
+                    precisely match the actual data layout in the table. It is also critical
+                    that all cells referenced by formulas contain the correct data types
+                    (e.g., numbers for calculations). Using 'null' or text where a formula expects
+                    a numerical value will lead to Excel errors (e.g., #VALUE!).
+
                     Example for a simple sheet: '{"Sales": {"Product": ["Laptop"], "Price": [1200]}}'
+                    Example for a sheet with formulas and cross-cell references:
+                    '''
+                    {
+                      "Calculations": {
+                        "data": {
+                          "Item": ["Price", "Quantity", "Total"],
+                          "Value": [100, 5, null]
+                        },
+                        "formulas": [
+                          {"cell": "B3", "formula": "=B1*B2"}
+                        ]
+                      }
+                    }
+                    '''
+                    In this example, cell B3 (Total) refers to B1 (Price) and B2 (Quantity).
+
         chat_id (str): The Telegram user chat ID where the file should be sent.
 
     Returns:

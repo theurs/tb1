@@ -90,6 +90,7 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
     Args:
         prompt: The text prompt to generate an image from.
         api_key: The API key for accessing the Gemini API.
+        user_id: The user's ID for logging purposes.
 
     Returns:
         The image data as bytes (jpg) if successful, otherwise None.
@@ -138,18 +139,22 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
                         return convert_png_to_jpg(image_data)
                     else:
                         pass
+            except json.JSONDecodeError as je:
+                # Catching a specific JSON decoding error from the API
+                my_log.log_gemini(f'my_gemini_genimg: [JSON error] API returned invalid JSON. Error: {str(je)}\nPrompt: {prompt}')
+                time.sleep(20)
+                continue # Retry
             except Exception as e:
                 traceback_error = traceback.format_exc()
                 my_log.log_gemini(f'my_gemini_genimg: [error genimg] {str(e)}\n{prompt}\n{traceback_error}')
-                # Retry on service unavailable, SSL errors, or broken JSON responses
+                # Retry on specific network or service errors
                 if ("'status': 'Service Unavailable'" in str(e)
                         or "'status': 'UNAVAILABLE'" in str(e)
-                        or 'SSL: UNEXPECTED_EOF_WHILE_READING' in str(e)
-                        or isinstance(e, json.JSONDecodeError)):
+                        or 'SSL: UNEXPECTED_EOF_WHILE_READING' in str(e)):
                     time.sleep(20)
                     continue
                 else:
-                    raise(e)
+                    raise e # Reraise other exceptions
 
         return None
 

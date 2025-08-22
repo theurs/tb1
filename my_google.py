@@ -27,7 +27,7 @@ def search_v3(query: str,
               chat_id: str = '',
               role: str = '',
               fast_search: bool = False,
-    ):
+) -> str:
 
     query = query.strip()
     text = ''

@@ -743,7 +743,7 @@ def chat(
             except Exception as error:
 
                 if '429 RESOURCE_EXHAUSTED' in str(error):
-                    my_log.log_gemini(f'my_gemini3:chat:2: {str(error)} {model} {key}')
+                    my_log.log_gemini(f'my_gemini3:chat:2: [{chat_id}] {str(error)} {model} {key}')
                     return ''
                 elif 'API key expired. Please renew the API key.' in str(error) or '429 Quota exceeded for quota metric' in str(error):
                     my_gemini_general.remove_key(key)
@@ -881,9 +881,9 @@ def chat(
             elif 'User location is not supported for the API use.' in str(error):
                 my_log.log_gemini(f'my_gemini3:chat:unknown_error:3: {error}')
             elif 'Request contains an invalid argument.' in str(error):
-                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}] {error}')
+                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}]\n{query}\n\n{error}')
             elif 'Server disconnected without sending a response' or 'Попытка установить соединение была безуспешной' in str(error):
-                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}] {error}')
+                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}]\n{query}\n\n{error}')
             else:
                 my_log.log_gemini(f'my_gemini5:chat:unknown_error:4: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}\nMem: {str(mem)[:1000]}')
         return ''

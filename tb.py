@@ -6253,7 +6253,7 @@ def google(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
-        role = my_db.get_user_property(chat_id_full, 'role')
+        role = my_db.get_user_property(chat_id_full, 'role') or ''
 
         COMMAND_MODE[chat_id_full] = ''
         # проверка на подписку

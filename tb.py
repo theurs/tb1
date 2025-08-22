@@ -7921,17 +7921,22 @@ def id_cmd_handler(message: telebot.types.Message):
 
         is_admin = message.from_user.id in cfg.admins
 
+        user_id = message.from_user.id
+
         try:
             if is_admin:
                 arg = message.text.split(maxsplit=1)[1].strip()
                 if arg:
                     if '[' not in arg:
+                        user_id = arg
                         arg = f'[{arg}] [0]'
+                    else:
+                        user_id = arg.replace('[', '').replace(']', '').split(' ')[0].strip()
                     chat_id_full = arg
+                    group_id_full = arg
         except IndexError:
             pass
 
-        user_id = message.from_user.id
         reported_language = message.from_user.language_code
         open_router_model, temperature, max_tokens, maxhistlines, maxhistchars = my_openrouter.PARAMS[chat_id_full] if chat_id_full in my_openrouter.PARAMS else my_openrouter.PARAMS_DEFAULT
 

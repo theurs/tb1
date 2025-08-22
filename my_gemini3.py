@@ -1634,7 +1634,6 @@ TEXT to rewrite:
         return ''
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl = 2*60)
 def compose_creative_text(prompt: str, user_id: str) -> str:
     '''
     Composes creative content such as songs, poems, and rhymed verses.
@@ -1654,14 +1653,6 @@ def compose_creative_text(prompt: str, user_id: str) -> str:
         my_log.log_gemini_skills(f'compose_creative_text: {user_id} {prompt}')
 
         query = f'''{{"request_type": "creative_text_generation", "user_prompt": "{prompt}", "output_format_instruction": "The output must contain only the requested creative text (song, poem, rhymed verse) without any introductory phrases, conversational remarks, or concluding comments."}}'''
-
-        # result = chat(
-        #     query=query,
-        #     chat_id=user_id,
-        #     temperature=1.5,
-        #     model=cfg.gemini_pro_model,
-        #     do_not_update_history=True,
-        # )
 
         result = my_github.ai(
             prompt=query,

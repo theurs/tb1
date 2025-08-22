@@ -4958,6 +4958,11 @@ def memo_handler(message: telebot.types.Message):
                     if len(memos) > 10:
                         bot_reply_tr(message, 'Too many memos. Delete some before add new.')
                     else:
+
+                        if utils_llm.detect_forbidden_prompt(arg):
+                            my_log.log2(f'tb:memo_handler: Forbidden prompt: {chat_id_full} {arg}')
+                            return
+
                         memos.append(arg)
                         my_db.set_user_property(chat_id_full, 'memos', my_db.obj_to_blob(memos))
                         bot_reply_tr(message, 'New memo was added.')
@@ -5126,6 +5131,11 @@ def change_mode(message: telebot.types.Message):
                 new_prompt = ''
             else:
                 new_prompt = arg
+
+            if utils_llm.detect_forbidden_prompt(new_prompt):
+                my_log.log2(f'tb:change_mode: Forbidden prompt: {chat_id_full} {new_prompt}')
+                return
+
             my_db.set_user_property(chat_id_full, 'role', new_prompt)
 
             if new_prompt:

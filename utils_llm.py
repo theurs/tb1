@@ -133,6 +133,22 @@ def extract_and_replace_tool_code(text: str) -> str:
         return text
 
 
+def detect_forbidden_prompt(text: str) -> bool:
+    '''
+    Определяет есть ли в тексте признаки запрещенных промптов.
+    '''
+    # Randi prompt
+    count_word_randi = text.lower().count('randi ')
+    has_word_void = 'VOID you' in text
+
+    if has_word_void:
+        return True
+    if count_word_randi > 4:
+        return True
+
+    return False
+
+
 if __name__ == '__main__':
     # test_split_thoughts()
 

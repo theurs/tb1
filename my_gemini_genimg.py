@@ -1,3 +1,4 @@
+import json
 import os
 import time
 import threading
@@ -140,7 +141,11 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
             except Exception as e:
                 traceback_error = traceback.format_exc()
                 my_log.log_gemini(f'my_gemini_genimg: [error genimg] {str(e)}\n{prompt}\n{traceback_error}')
-                if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e) or 'SSL: UNEXPECTED_EOF_WHILE_READING' in str(e):
+                # Retry on service unavailable, SSL errors, or broken JSON responses
+                if ("'status': 'Service Unavailable'" in str(e)
+                        or "'status': 'UNAVAILABLE'" in str(e)
+                        or 'SSL: UNEXPECTED_EOF_WHILE_READING' in str(e)
+                        or isinstance(e, json.JSONDecodeError)):
                     time.sleep(20)
                     continue
                 else:
@@ -261,7 +266,10 @@ def regenerate_image(
                             pass
                 except Exception as e:
                     my_log.log_gemini(f'my_gemini_genimg: [error regenimg] {str(e)}')
-                    if "'status': 'Service Unavailable'" in str(e) or "'status': 'UNAVAILABLE'" in str(e):
+                    # Retry on service unavailable or broken JSON responses
+                    if ("'status': 'Service Unavailable'" in str(e)
+                            or "'status': 'UNAVAILABLE'" in str(e)
+                            or isinstance(e, json.JSONDecodeError)):
                         time.sleep(20)
                         start_time = time.time()
                         continue

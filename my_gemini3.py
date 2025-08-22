@@ -883,7 +883,7 @@ def chat(
             elif 'validation errors for GenerateContentConfig' in str(error):
                 pass
             elif 'Request contains an invalid argument.' in str(error):
-                if '<PIL.JpegImagePlugin.JpegImageFile image mode=RGB' in str(error):
+                if '<PIL.JpegImagePlugin.JpegImageFile image mode=RGB' in str(query):
                     pass
                 else:
                     my_log.log_gemini(f'my_gemini3:chat:unknown_error:11: [{chat_id}]\n{query[:1500]}\n\n{error}')

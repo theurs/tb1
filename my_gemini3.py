@@ -881,9 +881,9 @@ def chat(
             elif 'User location is not supported for the API use.' in str(error):
                 my_log.log_gemini(f'my_gemini3:chat:unknown_error:3: {error}')
             elif 'Request contains an invalid argument.' in str(error):
-                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}]\n{query}\n\n{error}')
+                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}]\n{query[:1500]}\n\n{error}')
             elif 'Server disconnected without sending a response' or 'Попытка установить соединение была безуспешной' in str(error):
-                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}]\n{query}\n\n{error}')
+                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}]\n{query[:1500]}\n\n{error}')
             else:
                 my_log.log_gemini(f'my_gemini5:chat:unknown_error:4: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}\nMem: {str(mem)[:1000]}')
         return ''

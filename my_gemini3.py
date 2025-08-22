@@ -743,7 +743,7 @@ def chat(
             except Exception as error:
 
                 if '429 RESOURCE_EXHAUSTED' in str(error):
-                    my_log.log_gemini(f'my_gemini3:chat:2: [{chat_id}] {str(error)} {model} {key}')
+                    my_log.log_gemini(f'my_gemini3:chat:1: [{chat_id}] {str(error)} {model} {key}')
                     return ''
                 elif 'API key expired. Please renew the API key.' in str(error) or '429 Quota exceeded for quota metric' in str(error):
                     my_gemini_general.remove_key(key)
@@ -752,7 +752,7 @@ def chat(
                     my_gemini_general.remove_key(key)
                     continue
                 elif 'timeout' in str(error).lower():
-                    my_log.log_gemini(f'my_gemini3:chat:timeout: {str(error)} {model} {key}')
+                    my_log.log_gemini(f'my_gemini3:chat:2:timeout: {str(error)} {model} {key}')
                     return ''
                 elif """503 UNAVAILABLE. {'error': {'code': 503, 'message': 'The model is overloaded. Please try again later.', 'status': 'UNAVAILABLE'}}""" in str(error):
                     my_log.log_gemini(f'my_gemini3:chat:3: {str(error)} {model} {key}')
@@ -760,8 +760,8 @@ def chat(
                 elif """400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Please ensure that function response turn comes immediately after a function call turn.'""" in str(error):
                     traceback_error = traceback.format_exc()
                     my_log.log_gemini(f'my_gemini3:chat:4: {str(error)} {model} {key}')
-                    my_log.log_gemini(f'my_gemini3:chat:4: Invalid history state. mem dump: {mem}')
-                    my_log.log_gemini(f'my_gemini3:chat:4: {traceback_error}')
+                    my_log.log_gemini(f'my_gemini3:chat:5: Invalid history state. mem dump: {mem}')
+                    my_log.log_gemini(f'my_gemini3:chat:6: {traceback_error}')
                     new_mem = []
                     i = 0
                     while i < len(mem):
@@ -789,7 +789,7 @@ def chat(
                 except ValueError:
                     # Handle the case where the response was blocked or is otherwise empty.
                     if response.candidates:
-                        my_log.log_gemini(f'my_gemini3:chat: response has no valid text part. Finish reason: {response.candidates[0].finish_reason}')
+                        my_log.log_gemini(f'my_gemini3:chat:7: response has no valid text part. Finish reason: {response.candidates[0].finish_reason}')
                     resp = ''
             else:
                 resp = ''
@@ -856,7 +856,7 @@ def chat(
                 try:
                     chat._curated_history[-1].parts[-1].text = resp
                 except Exception as error4:
-                    my_log.log_gemini(f'my_gemini3:chat4: {error4}\nresult: {result}\nchat history: {str(chat_.history)}')
+                    my_log.log_gemini(f'my_gemini3:chat:8: {error4}\nresult: {result}\nchat history: {str(chat_.history)}')
 
 
             history = chat.get_history()
@@ -873,19 +873,24 @@ def chat(
         traceback_error = traceback.format_exc()
         if """500 INTERNAL. {'error': {'code': 500, 'message': 'An internal error has occurred. Please retry or report in https://developers.generativeai.google/guide/troubleshooting', 'status': 'INTERNAL'}}""" in str(error) \
            or """503 UNAVAILABLE. {'error': {'code': 503, 'message': 'The service is currently unavailable.', 'status': 'UNAVAILABLE'}}""" in str(error):
-            my_log.log_gemini(f'my_gemini3:chat:unknown_error:1: {error} {model}')
+            my_log.log_gemini(f'my_gemini3:chat:unknown_error:9: {error} {model}')
         else:
             if 'API Key not found. Please pass a valid API key.' in str(error):
                 # my_log.log_gemini(f'my_gemini3:chat:unknown_error:2: {error}\nKey: [{key}]')
                 my_gemini_general.remove_key(key)
             elif 'User location is not supported for the API use.' in str(error):
-                my_log.log_gemini(f'my_gemini3:chat:unknown_error:3: {error}')
+                my_log.log_gemini(f'my_gemini3:chat:unknown_error:10: {error}')
+            elif 'validation errors for GenerateContentConfig' in str(error):
+                pass
             elif 'Request contains an invalid argument.' in str(error):
-                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}]\n{query[:1500]}\n\n{error}')
+                if '<PIL.JpegImagePlugin.JpegImageFile image mode=RGB' in str(error):
+                    pass
+                else:
+                    my_log.log_gemini(f'my_gemini3:chat:unknown_error:11: [{chat_id}]\n{query[:1500]}\n\n{error}')
             elif 'Server disconnected without sending a response' or 'Попытка установить соединение была безуспешной' in str(error):
-                my_log.log_gemini(f'my_gemini4:chat:unknown_error:3: [{chat_id}]\n{query[:1500]}\n\n{error}')
+                my_log.log_gemini(f'my_gemini3:chat:unknown_error:12: [{chat_id}] {error}')
             else:
-                my_log.log_gemini(f'my_gemini5:chat:unknown_error:4: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}\nMem: {str(mem)[:1000]}')
+                my_log.log_gemini(f'my_gemini3:chat:unknown_error:13: {error}\n\n{traceback_error}\n{model}\nQuery: {str(query)[:1000]}\nMem: {str(mem)[:1000]}')
         return ''
     finally:
         if chat_id in my_skills_storage.STORAGE_ALLOWED_IDS:

@@ -8092,6 +8092,71 @@ def id_cmd_handler(message: telebot.types.Message):
         my_log.log2(f'tb:id: {error}\n\n{error_traceback}\n\n{message}')
 
 
+# @bot.message_handler(commands=['reload'], func=authorized_admin)
+# @async_run
+# def reload_module(message: telebot.types.Message):
+#     '''command for reload imported module on the fly'''
+#     chat_id_full = get_topic_id(message)
+#     lang = get_lang(chat_id_full, message)
+
+#     try:
+#         module_name = message.text.split(' ', 1)[1].strip()
+#         modules = module_name.split()
+#         if any([x for x in modules if 'skills' in x]):
+#             if 'my_cerebras_tools' not in modules:
+#                 modules.append('my_cerebras_tools')
+#         if len(modules) > 1:
+#             for module in modules:
+#                 message.text = f'/reload {module}'
+#                 reload_module(message)
+#             return
+
+#         with RELOAD_LOCK:
+#             # Проверяем существование файла и корректируем имя
+#             if not os.path.exists(f"{module_name}.py"):
+#                 if module_name.startswith('my_') and os.path.exists(f"{module_name[3:]}.py"):
+#                     module_name = module_name[3:]
+#                 elif not module_name.startswith('my_') and os.path.exists(f"my_{module_name}.py"):
+#                     module_name = f"my_{module_name}"
+#                 else:
+#                     raise Exception(f"Файл для модуля '{module_name}' не найден")
+
+#             module = importlib.import_module(module_name)
+#             importlib.reload(module)
+
+#             # реинициализация модуля
+#             if module_name == 'my_gemini3':
+#                 my_gemini_general.load_users_keys()
+#                 my_skills.init()
+#             elif module_name == 'my_groq':
+#                 my_groq.load_users_keys()
+#             elif module_name == 'my_cerebras':
+#                 my_cerebras.load_users_keys()
+#             elif module_name == 'my_mistral':
+#                 my_mistral.load_users_keys()
+#             elif module_name == 'my_github':
+#                 my_github.load_users_keys()
+#             elif module_name == 'my_nebius':
+#                 my_nebius.load_users_keys()
+#             elif module_name == 'my_cohere':
+#                 my_cohere.load_users_keys()
+#             elif module_name == 'my_init':
+#                 load_msgs()
+#             elif module_name == 'my_skills':
+#                 my_skills.init()
+#             elif module_name == 'my_db':
+#                 db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
+#                 db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
+#                 my_db.init(db_backup, db_vacuum)
+
+#             msg = f'{tr("Модуль успешно перезагружен:", lang)} {module_name}'
+#             bot_reply(message, msg)
+#     except Exception as e:
+#         my_log.log2(f"Ошибка при перезагрузке модуля: {e}")
+#         msg = f'{tr("Ошибка при перезагрузке модуля:", lang)}```ERROR\n{e}```'
+#         bot_reply(message, msg, parse_mode = 'MarkdownV2')
+
+
 @bot.message_handler(commands=['reload'], func=authorized_admin)
 @async_run
 def reload_module(message: telebot.types.Message):
@@ -8100,54 +8165,72 @@ def reload_module(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     try:
-        module_name = message.text.split(' ', 1)[1].strip()
-        modules = module_name.split()
-        if len(modules) > 1:
-            for module in modules:
-                message.text = f'/reload {module}'
-                reload_module(message)
+        # Получаем строку с именами модулей
+        module_name_raw_parts = message.text.split(' ', 1)
+        if len(module_name_raw_parts) < 2:
+            bot_reply(message, tr("Укажите модуль(и) для перезагрузки.", lang))
             return
 
-        with RELOAD_LOCK:
-            # Проверяем существование файла и корректируем имя
-            if not os.path.exists(f"{module_name}.py"):
-                if module_name.startswith('my_') and os.path.exists(f"{module_name[3:]}.py"):
-                    module_name = module_name[3:]
-                elif not module_name.startswith('my_') and os.path.exists(f"my_{module_name}.py"):
-                    module_name = f"my_{module_name}"
-                else:
-                    raise Exception(f"Файл для модуля '{module_name}' не найден")
+        # Разделяем имена модулей на список, используя set для уникальности
+        initial_modules_to_process = set(module_name_raw_parts[1].strip().split())
 
-            module = importlib.import_module(module_name)
-            importlib.reload(module)
+        # Создаем окончательный список модулей для перезагрузки
+        final_modules_to_reload = list(initial_modules_to_process)
 
-            # реинициализация модуля
-            if module_name == 'my_gemini3':
-                my_gemini_general.load_users_keys()
-                my_skills.init()
-            elif module_name == 'my_groq':
-                my_groq.load_users_keys()
-            elif module_name == 'my_cerebras':
-                my_cerebras.load_users_keys()
-            elif module_name == 'my_mistral':
-                my_mistral.load_users_keys()
-            elif module_name == 'my_github':
-                my_github.load_users_keys()
-            elif module_name == 'my_nebius':
-                my_nebius.load_users_keys()
-            elif module_name == 'my_cohere':
-                my_cohere.load_users_keys()
-            elif module_name == 'my_init':
-                load_msgs()
-            elif module_name == 'my_skills':
-                my_skills.init()
-            elif module_name == 'my_db':
-                db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
-                db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
-                my_db.init(db_backup, db_vacuum)
+        # Проверяем зависимость от 'skills' только один раз для всего набора модулей
+        # и добавляем 'my_cerebras_tools' если 'skills' присутствует
+        if any('skills' in x for x in initial_modules_to_process):
+            if 'my_cerebras_tools' not in final_modules_to_reload:
+                final_modules_to_reload.append('my_cerebras_tools')
 
-            msg = f'{tr("Модуль успешно перезагружен:", lang)} {module_name}'
-            bot_reply(message, msg)
+        results = []
+        # Теперь итерируем по окончательному списку и перезагружаем каждый модуль
+        for module_to_reload in sorted(final_modules_to_reload): # Сортируем для предсказуемого порядка
+            with RELOAD_LOCK:
+                current_module_name = module_to_reload
+
+                # Проверяем существование файла и корректируем имя
+                if not os.path.exists(f"{current_module_name}.py"):
+                    if current_module_name.startswith('my_') and os.path.exists(f"{current_module_name[3:]}.py"):
+                        current_module_name = current_module_name[3:]
+                    elif not current_module_name.startswith('my_') and os.path.exists(f"my_{current_module_name}.py"):
+                        current_module_name = f"my_{current_module_name}"
+                    else:
+                        raise Exception(f"Файл для модуля '{current_module_name}' не найден")
+
+                module = importlib.import_module(current_module_name)
+                importlib.reload(module)
+
+                # Реинициализация модуля (остается без изменений)
+                if current_module_name == 'my_gemini3':
+                    my_gemini_general.load_users_keys()
+                    my_skills.init()
+                elif current_module_name == 'my_groq':
+                    my_groq.load_users_keys()
+                elif current_module_name == 'my_cerebras':
+                    my_cerebras.load_users_keys()
+                elif current_module_name == 'my_mistral':
+                    my_mistral.load_users_keys()
+                elif current_module_name == 'my_github':
+                    my_github.load_users_keys()
+                elif current_module_name == 'my_nebius':
+                    my_nebius.load_users_keys()
+                elif current_module_name == 'my_cohere':
+                    my_cohere.load_users_keys()
+                elif current_module_name == 'my_init':
+                    load_msgs()
+                elif current_module_name == 'my_skills':
+                    my_skills.init()
+                elif current_module_name == 'my_db':
+                    db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
+                    db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
+                    my_db.init(db_backup, db_vacuum)
+
+                results.append(f'{tr("Модуль успешно перезагружен:", lang)} {current_module_name}')
+
+        # Отправляем общий ответ по всем перезагруженным модулям
+        bot_reply(message, "\n".join(results))
+
     except Exception as e:
         my_log.log2(f"Ошибка при перезагрузке модуля: {e}")
         msg = f'{tr("Ошибка при перезагрузке модуля:", lang)}```ERROR\n{e}```'

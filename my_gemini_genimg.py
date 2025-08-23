@@ -146,7 +146,10 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
                 continue # Retry
             except Exception as e:
                 traceback_error = traceback.format_exc()
-                my_log.log_gemini(f'my_gemini_genimg: [error genimg] {str(e)}\n{prompt}\n{traceback_error}')
+                if '500 INTERNAL.' in str(e):
+                    my_log.log_gemini(f'my_gemini_genimg:1: [error genimg] {str(e)}')
+                else:
+                    my_log.log_gemini(f'my_gemini_genimg:2: [error genimg] {str(e)}\n{prompt}\n{traceback_error}')
                 # Retry on specific network or service errors
                 if ("'status': 'Service Unavailable'" in str(e)
                         or "'status': 'UNAVAILABLE'" in str(e)

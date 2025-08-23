@@ -2145,12 +2145,14 @@ def string_to_dict(input_string: str) -> Optional[Dict[str, Any]]:
             return decoded_object
 
         # Log if a valid JSON was found, but it wasn't the expected type.
-        my_log.log2(f'utils:string_to_dict: Repaired JSON is not a dict ({type(decoded_object)}).')
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'utils:string_to_dict: Repaired JSON is not a dict ({type(decoded_object)}).\n\n{traceback_error}')
         return None
 
     except Exception as error:
+        traceback_error = traceback.format_exc()
         # Log parsing failures for debugging.
-        my_log.log2(f'utils:string_to_dict: {error}')
+        my_log.log2(f'utils:string_to_dict: {error}\n\n{traceback_error}')
         if input_string:
             my_log.log2(f'utils:string_to_dict: Failed on input: {input_string[:200]}')
         return None

@@ -9502,7 +9502,7 @@ def detect_img_answer(message: telebot.types.Message, answer: str) -> bool:
             result = True
             reprompt = message.text
 
-        if msg.startswith('The bot successfully generated images on the external services'):
+        if msg.startswith('the bot successfully generated images on the external services'):
             result = True
             reprompt = message.text
 

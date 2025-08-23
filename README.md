@@ -165,6 +165,11 @@ DO_NOT_LOG = [xxx, yyy,]
 #    yyy,
 #]
 
+# людям из этого списка нельзя использовать команду /style /memo
+#BLOCK_SYSTEM_MSGS = [
+#    xxx,
+#    yyy,
+#]
 
 # описание бота, которое отображается в чате с ботом, если чат пуст. До 512 символов.
 bot_description = """Free chat bot

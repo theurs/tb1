@@ -4934,6 +4934,12 @@ def memo_handler(message: telebot.types.Message):
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
+        # если есть список запрещенных юзеров в конфиге то проверить
+        if hasattr(cfg, 'BLOCK_SYSTEM_MSGS') and cfg.BLOCK_SYSTEM_MSGS:
+            if any([x for x in cfg.BLOCK_SYSTEM_MSGS if x == message.from_user.id]):
+                bot_reply(message, "OK.")
+                return
+
         COMMAND_MODE[chat_id_full] = ''
 
         arg = message.text.split(maxsplit=1)[1:]
@@ -5098,6 +5104,12 @@ def change_mode(message: telebot.types.Message):
     try:
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
+
+        # если есть список запрещенных юзеров в конфиге то проверить
+        if hasattr(cfg, 'BLOCK_SYSTEM_MSGS') and cfg.BLOCK_SYSTEM_MSGS:
+            if any([x for x in cfg.BLOCK_SYSTEM_MSGS if x == message.from_user.id]):
+                bot_reply(message, "OK.")
+                return
 
         COMMAND_MODE[chat_id_full] = ''
 

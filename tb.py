@@ -9498,7 +9498,7 @@ def detect_img_answer(message: telebot.types.Message, answer: str) -> bool:
             msg = msg[3:-3].strip()
             answer = answer[3:-3].strip()
 
-        if 'create image' in msg and len(msg) < 20:
+        if ('create image' in msg or 'generate image' in msg) and len(msg) < 20:
             result = True
             reprompt = message.text
 
@@ -9556,8 +9556,6 @@ def edit_image_detect(text: str, lang: str, chat_id_full: str, message: telebot.
             result = True
         elif text in ('Изображение создается.',):
             result = True
-        # elif text.startswith(('<<GENERATE IMAGE>>','<<CREATE IMAGE>>')):
-        #     result = True
         else:
             result = False
 

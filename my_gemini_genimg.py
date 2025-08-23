@@ -141,7 +141,7 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
                         pass
             except json.JSONDecodeError as je:
                 # Catching a specific JSON decoding error from the API
-                my_log.log_gemini(f'my_gemini_genimg: [JSON error] API returned invalid JSON. Error: {str(je)}')
+                # my_log.log_gemini(f'my_gemini_genimg: [JSON error] API returned invalid JSON. Error: {str(je)}')
                 time.sleep(5)
                 continue # Retry
             except Exception as e:

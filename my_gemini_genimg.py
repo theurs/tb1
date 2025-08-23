@@ -154,7 +154,7 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
                 if ("'status': 'Service Unavailable'" in str(e)
                         or "'status': 'UNAVAILABLE'" in str(e)
                         or 'SSL: UNEXPECTED_EOF_WHILE_READING' in str(e)):
-                    time.sleep(20)
+                    time.sleep(5)
                     continue
                 else:
                     raise e # Reraise other exceptions

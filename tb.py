@@ -8033,14 +8033,7 @@ def id_cmd_handler(message: telebot.types.Message):
             telegram_stars=telegram_stars,
             total_msgs=total_msgs,
             last_donate_time=last_donate_time,
-            cfg=cfg,
-            my_db=my_db,
             tr=tr,
-            my_gemini_general=my_gemini_general,
-            my_groq=my_groq,
-            my_mistral=my_mistral,
-            my_cohere=my_cohere,
-            my_github=my_github
         )
         msg += f'\n\n{subscription_info}'
 

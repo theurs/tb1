@@ -30,9 +30,13 @@ DEFAULT_TIMEOUT = 120
 MAX_QUERY_LENGTH = 100000
 MAX_SUM_REQUEST = 100000
 MAX_REQUEST = 20000
-# DEFAULT_MODEL = 'command-r-plus'
+
+# вызывает проблемы с тулзами
+# DEFAULT_MODEL = 'command-a-reasoning-08-2025' # 'command-a-03-2025'
+# FALLBACK_MODEL = 'command-a-03-2025' # 'command-r-plus'
 DEFAULT_MODEL = 'command-a-03-2025'
 FALLBACK_MODEL = 'command-r-plus'
+
 #FALLBACK_MODEL = 'command-r'
 VISION_MODEL = 'command-a-vision-07-2025'
 MAX_MEM_LINES = 20
@@ -56,6 +60,20 @@ CURRENT_KEYS_SET = []
 MAX_TOOL_OUTPUT_LEN = 60000
 
 SYSTEM_ = []
+
+
+def _construct_resp(resp) -> str:
+    '''
+    Создает из ответа модели строку
+    '''
+    r = ''
+    if resp and resp.message and resp.message.content and isinstance(resp.message.content, list):
+        for chunk in resp.message.content:
+            if chunk.type == 'text':
+                r += chunk.text
+            elif chunk.type == 'thinking':
+                r += f'<think>{chunk.thinking}</think>'
+    return r
 
 
 def ai(
@@ -163,7 +181,7 @@ def ai(
                     message = response.message
                     if not message.tool_calls:
                         if user_id: my_db.add_msg(user_id, model)
-                        return message.content[0].text.strip() if message.content else ""
+                        return _construct_resp(response)
 
                     mem.append(message.model_dump())
 
@@ -197,7 +215,7 @@ def ai(
                     messages=mem, model=model, temperature=temperature
                 )
                 if user_id: my_db.add_msg(user_id, model)
-                return final_response.message.content[0].text.strip() if final_response.message.content else ""
+                return _construct_resp(final_response)
 
             # --- Non-tool path ---
             else:
@@ -215,14 +233,15 @@ def ai(
                     response_format=response_format,
                 )
 
-                resp = response.message.content[0].text.strip() if response.message.content else ""
+                resp = _construct_resp(response)
                 if resp:
                     if user_id: my_db.add_msg(user_id, model)
                     return resp
 
         except Exception as error:
             error_str = str(error).lower()
-            my_log.log_cohere(f'ai: attempt {attempt + 1}/{RETRY_MAX} failed with error: {error} [user_id: {user_id}]')
+            traceback_error = traceback.format_exc()
+            my_log.log_cohere(f'ai: attempt {attempt + 1}/{RETRY_MAX} failed with error: {error} [user_id: {user_id}]\n\n{traceback_error}')
             if 'invalid api token' in error_str:
                 if not key_: remove_key(api_key)
             elif 'timeout' in error_str or 'timed out' in error_str:

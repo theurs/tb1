@@ -11364,6 +11364,8 @@ def do_task(message, custom_prompt: str = ''):
                             WHO_ANSWERED[chat_id_full] = 'Command A'
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
+                            thoughts, answer = utils_llm.split_thoughts(answer)
+                            thoughts = utils.bot_markdown_to_html(thoughts)
 
                             if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
@@ -11627,7 +11629,8 @@ def main():
         # print(my_gemini3.chat('привет ты как', model = 'gemini-2.5-flash', chat_id='test', system='отвечай всегда по-русски'))
         # my_gemini3.trim_all()
         # print(my_mistral.transcribe_audio(r'C:\Users\user\Downloads\samples for ai\аудио\короткий диалог 3 голоса.m4a', language='en', get_timestamps=False))
-        # my_mistral.test_chat()
+        # my_cohere.list_models()
+        # my_cohere.test_chat()
 
 
         bot.infinity_polling(timeout=90, long_polling_timeout=90)

@@ -103,7 +103,7 @@ level 3 - блокировать всё включая логи
 Для установки проекта выполните следующие шаги:
 
 1. Установите Python 3.12+.
-2. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk build-essential catdoc djvulibre-bin ffmpeg fonts-noto-color-emoji fonts-noto-core imagemagick libcairo2 libcairo2-dev libffi-dev libfreetype6-dev libjpeg-dev libpng-dev libxml2-dev libxslt1-dev npm pandoc python3-dev python3-pip python3-venv sox texlive-latex-base texlive-latex-recommended wkhtmltopdf zlib1g-dev`
+2. Установите словари и прочее `sudo apt install aspell aspell-en aspell-ru aspell-uk build-essential catdoc djvulibre-bin ffmpeg fonts-noto-color-emoji fonts-noto-core imagemagick libzbar0 libcairo2 libcairo2-dev libffi-dev libfreetype6-dev libjpeg-dev libpng-dev libxml2-dev libxslt1-dev npm pandoc python3-dev python3-pip python3-venv sox texlive-latex-base texlive-latex-recommended wkhtmltopdf zlib1g-dev`
    
    https://wkhtmltopdf.org/downloads.html это надо установить отдельно вручную для рисования таблиц
 

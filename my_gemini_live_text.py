@@ -98,6 +98,7 @@ async def query_text_(
             # my_skills.compose_creative_text, # its too slow
             my_skills.text_to_image,
             my_skills.text_to_qrcode,
+            my_skills_general.text_to_barcode,
             my_skills_general.save_to_txt,
             my_skills_general.save_to_excel,
             my_skills_general.save_to_docx,

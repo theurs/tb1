@@ -78,10 +78,10 @@ pysrt
 
 pytelegrambotapi
 
+python-barcode
 python-Levenshtein
 python-pptx
-
-re_edge_gpt
+pyzbar
 
 requests[socks]
 reportlab[renderPM]

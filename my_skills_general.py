@@ -10,6 +10,7 @@ import pandas as pd
 from geopy.geocoders import Nominatim
 
 import cfg
+import my_barcode_generate
 import my_qrcode_generate
 import my_log
 import my_mermaid
@@ -686,6 +687,48 @@ def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:
         my_log.log_gemini_skills_img(f'my_skills.py:text_to_qrcode - Failed to generate qrcode: {e}')
 
     return "Failed to generate qrcode."
+
+
+def text_to_barcode(text: str, barcode_type: str, user_id: str) -> str:
+    '''
+    Send barcode message to telegram user.
+
+    Args:
+        text: str - text to generate barcode from
+        barcode_type: str - type of barcode to generate (e.g., 'EAN13', 'Code128', 'Code39')
+        user_id: str - user id
+    Returns:
+        str: 'OK' or error message
+    '''
+    try:
+        my_log.log_gemini_skills_img(f'/barcode "{text}" "{barcode_type}" "{user_id}"')
+
+        user_id = restore_id(user_id)
+
+        png_bytes = my_barcode_generate.generate_barcode_bytes(text, barcode_type)
+
+        if isinstance(png_bytes, str): # Если вернулась строка, это ошибка
+            my_log.log_gemini_skills_img(f'my_skills_general:text_to_barcode - {png_bytes}')
+            return png_bytes # Возвращаем сообщение об ошибке
+
+        if isinstance(png_bytes, bytes) and len(png_bytes) > 0:
+            item = {
+                'type': 'image/png file',
+                'filename': f'{barcode_type}_{text[:20]}.png', # Обрезаем текст для имени файла
+                'data': png_bytes,
+            }
+            with my_skills_storage.STORAGE_LOCK:
+                if user_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[user_id]:
+                        my_skills_storage.STORAGE[user_id].append(item)
+                else:
+                    my_skills_storage.STORAGE[user_id] = [item,]
+            return "OK"
+
+    except Exception as e:
+        my_log.log_gemini_skills_img(f'my_skills.py:text_to_barcode - Failed to process barcode request: {e}')
+
+    return "Failed to generate barcode due to an unexpected issue."
 
 
 def help(user_id: str) -> str:

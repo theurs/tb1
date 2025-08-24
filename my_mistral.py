@@ -12,7 +12,6 @@ import tempfile
 import traceback
 from typing import Any, Callable, Dict, List, Optional, Union
 
-import cachetools.func
 import openai
 import pysrt
 from mistralai import Mistral
@@ -44,7 +43,7 @@ SYSTEM_ = []
 
 # сколько запросов хранить
 MAX_MEM_LINES = 20
-MAX_HIST_CHARS = 60000
+MAX_HIST_CHARS = 50000
 
 
 # блокировка чатов что бы не испортить историю
@@ -60,7 +59,7 @@ USER_KEYS = SqliteDict('db/mistral_user_keys.db', autocommit=True)
 USER_KEYS_LOCK = threading.Lock()
 CURRENT_KEYS_SET_LOCK = threading.Lock()
 
-MAX_TOOL_OUTPUT_LEN = 60000
+MAX_TOOL_OUTPUT_LEN = 50000
 
 # не принимать запросы больше чем, это ограничение для телеграм бота, в этом модуле оно не используется
 MAX_REQUEST = 40000
@@ -381,7 +380,6 @@ def _clear_ocred_text(text: str) -> str:
     return text.strip().replace('\\#', '#')
 
 
-# @cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
 @utils.memory_safe_ttl_cache(maxsize=100, ttl=300)
 def ocr_image(
     image_data: bytes,
@@ -435,7 +433,6 @@ def ocr_image(
         return ''
 
 
-# @cachetools.func.ttl_cache(maxsize=10, ttl=1 * 60)
 @utils.memory_safe_ttl_cache(maxsize=100, ttl=300)
 def ocr_pdf(
     image_data: bytes,

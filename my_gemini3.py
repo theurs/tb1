@@ -99,6 +99,7 @@ def get_config(
             tools = tools,
             thinking_config=thinking_config,
             response_mime_type=json,
+            # media_resolution="MEDIA_RESOLUTION_MEDIUM", # "MEDIA_RESOLUTION_LOW" "MEDIA_RESOLUTION_HIGH"
         )
     else:
         gen_config = GenerateContentConfig(
@@ -109,6 +110,7 @@ def get_config(
             safety_settings=SAFETY_SETTINGS,
             tools = tools,
             response_mime_type=json,
+            # media_resolution="MEDIA_RESOLUTION_MEDIUM", # "MEDIA_RESOLUTION_LOW" "MEDIA_RESOLUTION_HIGH"
         )
 
     return gen_config

@@ -275,6 +275,9 @@ def ai(
                     remove_key(api_key)
                 my_log.log_mistral(f'ai: Unauthorized key removed | {api_key} | {user_id}')
                 # For unauthorized, we retry with a new key immediately in the next loop iteration
+            elif 'Service tier capacity exceeded for this model.':
+                my_log.log_mistral(f'ai: Service tier capacity exceeded for this model. | {api_key} | {user_id} breaking loop...')
+                break
             else:
                 my_log.log_mistral(f'ai: Unexpected error on attempt {attempt+1} | {error} | {api_key} | {user_id}')
                 if attempt < 2:

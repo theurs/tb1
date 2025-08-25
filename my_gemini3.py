@@ -1660,7 +1660,7 @@ def compose_creative_text(prompt: str, user_id: str) -> str:
 
         my_log.log_gemini_skills(f'compose_creative_text: {user_id} {prompt}')
 
-        query = f'''{{"request_type": "creative_text_generation", "user_prompt": "{prompt}", "output_format_instruction": "The output must contain only the requested creative text (song, poem, rhymed verse) without any introductory phrases, conversational remarks, or concluding comments."}}'''
+        query = f'''{{"request_type": "creative_text_generation", "user_prompt": "{prompt}", "output_format_instruction": "The output must contain only the requested creative text (regular text, song, poem, rhymed verse) without any introductory phrases, conversational remarks, or concluding comments."}}'''
 
         result = my_github.ai(
             prompt=query,

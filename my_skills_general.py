@@ -599,7 +599,18 @@ def translate_text(user_id: str) -> str:
     '''
     user_id = restore_id(user_id)
     my_log.log_gemini_skills(f'/translate_text {user_id}')
-    return "The function itself does not return an translated text. It returns a string containing instructions for the assistant. There are no tools for text translation, assistant have to translate all text by itself, as if he is a professional translator, using synonyms and context for better translation."
+    # return "The function itself does not return an translated text. It returns a string containing instructions for the assistant. There are no tools for text translation, assistant have to translate all text by itself, as if he is a professional translator, using synonyms and context for better translation."
+    return (
+        "# Translation Protocol\n"
+        "**ROLE:** Expert Linguist & Cultural Translator.\n"
+        "**OBJECTIVE:** Translate the user's text.\n"
+        "**DIRECTIVES:**\n"
+        "1. **NO LITERAL TRANSLATION.** Bypass direct word-for-word mapping.\n"
+        "2. **PRESERVE CONTEXT & TONE.** Capture the original intent, nuance, and style.\n"
+        "3. **ADAPT IDIOMS.** Replace source idioms with natural equivalents in the target language.\n"
+        "4. **ENSURE FLUENCY.** The output must read as if originally written by a native speaker.\n\n"
+        "Await user text and execute translation."
+    )
 
 
 def translate_documents(user_id: str) -> str:

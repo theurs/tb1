@@ -384,7 +384,7 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
 
 def query_user_file(query: str, user_id: str) -> str:
     '''
-    Query saved user file (do not ask for full text, do not ask about images, it will only answer about saved text)
+    Query saved user file (do not ask for full text, do not ask about images, it will only answer about saved text (NOT IMAGE!))
 
     Args:
         query: str - user query

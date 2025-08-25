@@ -20,13 +20,14 @@ import utils
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=120 * 60)
-def search_v3(query: str,
-              lang: str = 'ru',
-              max_search: int = 10,
-              download_only = False,
-              chat_id: str = '',
-              role: str = '',
-              fast_search: bool = False,
+def search_v3(
+    query: str,
+    lang: str = 'ru',
+    max_search: int = 10,
+    download_only = False,
+    chat_id: str = '',
+    role: str = '',
+    fast_search: bool = False,
 ) -> str:
 
     query = query.strip()

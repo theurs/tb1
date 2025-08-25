@@ -1696,8 +1696,6 @@ def get_config_msg(chat_id_full: str, lang: str) -> str:
         return tr('ERROR', lang)
 
 
-
-
 # --- Helper functions for button creation ---
 
 def _create_selection_button(
@@ -3709,8 +3707,6 @@ def transcribe(message: telebot.types.Message):
         my_log.log2(f'tb:transcribe: {unknown}\n{traceback_error}')
 
 
-
-
 ### Openrouter ################################################################
 
 
@@ -4184,8 +4180,6 @@ Example for a Russian translation:
 ### Openrouter ################################################################
 
 
-
-
 @bot.message_handler(commands=['tgui'], func=authorized_admin)
 @async_run
 def translation_gui(message: telebot.types.Message):
@@ -4276,175 +4270,6 @@ def create_translations_for_all_languages():
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:create_translations_for_all_languages: {unknown}\n{traceback_error}')
-
-
-# @bot.message_handler(commands=['keys', 'key', 'Keys', 'Key'], func=authorized_owner)
-# @async_run
-# def users_keys_for_gemini(message: telebot.types.Message):
-#     """Юзеры могут добавить свои бесплатные ключи для джемини в общий котёл"""
-#     try:
-#         chat_id_full = get_topic_id(message)
-#         lang = get_lang(chat_id_full, message)
-#         COMMAND_MODE[chat_id_full] = ''
-#         is_private = message.chat.type == 'private'
-
-#         if not is_private:
-#             bot_reply_tr(message, "This command is only available in private chat.")
-#             return
-
-#         args = message.text.split(maxsplit=1)
-#         if len(args) > 1:
-#             args[1] = args[1].strip()
-
-#             # is admin?
-#             match = re.match(r'^\d{4,15}', args[1])
-#             if match:
-#                 found_number_str = match.group(0)
-#                 chat_id_full = f'[{found_number_str}] [0]'
-
-#             # gemini keys
-#             keys = [x.strip() for x in args[1].split() if len(x.strip()) == 39]
-#             already_exists = any(key in my_gemini_general.ALL_KEYS for key in keys)
-#             if already_exists:
-#                 msg = f'{tr("This key has already been added by someone earlier.", lang)} {keys}'
-#                 keys = []
-#                 bot_reply(message, msg)
-#             keys = [x for x in keys if x not in my_gemini_general.ALL_KEYS and x.startswith('AIza')]
-
-#             # mistral keys len = 32 and passed test
-#             keys_mistral = [x.strip() for x in args[1].split() if len(x.strip()) == 32 and my_mistral.test_key(x)]
-#             already_exists = any(key in my_mistral.ALL_KEYS for key in keys_mistral)
-#             if already_exists:
-#                 keys_mistral = []
-#                 msg = f'{tr("This key has already been added by someone earlier.", lang)}'
-#                 bot_reply(message, msg)
-
-#             # cohere keys len = 40 and passed test
-#             keys_cohere = [x.strip() for x in args[1].split() if len(x.strip()) == 40 and not x.strip().startswith('ghp_') and my_cohere.test_key(x)]
-#             already_exists = any(key in my_cohere.ALL_KEYS for key in keys_cohere)
-#             if already_exists:
-#                 keys_cohere = []
-#                 msg = f'{tr("This key has already been added by someone earlier.", lang)}'
-#                 bot_reply(message, msg)
-
-
-#             # github keys len = 40 and passed test
-#             keys_github = [x.strip() for x in args[1].split() if len(x.strip()) == 40 and x.strip().startswith('ghp_') and my_github.test_key(x)]
-#             already_exists = any(key in my_github.ALL_KEYS for key in keys_github)
-#             if already_exists:
-#                 keys_github = []
-#                 msg = f'{tr("This key has already been added by someone earlier.", lang)}'
-#                 bot_reply(message, msg)
-
-
-#             # groq keys len=56, starts with "gsk_"
-#             keys_groq = [x.strip() for x in args[1].split() if len(x.strip()) == 56]
-#             if keys_groq and keys_groq[0] in my_groq.ALL_KEYS:
-#                 keys_groq = []
-#                 bot_reply_tr(message, 'Groq API key already exists!')
-#             keys_groq = [x for x in keys_groq if x not in my_groq.ALL_KEYS and x.startswith('gsk_')]
-
-
-#             if keys_mistral:
-#                 my_mistral.USER_KEYS[chat_id_full] = keys_mistral[0]
-#                 my_mistral.ALL_KEYS.append(keys_mistral[0])
-#                 my_log.log_keys(f'Added new API key for Mistral: {chat_id_full} {keys_mistral}')
-#                 bot_reply_tr(message, 'Added API key for Mistral successfully!')
-
-#             if keys_cohere:
-#                 my_cohere.USER_KEYS[chat_id_full] = keys_cohere[0]
-#                 my_cohere.ALL_KEYS.append(keys_cohere[0])
-#                 my_log.log_keys(f'Added new API key for Cohere: {chat_id_full} {keys_cohere}')
-#                 bot_reply_tr(message, 'Added API key for Cohere successfully!')
-
-
-#             if keys_github:
-#                 my_github.USER_KEYS[chat_id_full] = keys_github[0]
-#                 my_github.ALL_KEYS.append(keys_github[0])
-#                 my_log.log_keys(f'Added new API key for github: {chat_id_full} {keys_github}')
-#                 bot_reply_tr(message, 'Added API key for github successfully!')
-
-
-#             if keys_groq:
-#                 my_groq.USER_KEYS[chat_id_full] = keys_groq[0]
-#                 my_groq.ALL_KEYS.append(keys_groq[0])
-#                 my_log.log_keys(f'Added new API key for Groq: {chat_id_full} {keys_groq}')
-#                 bot_reply_tr(message, 'Added API key for Groq successfully!')
-
-#             if keys:
-#                 added_flag = False
-#                 with my_gemini_general.USER_KEYS_LOCK:
-#                     # my_gemini_general.USER_KEYS[chat_id_full] = keys
-#                     new_keys = []
-#                     for key in keys:
-#                         if key not in my_gemini_general.ALL_KEYS and key not in cfg.gemini_keys:
-#                             if my_gemini3.test_new_key(key, chat_id_full):
-#                                 my_gemini_general.ALL_KEYS.append(key)
-#                                 new_keys.append(key)
-#                                 added_flag = True
-#                                 my_log.log_keys(f'Added new api key for Gemini: {chat_id_full} {key}')
-#                                 my_db.set_user_property(chat_id_full, 'chat_mode', 'gemini15')
-#                                 msg = tr('Added new API key for Gemini:', lang) + f' {key}'
-#                                 bot_reply(message, msg)
-#                             else:
-#                                 my_log.log_keys(f'Failed to add new API key for Gemini: {key}')
-#                                 msg = tr('Failed to add new API key for Gemini:', lang) + f' {key}'
-#                                 bot_reply(message, msg)
-#                 if added_flag:
-#                     my_gemini_general.USER_KEYS[chat_id_full] = new_keys
-#                     bot_reply_tr(message, 'Added keys successfully!')
-#                     return
-
-#         msg = tr('Usage: /keys API KEYS space separated (gemini, groq)', lang) + '\n\n' + \
-#                  '<blockquote>/keys xxxxx yyyy zzz\n/keys xxxxx</blockquote>\n\n' + \
-#                  tr('This bot requires free API keys. At least first 2 keys are required.', lang) + '\n\n' + \
-#                  tr('Please <b>use only FREE keys</b>. Do not use paid accounts. If you have a paid account, please create a new one.', lang)+'\n\n'+\
-#                  '0️⃣ Free VPN: https://www.vpnjantit.com/\n\n' + \
-#                  '1️⃣ https://www.youtube.com/watch?v=6aj5a7qGcb4\nhttps://ai.google.dev/\nhttps://aistudio.google.com/apikey\n\n' + \
-#                  '2️⃣ https://github.com/theurs/tb1/tree/master/pics/groq\nhttps://console.groq.com/keys\n\n' + \
-#                  '\n\nhttps://console.mistral.ai/api-keys/\n\nhttps://dashboard.cohere.com/api-keys\n\nhttps://github.com/settings/tokens (classic, unlimited time, empty rights)'
-
-#         bot_reply(message, msg, disable_web_page_preview = True, parse_mode='HTML', reply_markup = get_keyboard('donate_stars', message))
-
-#         # показать юзеру его ключи
-#         if is_private:
-#             gemini_keys = my_gemini_general.USER_KEYS[chat_id_full] if chat_id_full in my_gemini_general.USER_KEYS else []
-#             mistral_keys = [my_mistral.USER_KEYS[chat_id_full],] if chat_id_full in my_mistral.USER_KEYS else []
-#             cohere_keys = [my_cohere.USER_KEYS[chat_id_full],] if chat_id_full in my_cohere.USER_KEYS else []
-#             github_keys = [my_github.USER_KEYS[chat_id_full],] if chat_id_full in my_github.USER_KEYS else []
-#             groq_keys = [my_groq.USER_KEYS[chat_id_full],] if chat_id_full in my_groq.USER_KEYS else []
-#             openrouter_keys = [my_openrouter.KEYS[chat_id_full],] if chat_id_full in my_openrouter.KEYS else []
-#             msg = tr('Your keys:', lang) + '\n\n'
-
-#             if openrouter_keys:
-#                 msg += f'🔑️ Openrouter [...{openrouter_keys[0][-4:]}]\n'
-#             else:
-#                 msg += '🔒 Openrouter\n'
-#             if gemini_keys:
-#                 msg += f'🔑️ Gemini [...{gemini_keys[0][-4:]}]\n'
-#             else:
-#                 msg += '🔒 Gemini\n'
-#             if groq_keys:
-#                 msg += f'🔑️ Groq [...{groq_keys[0][-4:]}]\n'
-#             else:
-#                 msg += '🔒 Groq\n'
-#             if mistral_keys:
-#                 msg += f'🔑️ Mistral [...{mistral_keys[0][-4:]}]\n'
-#             else:
-#                 msg += '🔒 Mistral\n'
-#             if cohere_keys:
-#                 msg += f'🔑️ Cohere [...{cohere_keys[0][-4:]}]\n'
-#             else:
-#                 msg += '🔒 Cohere\n'
-#             if github_keys:
-#                 msg += f'🔑️ Github [...{github_keys[0][-4:]}]\n'
-#             else:
-#                 msg += '🔒 Github\n'
-
-#             bot_reply(message, msg, parse_mode='HTML')
-#     except Exception as error:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'Error in /keys: {error}\n\n{message.text}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['keys', 'key', 'Keys', 'Key'], func=authorized_owner)
@@ -6786,7 +6611,16 @@ def send_images_to_pic_group(
 # @bot.message_handler(func=lambda message: authorized(message) and message.text.split()[0].lower() in ['/image', '/img', '/i', '/imagine', '/generate', '/gen', '/art', '/picture', '/pic'])
 
 
-@bot.message_handler(commands=['image','image:','Image:','IMAGE:','img', 'IMG', 'Image', 'Img', 'i', 'I', 'imagine', 'imagine:', 'Imagine', 'Imagine:', 'generate', 'gen', 'Generate', 'Gen', 'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'], func=authorized)
+@bot.message_handler(
+    commands=[
+        'image', 'image:', 'Image:', 'IMAGE:',
+        'img', 'IMG', 'Image', 'Img', 'i', 'I',
+        'imagine', 'imagine:', 'Imagine', 'Imagine:',
+        'generate', 'gen', 'Generate', 'Gen',
+        'art', 'Art', 'picture', 'pic', 'Picture', 'Pic'
+    ],
+    func=authorized
+)
 @async_run
 def image_gen(message: telebot.types.Message):
     """Generates a picture from a description"""

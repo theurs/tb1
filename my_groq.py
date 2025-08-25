@@ -319,6 +319,10 @@ def ai(prompt: str = '',
             try:
                 resp = chat_completion.choices[0].message.content.strip()
 
+                # эта модель отвечает через reasoning вместо context?
+                if 'compound' in chat_completion.model:
+                    if chat_completion.choices[0].message.reasoning:
+                        resp = chat_completion.choices[0].message.reasoning
 
                 # проверка есть ли в ответе картинки (их может создавать модель compound-beta)
                 # if 'compound-beta' in model:
@@ -1134,6 +1138,10 @@ if __name__ == '__main__':
     #     f.write(tts('Мы к вам заехали на час, а ну скорей любите нас!'))
 
     # print(search('покажи полный текст песни братьев газьянов - малиновая лада'))
+
+
+    print(search('кто такой лабубу'))
+    # print(calc('''from datetime import datetime, timedelta; (datetime(2025, 8, 25, 10, 3, 51) - timedelta(hours=20, minutes=11)).strftime('%Y-%m-%d %H:%M:%S')'''))
 
     reset('test')
     chat_cli() #(model = 'compound-beta')

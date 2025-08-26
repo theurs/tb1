@@ -16,8 +16,8 @@ import my_log
 import utils
 
 
-MODEL = "gemini-2.0-flash-preview-image-generation"
-MODEL_OLD = "gemini-2.0-flash-exp-image-generation"
+MODEL =     "gemini-2.0-flash-preview-image-generation" # "gemini-2.5-flash-image-preview" # "gemini-2.0-flash-preview-image-generation"
+MODEL_OLD = "gemini-2.0-flash-exp-image-generation" # "gemini-2.0-flash-preview-image-generation"
 
 
 # не давать одному юзеру больше одного потока в редактировании изображений
@@ -147,7 +147,7 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
             except Exception as e:
                 str_error = str(e)
                 traceback_error = traceback.format_exc()
-                if '500 INTERNAL.' in str_error or '503 UNAVAILABLE' in str_error:
+                if '500 INTERNAL.' in str_error or '503 UNAVAILABLE' in str_error or '429 RESOURCE_EXHAUSTED' in str_error:
                     my_log.log_gemini(f'my_gemini_genimg:1: [error genimg] {str_error}')
                 else:
                     my_log.log_gemini(f'my_gemini_genimg:2: [error genimg] {str_error}\n{prompt}\n{traceback_error}')

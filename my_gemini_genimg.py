@@ -145,15 +145,17 @@ def generate_image(prompt: str, api_key: str = '', user_id: str = '') -> Optiona
                 time.sleep(5)
                 continue # Retry
             except Exception as e:
+                str_error = str(e)
                 traceback_error = traceback.format_exc()
-                if '500 INTERNAL.' in str(e):
-                    my_log.log_gemini(f'my_gemini_genimg:1: [error genimg] {str(e)}')
+                if '500 INTERNAL.' in str_error or '503 UNAVAILABLE' in str_error:
+                    my_log.log_gemini(f'my_gemini_genimg:1: [error genimg] {str_error}')
                 else:
-                    my_log.log_gemini(f'my_gemini_genimg:2: [error genimg] {str(e)}\n{prompt}\n{traceback_error}')
+                    my_log.log_gemini(f'my_gemini_genimg:2: [error genimg] {str_error}\n{prompt}\n{traceback_error}')
                 # Retry on specific network or service errors
-                if ("'status': 'Service Unavailable'" in str(e)
-                        or "'status': 'UNAVAILABLE'" in str(e)
-                        or 'SSL: UNEXPECTED_EOF_WHILE_READING' in str(e)):
+                if (
+                    "unavailable" in str_error.lower()
+                    or 'SSL: UNEXPECTED_EOF_WHILE_READING' in str_error
+                    ):
                     time.sleep(5)
                     continue
                 else:

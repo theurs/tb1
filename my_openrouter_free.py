@@ -520,25 +520,23 @@ def _send_image_request(
     temperature: float,
 ) -> Optional[bytes]:
     """
-    Sends a request to the OpenRouter API for image generation or editing.
+    Sends a request to the OpenRouter API for image generation or editing with a total timeout.
 
     This private helper function handles the entire request lifecycle, including
     authentication, payload construction, sending the request, retrying on
-    server errors, and parsing the response to extract the image data.
+    server errors, and parsing the response to extract the image data, all
+    within a cumulative timeout using a monotonic clock for reliability.
 
     Args:
         model (str): The model identifier to use for the request.
-        messages (List[Dict[str, Any]]): The list of messages forming the conversation,
-            structured according to the OpenRouter API schema.
+        messages (List[Dict[str, Any]]): The list of messages forming the conversation.
         user_id (str): The ID of the user initiating the request, for logging purposes.
-        timeout (int): The request timeout in seconds.
-        log_context (str): A string identifier for the calling function (e.g., 'txt2img')
-            to provide context in logs.
+        timeout (int): The total request timeout in seconds for all retries.
+        log_context (str): A string identifier for the calling function (e.g., 'txt2img').
         temperature (float): The temperature for the generation.
 
     Returns:
-        Optional[bytes]: The image data as bytes if the request is successful,
-        otherwise None.
+        Optional[bytes]: The image data as bytes if the request is successful, otherwise None.
     """
     if not hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') or not cfg.OPEN_ROUTER_FREE_KEYS:
         return None
@@ -552,7 +550,17 @@ def _send_image_request(
         "temperature": temperature,
     }
 
-    for _ in range(3):  # Retry loop
+    start_time = time.monotonic()  # Use monotonic clock for reliable timeout measurement
+
+    for attempt in range(3):  # Retry loop
+        elapsed_time = time.monotonic() - start_time
+        remaining_time = timeout - elapsed_time
+
+        # Check if the total time has expired
+        if remaining_time <= 0:
+            my_log.log_openrouter_free(f'{log_context}: Total timeout of {timeout}s exceeded. Aborting.')
+            return None
+
         try:
             response = requests.post(
                 url="https://openrouter.ai/api/v1/chat/completions",
@@ -562,7 +570,7 @@ def _send_image_request(
                     "X-Title": YOUR_APP_NAME,
                 },
                 data=json.dumps(payload),
-                timeout=timeout,
+                timeout=remaining_time,  # Use the remaining time for this attempt's timeout
             )
 
             # Differentiate client/server errors for logging
@@ -601,7 +609,8 @@ def _send_image_request(
                 time.sleep(5)
 
         except requests.exceptions.RequestException as e:
-            my_log.log_openrouter_free(f'{log_context}: Request failed: {e}. Retrying...')
+            # This will catch timeouts from requests and other connection errors
+            my_log.log_openrouter_free(f'{log_context}: Request failed on attempt {attempt + 1}: {e}. Retrying...')
             time.sleep(5)
 
     return None

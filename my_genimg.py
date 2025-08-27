@@ -55,7 +55,7 @@ def openrouter_gen(prompt: str, user_id: str) -> list[bytes]:
     data: bytes | None = my_openrouter_free.txt2img(prompt, user_id=user_id)
     if data:
         # If successful, register the author and return data in a list
-        WHO_AUTOR[utils.fast_hash(data)] = 'openrouter gemini flash 2.5'
+        WHO_AUTOR[utils.fast_hash(data)] = my_openrouter_free.GEMINI25_FLASH_IMAGE
         return [data]
     # Return an empty list if fetching failed
     return []

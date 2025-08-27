@@ -603,6 +603,8 @@ def _send_image_request(
                                   .get('url'))
 
                 if not base64_content:
+                    if 'PROHIBITED_CONTENT' in str(response.text):
+                        return None
                     my_log.log_openrouter_free(f'{log_context}: "url" key not found in response.\nResponse: {response.text[:500].strip()}')
                     continue
 

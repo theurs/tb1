@@ -2841,6 +2841,49 @@ def edit_image_detect(text: str, lang: str, tr: Callable) -> bool:
         return False
 
 
+def is_completely_black_image(image_input: Union[str, bytes]) -> bool:
+    """
+    Determines if an image consists exclusively of black pixels.
+
+    This function accepts either a file path (string) or image bytes.
+    It converts the image to grayscale and efficiently checks if every pixel has a value of 0
+    using NumPy for optimized array operations.
+
+    Args:
+        image_input: The path to the image file (str) or the image content as bytes (bytes).
+
+    Returns:
+        True if all pixels are black, False otherwise.
+    """
+    try:
+        if isinstance(image_input, str):
+            # If it's a string, treat it as a file path
+            img = PIL.Image.open(image_input)
+        elif isinstance(image_input, bytes):
+            # If it's bytes, open it from a byte stream
+            img = PIL.Image.open(io.BytesIO(image_input))
+        else:
+            my_log.log2(f"is_almost_black_image: Invalid input type: {type(image_input)}")
+            return False
+
+        # Convert the image to 'L' mode (grayscale) for simpler pixel value checking.
+        # A black pixel in 'L' mode has a value of 0.
+        # Then convert to a NumPy array for efficient checks.
+        img_array = np.array(img.convert('L'))
+        img.close()
+
+        # Check if all pixel values in the NumPy array are 0
+        return np.all(img_array == 0)
+
+    except FileNotFoundError:
+        my_log.log2(f"utils:is_almost_black_image: Error: File '{image_input}' not found.")
+        return False
+    except Exception as e:
+        my_log.log2(f"utils:is_almost_black_image: unexpected error: {e}")
+
+    return False
+
+
 if __name__ == '__main__':
     pass
 

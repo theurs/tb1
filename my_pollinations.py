@@ -4,9 +4,10 @@ from typing import Optional
 from urllib.parse import quote_plus
 
 import requests
-from PIL import Image, UnidentifiedImageError
+from PIL import Image
 
 import my_log
+import utils
 
 
 def fetch_image_bytes(
@@ -83,7 +84,12 @@ def fetch_image_bytes(
         if buffer.tell() > TELEGRAM_MAX_SIZE_BYTES:
             return None
 
-        return buffer.getvalue()
+        r = buffer.getvalue()
+
+        if utils.is_completely_black_image(r):
+            return None
+
+        return r
 
     except Exception as e:
         if 'Details: 502 Server Error: Bad Gateway for url:' in str(e)[:150]:
@@ -95,7 +101,7 @@ def fetch_image_bytes(
 if __name__ == "__main__":
     # prompt = 'curly woman dring water'
     prompt = '''Generate a highly detailed and hyperrealistic image of an immense blue whale crammed inside a standard-sized porcelain bathtub. Focus on accurate anatomy and scale, emphasizing the absurd contrast between the gigantic marine mammal and the confined domestic setting. Show water splashing vigorously out of the tub, reflecting natural light. The whale's skin should exhibit realistic textures, barnacles, and subtle ripples, suggesting the wet environment. The bathtub should appear solid and slightly overflowing, with reflections on its glazed surface. Use dramatic volumetric lighting to enhance depth and realism, captured with a professional high-resolution camera, akin to an award-winning wildlife photograph.'''
-    image = fetch_image_bytes(prompt, model='cccontext')
+    image = fetch_image_bytes(prompt, model='')
     if image:
         with open(r'c:\Users\user\Downloads\image.jpg', 'wb') as f:
             f.write(image)

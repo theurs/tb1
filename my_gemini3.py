@@ -1642,7 +1642,7 @@ TEXT to rewrite:
         return ''
 
 
-def compose_creative_text(prompt: str, user_id: str) -> str:
+def compose_creative_text(prompt: str, context: str, user_id: str) -> str:
     '''
     Composes creative content such as songs, poems, and rhymed verses.
     Only use it if user ask for generating song, poem, or rhymed text.
@@ -1650,6 +1650,7 @@ def compose_creative_text(prompt: str, user_id: str) -> str:
 
     Args:
         prompt: The user's full request for creative text generation, including any topic, style, length, or specific rhyming schemes.
+        context: The context for the creative text generation, brefly summarizing the dialog before the prompt.
         user_id: The Telegram user ID.
 
     Returns:
@@ -1658,9 +1659,9 @@ def compose_creative_text(prompt: str, user_id: str) -> str:
     try:
         user_id = my_skills_general.restore_id(user_id)
 
-        my_log.log_gemini_skills(f'compose_creative_text: {user_id} {prompt}')
+        my_log.log_gemini_skills(f'compose_creative_text: {user_id} {prompt}\n\n{context}')
 
-        query = f'''{{"request_type": "creative_text_generation", "user_prompt": "{prompt}", "output_format_instruction": "The output must contain only the requested creative text (regular text, song, poem, rhymed verse) without any introductory phrases, conversational remarks, or concluding comments."}}'''
+        query = f'''{{"request_type": "creative_text_generation", "user_prompt": "{prompt}", "context": "{context}", "output_format_instruction": "The output must contain only the requested creative text (regular text, song, poem, rhymed verse) without any introductory phrases, conversational remarks, or concluding comments."}}'''
 
         result = my_github.ai(
             prompt=query,

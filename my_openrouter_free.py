@@ -10,6 +10,8 @@ import threading
 import traceback
 from typing import Optional, List, Union, Dict, Any
 
+from sqlitedict import SqliteDict
+
 import cfg
 import my_db
 import my_log
@@ -30,6 +32,64 @@ MAX_REQUEST = 50000
 DEFAULT_MODEL = 'qwen/qwen3-235b-a22b-07-25:free'
 DEFAULT_MODEL_FALLBACK = 'qwen/qwen3-235b-a22b:free'
 GEMINI25_FLASH_IMAGE = 'google/gemini-2.5-flash-image-preview:free'
+
+
+# хранилище временно замороженных ключей {key: unfreeze_timestamp}
+FROZEN_KEYS = SqliteDict('db/openrouter_frozen_keys.db', autocommit=True)
+FROZEN_KEYS_LOCK = threading.Lock()
+CURRENT_KEY_INDEX = 0
+KEY_INDEX_LOCK = threading.Lock()
+
+
+def freeze_key(key: str, duration_seconds: int = 86400) -> None:
+    """
+    Temporarily freezes a rate-limited API key by adding it to the FROZEN_KEYS database.
+
+    Args:
+        key (str): The API key to freeze.
+        duration_seconds (int): The duration in seconds for which the key will be frozen. Defaults to 86400 (24 hours).
+    """
+    with FROZEN_KEYS_LOCK:
+        unfreeze_time = time.time() + duration_seconds
+        FROZEN_KEYS[key] = unfreeze_time
+        my_log.log_openrouter_free(f'Key frozen due to rate limit until {time.ctime(unfreeze_time)}: ...{key[-4:]}')
+
+
+def get_available_key() -> Optional[str]:
+    """
+    Retrieves the next available, non-frozen API key using a round-robin strategy
+    and cleans up expired frozen keys.
+
+    Returns:
+        Optional[str]: An available API key, or None if no keys are available.
+    """
+    global CURRENT_KEY_INDEX
+    with FROZEN_KEYS_LOCK:
+        # Clean up expired keys from the frozen list
+        current_time = time.time()
+        expired_keys = [key for key, unfreeze_time in FROZEN_KEYS.items() if current_time > unfreeze_time]
+        for key in expired_keys:
+            del FROZEN_KEYS[key]
+            my_log.log_openrouter_free(f'Key unfrozen: ...{key[-4:]}')
+
+        # Get the list of all keys and filter out the currently frozen ones
+        all_keys = cfg.OPEN_ROUTER_FREE_KEYS if hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') else []
+        frozen_keys_set = set(FROZEN_KEYS.keys())
+        available_keys = [key for key in all_keys if key not in frozen_keys_set]
+
+    if not available_keys:
+        my_log.log_openrouter_free('No available (non-frozen) API keys.')
+        return None
+
+    # Select the next key using round-robin logic in a thread-safe manner
+    with KEY_INDEX_LOCK:
+        # Ensure the index wraps around the current list of available keys
+        index = CURRENT_KEY_INDEX % len(available_keys)
+        key_to_return = available_keys[index]
+        # Move to the next index for the subsequent call
+        CURRENT_KEY_INDEX += 1
+
+    return key_to_return
 
 
 def clear_mem(mem, user_id: str):
@@ -106,10 +166,16 @@ def ai(prompt: str = '',
     for _ in range(3):
         if time.time() - start_time > timeout:
             return ''
+
+        key = get_available_key()
+        if not key:
+            time.sleep(5)  # Wait if no keys are available
+            continue
+
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
-                "Authorization": f"Bearer {random.choice(cfg.OPEN_ROUTER_FREE_KEYS)}",
+                "Authorization": f"Bearer {key}",
                 "HTTP-Referer": f"{YOUR_SITE_URL}",
                 "X-Title": f"{YOUR_APP_NAME}",
             },
@@ -136,6 +202,8 @@ def ai(prompt: str = '',
                     return ai(prompt, mem, user_id, system, DEFAULT_MODEL_FALLBACK, temperature, max_tokens, timeout)
                 time.sleep(2)
         else:
+            if status == 429 and "free-models-per-day" in response.text:
+                freeze_key(key)
             my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response)[:2000]}')
             time.sleep(2)
 
@@ -571,11 +639,16 @@ def _send_image_request(
             my_log.log_openrouter_free(f'{log_context}: Total timeout of {timeout}s exceeded. Aborting.')
             return None
 
+        key = get_available_key()
+        if not key:
+            time.sleep(5)  # Wait if no keys are available
+            continue
+
         try:
             response = requests.post(
                 url="https://openrouter.ai/api/v1/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {random.choice(cfg.OPEN_ROUTER_FREE_KEYS)}",
+                    "Authorization": f"Bearer {key}",
                     "HTTP-Referer": YOUR_SITE_URL,
                     "X-Title": YOUR_APP_NAME,
                 },
@@ -583,7 +656,14 @@ def _send_image_request(
                 timeout=remaining_time,  # Use the remaining time for this attempt's timeout
             )
 
-            # Differentiate client/server errors for logging
+            # Handle rate limit error by freezing the key and retrying
+            if response.status_code == 429 and "free-models-per-day" in response.text:
+                freeze_key(key)
+                my_log.log_openrouter_free(f'{log_context}: Rate limit exceeded for key. Freezing and retrying...')
+                time.sleep(2)
+                continue
+
+            # Differentiate other client/server errors for logging
             if 400 <= response.status_code < 500:
                 my_log.log_openrouter_free(f'{log_context}: Client error {response.status_code}. Aborting retries.\n{response.text[:500]}')
                 return None  # No point in retrying client errors

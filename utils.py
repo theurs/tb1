@@ -35,6 +35,7 @@ import json_repair
 import markdownify
 import PIL
 from bs4 import BeautifulSoup
+import numpy as np
 
 from pylatexenc.latex2text import LatexNodes2Text
 from pillow_heif import register_heif_opener

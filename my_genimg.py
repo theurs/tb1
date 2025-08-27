@@ -23,6 +23,7 @@ import my_gemini_genimg
 import my_groq
 import my_log
 import my_mistral
+import my_openrouter_free
 import my_pollinations
 import utils
 from my_nebius import txt2img as flux_nebius
@@ -37,6 +38,27 @@ BING_LOCK = threading.Lock()
 # 0 - main, 1 - second instance
 # если есть второй инстанс с бингом то переключаться между ними циклично
 BING_SWITCH = 0
+
+
+def openrouter_gen(prompt: str, user_id: str) -> list[bytes]:
+    """
+    Wrapper for my_openrouter_free.txt2img to align with ThreadPool usage.
+
+    Args:
+        prompt: The text prompt for the image.
+        user_id: The user's ID for logging.
+
+    Returns:
+        A list containing the image bytes, or an empty list on failure.
+    """
+    # Attempt to fetch the image data using the OpenRouter API
+    data: bytes | None = my_openrouter_free.txt2img(prompt, user_id=user_id)
+    if data:
+        # If successful, register the author and return data in a list
+        WHO_AUTOR[utils.fast_hash(data)] = 'openrouter gemini flash 2.5'
+        return [data]
+    # Return an empty list if fetching failed
+    return []
 
 
 def pollinations_gen(prompt: str, width: int = 1024, height: int = 1024, model: str = "fluxxx") -> list[bytes]:
@@ -442,7 +464,9 @@ def gen_images(
     bing_prompt = original_prompt if original_prompt.startswith('!') else prompt
     bing_prompt = re.sub(r'^!+', '', bing_prompt).strip()
 
-    pool = ThreadPool(processes=9)
+    pool = ThreadPool(processes=10)
+
+    async_result_openrouter = pool.apply_async(openrouter_gen, (prompt, user_id))
 
     if use_bing:
         async_result1 = pool.apply_async(bing, (bing_prompt, moderation_flag, user_id))
@@ -458,7 +482,8 @@ def gen_images(
                 (async_result2.get() or []) + \
                 (async_result3.get() or []) + \
                 (async_result10.get() or []) + \
-                (async_result_pollinations.get() or [])
+                (async_result_pollinations.get() or []) + \
+                (async_result_openrouter.get() or [])
     else:
         async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
         async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
@@ -469,7 +494,8 @@ def gen_images(
         result = (async_result2.get() or []) + \
                 (async_result3.get() or []) + \
                 (async_result10.get() or []) + \
-                (async_result_pollinations.get() or [])
+                (async_result_pollinations.get() or []) + \
+                (async_result_openrouter.get() or [])
 
     return result
 

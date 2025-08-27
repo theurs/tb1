@@ -528,8 +528,39 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_log.log2(f'tb:add_to_bots_mem:{unexpected_error}\n\n{traceback_error}')
 
 
+# def img2img(
+#     text,
+#     lang: str,
+#     chat_id_full: str,
+#     query: str = '',
+#     model: str = '',
+#     temperature: float = 0,
+#     system_message: str = '',
+#     timeout: int = 120,
+#     ) -> Optional[bytes]:
+#     """
+#     Regenerate the image using query.
+
+#     Args:
+#         text (str): The image file URL or downloaded data(bytes).
+#         lang (str): The language code for the image description.
+#         chat_id_full (str): The full chat ID.
+#         query (str): The user's query text.
+#         model (str): gemini model
+#         temperature (float): temperature
+#         system_message (str): system message (role/style)
+#         timeout (int): timeout
+
+#     Returns:
+#         str: new image as jpg bytes.
+#     """
+#     images = [text,]
+
+#     return my_gemini_genimg.regenerate_image(query, sources_images=images, user_id=chat_id_full)
+
+
 def img2img(
-    text,
+    text: bytes,
     lang: str,
     chat_id_full: str,
     query: str = '',
@@ -537,25 +568,41 @@ def img2img(
     temperature: float = 0,
     system_message: str = '',
     timeout: int = 120,
-    ) -> Optional[bytes]:
+) -> Optional[bytes]:
     """
-    Regenerate the image using query.
+    Regenerate the image using a query.
+    Tries OpenRouter first, then falls back to the old method.
 
     Args:
-        text (str): The image file URL or downloaded data(bytes).
-        lang (str): The language code for the image description.
-        chat_id_full (str): The full chat ID.
-        query (str): The user's query text.
-        model (str): gemini model
-        temperature (float): temperature
-        system_message (str): system message (role/style)
-        timeout (int): timeout
+        text (bytes): The source image data.
+        lang (str): The language code (unused, for compatibility).
+        chat_id_full (str): The full chat ID for logging.
+        query (str): The user's prompt for the edit.
+        model (str): The model to use (for OpenRouter).
+        temperature (float): Generation temperature.
+        system_message (str): System message for the model.
+        timeout (int): Request timeout in seconds.
 
     Returns:
-        str: new image as jpg bytes.
+        Optional[bytes]: The new image as bytes, or None on failure.
     """
-    images = [text,]
+    # Attempt to edit the image using the new OpenRouter method
+    edited_image: Optional[bytes] = my_openrouter_free.edit_image(
+        prompt=query,
+        source_image=text,
+        user_id=chat_id_full,
+        model=model or 'google/gemini-2.5-flash-image-preview:free',
+        timeout=timeout,
+        system_prompt=system_message,
+        temperature=temperature
+    )
 
+    # If the new method succeeds, return the result
+    if edited_image:
+        return edited_image
+
+    # If the new method fails, fall back to the original method
+    images: list[bytes] = [text]
     return my_gemini_genimg.regenerate_image(query, sources_images=images, user_id=chat_id_full)
 
 

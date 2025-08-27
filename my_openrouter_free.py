@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
 import base64
+import binascii
 import json
 import random
 import requests
 import time
 import threading
 import traceback
+from typing import Optional, List, Union, Dict, Any
 
 import cfg
 import my_db
@@ -27,6 +29,7 @@ MAX_REQUEST = 50000
 
 DEFAULT_MODEL = 'qwen/qwen3-235b-a22b-07-25:free'
 DEFAULT_MODEL_FALLBACK = 'qwen/qwen3-235b-a22b:free'
+
 
 def clear_mem(mem, user_id: str):
     while 1:
@@ -505,6 +508,214 @@ def img2txt(
 #     return result
 
 
+#### flash25 image generate and edit ####
+
+
+def _send_image_request(
+    model: str,
+    messages: List[Dict[str, Any]],
+    user_id: str,
+    timeout: int,
+    log_context: str,
+    temperature: float,
+) -> Optional[bytes]:
+    """
+    Sends a request to the OpenRouter API for image generation or editing.
+
+    This private helper function handles the entire request lifecycle, including
+    authentication, payload construction, sending the request, retrying on
+    server errors, and parsing the response to extract the image data.
+
+    Args:
+        model (str): The model identifier to use for the request.
+        messages (List[Dict[str, Any]]): The list of messages forming the conversation,
+            structured according to the OpenRouter API schema.
+        user_id (str): The ID of the user initiating the request, for logging purposes.
+        timeout (int): The request timeout in seconds.
+        log_context (str): A string identifier for the calling function (e.g., 'txt2img')
+            to provide context in logs.
+        temperature (float): The temperature for the generation.
+
+    Returns:
+        Optional[bytes]: The image data as bytes if the request is successful,
+        otherwise None.
+    """
+    if not hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') or not cfg.OPEN_ROUTER_FREE_KEYS:
+        return None
+
+    YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
+    YOUR_APP_NAME = 'kun4sun_bot'
+
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+    }
+
+    for _ in range(3):  # Retry loop
+        try:
+            response = requests.post(
+                url="https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {random.choice(cfg.OPEN_ROUTER_FREE_KEYS)}",
+                    "HTTP-Referer": YOUR_SITE_URL,
+                    "X-Title": YOUR_APP_NAME,
+                },
+                data=json.dumps(payload),
+                timeout=timeout,
+            )
+
+            # Differentiate client/server errors for logging
+            if 400 <= response.status_code < 500:
+                my_log.log_openrouter_free(f'{log_context}: Client error {response.status_code}. Aborting retries.\n{response.text[:500]}')
+                return None  # No point in retrying client errors
+
+            if response.status_code != 200:
+                my_log.log_openrouter_free(f'{log_context}: Bad response status {response.status_code}. Retrying...\n{response.text[:500]}')
+                time.sleep(5)
+                continue
+
+            try:
+                json_response = response.json()
+                # Robust parsing using .get() to avoid KeyErrors
+                base64_content = (json_response.get('choices', [{}])[0]
+                                  .get('message', {})
+                                  .get('images', [{}])[0]
+                                  .get('image_url', {})
+                                  .get('url'))
+
+                if not base64_content:
+                    my_log.log_openrouter_free(f'{log_context}: "url" key not found in response.\nResponse: {response.text[:500]}')
+                    continue
+
+                if 'base64,' in base64_content:
+                    base64_content = base64_content.split('base64,', 1)[1].strip(') \n')
+
+                if user_id:
+                    my_db.add_msg(user_id, 'img ' + model)
+
+                return base64.b64decode(base64_content)
+
+            except (json.JSONDecodeError, IndexError, binascii.Error) as e:
+                my_log.log_openrouter_free(f'{log_context}: Failed to parse/decode response: {e}\nResponse: {response.text[:500]}')
+                time.sleep(5)
+
+        except requests.exceptions.RequestException as e:
+            my_log.log_openrouter_free(f'{log_context}: Request failed: {e}. Retrying...')
+            time.sleep(5)
+
+    return None
+
+
+def txt2img(
+    prompt: str,
+    user_id: str = '',
+    model: str = 'google/gemini-2.5-flash-image-preview:free',
+    timeout: int = 120,
+    system_prompt: str = '',
+    temperature: float = 1.0,
+) -> Optional[bytes]:
+    """
+    Generates an image from a text prompt using a specified model on OpenRouter.
+
+    Args:
+        prompt (str): The text prompt describing the desired image.
+        user_id (str): The user's ID for logging purposes. Defaults to ''.
+        model (str): The model to use for generation. Defaults to a free Gemini model.
+        timeout (int): Request timeout in seconds. Defaults to 120.
+        system_prompt (str): An optional system prompt to guide the model. Defaults to ''.
+        temperature (float): The generation temperature. Defaults to 1.0.
+
+    Returns:
+        Optional[bytes]: The generated image data as bytes if successful, otherwise None.
+    """
+    if not model.endswith(':free'):
+        my_log.log_openrouter_free(f"txt2img: Model '{model}' is not a free model.")
+        return None
+
+    messages: List[Dict[str, Any]] = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+
+    return _send_image_request(
+        model=model,
+        messages=messages,
+        user_id=user_id,
+        timeout=timeout,
+        log_context='txt2img',
+        temperature=temperature
+    )
+
+
+def edit_image(
+    prompt: str,
+    source_image: Union[bytes, str, List[Union[bytes, str]]],
+    user_id: str = '',
+    model: str = 'google/gemini-2.5-flash-image-preview:free',
+    timeout: int = 180,
+    system_prompt: str = '',
+    temperature: float = 1.0,
+) -> Optional[bytes]:
+    """
+    Edits an image based on a text prompt using a specified model on OpenRouter.
+    Can accept one or more source images.
+
+    Args:
+        prompt (str): The text prompt describing the desired edit.
+        source_image (Union[bytes, str, List[Union[bytes, str]]]): The source image(s)
+            data as bytes, a file path (str), or a list of bytes/paths.
+        user_id (str): The user's ID for logging purposes. Defaults to ''.
+        model (str): The model to use for generation. Defaults to a free Gemini model.
+        timeout (int): Request timeout in seconds. Defaults to 180.
+        system_prompt (str): An optional system prompt to guide the model. Defaults to ''.
+        temperature (float): The generation temperature. Defaults to 1.0.
+
+    Returns:
+        Optional[bytes]: The edited image data as bytes if successful, otherwise None.
+    """
+    if not model.endswith(':free'):
+        my_log.log_openrouter_free(f"edit_image: Model '{model}' is not a free model.")
+        return None
+
+    # Normalize input to always be a list of images
+    if isinstance(source_image, (bytes, str)):
+        image_list = [source_image]
+    else:
+        image_list = source_image
+
+    # Prepare content for the API message
+    content_list: List[Dict[str, Any]] = [{"type": "text", "text": prompt}]
+
+    for image_item in image_list:
+        img_bytes = image_item
+        if isinstance(image_item, str):
+            with open(image_item, 'rb') as f:
+                img_bytes = f.read()
+
+        base64_image = base64.b64encode(img_bytes).decode('utf-8')
+        content_list.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+        })
+
+    messages: List[Dict[str, Any]] = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": content_list})
+
+    return _send_image_request(
+        model=model,
+        messages=messages,
+        user_id=user_id,
+        timeout=timeout,
+        log_context='edit_image',
+        temperature=temperature
+    )
+
+
+#### flash25 image generate and edit ####
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)
@@ -521,7 +732,26 @@ if __name__ == '__main__':
 
 
     # print(img2txt('C:/Users/user/Downloads/1.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-3.2-11b-vision-instruct:free'))
-    print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-4-maverick:free'))
+    # print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-4-maverick:free'))
     # print(voice2txt('C:/Users/user/Downloads/1.ogg'))
+
+    # img = txt2img('сигарета в руке крупным планом')
+    # if img:
+    #     with open(r'C:/Users/user/Downloads/1.png', 'wb') as f:
+    #         f.write(img)
+
+    # img1 = r'C:\Users\user\Downloads\samples for ai\картинки\студийное фото человека.png'
+    # img2 = edit_image('помести его внутрь тардис, и пусть он курит папиросу', img1)
+    # if img2:
+    #     with open(r'C:/Users/user/Downloads/2.png', 'wb') as f:
+    #         f.write(img2)
+
+    # img1 = r'C:\Users\user\Downloads\samples for ai\картинки\студийное фото человека.png'
+    # img2 = r'C:\Users\user\Downloads\samples for ai\картинки\фотография улицы.png'
+    # img3 = edit_image('помести человека на улице', (img1, img2))
+    # if img3:
+    #     with open(r'C:/Users/user/Downloads/3.png', 'wb') as f:
+    #         f.write(img3)
+
 
     my_db.close()

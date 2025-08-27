@@ -29,6 +29,7 @@ MAX_REQUEST = 50000
 
 DEFAULT_MODEL = 'qwen/qwen3-235b-a22b-07-25:free'
 DEFAULT_MODEL_FALLBACK = 'qwen/qwen3-235b-a22b:free'
+GEMINI25_FLASH_IMAGE = 'google/gemini-2.5-flash-image-preview:free'
 
 
 def clear_mem(mem, user_id: str):
@@ -550,6 +551,15 @@ def _send_image_request(
         "temperature": temperature,
     }
 
+    # Disable safety filters for Google Gemini models
+    if "gemini" in model.lower():
+        payload["safety_settings"] = [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        ]
+
     start_time = time.monotonic()  # Use monotonic clock for reliable timeout measurement
 
     for attempt in range(3):  # Retry loop
@@ -593,7 +603,7 @@ def _send_image_request(
                                   .get('url'))
 
                 if not base64_content:
-                    my_log.log_openrouter_free(f'{log_context}: "url" key not found in response.\nResponse: {response.text[:500]}')
+                    my_log.log_openrouter_free(f'{log_context}: "url" key not found in response.\nResponse: {response.text[:500].strip()}')
                     continue
 
                 if 'base64,' in base64_content:
@@ -619,7 +629,7 @@ def _send_image_request(
 def txt2img(
     prompt: str,
     user_id: str = '',
-    model: str = 'google/gemini-2.5-flash-image-preview:free',
+    model: str = GEMINI25_FLASH_IMAGE,
     timeout: int = 120,
     system_prompt: str = '',
     temperature: float = 1.0,
@@ -661,7 +671,7 @@ def edit_image(
     prompt: str,
     source_image: Union[bytes, str, List[Union[bytes, str]]],
     user_id: str = '',
-    model: str = 'google/gemini-2.5-flash-image-preview:free',
+    model: str = GEMINI25_FLASH_IMAGE,
     timeout: int = 180,
     system_prompt: str = '',
     temperature: float = 1.0,

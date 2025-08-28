@@ -722,7 +722,7 @@ def txt2img(
     prompt: str,
     user_id: str = '',
     model: str = GEMINI25_FLASH_IMAGE,
-    timeout: int = 120,
+    timeout: int = 60,
     system_prompt: str = '',
     temperature: float = 1.0,
 ) -> Optional[bytes]:
@@ -733,7 +733,7 @@ def txt2img(
         prompt (str): The text prompt describing the desired image.
         user_id (str): The user's ID for logging purposes. Defaults to ''.
         model (str): The model to use for generation. Defaults to a free Gemini model.
-        timeout (int): Request timeout in seconds. Defaults to 120.
+        timeout (int): Request timeout in seconds. Defaults to 60.
         system_prompt (str): An optional system prompt to guide the model. Defaults to ''.
         temperature (float): The generation temperature. Defaults to 1.0.
 
@@ -764,7 +764,7 @@ def edit_image(
     source_image: Union[bytes, str, List[Union[bytes, str]]],
     user_id: str = '',
     model: str = GEMINI25_FLASH_IMAGE,
-    timeout: int = 180,
+    timeout: int = 60,
     system_prompt: str = '',
     temperature: float = 1.0,
 ) -> Optional[bytes]:
@@ -778,7 +778,7 @@ def edit_image(
             data as bytes, a file path (str), or a list of bytes/paths.
         user_id (str): The user's ID for logging purposes. Defaults to ''.
         model (str): The model to use for generation. Defaults to a free Gemini model.
-        timeout (int): Request timeout in seconds. Defaults to 180.
+        timeout (int): Request timeout in seconds. Defaults to 60.
         system_prompt (str): An optional system prompt to guide the model. Defaults to ''.
         temperature (float): The generation temperature. Defaults to 1.0.
 

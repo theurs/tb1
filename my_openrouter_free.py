@@ -673,6 +673,7 @@ def _send_image_request(
                 time.sleep(5)
                 continue
 
+            json_response = None
             try:
                 json_response = response.json()
                 # Robust parsing using .get() to avoid KeyErrors
@@ -685,7 +686,16 @@ def _send_image_request(
                 if not base64_content:
                     if 'PROHIBITED_CONTENT' in str(response.text):
                         return None
-                    my_log.log_openrouter_free(f'{log_context}: "url" key not found in response.\nResponse: {response.text[:500].strip()}')
+                    # Check if there's a text response instead of an image URL.
+                    # This indicates a model-level refusal or alternative reply, not a transient error.
+                    if json_response:
+                        text_content = (json_response.get('choices', [{}])[0]
+                                        .get('message', {})
+                                        .get('content'))
+                        if text_content:
+                            # my_log.log_openrouter_free(f'{log_context}: Received text response instead of image. Aborting.\nResponse: {text_content[:200].strip()}')
+                            return None
+                    my_log.log_openrouter_free(f'{log_context}: No image URL found in response. Aborting.\nResponse: {response.text[:500]}')
                     continue
 
                 if 'base64,' in base64_content:

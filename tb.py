@@ -6284,13 +6284,257 @@ def downgrade_handler(message: telebot.types.Message):
         my_log.log2(f'tb:downgrade: {unknown}\n{traceback_error}')
 
 
+# @bot.message_handler(commands=['gem', 'Gem', 'GEM', 'GEN', 'Gen', 'gen'], func=authorized)
+# @async_run
+# def image_gemini_gen(message: telebot.types.Message):
+#     """
+#     Generates images using Gemini 2.0 and 2.5, creating a media group with individual captions
+#     by replicating the exact logic of the /image command.
+#     /gem <[1-4]> <prompt> - generates N images with Gemini 2.0 + 1 with Gemini 2.5.
+#     """
+#     try:
+#         chat_id_full = get_topic_id(message)
+#         lang = get_lang(chat_id_full, message)
+
+#         COMMAND_MODE[chat_id_full] = ''
+
+#         if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
+#             return
+
+#         lock = IMG_GEN_LOCKS_GEM_IMG.setdefault(chat_id_full, threading.Lock())
+
+#         if lock.locked():
+#             if not (hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(chat_id_full) in cfg.ALLOW_PASS_NSFW_FILTER):
+#                 return
+
+#         help_text = f"""/gem <[1|2|3|4]> <prompt>
+
+# {tr('Generates N images with Gemini 2.0 Flash and 1 with OpenRouter Flash 2.5', lang)}
+# """
+
+#         with lock:
+#             parts = message.text.split(maxsplit=2)
+#             if len(parts) < 2:
+#                 bot_reply(message, help_text)
+#                 COMMAND_MODE[chat_id_full] = 'gem'
+#                 return
+
+#             try:
+#                 if len(parts) == 2:
+#                     num = 1
+#                     prompt = parts[1].strip()
+#                 else:
+#                     num_str = parts[1].strip()
+#                     prompt = parts[2].strip()
+#                     if num_str in ('1', '2', '3', '4'):
+#                         num = int(num_str)
+#                     else:
+#                         prompt = f"{num_str} {prompt}"
+#                         num = 1
+#             except IndexError:
+#                 bot_reply(message, help_text)
+#                 return
+
+#             if not prompt:
+#                 bot_reply(message, help_text)
+#                 return
+
+#             with ShowAction(message, 'upload_photo'):
+#                 try:
+#                     reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
+#                     if reprompt == 'MODERATION':
+#                         bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
+#                         return
+#                     if not reprompt:
+#                         bot_reply_tr(message, 'Could not translate your prompt. Try again.')
+#                         return
+
+#                     pool = ThreadPool(processes=2)
+#                     async_gemini = pool.apply_async(my_genimg.gemini_flash, (reprompt,), {'num': num, 'user_id': chat_id_full})
+#                     async_openrouter = pool.apply_async(my_openrouter_free.txt2img, (reprompt,), {'user_id': chat_id_full})
+
+#                     gemini_images = async_gemini.get() or []
+#                     openrouter_image_bytes = async_openrouter.get()
+#                     openrouter_images = [openrouter_image_bytes] if openrouter_image_bytes else []
+
+#                     all_images = gemini_images + openrouter_images
+
+#                     if not all_images:
+#                         bot_reply_tr(message, "Generation failed.")
+#                         return
+
+#                     # --- Replicate the exact media preparation logic from /image ---
+#                     medias = []
+#                     models_used = []
+#                     bot_addr = f'https://t.me/{_bot_name}'
+
+#                     if gemini_images:
+#                         model_name = my_gemini_genimg.MODEL
+#                         models_used.append(model_name)
+#                         for img in gemini_images:
+#                             caption = f'{bot_addr} {model_name}\n\n{prompt}'
+#                             caption = re.sub(r"(\s)\1+", r"\1\1", caption)[:1024]
+#                             medias.append(telebot.types.InputMediaPhoto(img, caption=caption))
+
+#                     if openrouter_images:
+#                         model_name = my_openrouter_free.GEMINI25_FLASH_IMAGE
+#                         models_used.append(model_name)
+#                         for img in openrouter_images:
+#                             caption = f'{bot_addr} {model_name}\n\n{prompt}'
+#                             caption = re.sub(r"(\s)\1+", r"\1\1", caption)[:1024]
+#                             medias.append(telebot.types.InputMediaPhoto(img, caption=caption))
+
+#                     if medias:
+#                         chunk_size = 10
+#                         chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
+
+#                         # Call the same helper function that /image uses
+#                         send_images_to_user(chunks, message, chat_id_full, medias, all_images)
+
+#                         if pics_group:
+#                             send_images_to_pic_group(chunks, message, chat_id_full, reprompt)
+
+#                         service_names = " & ".join(sorted(list(set(models_used))))
+#                         add_to_bots_mem(message.text, f'The bot successfully generated images on external services <service>{service_names}</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
+
+#                 except Exception as e:
+#                     error_traceback = traceback.format_exc()
+#                     my_log.log2(f"tb:image_gemini_gen: {e}\n{error_traceback}")
+#                     bot_reply_tr(message, tr("An error occurred during image generation.", lang))
+#     except Exception as unknown:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'tb:image_gemini_gen: {unknown}\n{traceback_error}')
+
+
+# @bot.message_handler(commands=['gem', 'Gem', 'GEM', 'GEN', 'Gen', 'gen'], func=authorized)
+# @async_run
+# def image_gemini_gen(message: telebot.types.Message):
+#     """
+#     Generates 1-4 images using Gemini 2.5, with a fallback to Gemini 2.0.
+#     /gem <[1-4]> <prompt> - generates N images.
+#     """
+#     try:
+#         chat_id_full = get_topic_id(message)
+#         lang = get_lang(chat_id_full, message)
+
+#         COMMAND_MODE[chat_id_full] = ''
+
+#         if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
+#             return
+
+#         lock = IMG_GEN_LOCKS_GEM_IMG.setdefault(chat_id_full, threading.Lock())
+
+#         if lock.locked():
+#             if not (hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(chat_id_full) in cfg.ALLOW_PASS_NSFW_FILTER):
+#                 return
+
+#         help_text = f"""/gem <[1|2|3|4]> <prompt>
+
+# {tr('Generates N images with Gemini 2.5, fallback to 2.0 if needed', lang)}
+# """
+
+#         with lock:
+#             parts = message.text.split(maxsplit=2)
+#             if len(parts) < 2:
+#                 bot_reply(message, help_text)
+#                 COMMAND_MODE[chat_id_full] = 'gem'
+#                 return
+
+#             try:
+#                 if len(parts) == 2:
+#                     num = 1
+#                     prompt = parts[1].strip()
+#                 else:
+#                     num_str = parts[1].strip()
+#                     prompt = parts[2].strip()
+#                     if num_str in ('1', '2', '3', '4'):
+#                         num = int(num_str)
+#                     else:
+#                         prompt = f"{num_str} {prompt}"
+#                         num = 1
+#             except IndexError:
+#                 bot_reply(message, help_text)
+#                 return
+
+#             if not prompt:
+#                 bot_reply(message, help_text)
+#                 return
+
+#             with ShowAction(message, 'upload_photo'):
+#                 try:
+#                     reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
+#                     if reprompt == 'MODERATION':
+#                         bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
+#                         return
+#                     if not reprompt:
+#                         bot_reply_tr(message, 'Could not translate your prompt. Try again.')
+#                         return
+
+#                     images = []
+#                     model_name = ''
+
+#                     # Attempt to generate with the primary model (2.5)
+#                     try:
+#                         # Call the generator 'num' times as it returns one image at a time.
+#                         generated_results = [my_openrouter_free.txt2img(reprompt, user_id=chat_id_full) for _ in range(num)]
+#                         images = [img for img in generated_results if img]  # Filter out None results on failure
+
+#                         if images:
+#                             model_name = my_openrouter_free.GEMINI25_FLASH_IMAGE
+#                     except Exception as e:
+#                         my_log.log2(f"tb:image_gemini_gen: primary model 2.5 failed: {e}")
+#                         images = [] # Ensure images is empty on failure
+
+#                     # Fallback to the secondary model (2.0) if the primary failed
+#                     if not images:
+#                         try:
+#                             images = my_genimg.gemini_flash(reprompt, num=num, user_id=chat_id_full)
+#                             if images:
+#                                 model_name = my_gemini_genimg.MODEL
+#                         except Exception as e:
+#                             my_log.log2(f"tb:image_gemini_gen: fallback model 2.0 failed: {e}")
+#                             images = []
+
+#                     if not images:
+#                         bot_reply_tr(message, "Generation failed on both models.")
+#                         return
+
+#                     # --- Simplified media preparation ---
+#                     medias = []
+#                     bot_addr = f'https://t.me/{_bot_name}'
+
+#                     for img in images:
+#                         caption = f'{bot_addr} {model_name}\n\n{prompt}'
+#                         caption = re.sub(r"(\s)\1+", r"\1\1", caption)[:1024]
+#                         medias.append(telebot.types.InputMediaPhoto(img, caption=caption))
+
+#                     if medias:
+#                         chunk_size = 10
+#                         chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
+
+#                         send_images_to_user(chunks, message, chat_id_full, medias, images)
+
+#                         if pics_group:
+#                             send_images_to_pic_group(chunks, message, chat_id_full, reprompt)
+
+#                         add_to_bots_mem(message.text, f'The bot successfully generated images on external services <service>{model_name}</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
+
+#                 except Exception as e:
+#                     error_traceback = traceback.format_exc()
+#                     my_log.log2(f"tb:image_gemini_gen: {e}\n{error_traceback}")
+#                     bot_reply_tr(message, tr("An error occurred during image generation.", lang))
+
+#     except Exception as unknown:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'tb:image_gemini_gen: {unknown}\n{traceback_error}')
+
+
 @bot.message_handler(commands=['gem', 'Gem', 'GEM', 'GEN', 'Gen', 'gen'], func=authorized)
 @async_run
 def image_gemini_gen(message: telebot.types.Message):
     """
-    Generates images using Gemini 2.0 and 2.5, creating a media group with individual captions
-    by replicating the exact logic of the /image command.
-    /gem <[1-4]> <prompt> - generates N images with Gemini 2.0 + 1 with Gemini 2.5.
+    Generates 1-4 images using Gemini 2.5 in parallel, with a fallback to Gemini 2.0.
+    /gem <[1-4]> <prompt> - generates N images.
     """
     try:
         chat_id_full = get_topic_id(message)
@@ -6309,7 +6553,7 @@ def image_gemini_gen(message: telebot.types.Message):
 
         help_text = f"""/gem <[1|2|3|4]> <prompt>
 
-{tr('Generates N images with Gemini 2.0 Flash and 1 with OpenRouter Flash 2.5', lang)}
+{tr('Generates N images with Gemini 2.5, fallback to 2.0 if needed', lang)}
 """
 
         with lock:
@@ -6349,58 +6593,71 @@ def image_gemini_gen(message: telebot.types.Message):
                         bot_reply_tr(message, 'Could not translate your prompt. Try again.')
                         return
 
-                    pool = ThreadPool(processes=2)
-                    async_gemini = pool.apply_async(my_genimg.gemini_flash, (reprompt,), {'num': num, 'user_id': chat_id_full})
-                    async_openrouter = pool.apply_async(my_openrouter_free.txt2img, (reprompt,), {'user_id': chat_id_full})
+                    images: List[bytes] = []
+                    model_name = ''
 
-                    gemini_images = async_gemini.get() or []
-                    openrouter_image_bytes = async_openrouter.get()
-                    openrouter_images = [openrouter_image_bytes] if openrouter_image_bytes else []
+                    # Attempt to generate with the primary model (2.5) in parallel
+                    try:
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=num) as executor:
+                            # Submit 'num' generation tasks to the thread pool
+                            futures = {executor.submit(my_openrouter_free.txt2img, reprompt, user_id=chat_id_full) for _ in range(num)}
 
-                    all_images = gemini_images + openrouter_images
+                            results = []
+                            for future in concurrent.futures.as_completed(futures):
+                                try:
+                                    result = future.result()
+                                    if result:
+                                        results.append(result)
+                                except Exception as exc:
+                                    my_log.log2(f'tb:image_gemini_gen: thread generated an exception: {exc}')
 
-                    if not all_images:
-                        bot_reply_tr(message, "Generation failed.")
+                            images = results
+
+                        if images:
+                            model_name = my_openrouter_free.GEMINI25_FLASH_IMAGE
+                    except Exception as e:
+                        my_log.log2(f"tb:image_gemini_gen: primary model 2.5 failed: {e}")
+                        images = [] # Ensure images is empty on failure
+
+                    # Fallback to the secondary model (2.0) if the primary failed
+                    if not images:
+                        try:
+                            images = my_genimg.gemini_flash(reprompt, num=num, user_id=chat_id_full) or []
+                            if images:
+                                model_name = my_gemini_genimg.MODEL
+                        except Exception as e:
+                            my_log.log2(f"tb:image_gemini_gen: fallback model 2.0 failed: {e}")
+                            images = []
+
+                    if not images:
+                        bot_reply_tr(message, "Generation failed on both models.")
                         return
 
-                    # --- Replicate the exact media preparation logic from /image ---
+                    # --- Simplified media preparation ---
                     medias = []
-                    models_used = []
                     bot_addr = f'https://t.me/{_bot_name}'
 
-                    if gemini_images:
-                        model_name = my_gemini_genimg.MODEL
-                        models_used.append(model_name)
-                        for img in gemini_images:
-                            caption = f'{bot_addr} {model_name}\n\n{prompt}'
-                            caption = re.sub(r"(\s)\1+", r"\1\1", caption)[:1024]
-                            medias.append(telebot.types.InputMediaPhoto(img, caption=caption))
-
-                    if openrouter_images:
-                        model_name = my_openrouter_free.GEMINI25_FLASH_IMAGE
-                        models_used.append(model_name)
-                        for img in openrouter_images:
-                            caption = f'{bot_addr} {model_name}\n\n{prompt}'
-                            caption = re.sub(r"(\s)\1+", r"\1\1", caption)[:1024]
-                            medias.append(telebot.types.InputMediaPhoto(img, caption=caption))
+                    for img in images:
+                        caption = f'{bot_addr} {model_name}\n\n{prompt}'
+                        caption = re.sub(r"(\s)\1+", r"\1\1", caption)[:1024]
+                        medias.append(telebot.types.InputMediaPhoto(img, caption=caption))
 
                     if medias:
                         chunk_size = 10
                         chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
 
-                        # Call the same helper function that /image uses
-                        send_images_to_user(chunks, message, chat_id_full, medias, all_images)
+                        send_images_to_user(chunks, message, chat_id_full, medias, images)
 
                         if pics_group:
                             send_images_to_pic_group(chunks, message, chat_id_full, reprompt)
 
-                        service_names = " & ".join(sorted(list(set(models_used))))
-                        add_to_bots_mem(message.text, f'The bot successfully generated images on external services <service>{service_names}</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
+                        add_to_bots_mem(message.text, f'The bot successfully generated images on external services <service>{model_name}</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
 
                 except Exception as e:
                     error_traceback = traceback.format_exc()
                     my_log.log2(f"tb:image_gemini_gen: {e}\n{error_traceback}")
                     bot_reply_tr(message, tr("An error occurred during image generation.", lang))
+
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:image_gemini_gen: {unknown}\n{traceback_error}')

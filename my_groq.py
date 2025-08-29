@@ -750,6 +750,7 @@ def stt(
     model: str = 'whisper-large-v3-turbo',
     retries: int = 4,
     timeout: int = 120,
+    lang_detect: bool = False
 ) -> str:
     """
     Speech to text function. Uses Groq API for speech recognition.
@@ -763,6 +764,7 @@ def stt(
         model (str, optional): The model to use for transcription.
         retries (int, optional): Number of retries on failure. Defaults to 4.
         timeout (int, optional): Request timeout in seconds. Defaults to 120.
+        lang_detect (bool, optional): Enable language detection.
 
     Returns:
         str: Transcribed text, or an empty string if it fails.
@@ -789,13 +791,22 @@ def stt(
 
             client = Groq(**client_params)
 
-            transcription = client.audio.transcriptions.create(
-                file=("audio.mp3", audio_data),
-                model=model,
-                language=lang,
-                prompt=prompt,
-                timeout=timeout,
-            )
+            if lang_detect:
+                transcription = client.audio.transcriptions.create(
+                    file=("audio.mp3", audio_data),
+                    model=model,
+                    # language=lang,
+                    prompt=prompt,
+                    timeout=timeout,
+                )
+            else:
+                transcription = client.audio.transcriptions.create(
+                    file=("audio.mp3", audio_data),
+                    model=model,
+                    language=lang,
+                    prompt=prompt,
+                    timeout=timeout,
+                )
             return remove_dimatorzok(transcription.text)
 
         except Exception as error:

@@ -180,6 +180,9 @@ def stt(input_file: str|bytes, lang: str = 'ru', chat_id: str = '_', prompt: str
         with LOCKS[chat_id]:
 
             dur = utils.audio_duration(input_file)
+            lang_detect = False
+            if dur > 10:
+                lang_detect = True
             input_file2 = convert_to_ogg_with_ffmpeg(input_file)
             if not input_file2:
                 return ''
@@ -198,7 +201,7 @@ def stt(input_file: str|bytes, lang: str = 'ru', chat_id: str = '_', prompt: str
 
                     # try first shot from config
                     if speech_to_text_engine == 'whisper':
-                        text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3')
+                        text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3', lang_detect=lang_detect)
                         if text and not done_flag:
                             done_flag = True
                             my_db.add_msg(chat_id, 'STT whisper-large-v3')
@@ -231,7 +234,7 @@ def stt(input_file: str|bytes, lang: str = 'ru', chat_id: str = '_', prompt: str
                             my_db.add_msg(chat_id, 'STT voxtral')
 
                 if not text and dur < 60:
-                    text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo')
+                    text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo', lang_detect=lang_detect)
                     if text and not done_flag:
                         done_flag = True
                         my_db.add_msg(chat_id, 'STT whisper-large-v3-turbo')
@@ -258,7 +261,7 @@ def stt(input_file: str|bytes, lang: str = 'ru', chat_id: str = '_', prompt: str
                         if len(text) < 100: # failed?
                             done_flag = False
                             my_log.log2(f'my_stt:stt: stt_genai failed long file, trying groq')
-                            text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo') or text
+                            text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3-turbo', lang_detect=lang_detect) or text
                             if text and not done_flag:
                                 done_flag = True
                                 my_db.add_msg(chat_id, 'STT whisper-large-v3-turbo')
@@ -272,7 +275,7 @@ def stt(input_file: str|bytes, lang: str = 'ru', chat_id: str = '_', prompt: str
                         my_log.log2(f'my_stt:stt:genai:{error}')
 
                 if not text:
-                    text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3')
+                    text = my_groq.stt(input_file2, lang, prompt=prompt, model = 'whisper-large-v3', lang_detect=lang_detect)
                     if text and not done_flag:
                         done_flag = True
                         my_db.add_msg(chat_id, 'STT whisper-large-v3')

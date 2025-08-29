@@ -339,7 +339,8 @@ def ai(
                                     tool_output = tool_output[:MAX_TOOL_OUTPUT_LEN]
                             except Exception as e:
                                 tool_output = f"Error executing tool '{function_name}': {e}"
-                                my_log.log_cerebras(f"Error executing tool: {e}\n{traceback.format_exc()}")
+                                if 'got an unexpected keyword argument' not in str(e):
+                                    my_log.log_cerebras(f"Error executing tool: {e}\n{traceback.format_exc()}")
                         else:
                             tool_output = f"Error: Tool '{function_name}' not found."
 
@@ -888,117 +889,6 @@ def remove_key(key: str):
         my_log.log_cerebras(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
 
 
-# нет ни одной модели поддерживающей визуальное описание?
-# def img2txt(
-#     image_data: bytes,
-#     prompt: str = 'Describe picture',
-#     model: str = MODEL_LLAMA_4_MAVERICK_17B_128E_INSTRUCT,
-#     temperature: float = 1,
-#     max_tokens: int = 4000,
-#     timeout: int = DEFAULT_TIMEOUT,
-#     chat_id: str = '',
-#     system: str = '',
-#     reasoning_effort_value_: str = 'none'
-# ) -> str:
-#     """
-#     Describes an image using the Cerebras API.
-
-#     Args:
-#         image_data: The image data as bytes, or the path to the image file.
-#         prompt: The prompt to guide the description. Defaults to 'Describe picture'.
-#         model: The model to use for generating the description. If empty, uses a default vision model.
-#         temperature: The temperature for the generation 0-2.
-#         max_tokens: The maximum number of tokens to generate.
-#         timeout: The request timeout in seconds.
-#         chat_id: The user ID for fetching specific configurations.
-#         system: An optional system prompt.
-#         reasoning_effort_value_: Overrides the user's reasoning effort setting.
-
-#     Returns:
-#         A string containing the description of the image, or an empty string if an error occurs.
-#     """
-#     # handle if image_data is a path to a file
-#     if isinstance(image_data, str):
-#         try:
-#             with open(image_data, 'rb') as f:
-#                 image_data = f.read()
-#         except FileNotFoundError:
-#             my_log.log_cerebras(f'img2txt: File not found at path: {image_data}')
-#             return ''
-
-#     if any(x in model.lower() for x in ('llama', 'gpt-oss', 'qwen')):
-#         temperature = temperature / 2
-
-#     # encode image to base64
-#     img_b64_str = base64.b64encode(image_data).decode('utf-8')
-#     img_type = 'image/png' # assuming png, but other formats might work
-
-#     # construct the payload for a multimodal request
-#     messages = [
-#         {
-#             "role": "user",
-#             "content": [
-#                 {"type": "text", "text": prompt},
-#                 {
-#                     "type": "image_url",
-#                     "image_url": {"url": f"data:{img_type};base64,{img_b64_str}"},
-#                 },
-#             ],
-#         }
-#     ]
-
-#     # prepend a system message if one is provided
-#     if system:
-#         messages.insert(0, {'role': 'system', 'content': system})
-
-#     # determine the reasoning effort based on user settings
-#     reasoning_effort = 'none'
-#     if chat_id:
-#         reasoning_effort = my_db.get_user_property(chat_id, 'openrouter_reasoning_effort') or 'none'
-#     if reasoning_effort_value_ != 'none':
-#         reasoning_effort = reasoning_effort_value_
-
-#     # the SDK expects None for default, not the string 'none'
-#     if reasoning_effort in ('none', 'auto'):
-#         reasoning_effort = None
-#     elif reasoning_effort == 'minimal':
-#         reasoning_effort = 'low'
-
-#     # retry logic for network resilience
-#     RETRY_MAX = 3
-#     for attempt in range(RETRY_MAX):
-
-#         api_key = get_next_key()
-#         if not api_key:
-#             my_log.log_cerebras('img2txt: No API key available.')
-#             return ''
-
-#         try:
-#             client = Cerebras(api_key=api_key)
-
-#             chat_completion = client.chat.completions.create(
-#                 messages=messages,
-#                 model=model,
-#                 max_completion_tokens=max_tokens,
-#                 temperature=temperature,
-#                 reasoning_effort=reasoning_effort,
-#                 timeout=timeout,
-#             )
-
-#             result = chat_completion.choices[0].message.content or ''
-#             if result:
-#                 return result.strip()
-
-#             my_log.log_cerebras(f'img2txt: attempt {attempt+1}: Empty response from model {model}')
-
-#         except Exception as e:
-#             my_log.log_cerebras(f'img2txt: attempt {attempt+1} failed for user {chat_id}: {e}')
-#             if attempt < RETRY_MAX - 1:
-#                 time.sleep(1) # wait before retrying
-
-#     return '' # return empty string if all attempts fail
-
-
 def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> Tuple[str, str]:
     """
     Generates an improved prompt and a negative prompt for image generation
@@ -1204,6 +1094,117 @@ TEXT TO REWRITE:
         my_log.log_cerebras(f'rewrite_text_for_tts: Unhandled exception for text "{text[:50]}...": {error}\n\n{error_traceback}')
         # On any exception, return the original text to prevent failure.
         return text
+
+
+# нет ни одной модели поддерживающей визуальное описание?
+# def img2txt(
+#     image_data: bytes,
+#     prompt: str = 'Describe picture',
+#     model: str = MODEL_LLAMA_4_MAVERICK_17B_128E_INSTRUCT,
+#     temperature: float = 1,
+#     max_tokens: int = 4000,
+#     timeout: int = DEFAULT_TIMEOUT,
+#     chat_id: str = '',
+#     system: str = '',
+#     reasoning_effort_value_: str = 'none'
+# ) -> str:
+#     """
+#     Describes an image using the Cerebras API.
+
+#     Args:
+#         image_data: The image data as bytes, or the path to the image file.
+#         prompt: The prompt to guide the description. Defaults to 'Describe picture'.
+#         model: The model to use for generating the description. If empty, uses a default vision model.
+#         temperature: The temperature for the generation 0-2.
+#         max_tokens: The maximum number of tokens to generate.
+#         timeout: The request timeout in seconds.
+#         chat_id: The user ID for fetching specific configurations.
+#         system: An optional system prompt.
+#         reasoning_effort_value_: Overrides the user's reasoning effort setting.
+
+#     Returns:
+#         A string containing the description of the image, or an empty string if an error occurs.
+#     """
+#     # handle if image_data is a path to a file
+#     if isinstance(image_data, str):
+#         try:
+#             with open(image_data, 'rb') as f:
+#                 image_data = f.read()
+#         except FileNotFoundError:
+#             my_log.log_cerebras(f'img2txt: File not found at path: {image_data}')
+#             return ''
+
+#     if any(x in model.lower() for x in ('llama', 'gpt-oss', 'qwen')):
+#         temperature = temperature / 2
+
+#     # encode image to base64
+#     img_b64_str = base64.b64encode(image_data).decode('utf-8')
+#     img_type = 'image/png' # assuming png, but other formats might work
+
+#     # construct the payload for a multimodal request
+#     messages = [
+#         {
+#             "role": "user",
+#             "content": [
+#                 {"type": "text", "text": prompt},
+#                 {
+#                     "type": "image_url",
+#                     "image_url": {"url": f"data:{img_type};base64,{img_b64_str}"},
+#                 },
+#             ],
+#         }
+#     ]
+
+#     # prepend a system message if one is provided
+#     if system:
+#         messages.insert(0, {'role': 'system', 'content': system})
+
+#     # determine the reasoning effort based on user settings
+#     reasoning_effort = 'none'
+#     if chat_id:
+#         reasoning_effort = my_db.get_user_property(chat_id, 'openrouter_reasoning_effort') or 'none'
+#     if reasoning_effort_value_ != 'none':
+#         reasoning_effort = reasoning_effort_value_
+
+#     # the SDK expects None for default, not the string 'none'
+#     if reasoning_effort in ('none', 'auto'):
+#         reasoning_effort = None
+#     elif reasoning_effort == 'minimal':
+#         reasoning_effort = 'low'
+
+#     # retry logic for network resilience
+#     RETRY_MAX = 3
+#     for attempt in range(RETRY_MAX):
+
+#         api_key = get_next_key()
+#         if not api_key:
+#             my_log.log_cerebras('img2txt: No API key available.')
+#             return ''
+
+#         try:
+#             client = Cerebras(api_key=api_key)
+
+#             chat_completion = client.chat.completions.create(
+#                 messages=messages,
+#                 model=model,
+#                 max_completion_tokens=max_tokens,
+#                 temperature=temperature,
+#                 reasoning_effort=reasoning_effort,
+#                 timeout=timeout,
+#             )
+
+#             result = chat_completion.choices[0].message.content or ''
+#             if result:
+#                 return result.strip()
+
+#             my_log.log_cerebras(f'img2txt: attempt {attempt+1}: Empty response from model {model}')
+
+#         except Exception as e:
+#             my_log.log_cerebras(f'img2txt: attempt {attempt+1} failed for user {chat_id}: {e}')
+#             if attempt < RETRY_MAX - 1:
+#                 time.sleep(1) # wait before retrying
+
+#     return '' # return empty string if all attempts fail
 
 
 if __name__ == '__main__':

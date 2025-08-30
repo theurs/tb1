@@ -221,7 +221,7 @@ NEW_KEYBOARD = SqliteDict('db/new_keyboard_installed.db', autocommit=True)
 FILE_GROUPS = {}
 
 
-# {user_id:(date, image),} keep up to UNCAPTIONED_IMAGES_MAX images
+# {user_id:(date, image, list(images)),} keep up to UNCAPTIONED_IMAGES_MAX images
 UNCAPTIONED_IMAGES_MAX = 100
 UNCAPTIONED_IMAGES = SqliteDict('db/user_images.db', autocommit = True)
 # {user_id: image_prompt}

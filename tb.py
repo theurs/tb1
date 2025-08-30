@@ -589,6 +589,7 @@ def img2img(
     """
     edited_image = None
     # Attempt to edit the image using the new OpenRouter method
+    # print(model)
     if not model or model == 'google/gemini-2.5-flash-image-preview:free':
         edited_image: Optional[bytes] = my_openrouter_free.edit_image(
             prompt=query,
@@ -9874,31 +9875,31 @@ def edit_image_detect(text: str, lang: str, chat_id_full: str, message: telebot.
             else:
                 my_openrouter.undo(chat_id_full)
 
-            last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
+            source_images = UNCAPTIONED_IMAGES[chat_id_full][2] if chat_id_full in UNCAPTIONED_IMAGES else None
             query = message.text
             r = ''
-            if not last_image:
+            if not source_images:
                 undo_cmd(message, show_message=False)
                 message.text = f'/img {message.text}'
                 image_gen(message)
             else:
                 if gemini_mem:
                     r = img2img(
-                        text=last_image,
+                        text=source_images,
                         lang=lang,
                         chat_id_full=chat_id_full,
                         query=query,
-                        model=gmodel,
+                        # model=gmodel, # это ломает повторный запрос на редактирование?
                         temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                         system_message=hidden_text,
                     )
                 else:
                     r = img2img(
-                        text=last_image,
+                        text=source_images,
                         lang=lang,
                         chat_id_full=chat_id_full,
                         query=query,
-                        # model=gmodel,
+
                         temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                         system_message=hidden_text,
                     )

@@ -2147,7 +2147,7 @@ def string_to_dict(input_string: str) -> Optional[Dict[str, Any]]:
 
         # Log if a valid JSON was found, but it wasn't the expected type.
         traceback_error = traceback.format_exc()
-        my_log.log2(f'utils:string_to_dict: Repaired JSON is not a dict ({type(decoded_object)}).\n\n{traceback_error}')
+        # my_log.log2(f'utils:string_to_dict: Repaired JSON is not a dict ({type(decoded_object)}).\n\n{traceback_error}')
         return None
 
     except Exception as error:

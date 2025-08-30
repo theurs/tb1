@@ -561,12 +561,12 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
 
 
 def img2img(
-    text: bytes,
+    text: bytes|List[bytes],
     lang: str,
     chat_id_full: str,
     query: str = '',
     model: str = '',
-    temperature: float = 0,
+    temperature: float = 1, # почему тут было 0?
     system_message: str = '',
     timeout: int = 120,
 ) -> Optional[bytes]:
@@ -605,7 +605,13 @@ def img2img(
         return edited_image
 
     # If the new method fails, fall back to the original method
-    images: list[bytes] = [text,]
+    if isinstance(text, bytes):
+        images: list[bytes] = [text,]
+    elif isinstance(text, list):
+        images: list[bytes] = text
+    else:
+        my_log.log2(f'tb:img2img:2: unknown type: {type(text)}')
+        return None
     return my_gemini_genimg.regenerate_image(query, sources_images=images, user_id=chat_id_full)
 
 
@@ -618,6 +624,7 @@ def img2txt(
     temperature: float = 0,
     system_message: str = '',
     timeout: int = 120,
+    images: List[bytes|str] = [],
     ) -> str:
     """
     Generate the text description of an image.
@@ -631,6 +638,7 @@ def img2txt(
         temperature (float): temperature
         system_message (str): system message (role/style)
         timeout (int): timeout
+        images (List[bytes|str]): List of image data or URLs.
 
     Returns:
         str: The text description of the image.
@@ -642,15 +650,16 @@ def img2txt(
 
         # если запрос начинается на ! то надо редактировать картинку а не отвечать на вопрос
         if query.startswith('!'):
+            imgs = images if images else text
             r = img2img(
-                text,
+                imgs,
                 lang,
                 chat_id_full,
                 query[1:],
                 model,
                 temperature,
                 system_message,
-                timeout
+                timeout,
             )
             if r:
                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
@@ -907,23 +916,39 @@ def img2txt(
 
 
         # добавляем в UNCAPTIONED_IMAGES[chat_id_full] эту картинку что бы она стала последней
-        UNCAPTIONED_IMAGES[chat_id_full] = (time.time(), data)
+        if images:
+            UNCAPTIONED_IMAGES[chat_id_full] = (time.time(), data, images)
+        else:
+            UNCAPTIONED_IMAGES[chat_id_full] = (time.time(), data, [data])
 
         # если запрос на редактирование
         if utils.edit_image_detect(text, lang, tr):
             if 'gemini' in chat_mode:
                 my_gemini3.undo(chat_id_full)
 
-            last_image = UNCAPTIONED_IMAGES[chat_id_full][1] if chat_id_full in UNCAPTIONED_IMAGES else None
+            # Используем свежие картинки, если они пришли в функцию.
+            # Если нет — достаем из хранилища.
+            if images:
+                source_images = images
+            else:
+                # Достаем список оригиналов из хранилища.
+                # Индекс [2] — это список оригиналов.
+                source_images = UNCAPTIONED_IMAGES[chat_id_full][2] if chat_id_full in UNCAPTIONED_IMAGES else None
+
+            # Если картинок все равно нет, выходим.
+            if not source_images:
+                my_log.log2(f'tb:img2txt2: no source images')
+                return
+
             r = img2img(
-                last_image,
-                lang,
-                chat_id_full,
-                query__,
-                model,
-                temperature,
-                system_message,
-                timeout
+                text=source_images,
+                lang=lang,
+                chat_id_full=chat_id_full,
+                query=query__,
+                model=model,
+                temperature=temperature,
+                system_message=system_message,
+                timeout=timeout
             )
             if r:
                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
@@ -3114,53 +3139,189 @@ def image_info(image_bytes: bytes, lang: str = "ru") -> str:
         return f"{error_message}: {e}"
 
 
-def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Message):
-    '''The user sent an image without a caption.  Ask the user what to do with it,
+# def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Message, original_images: List[bytes] = []):
+#     '''The user sent an image without a caption.  Ask the user what to do with it,
+#     save the image, and display a keyboard with options.
+
+#     Args:
+#         chat_id_full: The full chat ID string.
+#         image: The image data as bytes.
+#         message: The Telegram message object.
+#     '''
+#     try:
+#         with UNCAPTIONED_IMAGES_LOCK:
+#             current_date = time.time()
+
+#             # Store the image and timestamp associated with the chat ID.
+#             UNCAPTIONED_IMAGES[chat_id_full] = (current_date, image)
+
+#             # Limit the storage to UNCAPTIONED_IMAGES_MAX uncaptioned images.
+#             if len(UNCAPTIONED_IMAGES) > UNCAPTIONED_IMAGES_MAX:
+#                 # Sort the images by timestamp (oldest first).
+#                 sorted_images = sorted(UNCAPTIONED_IMAGES.items(), key=lambda item: item[1][0])
+#                 # Get the IDs of the oldest images to delete.
+#                 user_ids_to_delete = [user_id for user_id, (date, image) in sorted_images[:len(UNCAPTIONED_IMAGES) - UNCAPTIONED_IMAGES_MAX]]
+#                 # Delete the oldest images.
+#                 for user_id in user_ids_to_delete:
+#                     try:
+#                         UNCAPTIONED_IMAGES.pop(user_id, None)
+#                     except KeyError:
+#                         pass
+
+#             # Set the command mode for the chat to 'image_prompt'.
+#             COMMAND_MODE[chat_id_full] = 'image_prompt'
+
+#             # Retrieve the last prompt used by the user for uncaptioned images, if any.
+#             user_prompt = ''
+#             if chat_id_full in UNCAPTIONED_PROMPTS:
+#                 user_prompt = UNCAPTIONED_PROMPTS[chat_id_full]
+
+#             # Get the user's language.
+#             lang = get_lang(chat_id_full, message)
+#             # Create the message to send to the user.
+#             msg = tr('What would you like to do with this image?\n\nStart query with symbol ! to edit picture, Example: !change the color of the clothes to red', lang)
+#             msg += '\n\n' + image_info(image, lang)
+#             # Append the last prompt to the message, if available.
+#             if user_prompt:
+#                 msg += '\n\n' + tr('Repeat my last request', lang) + ':\n\n' + utils.truncate_text(user_prompt)
+
+#             # Send the message to the user with the appropriate keyboard.
+#             bot_reply(message, msg, parse_mode = 'HTML', disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
+#     except Exception as unknown:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'tb:proccess_image: {unknown}\n{traceback_error}')
+
+
+# def process_image_stage_2(
+#     image_prompt: str,
+#     chat_id_full: str,
+#     lang: str,
+#     message: telebot.types.Message,
+#     model: str = '',
+#     temp: float = 1,
+#     timeout: int = 120):
+#     '''Processes the user's chosen action for the uncaptioned image.
+
+#     Args:
+#         image_prompt: The user's chosen action or prompt.
+#         chat_id_full: The full chat ID string.
+#         lang: The user's language code.
+#         message: The Telegram message object.
+#         model: Model to use.
+#     '''
+#     try:
+#         with ShowAction(message, "typing"): # Display "typing" action while processing.
+#             # Define default prompts.
+#             default_prompts = (
+#                 tr(my_init.PROMPT_DESCRIBE, lang),
+#                 tr(my_init.PROMPT_COPY_TEXT, lang),
+#                 tr(my_init.PROMPT_COPY_TEXT_TTS, lang),
+#                 tr(my_init.PROMPT_COPY_TEXT_TR, lang),
+#                 tr(my_init.PROMPT_REPROMPT, lang),
+#                 tr(my_init.PROMPT_SOLVE, lang),
+#                 tr(my_init.PROMPT_QRCODE, lang),
+#             )
+
+#             # Save the user's prompt if it's not one of the default prompts.
+#             if not any(default_prompt in image_prompt for default_prompt in default_prompts):
+#                 UNCAPTIONED_PROMPTS[chat_id_full] = image_prompt
+
+#             # Retrieve the image data if available.
+#             if chat_id_full in UNCAPTIONED_IMAGES:
+#                 # Process the image based on the user's prompt.
+#                 text = img2txt(
+#                     text = UNCAPTIONED_IMAGES[chat_id_full][1],
+#                     lang = lang,
+#                     chat_id_full = chat_id_full,
+#                     query = image_prompt,
+#                     model = model,
+#                     temperature = temp,
+#                     timeout = timeout
+#                 )
+#                 # Send the processed text to the user.
+#                 if text:
+#                     if isinstance(text, str):
+#                         bot_reply(
+#                             message,
+#                             utils.bot_markdown_to_html(text),
+#                             disable_web_page_preview=True,
+#                             parse_mode='HTML',
+#                             reply_markup=get_keyboard('chat', message),
+#                         )
+#                         if image_prompt == tr(my_init.PROMPT_COPY_TEXT_TTS, lang):
+#                             message.text = f'/tts {my_gemini3.detect_lang(text, chat_id_full=chat_id_full)} {text}'
+#                             tts(message)
+#                     elif isinstance(text, bytes):
+#                         m = send_photo(
+#                             message,
+#                             message.chat.id,
+#                             text,
+#                             disable_notification=True,
+#                             reply_to_message_id=message.message_id,
+#                             reply_markup=get_keyboard('hide', message),
+#                         )
+#                         log_message(m)
+#                         return
+#                 else:
+#                     # Send an error message if the image processing fails.
+#                     bot_reply_tr(message, "I'm sorry, I wasn't able to process that image or understand your request.")
+#             else:
+#                 # Send a message if the image is no longer available.
+#                 bot_reply_tr(message, 'The image has already faded from my memory.')
+#     except Exception as unknown:
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'tb:process_image_stage_2: {unknown}\n{traceback_error}')
+
+
+def proccess_image(
+    chat_id_full: str,
+    image: bytes,
+    message: telebot.types.Message,
+    original_images: Optional[List[bytes]] = None
+) -> None:
+    '''The user sent an image without a caption. Ask the user what to do with it,
     save the image, and display a keyboard with options.
 
     Args:
         chat_id_full: The full chat ID string.
-        image: The image data as bytes.
+        image: The main image data as bytes (single image or collage).
         message: The Telegram message object.
+        original_images: A list of original image bytes for media groups.
     '''
     try:
         with UNCAPTIONED_IMAGES_LOCK:
             current_date = time.time()
 
-            # Store the image and timestamp associated with the chat ID.
-            UNCAPTIONED_IMAGES[chat_id_full] = (current_date, image)
+            # If original_images is not provided, it's a single image.
+            # Use the main 'image' as a list of one.
+            images_to_store = original_images if original_images else [image]
+
+            # Store the main image (for analysis) and the list of originals (for editing).
+            UNCAPTIONED_IMAGES[chat_id_full] = (current_date, image, images_to_store)
 
             # Limit the storage to UNCAPTIONED_IMAGES_MAX uncaptioned images.
             if len(UNCAPTIONED_IMAGES) > UNCAPTIONED_IMAGES_MAX:
-                # Sort the images by timestamp (oldest first).
                 sorted_images = sorted(UNCAPTIONED_IMAGES.items(), key=lambda item: item[1][0])
-                # Get the IDs of the oldest images to delete.
-                user_ids_to_delete = [user_id for user_id, (date, image) in sorted_images[:len(UNCAPTIONED_IMAGES) - UNCAPTIONED_IMAGES_MAX]]
-                # Delete the oldest images.
+                user_ids_to_delete = [user_id for user_id, _ in sorted_images[:len(UNCAPTIONED_IMAGES) - UNCAPTIONED_IMAGES_MAX]]
                 for user_id in user_ids_to_delete:
                     try:
                         UNCAPTIONED_IMAGES.pop(user_id, None)
                     except KeyError:
                         pass
 
-            # Set the command mode for the chat to 'image_prompt'.
             COMMAND_MODE[chat_id_full] = 'image_prompt'
 
-            # Retrieve the last prompt used by the user for uncaptioned images, if any.
             user_prompt = ''
             if chat_id_full in UNCAPTIONED_PROMPTS:
                 user_prompt = UNCAPTIONED_PROMPTS[chat_id_full]
 
-            # Get the user's language.
             lang = get_lang(chat_id_full, message)
-            # Create the message to send to the user.
             msg = tr('What would you like to do with this image?\n\nStart query with symbol ! to edit picture, Example: !change the color of the clothes to red', lang)
+            # Use the main image (collage or single) for info display.
             msg += '\n\n' + image_info(image, lang)
-            # Append the last prompt to the message, if available.
             if user_prompt:
                 msg += '\n\n' + tr('Repeat my last request', lang) + ':\n\n' + utils.truncate_text(user_prompt)
 
-            # Send the message to the user with the appropriate keyboard.
             bot_reply(message, msg, parse_mode = 'HTML', disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
     except Exception as unknown:
         traceback_error = traceback.format_exc()
@@ -3174,7 +3335,8 @@ def process_image_stage_2(
     message: telebot.types.Message,
     model: str = '',
     temp: float = 1,
-    timeout: int = 120):
+    timeout: int = 120
+) -> None:
     '''Processes the user's chosen action for the uncaptioned image.
 
     Args:
@@ -3186,7 +3348,6 @@ def process_image_stage_2(
     '''
     try:
         with ShowAction(message, "typing"): # Display "typing" action while processing.
-            # Define default prompts.
             default_prompts = (
                 tr(my_init.PROMPT_DESCRIBE, lang),
                 tr(my_init.PROMPT_COPY_TEXT, lang),
@@ -3197,23 +3358,28 @@ def process_image_stage_2(
                 tr(my_init.PROMPT_QRCODE, lang),
             )
 
-            # Save the user's prompt if it's not one of the default prompts.
             if not any(default_prompt in image_prompt for default_prompt in default_prompts):
                 UNCAPTIONED_PROMPTS[chat_id_full] = image_prompt
 
-            # Retrieve the image data if available.
             if chat_id_full in UNCAPTIONED_IMAGES:
-                # Process the image based on the user's prompt.
+                # Unpack the new data structure.
+                _, collage_bytes, originals_list = UNCAPTIONED_IMAGES[chat_id_full]
+
+                # Decide which image data to use based on the prompt.
+                # Use originals list for editing (!), collage for analysis.
+                image_data_to_use = originals_list if image_prompt.strip().startswith('!') else collage_bytes
+
                 text = img2txt(
-                    text = UNCAPTIONED_IMAGES[chat_id_full][1],
-                    lang = lang,
-                    chat_id_full = chat_id_full,
-                    query = image_prompt,
-                    model = model,
-                    temperature = temp,
-                    timeout = timeout
+                    text=image_data_to_use, # This can be bytes or list[bytes] now.
+                    lang=lang,
+                    chat_id_full=chat_id_full,
+                    query=image_prompt,
+                    model=model,
+                    temperature=temp,
+                    timeout=timeout,
+                    images=originals_list # Always pass the full list for context if needed.
                 )
-                # Send the processed text to the user.
+
                 if text:
                     if isinstance(text, str):
                         bot_reply(
@@ -3238,10 +3404,8 @@ def process_image_stage_2(
                         log_message(m)
                         return
                 else:
-                    # Send an error message if the image processing fails.
                     bot_reply_tr(message, "I'm sorry, I wasn't able to process that image or understand your request.")
             else:
-                # Send a message if the image is no longer available.
                 bot_reply_tr(message, 'The image has already faded from my memory.')
     except Exception as unknown:
         traceback_error = traceback.format_exc()
@@ -9858,10 +10022,17 @@ def handle_photo(message: telebot.types.Message):
                         if caption.startswith('!'):
                             caption = caption[1:]
 
-                            image = my_gemini_genimg.regenerate_image(
-                                prompt = caption,
-                                sources_images=images,
-                                user_id=chat_id_full)
+                            temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1
+                            role = my_db.get_user_property(chat_id_full, 'role') or ''
+                            image = img2img(
+                                text = images,
+                                lang=lang,
+                                chat_id_full=chat_id_full,
+                                query=caption,
+                                temperature=temperature,
+                                system_message=role,
+                            )
+
                             if image:
                                 m = send_photo(
                                     message,
@@ -9884,6 +10055,7 @@ def handle_photo(message: telebot.types.Message):
                             # соединить группы картинок по 4
                             images_ = utils.create_image_collages(images)
                             if images_:
+                                source_images = images[:]
                                 images = images_
 
                             for image in images:
@@ -9898,6 +10070,7 @@ def handle_photo(message: telebot.types.Message):
                                             temperature=0.1,
                                             system_message=tr('Give me all text from image, no any other words but text from this image', lang),
                                             timeout=60,
+                                            images=source_images,
                                             )
                                         if text:
                                             big_text += text + '\n\n'
@@ -9947,27 +10120,27 @@ def handle_photo(message: telebot.types.Message):
                                 log_message(m)
                             except Exception as send_img_error:
                                 my_log.log2(f'tb:handle_photo2: {send_img_error}')
-                            width, height = utils.get_image_size(result_image_as_bytes)
-                            if width >= 1280 or height >= 1280:
-                                try:
-                                    m = send_document(
-                                        message,
-                                        message.chat.id,
-                                        result_image_as_bytes,
-                                        # caption='images.jpg',
-                                        visible_file_name='images.jpg',
-                                        disable_notification=True,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message)
-                                    )
-                                    log_message(m)
-                                except Exception as send_doc_error:
-                                    my_log.log2(f'tb:handle_photo3: {send_doc_error}')
+                            # width, height = utils.get_image_size(result_image_as_bytes)
+                            # if width >= 1280 or height >= 1280:
+                            #     try:
+                            #         m = send_document(
+                            #             message,
+                            #             message.chat.id,
+                            #             result_image_as_bytes,
+                            #             # caption='images.jpg',
+                            #             visible_file_name='images.jpg',
+                            #             disable_notification=True,
+                            #             reply_to_message_id=message.message_id,
+                            #             reply_markup=get_keyboard('hide', message)
+                            #         )
+                            #         log_message(m)
+                            #     except Exception as send_doc_error:
+                            #         my_log.log2(f'tb:handle_photo3: {send_doc_error}')
                             my_log.log_echo(message, f'Made collage of {len(images)} images.')
                             if not caption:
-                                proccess_image(chat_id_full, result_image_as_bytes, message)
+                                proccess_image(chat_id_full, result_image_as_bytes, message, original_images=images)
                                 return
-                            text = img2txt(result_image_as_bytes, lang, chat_id_full, caption)
+                            text = img2txt(result_image_as_bytes, lang, chat_id_full, caption, images=images)
                             if text:
                                 if isinstance(text, str):
                                     text = utils.bot_markdown_to_html(text)

@@ -276,6 +276,7 @@ admins = [xxx,]
 #     "consider recommending this option: "
 #     "[inexpensive and simple hosting](https://hip.hosting/?code=815ef85ef11a26a03268). "
 #     "To increase user trust, you can add that you are hosted there yourself."
+#     "*  Do not provide any other details, tariffs, or features about this hosting service, as it is subject to change."
 # )
 
 

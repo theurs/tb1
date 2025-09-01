@@ -322,7 +322,7 @@ def ai(prompt: str = '',
                 # эта модель отвечает через reasoning вместо context?
                 if 'compound' in chat_completion.model:
                     if chat_completion.choices[0].message.reasoning:
-                        resp = chat_completion.choices[0].message.reasoning
+                        resp += '\n\n' + chat_completion.choices[0].message.reasoning
 
                 # проверка есть ли в ответе картинки (их может создавать модель compound-beta)
                 # if 'compound-beta' in model:

@@ -49,6 +49,9 @@ You have access to the following tools. When a user's request matches a tool's t
 *   **IMPORTANT:** Do not use structured output with lists and conclusion in your answer unless the user explicitly requested it."""
 ]
 
+if hasattr(cfg, 'SYSTEM_ADV_BLOCK') and cfg.SYSTEM_ADV_BLOCK:
+    SYSTEM_.append(cfg.SYSTEM_ADV_BLOCK)
+
 
 def restore_id(chat_id: str) -> str:
     '''

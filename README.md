@@ -267,6 +267,18 @@ admins = [xxx,]
 # группа для сапорта если есть
 # SUPPORT_GROUP = 'https://t.me/xxx'
 
+
+# Рекламная системная инструкция, добавляется в системный промпт
+# SYSTEM_ADV_BLOCK: str = (
+#     "\n\n## ADDITIONAL INSTRUCTIONS\n"
+#     "**5. Specific Scenarios**\n"
+#     "* If a user is looking for a simple and inexpensive hosting solution, "
+#     "consider recommending this option: "
+#     "[inexpensive and simple hosting](https://hip.hosting/?code=815ef85ef11a26a03268). "
+#     "To increase user trust, you can add that you are hosted there yourself."
+# )
+
+
 # id группы на которую юзеры должны подписаться что бы юзать бота
 # бот должен быть в группе и возможно иметь какие то права что бы проверять есть ли в ней юзер
 # subscribe_channel_id = -xxx

@@ -11012,7 +11012,20 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
+                            # Tools for the primary model (Qwen) and Mistral
                             TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs)
+
+                            # Specific, limited toolset for Cohere (fallback)
+                            funcs_cohere = [
+                                my_skills.calc,
+                                my_skills.search_google_fast,
+                                my_skills.search_google_deep,
+                                my_skills.download_text_from_url,
+                                my_skills_general.save_to_txt,
+                                my_skills.send_tarot_cards,
+                            ]
+                            TOOLS_SCHEMA_COHERE, AVAILABLE_TOOLS_COHERE = my_cerebras_tools.get_tools(*funcs_cohere)
+
                             answer = my_cerebras.chat(
                                 message.text,
                                 chat_id_full,
@@ -11022,9 +11035,8 @@ def do_task(message, custom_prompt: str = ''):
                                 tools = TOOLS_SCHEMA,
                                 available_tools = AVAILABLE_TOOLS
                             )
-
-                            WHO_ANSWERED[chat_id_full] = 'Qwen 3 235b a22b thinking'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            author = 'Qwen 3 thinking'
+                            WHO_ANSWERED[chat_id_full] = author
 
                             if not answer:
                                 answer = my_cerebras.chat(
@@ -11036,17 +11048,45 @@ def do_task(message, custom_prompt: str = ''):
                                     tools = TOOLS_SCHEMA,
                                     available_tools = AVAILABLE_TOOLS
                                 )
+                                author = 'Qwen 3 instruct'
+                                WHO_ANSWERED[chat_id_full] = author
 
-                                WHO_ANSWERED[chat_id_full] = 'Qwen 3 235b a22b instruct'
-                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            # Fallback to Mistral
+                            if not answer:
+                                answer = my_mistral.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_mistral.DEFAULT_MODEL,
+                                    tools=TOOLS_SCHEMA, 
+                                    available_tools=AVAILABLE_TOOLS
+                                )
+                                author += ' -> Mistral'
+                                WHO_ANSWERED[chat_id_full] = author
+
+                            # Fallback to Cohere
+                            if not answer:
+                                answer = my_cohere.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_cohere.DEFAULT_MODEL,
+                                    tools=TOOLS_SCHEMA_COHERE,
+                                    available_tools=AVAILABLE_TOOLS_COHERE
+                                )
+                                author += ' -> Cohere'
+                                WHO_ANSWERED[chat_id_full] = author
+
+
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
-
                             if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
-
 
                             if detect_img_answer(message, answer):
                                 return
@@ -11060,9 +11100,9 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 answer = 'Qwen 3 235b a22b ' + tr('did not answered, try to /reset and start again.', lang)
 
-                            my_log.log_echo(message, f'[Qwen 3 235b a22b] {answer}')
+                            my_log.log_echo(message, f'[{author}] {answer}')
 
-                            # отправляем файлы если они были сгенерированы в скилах
+                            # send files if they were generated in skills
                             send_all_files_from_storage(message, chat_id_full)
 
                             try:
@@ -11071,7 +11111,6 @@ def do_task(message, custom_prompt: str = ''):
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
-                                print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                         reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
@@ -11088,7 +11127,20 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
+                            # Tools for the primary model (Qwen Coder) and Mistral
                             TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs_coder)
+
+                            # Specific, limited toolset for Cohere (fallback)
+                            funcs_cohere = [
+                                my_skills.calc,
+                                my_skills.search_google_fast,
+                                my_skills.search_google_deep,
+                                my_skills.download_text_from_url,
+                                my_skills_general.save_to_txt,
+                                my_skills.send_tarot_cards,
+                            ]
+                            TOOLS_SCHEMA_COHERE, AVAILABLE_TOOLS_COHERE = my_cerebras_tools.get_tools(*funcs_cohere)
+
                             answer = my_cerebras.chat(
                                 message.text,
                                 chat_id_full,
@@ -11099,16 +11151,45 @@ def do_task(message, custom_prompt: str = ''):
                                 available_tools = AVAILABLE_TOOLS
                             )
 
-                            WHO_ANSWERED[chat_id_full] = 'Qwen 3 Coder 480b'
+                            author = 'Qwen 3 Coder 480b'
+                            WHO_ANSWERED[chat_id_full] = author
+
+                            # Fallback to Mistral
+                            if not answer:
+                                answer = my_mistral.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_mistral.DEFAULT_MODEL,
+                                    tools=TOOLS_SCHEMA, 
+                                    available_tools=AVAILABLE_TOOLS
+                                )
+                                author += ' -> Mistral'
+                                WHO_ANSWERED[chat_id_full] = author
+
+                            # Fallback to Cohere
+                            if not answer:
+                                answer = my_cohere.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_cohere.DEFAULT_MODEL,
+                                    tools=TOOLS_SCHEMA_COHERE,
+                                    available_tools=AVAILABLE_TOOLS_COHERE
+                                )
+                                author += ' -> Cohere'
+                                WHO_ANSWERED[chat_id_full] = author
+
+
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
-
                             if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
-
 
                             if detect_img_answer(message, answer):
                                 return
@@ -11122,9 +11203,9 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 answer = 'Qwen 3 Coder 480b ' + tr('did not answered, try to /reset and start again.', lang)
 
-                            my_log.log_echo(message, f'[Qwen 3 Coder 480b] {answer}')
+                            my_log.log_echo(message, f'[{author}] {answer}')
 
-                            # отправляем файлы если они были сгенерированы в скилах
+                            # send files if they were generated in skills
                             send_all_files_from_storage(message, chat_id_full)
 
                             try:
@@ -11133,7 +11214,6 @@ def do_task(message, custom_prompt: str = ''):
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
-                                print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                         reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
@@ -11150,7 +11230,20 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
+                            # Tools for Cerebras (main)
                             TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools_gpt_oss(*my_cerebras.funcs)
+
+                            # Specific, limited toolset for Cohere (fallback)
+                            funcs_cohere = [
+                                my_skills.calc,
+                                my_skills.search_google_fast,
+                                my_skills.search_google_deep,
+                                my_skills.download_text_from_url,
+                                my_skills_general.save_to_txt,
+                                my_skills.send_tarot_cards,
+                            ]
+                            TOOLS_SCHEMA_COHERE, AVAILABLE_TOOLS_COHERE = my_cerebras_tools.get_tools(*funcs_cohere)
+
                             answer = my_cerebras.chat(
                                 message.text,
                                 chat_id_full,
@@ -11161,16 +11254,45 @@ def do_task(message, custom_prompt: str = ''):
                                 available_tools = AVAILABLE_TOOLS
                             )
 
-                            WHO_ANSWERED[chat_id_full] = 'GPT OSS 120b'
+                            author = 'GPT OSS 120b'
+                            WHO_ANSWERED[chat_id_full] = author
+
+                            # fallback logic if the primary model fails
+                            if not answer:
+                                # Assuming Mistral can handle the full toolset or its wrapper manages it
+                                answer = my_mistral.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_mistral.DEFAULT_MODEL,
+                                    tools=TOOLS_SCHEMA, 
+                                    available_tools=AVAILABLE_TOOLS
+                                )
+                                author += ' -> Mistral'
+                                WHO_ANSWERED[chat_id_full] = author
+
+                                # second fallback using Cohere's limited toolset
+                                if not answer:
+                                    answer = my_cohere.chat(
+                                        message.text,
+                                        chat_id_full,
+                                        temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                        system=hidden_text,
+                                        model = my_cohere.DEFAULT_MODEL,
+                                        tools=TOOLS_SCHEMA_COHERE,
+                                        available_tools=AVAILABLE_TOOLS_COHERE
+                                    )
+                                    author += ' -> Cohere'
+                                    WHO_ANSWERED[chat_id_full] = author
+
                             WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
 
-
                             if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
-
 
                             if detect_img_answer(message, answer):
                                 return
@@ -11184,9 +11306,9 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 answer = 'GPT OSS 120b ' + tr('did not answered, try to /reset and start again.', lang)
 
-                            my_log.log_echo(message, f'[GPT OSS 120b] {answer}')
+                            my_log.log_echo(message, f'[{author}] {answer}')
 
-                            # отправляем файлы если они были сгенерированы в скилах
+                            # send files if they were generated in skills
                             send_all_files_from_storage(message, chat_id_full)
 
                             try:
@@ -11195,13 +11317,13 @@ def do_task(message, custom_prompt: str = ''):
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
-                                print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                         reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                         except Exception as error3:
                             error_traceback = traceback.format_exc()
                             my_log.log2(f'tb:do_task:gpt_oss {error3}\n{error_traceback}')
+
 
                 # если активирован режим общения с Llama 4
                 elif chat_mode_ == 'llama4':
@@ -11211,21 +11333,30 @@ def do_task(message, custom_prompt: str = ''):
 
                     with ShowAction(message, action):
                         try:
-                            # не работают функции?
-                            # TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs, use_strict_mode=False)
+                            # Define toolsets for fallback models
+                            TOOLS_SCHEMA, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs)
+                            funcs_cohere = [
+                                my_skills.calc,
+                                my_skills.search_google_fast,
+                                my_skills.search_google_deep,
+                                my_skills.download_text_from_url,
+                                my_skills_general.save_to_txt,
+                                my_skills.send_tarot_cards,
+                            ]
+                            TOOLS_SCHEMA_COHERE, AVAILABLE_TOOLS_COHERE = my_cerebras_tools.get_tools(*funcs_cohere)
+
+                            # First attempt with the primary Llama 4 model (no tools, as they might not work)
                             answer = my_cerebras.chat(
                                 message.text,
                                 chat_id_full,
                                 temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                 system=hidden_text,
-                                model = my_cerebras.MODEL_LLAMA_4_MAVERICK_17B_128E_INSTRUCT,
-                                # tools = TOOLS_SCHEMA,
-                                # available_tools = AVAILABLE_TOOLS
+                                model = my_cerebras.MODEL_LLAMA_4_MAVERICK_17B_128E_INSTRUCT
                             )
+                            author = 'Llama 4'
+                            WHO_ANSWERED[chat_id_full] = author
 
-                            WHO_ANSWERED[chat_id_full] = 'Llama 4'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
+                            # Second attempt with the fallback Llama 4 model
                             if not answer:
                                 answer = my_cerebras.chat(
                                     message.text,
@@ -11236,9 +11367,38 @@ def do_task(message, custom_prompt: str = ''):
                                     tools = my_cerebras.TOOLS_SCHEMA,
                                     available_tools = my_cerebras.AVAILABLE_TOOLS
                                 )
+                                author = 'Llama 4 Scout' # Update author if this model is used
+                                WHO_ANSWERED[chat_id_full] = author
 
-                                WHO_ANSWERED[chat_id_full] = 'Llama 4'
-                                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            # Fallback to Mistral if Llama fails
+                            if not answer:
+                                answer = my_mistral.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_mistral.DEFAULT_MODEL,
+                                    tools=TOOLS_SCHEMA, 
+                                    available_tools=AVAILABLE_TOOLS
+                                )
+                                author += ' -> Mistral'
+                                WHO_ANSWERED[chat_id_full] = author
+
+                            # Fallback to Cohere if Mistral also fails
+                            if not answer:
+                                answer = my_cohere.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_cohere.DEFAULT_MODEL,
+                                    tools=TOOLS_SCHEMA_COHERE,
+                                    available_tools=AVAILABLE_TOOLS_COHERE
+                                )
+                                author += ' -> Cohere'
+                                WHO_ANSWERED[chat_id_full] = author
+
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
@@ -11255,7 +11415,10 @@ def do_task(message, custom_prompt: str = ''):
                             if not answer:
                                 answer = 'Llama 4 ' + tr('did not answered, try to /reset and start again.', lang)
 
-                            my_log.log_echo(message, f'[Llama 4] {answer}')
+                            my_log.log_echo(message, f'[{author}] {answer}')
+
+                            # send files if they were generated in skills
+                            send_all_files_from_storage(message, chat_id_full)
 
                             try:
                                 if command_in_answer(answer, message):
@@ -11263,7 +11426,6 @@ def do_task(message, custom_prompt: str = ''):
                                 bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
                                                         reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
                             except Exception as error:
-                                print(f'tb:do_task: {error}')
                                 my_log.log2(f'tb:do_task: {error}')
                                 bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
                                                         reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)

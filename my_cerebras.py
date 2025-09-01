@@ -255,6 +255,9 @@ def ai(
     if prompt:
         mem_.append({"role": "user", "content": prompt})
 
+    # Proactively trim the memory before the first API call.
+    mem_ = clear_mem(mem_, user_id)
+
     # --- 1. Centralized SDK parameter preparation ---
     reasoning_effort = 'none'
     if user_id:
@@ -286,7 +289,7 @@ def ai(
                 'model': model,
                 'messages': mem_,
                 'temperature': temperature,
-                'timeout': timeout, 
+                'timeout': timeout,
             }
 
             # Add conditional parameters that apply to both tool and non-tool paths
@@ -379,35 +382,67 @@ def ai(
                     return result.strip()
 
         except Exception as error:
-            # Log the error
-            my_log.log_cerebras(f'ai: attempt {attempt + 1}/{RETRY_MAX} failed with error: {error} [user_id: {user_id}]')
-            if 'Please try again soon.' in str(error):
+            error_str = str(error)
+            my_log.log_cerebras(f'ai: attempt {attempt + 1}/{RETRY_MAX} failed with error: {error_str} [user_id: {user_id}]')
+
+            # --- PATCH START: Reactive context trimming ---
+            if 'Please reduce the length of the messages or completion' in error_str:
+                # The context is too long. Trim the history more aggressively and retry.
+                # This logic is simpler because clear_mem handles preserving system prompts.
+                mem_ = clear_mem(mem_[2:], user_id) # Remove oldest conversational pair and re-check
+                if attempt < RETRY_MAX - 1:
+                    time.sleep(1)
+                    continue # Continue to the next attempt with the shortened mem_
+                else:
+                    return "" # Failed even after trimming
+            # --- PATCH END ---
+
+            if 'Please try again soon.' in error_str:
                 return ''
-            if 'Request timed out.' in str(error) or 'Global timeout' in str(error):
+            if 'Request timed out.' in error_str or 'Global timeout' in error_str:
                 return ''
-            if 'Wrong API key' in str(error):
+            if 'Wrong API key' in error_str:
                 if not key_:
                     remove_key(api_key)
-            if 'Please reduce the length of the messages or completion' in str(error):
-                return ''
-            # Add a pause before the next attempt, if it's not the last one.
+
             if attempt < RETRY_MAX - 1:
                 time.sleep(1)
 
     return ''
 
-def clear_mem(mem, user_id: str = '') -> List[Dict[str, str]]:
-    while 1:
-        sizeofmem = count_tokens(mem)
-        if sizeofmem <= maxhistchars:
-            break
-        try:
-            mem = mem[2:]
-        except IndexError:
-            mem = []
+
+
+def clear_mem(mem: List[Dict[str, str]], user_id: str = '') -> List[Dict[str, str]]:
+    """
+    Trims conversation history to fit within token and line limits,
+    always preserving system messages.
+
+    Args:
+        mem (List[Dict[str, str]]): The message history list.
+        user_id (str): The user ID (currently unused but kept for signature consistency).
+
+    Returns:
+        List[Dict[str, str]]: The potentially trimmed message history.
+    """
+    # 1. Separate system messages from the main conversation
+    system_messages = [m for m in mem if m.get("role") == "system"]
+    conversation_messages = [m for m in mem if m.get("role") != "system"]
+
+    # 2. Trim conversation by token count, preserving system messages' count
+    # Remove the oldest pairs (user/assistant) until the total size is acceptable.
+    while count_tokens(system_messages + conversation_messages) > maxhistchars:
+        if len(conversation_messages) >= 2:
+            conversation_messages = conversation_messages[2:]
+        else:
+            # Cannot trim further, break to prevent infinite loop
             break
 
-    return mem[-MAX_MEM_LINES*2:]
+    # 3. Trim conversation by total message line limit
+    if len(conversation_messages) > MAX_MEM_LINES * 2:
+        conversation_messages = conversation_messages[-(MAX_MEM_LINES * 2):]
+
+    # 4. Recombine and return
+    return system_messages + conversation_messages
 
 
 def count_tokens(mem) -> int:

@@ -119,6 +119,7 @@ def ai(
     Returns:
         str: The generated response from the Cohere AI model. Returns an empty string if an error occurs.
     """
+    prompt = prompt.strip()
     start_time = time.monotonic()
     effective_timeout = timeout * 2 if tools and available_tools else timeout
 
@@ -140,7 +141,7 @@ def ai(
     if prompt:
         mem.append({'role': 'user', 'content': prompt})
 
-    if not mem:
+    if not mem or not prompt:
         return ''
 
     model = model_ if model_ else DEFAULT_MODEL

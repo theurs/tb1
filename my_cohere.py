@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # pip install -U cohere
-# hosts: 50.7.85.220 api.cohere.com
+# /etc/hosts
+# 63.141.252.204 api.cohere.com
+# 63.141.252.204 production.api.cohere.com
 
 
 import base64

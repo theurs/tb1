@@ -55,6 +55,45 @@ def freeze_key(key: str, duration_seconds: int = 86400) -> None:
         my_log.log_openrouter_free(f'Key frozen due to rate limit until {time.ctime(unfreeze_time)}: ...{key[-4:]}')
 
 
+def handle_rate_limit(key: str, response: Any) -> None:
+    """
+    Parses a rate limit response to freeze the key until the reset time.
+
+    If the reset time can be parsed from the response headers, the key is
+    frozen until that time plus a 60-second buffer. Otherwise, it falls
+    back to the default freeze duration.
+
+    Args:
+        key (str): The API key to freeze.
+        response (Any): The requests response object from the failed request.
+    """
+    try:
+        # Attempt to parse the JSON response body
+        data = response.json()
+
+        # Navigate to the reset timestamp (in milliseconds)
+        reset_timestamp_ms = data.get('error', {}).get('metadata', {}).get('headers', {}).get('X-RateLimit-Reset')
+
+        if reset_timestamp_ms:
+            # Convert to seconds and calculate duration from now
+            reset_time_sec = int(reset_timestamp_ms) / 1000
+            current_time_sec = time.time()
+
+            # Add a small buffer (e.g., 60 seconds) to be safe
+            duration_seconds = max(0, reset_time_sec - current_time_sec + 60)
+
+            if duration_seconds > 0:
+                freeze_key(key, int(duration_seconds))
+                my_log.log_openrouter_free(f'Key ...{key[-4:]} frozen until reset time.')
+                return
+    except (json.JSONDecodeError, AttributeError, TypeError, ValueError) as e:
+        # Log the parsing failure, but proceed to default freeze
+        my_log.log_openrouter_free(f"Could not parse rate limit reset time: {e}. Falling back to default freeze.")
+
+    # Fallback to default 24-hour freeze if parsing fails or timestamp is not found
+    freeze_key(key)
+
+
 def get_available_key() -> Optional[str]:
     """
     Retrieves the next available, non-frozen API key using a round-robin strategy
@@ -202,8 +241,8 @@ def ai(prompt: str = '',
                     return ai(prompt, mem, user_id, system, DEFAULT_MODEL_FALLBACK, temperature, max_tokens, timeout)
                 time.sleep(2)
         else:
-            if status == 429 and "free-models-per-day" in response.text:
-                freeze_key(key)
+            if status == 429:
+                handle_rate_limit(key, response)
             my_log.log_openrouter_free(f'Bad response.status_code\n\n{str(response)[:2000]}')
             time.sleep(2)
 
@@ -657,10 +696,9 @@ def _send_image_request(
             )
 
             # Handle rate limit error by freezing the key and retrying
-            if response.status_code == 429 and "free-models-per-day" in response.text:
-                freeze_key(key)
+            if response.status_code == 429:
+                handle_rate_limit(key, response)
                 my_log.log_openrouter_free(f'{log_context}: Rate limit exceeded for key. Freezing and retrying...')
-                time.sleep(2)
                 continue
 
             # Differentiate other client/server errors for logging

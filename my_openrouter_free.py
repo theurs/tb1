@@ -135,7 +135,33 @@ def get_available_key() -> Optional[str]:
         available_keys = [key for key in all_keys if key not in frozen_keys_set]
 
     if not available_keys:
-        my_log.log_openrouter_free('No available (non-frozen) API keys.')
+        # If no keys are available, check if any are frozen and report when the next one is free
+        if FROZEN_KEYS:
+            next_unfreeze_time = min(FROZEN_KEYS.values())
+            remaining_seconds = max(0, next_unfreeze_time - current_time)
+
+            # Human-readable duration
+            days, rem = divmod(remaining_seconds, 86400)
+            hours, rem = divmod(rem, 3600)
+            minutes, _ = divmod(rem, 60)
+
+            duration_parts = []
+            if days > 0:
+                duration_parts.append(f"{int(days)}d")
+            if hours > 0:
+                duration_parts.append(f"{int(hours)}h")
+            # Show minutes if it's the largest unit or there's a remainder
+            if minutes > 0 or not duration_parts:
+                duration_parts.append(f"{int(minutes)}m")
+
+            duration_str = " ".join(duration_parts) if duration_parts else "0m"
+
+            my_log.log_openrouter_free(
+                f'No available keys. Next unfreezes in ~{duration_str} at {time.ctime(next_unfreeze_time)}'
+            )
+        else:
+            # This case means no keys are defined in the config at all
+            my_log.log_openrouter_free('No available (non-frozen) API keys.')
         return None
 
     # Select the next key using round-robin logic in a thread-safe manner

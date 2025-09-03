@@ -19,6 +19,8 @@ Flask
 
 geopy
 
+imagecodecs[all]
+
 json_repair
 
 httpx[socks]
@@ -27,7 +29,7 @@ fuzzywuzzy
 
 google
 
-google-generativeai # удалить потом
+# google-generativeai # удалить потом
 google-genai
 
 gradio_client

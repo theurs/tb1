@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# pip install -U google-generativeai
 # pip install assemblyai
 
 import hashlib

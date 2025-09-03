@@ -32,6 +32,7 @@ from functools import wraps
 
 import cachetools.func
 import json_repair
+import imagecodecs
 import markdownify
 import PIL
 from bs4 import BeautifulSoup
@@ -2261,11 +2262,81 @@ def extract_frames_as_bytes(input_bytes: bytes) -> bytes | None:
             remove_dir(temp_frames_dir)
 
 
+# def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 2000, jpg_quality: int = 60) -> bytes:
+#     """
+#     Resizes an image to a maximum size in either dimension,
+#     converts it to JPG format (if it's not already), and compresses it.
+#     If the image is already JPG and within the size limits, it returns the original data.
+
+#     Args:
+#         image_data: The image data as bytes or a file path to the image.
+#         max_size: The maximum size (in pixels) for the width or height of the image. Defaults to 2000.
+#         jpg_quality: The quality of the JPG compression (0-100). Defaults to 60.
+
+#     Returns:
+#         The processed JPG image data as bytes, or the original data if no changes were needed.
+#     """
+#     try:
+#         # Открываем изображение, если передали путь к файлу, то читаем файл
+#         if isinstance(image_data, str):
+#             with open(image_data, 'rb') as f:
+#                 image_data = f.read()
+
+#         # print(len(image_data))
+
+#         # Открываем изображение из байтов
+#         img = PIL.Image.open(io.BytesIO(image_data))
+
+#         # Получаем ширину и высоту
+#         width, height = img.size
+
+#         # Если размеры меньше max_size и формат JPG, возвращаем исходные данные
+#         if width <= max_size and height <= max_size and img.format == 'JPEG':
+#             return image_data
+
+#         # Определяем, нужно ли изменять размер
+#         if width > max_size or height > max_size:
+#             # Вычисляем коэффициент масштабирования
+#             if width > height:
+#                 scale = max_size / width
+#             else:
+#                 scale = max_size / height
+
+#             # Рассчитываем новые размеры
+#             new_width = int(width * scale)
+#             new_height = int(height * scale)
+
+#             # Изменяем размер изображения
+#             img = img.resize((new_width, new_height))
+
+#         # Конвертируем в JPG и сжимаем только если это необходимо
+#         with io.BytesIO() as output:
+#             img = img.convert('RGB')  # Конвертируем в RGB если это необходимо
+#             img.save(output, format='JPEG', quality=jpg_quality, optimize=True)
+#             jpg_data = output.getvalue()
+
+#         # print(len(jpg_data))
+
+#         return jpg_data
+
+#     except PIL.UnidentifiedImageError as e:
+#         jpg_data = extract_frames_as_bytes(image_data)
+#         if jpg_data:
+#             return jpg_data
+#         my_log.log2(f'utils:resize_and_convert_to_jpg: {e}')
+#         return b''
+#     except Exception as e:
+#         my_log.log2(f'utils:resize_and_convert_to_jpg: {e}')
+#         return b''
+
+
 def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 2000, jpg_quality: int = 60) -> bytes:
     """
     Resizes an image to a maximum size in either dimension,
     converts it to JPG format (if it's not already), and compresses it.
     If the image is already JPG and within the size limits, it returns the original data.
+    Attempts to open with PIL first, then falls back to imagecodecs for broader format support,
+    handling various numpy array data types and image modes.
 
     Args:
         image_data: The image data as bytes or a file path to the image.
@@ -2274,59 +2345,133 @@ def resize_and_convert_to_jpg(image_data: Union[bytes, str], max_size: int = 200
 
     Returns:
         The processed JPG image data as bytes, or the original data if no changes were needed.
+        Returns empty bytes (b'') if the image cannot be processed.
     """
-    try:
-        # Открываем изображение, если передали путь к файлу, то читаем файл
-        if isinstance(image_data, str):
+    img = None
+    original_format_was_jpeg_and_small_enough = False
+
+    # Если передали путь к файлу, читаем байты
+    if isinstance(image_data, str):
+        try:
             with open(image_data, 'rb') as f:
                 image_data = f.read()
+        except Exception as e:
+            # Если my_log не определен, закомментируй эту строку
+            # my_log.log2(f'utils:resize_and_convert_to_jpg: Failed to read image from path {image_data}: {e}')
+            return b''
 
-        # print(len(image_data))
+    # 1. Попытка открыть изображение с помощью Pillow (для большинства форматов)
+    try:
+        temp_img_stream = io.BytesIO(image_data)
+        img = PIL.Image.open(temp_img_stream)
+        # Если my_log не определен, закомментируй эту строку
+        # my_log.log2('utils:resize_and_convert_to_jpg: Image opened successfully with PIL.')
 
-        # Открываем изображение из байтов
-        img = PIL.Image.open(io.BytesIO(image_data))
+        # Проверяем, был ли исходник уже JPG и достаточно мал
+        if img.format == 'JPEG' and img.size[0] <= max_size and img.size[1] <= max_size:
+            original_format_was_jpeg_and_small_enough = True
 
-        # Получаем ширину и высоту
-        width, height = img.size
+    except PIL.Image.UnidentifiedImageError:
+        # Если my_log не определен, закомментируй эту строку
+        # my_log.log2('utils:resize_and_convert_to_jpg: PIL could not identify image. Trying imagecodecs.')
+        # 2. Если Pillow не справился, пробуем imagecodecs
+        try:
+            # imagecodecs.imread возвращает массив NumPy
+            numpy_array = imagecodecs.imread(image_data)
+            # Если my_log не определен, закомментируй эту строку
+            # my_log.log2(f'utils:resize_and_convert_to_jpg: imagecodecs returned array with shape {numpy_array.shape}, dtype {numpy_array.dtype}.')
 
-        # Если размеры меньше max_size и формат JPG, возвращаем исходные данные
-        if width <= max_size and height <= max_size and img.format == 'JPEG':
-            return image_data
+            # Преобразование типа данных и масштабирование, если необходимо
+            if numpy_array.dtype != np.uint8:
+                if np.issubdtype(numpy_array.dtype, np.floating):
+                    # Если float, масштабируем до 0-255 и преобразуем в uint8
+                    # Определяем максимальное значение для нормализации
+                    data_max = numpy_array.max()
+                    if data_max > 1.0: # Если значения уже в диапазоне 0-255 или выше
+                        # Масштабируем относительно фактического максимума, чтобы не потерять контраст
+                        numpy_array = (numpy_array / data_max * 255).astype(np.uint8)
+                    else: # Предполагаем диапазон 0-1 для float
+                        numpy_array = (numpy_array * 255).astype(np.uint8)
+                else: # Если другой целочисленный тип, просто приводим к uint8
+                    numpy_array = numpy_array.astype(np.uint8)
 
-        # Определяем, нужно ли изменять размер
-        if width > max_size or height > max_size:
-            # Вычисляем коэффициент масштабирования
-            if width > height:
-                scale = max_size / width
+            # Определяем режим Pillow на основе количества каналов
+            if numpy_array.ndim == 3: # Цветное изображение (H, W, C)
+                if numpy_array.shape[2] == 3: # RGB
+                    img = PIL.Image.fromarray(numpy_array, mode='RGB')
+                elif numpy_array.shape[2] == 4: # RGBA
+                    img = PIL.Image.fromarray(numpy_array, mode='RGBA')
+                else:
+                    # Если my_log не определен, закомментируй эту строку
+                    # my_log.log2(f'utils:resize_and_convert_to_jpg: Unsupported number of channels by imagecodecs: {numpy_array.shape[2]}.')
+                    return b'' # Возвращаем пустые байты при неподдерживаемом количестве каналов
+            elif numpy_array.ndim == 2: # Оттенки серого (H, W)
+                img = PIL.Image.fromarray(numpy_array, mode='L') # L для 8-битного оттенка серого
             else:
-                scale = max_size / height
+                # Если my_log не определен, закомментируй эту строку
+                # my_log.log2(f'utils:resize_and_convert_to_jpg: Unsupported numpy array dimensions: {numpy_array.ndim}.')
+                return b'' # Возвращаем пустые байты при неподдерживаемых измерениях массива
 
-            # Рассчитываем новые размеры
-            new_width = int(width * scale)
-            new_height = int(height * scale)
+            # Если my_log не определен, закомментируй эту строку
+            # my_log.log2('utils:resize_and_convert_to_jpg: Image successfully opened with imagecodecs and converted to PIL.')
 
-            # Изменяем размер изображения
-            img = img.resize((new_width, new_height))
-
-        # Конвертируем в JPG и сжимаем только если это необходимо
-        with io.BytesIO() as output:
-            img = img.convert('RGB')  # Конвертируем в RGB если это необходимо
-            img.save(output, format='JPEG', quality=jpg_quality, optimize=True)
-            jpg_data = output.getvalue()
-
-        # print(len(jpg_data))
-
-        return jpg_data
-
-    except PIL.UnidentifiedImageError as e:
+        except Exception as imagecodecs_e:
+            # Если my_log не определен, закомментируй эту строку
+            # my_log.log2(f'utils:resize_and_convert_to_jpg: Failed to open with imagecodecs: {imagecodecs_e}. Attempting fallback.')
+            # 3. Если и imagecodecs не справился, используем старый запасной вариант
+            # Убедись, что extract_frames_as_bytes определена или доступна
+            # Если нет, можно вернуть b'' или поднять исключение
+            jpg_data = extract_frames_as_bytes(image_data)
+            if jpg_data:
+                return jpg_data
+            # Если my_log не определен, закомментируй эту строку
+            # my_log.log2('utils:resize_and_convert_to_jpg: All image opening attempts failed, returning empty bytes.')
+            return b''
+    except Exception as general_e:
+        # Ловим любые другие неожиданные ошибки при начальном открытии Pillow
+        # Если my_log не определен, закомментируй эту строку
+        # my_log.log2(f'utils:resize_and_convert_to_jpg: General error during initial PIL open: {general_e}. Attempting fallback.')
+        # Убедись, что extract_frames_as_bytes определена или доступна
         jpg_data = extract_frames_as_bytes(image_data)
         if jpg_data:
             return jpg_data
-        my_log.log2(f'utils:resize_and_convert_to_jpg: {e}')
         return b''
-    except Exception as e:
-        my_log.log2(f'utils:resize_and_convert_to_jpg: {e}')
+
+    # Если на этом этапе `img` все еще None, значит, ни один метод не смог открыть изображение
+    if img is None:
+        # Если my_log не определен, закомментируй эту строку
+        # my_log.log2('utils:resize_and_convert_to_jpg: Image object is unexpectedly None after all opening attempts.')
         return b''
+
+    # Если исходное изображение было JPG, достаточно маленькое и Pillow его открыл,
+    # то возвращаем исходные байты без изменений.
+    if original_format_was_jpeg_and_small_enough:
+        return image_data
+
+    # Продолжаем процесс изменения размера и конвертации
+    width, height = img.size
+    if width > max_size or height > max_size:
+        if width > height:
+            scale = max_size / width
+        else:
+            scale = max_size / height
+
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+
+        img = img.resize((new_width, new_height), PIL.Image.Resampling.LANCZOS) # Используем LANCZOS для лучшего качества
+
+    with io.BytesIO() as output:
+        # Убедимся, что изображение в режиме RGB, т.к. JPG не поддерживает другие цветовые пространства
+        if img.mode != 'RGB':
+            # Если изображение имеет альфа-канал (RGBA), при конвертации в RGB он будет отброшен.
+            # Если нужен фон, его можно добавить перед конвертацией, но это усложняет.
+            # Для сохранения в JPG альфа-канал обычно не нужен, поэтому просто конвертируем.
+            img = img.convert('RGB')
+        img.save(output, format='JPEG', quality=jpg_quality, optimize=True)
+        jpg_data = output.getvalue()
+
+    return jpg_data
 
 
 def heic2jpg(data: Union[bytes, str]) -> bytes:

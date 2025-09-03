@@ -252,8 +252,8 @@ def ai(prompt: str = '',
 
         key = get_available_key()
         if not key:
-            time.sleep(5)  # Wait if no keys are available
-            continue
+            # The get_available_key function has already logged the details.
+            return ''
 
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
@@ -724,8 +724,8 @@ def _send_image_request(
 
         key = get_available_key()
         if not key:
-            time.sleep(5)  # Wait if no keys are available
-            continue
+            # The get_available_key function has already logged the details.
+            return None
 
         try:
             response = requests.post(

@@ -252,8 +252,7 @@ def ai(prompt: str = '',
 
         key = get_available_key()
         if not key:
-            # The get_available_key function has already logged the details.
-            return ''
+            return ''  # No keys available, abort immediately
 
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",

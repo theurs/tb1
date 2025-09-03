@@ -467,7 +467,6 @@ def gen_images(
     pool = ThreadPool(processes=10)
 
     async_result_openrouter1 = pool.apply_async(openrouter_gen, (prompt, user_id))
-    async_result_openrouter2 = pool.apply_async(openrouter_gen, (prompt, user_id))
     async_result2 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
     async_result3 = pool.apply_async(kandinski, (prompt, 1024, 1024, 1, negative))
     async_result10 = pool.apply_async(gemini_flash, (prompt, 1024, 1024, 1, negative, user_id))
@@ -477,7 +476,6 @@ def gen_images(
         async_result1 = pool.apply_async(bing, (bing_prompt, moderation_flag, user_id))
 
         result = (async_result_openrouter1.get() or []) + \
-                 (async_result_openrouter2.get() or []) + \
                  (async_result1.get() or []) + \
                  (async_result2.get() or []) + \
                  (async_result3.get() or []) + \
@@ -485,7 +483,6 @@ def gen_images(
                  (async_result_pollinations.get() or [])
     else:
         result = (async_result_openrouter1.get() or []) + \
-                 (async_result_openrouter2.get() or []) + \
                  (async_result2.get() or []) + \
                  (async_result3.get() or []) + \
                  (async_result10.get() or []) + \

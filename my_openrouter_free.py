@@ -43,16 +43,34 @@ KEY_INDEX_LOCK = threading.Lock()
 
 def freeze_key(key: str, duration_seconds: int = 86400) -> None:
     """
-    Temporarily freezes a rate-limited API key by adding it to the FROZEN_KEYS database.
+    Temporarily freezes a rate-limited API key and logs the duration.
 
     Args:
         key (str): The API key to freeze.
-        duration_seconds (int): The duration in seconds for which the key will be frozen. Defaults to 86400 (24 hours).
+        duration_seconds (int): The duration in seconds for which the key will be frozen.
     """
     with FROZEN_KEYS_LOCK:
         unfreeze_time = time.time() + duration_seconds
         FROZEN_KEYS[key] = unfreeze_time
-        my_log.log_openrouter_free(f'Key frozen due to rate limit until {time.ctime(unfreeze_time)}: ...{key[-4:]}')
+
+        # Create a human-readable duration string
+        days, rem = divmod(duration_seconds, 86400)
+        hours, rem = divmod(rem, 3600)
+        minutes, _ = divmod(rem, 60)
+
+        duration_parts = []
+        if days > 0:
+            duration_parts.append(f"{int(days)}d")
+        if hours > 0:
+            duration_parts.append(f"{int(hours)}h")
+        if minutes > 0:
+            duration_parts.append(f"{int(minutes)}m")
+
+        duration_str = " ".join(duration_parts) if duration_parts else f"{duration_seconds}s"
+
+        my_log.log_openrouter_free(
+            f'Key ...{key[-4:]} frozen for {duration_str} until {time.ctime(unfreeze_time)}'
+        )
 
 
 def handle_rate_limit(key: str, response: Any) -> None:
@@ -83,8 +101,8 @@ def handle_rate_limit(key: str, response: Any) -> None:
             duration_seconds = max(0, reset_time_sec - current_time_sec + 60)
 
             if duration_seconds > 0:
+                # The freeze_key function now handles its own logging
                 freeze_key(key, int(duration_seconds))
-                my_log.log_openrouter_free(f'Key ...{key[-4:]} frozen until reset time.')
                 return
     except (json.JSONDecodeError, AttributeError, TypeError, ValueError) as e:
         # Log the parsing failure, but proceed to default freeze

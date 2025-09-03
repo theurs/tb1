@@ -529,37 +529,6 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
         my_log.log2(f'tb:add_to_bots_mem:{unexpected_error}\n\n{traceback_error}')
 
 
-# def img2img(
-#     text,
-#     lang: str,
-#     chat_id_full: str,
-#     query: str = '',
-#     model: str = '',
-#     temperature: float = 0,
-#     system_message: str = '',
-#     timeout: int = 120,
-#     ) -> Optional[bytes]:
-#     """
-#     Regenerate the image using query.
-
-#     Args:
-#         text (str): The image file URL or downloaded data(bytes).
-#         lang (str): The language code for the image description.
-#         chat_id_full (str): The full chat ID.
-#         query (str): The user's query text.
-#         model (str): gemini model
-#         temperature (float): temperature
-#         system_message (str): system message (role/style)
-#         timeout (int): timeout
-
-#     Returns:
-#         str: new image as jpg bytes.
-#     """
-#     images = [text,]
-
-#     return my_gemini_genimg.regenerate_image(query, sources_images=images, user_id=chat_id_full)
-
-
 def img2img(
     text: bytes|List[bytes],
     lang: str,
@@ -1717,14 +1686,17 @@ def bot_reply_tr(
         my_log.log2(f'tb:bot_reply_tr:{unexpected_error}\n\n{traceback_error}')
 
 
-def bot_reply(message: telebot.types.Message,
-              msg: str,
-              parse_mode: str = None,
-              disable_web_page_preview: bool = None,
-              reply_markup: telebot.types.InlineKeyboardMarkup = None,
-              send_message: bool = False,
-              not_log: bool = False,
-              allow_voice: bool = False):
+def bot_reply(
+    message: telebot.types.Message,
+    msg: str,
+    parse_mode: str = None,
+    disable_web_page_preview: bool = None,
+    reply_markup: telebot.types.InlineKeyboardMarkup = None,
+    send_message: bool = False,
+    not_log: bool = False,
+    allow_voice: bool = False,
+    collapse_text: bool = False
+):
     """Send message from bot and log it
     send_message - send message or reply (ignored, used value from db)
     """
@@ -1738,12 +1710,25 @@ def bot_reply(message: telebot.types.Message,
         send_message = my_db.get_user_property(get_topic_id(message), 'send_message') or False
 
         if send_message:
-            send_long_message(message, msg, parse_mode=parse_mode,
-                                disable_web_page_preview=disable_web_page_preview,
-                                reply_markup=reply_markup, allow_voice=allow_voice)
+            send_long_message(
+                message,
+                msg, 
+                parse_mode=parse_mode,
+                disable_web_page_preview=disable_web_page_preview,
+                reply_markup=reply_markup,
+                allow_voice=allow_voice,
+                collapse_text=collapse_text
+            )
         else:
-            reply_to_long_message(message, msg, parse_mode=parse_mode, disable_web_page_preview=disable_web_page_preview,
-                            reply_markup=reply_markup, allow_voice=allow_voice)
+            reply_to_long_message(
+                message,
+                msg, 
+                parse_mode=parse_mode, 
+                disable_web_page_preview=disable_web_page_preview,
+                reply_markup=reply_markup,
+                allow_voice=allow_voice,
+                collapse_text=collapse_text
+            )
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:bot_reply: {unexpected_error}\n\n{traceback_error}')
@@ -3010,9 +2995,13 @@ def handle_voice(message: telebot.types.Message):
 
             # Отправляем, если есть что отправлять, и если это не режим "только голос"
             if full_transcription_text and not is_voice_only_mode:
-                bot_reply(messages_to_process[0], full_transcription_text,
-                          parse_mode='HTML',
-                          reply_markup=get_keyboard('translate', messages_to_process[0]))
+                bot_reply(
+                    messages_to_process[0],
+                    full_transcription_text,
+                    parse_mode='HTML',
+                    reply_markup=get_keyboard('translate', messages_to_process[0]),
+                    collapse_text = True
+                )
 
             # Если это был режим transcribe_only, на этом все
             if is_transcribe_only:
@@ -8697,13 +8686,25 @@ def set_default_commands(message: telebot.types.Message):
         my_log.log2(f'tb:set_default_command: {unknown}\n{traceback_error}')
 
 
-def send_long_message(message: telebot.types.Message, resp: str, parse_mode:str = None, disable_web_page_preview: bool = None,
-                      reply_markup: telebot.types.InlineKeyboardMarkup = None, allow_voice: bool = False):
+def send_long_message(
+    message: telebot.types.Message,
+    resp: str,
+    parse_mode:str = None,
+    disable_web_page_preview: bool = None,
+    reply_markup: telebot.types.InlineKeyboardMarkup = None,
+    allow_voice: bool = False,
+    collapse_text: bool = False
+):
     """отправляем сообщение, если оно слишком длинное то разбивает на 2 части либо отправляем как текстовый файл"""
-    reply_to_long_message(message=message, resp=resp, parse_mode=parse_mode,
-                          disable_web_page_preview=disable_web_page_preview,
-                          reply_markup=reply_markup, send_message = True,
-                          allow_voice=allow_voice)
+    reply_to_long_message(
+        message=message,
+        resp=resp,
+        parse_mode=parse_mode,
+        disable_web_page_preview=disable_web_page_preview,
+        reply_markup=reply_markup, send_message = True,
+        allow_voice=allow_voice,
+        collapse_text=collapse_text
+    )
 
 
 def send_resp_as_file(message: telebot.types.Message,
@@ -8836,7 +8837,9 @@ def reply_to_long_message(
     disable_web_page_preview: bool = None,
     reply_markup: telebot.types.InlineKeyboardMarkup = None,
     send_message: bool = False,
-    allow_voice: bool = False):
+    allow_voice: bool = False,
+    collapse_text: bool = False
+):
     """
     Sends a message, splitting it into two parts if it's too long, or sending it as a text file.
 
@@ -8861,10 +8864,19 @@ def reply_to_long_message(
         preview = telebot.types.LinkPreviewOptions(is_disabled=disable_web_page_preview)
 
         max_size = cfg.SPLIT_CHUNK_HTML if hasattr(cfg, 'SPLIT_CHUNK_HTML') else 3800
+
         if parse_mode == 'HTML':
             chunks = utils.split_html(resp, max_size)
         else:
             chunks = utils.split_text(resp, max_size)
+
+        # collapse_text - HTML текст надо спрятать в <blockquote expandable> .. </blockquote>
+        if collapse_text and parse_mode == 'HTML':
+            chunks_ = []
+            for chunk in chunks:
+                chunks_.append('<blockquote expandable>' + chunk + '</blockquote>')
+            chunks = chunks_
+
 
         # в режиме только голоса ответы идут голосом без текста и разделения на части
         if my_db.get_user_property(chat_id_full, 'voice_only_mode') and allow_voice:

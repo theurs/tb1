@@ -308,7 +308,7 @@ if __name__ == "__main__":
     print("Knowledge base created successfully.")
     print(df)
 
-    query = "текст пергамента."
+    query = "Кто победил в дуэли Гермионы и Хмури"
     print(f"\nFinding best passages for query: '{query}'")
 
     best_passages = my_mistral_embedding.find_best_passages(query, df)

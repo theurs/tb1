@@ -51,6 +51,7 @@ import my_skills_storage
 import my_skills_general
 import my_sum
 import my_tarot
+import my_tavily
 import utils
 
 
@@ -859,6 +860,73 @@ def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_h
         return f"FAIL: An unexpected error occurred: {e}"
 
     return 'FAILED'
+
+
+def search_and_send_images(query: str, chat_id: str) -> str:
+    """
+    Searches for images based on a query and sends them to the user.
+
+    This function utilizes the Tavily search API to find relevant images.
+    The found images are then prepared and stored for sending to the specified
+    Telegram user.
+
+    Args:
+        query (str): The search term for the images.
+        chat_id (str): The Telegram user chat ID where the images should be sent.
+                       The ID will be restored and validated internally.
+
+    Returns:
+        str: A confirmation message with the number of found images on success,
+             or a 'FAIL' message with an error description.
+    """
+    try:
+        # Log the request for auditing and debugging.
+        my_log.log_gemini_skills(f"Searching images for query: '{query}' for chat_id: {chat_id}")
+
+        # Restore and validate the chat_id.
+        restored_chat_id: str = my_skills_general.restore_id(chat_id)
+        if restored_chat_id == '[unknown]':
+            return "FAIL: Unknown chat ID."
+
+        # Perform the image search using the Tavily client.
+        # This returns a list of tuples: (image_bytes, title)
+        images: list[tuple[bytes, str]] = my_tavily.search_images(
+            query=query, user_id=restored_chat_id
+        )
+
+        # Handle cases where no images were found.
+        if not images:
+            return f"FAIL: No images found for the query '{query}'."
+
+        # Prepare image data for storage.
+        storage_items = []
+        for i, (image_bytes, title) in enumerate(images):
+            filename = f"{title}"
+
+            item = {
+                'type': 'image/png file',
+                'filename': filename,
+                'data': image_bytes,
+            }
+            storage_items.append(item)
+
+        # Store all found images in the user-specific storage.
+        with my_skills_storage.STORAGE_LOCK:
+            if restored_chat_id not in my_skills_storage.STORAGE:
+                my_skills_storage.STORAGE[restored_chat_id] = []
+            my_skills_storage.STORAGE[restored_chat_id].extend(storage_items)
+
+        # Return a success message for the assistant.
+        return f"OK. Found {len(storage_items)} images. They are ready to be sent to the user."
+
+    except Exception as e:
+        # Log any unexpected errors with a full traceback.
+        traceback_error: str = traceback.format_exc()
+        my_log.log_gemini_skills(
+            f'search_and_send_images: Unexpected error: {e}\n\n{traceback_error}\n\n'
+            f"query: {query}, chat_id: {chat_id}"
+        )
+        return f"FAIL: An unexpected error occurred while searching for images: {e}"
 
 
 ##### charts ###############################################

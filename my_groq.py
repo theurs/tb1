@@ -36,9 +36,10 @@ USER_KEYS_LOCK = threading.Lock()
 
 
 # for ai func
-# DEFAULT_MODEL = 'llama-3.2-90b-vision-preview'
-DEFAULT_MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct'
-FALLBACK_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
+# DEFAULT_MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct'
+# FALLBACK_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
+DEFAULT_MODEL = 'moonshotai/kimi-k2-instruct-0905'
+FALLBACK_MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct'
 
 
 # блокировка чатов что бы не испортить историю 

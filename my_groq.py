@@ -278,19 +278,33 @@ def ai(prompt: str = '',
             else:
                 client = Groq(api_key=key, timeout = timeout)
 
-            if json_output:
-                resp_type = 'json_object'
-            else:
-                resp_type = 'text'
             try:
-                chat_completion = client.chat.completions.create(
-                    messages=mem,
-                    model=model,
-                    temperature=temperature,
-                    max_tokens=max_tokens_,
-                    response_format = {"type": resp_type},
-                    timeout=timeout
-                )
+                params = {
+                    "messages": mem,
+                    "model": model,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens_,
+                    "timeout": timeout,
+                }
+                
+                # Try with JSON mode first if requested
+                if json_output:
+                    json_params = params.copy()
+                    json_params["response_format"] = {"type": "json_object"}
+                    try:
+                        chat_completion = client.chat.completions.create(**json_params)
+                    except Exception as json_error:
+                        # Fallback to text mode if JSON validation fails
+                        if 'json_validate_failed' in str(json_error):
+                            my_log.log_groq(f'GROQ JSON mode failed for model {model}. Retrying in text mode.')
+                            params["response_format"] = {"type": "text"}
+                            chat_completion = client.chat.completions.create(**params)
+                        else:
+                            raise json_error  # Re-raise other errors
+                else:
+                    # Standard text request
+                    chat_completion = client.chat.completions.create(**params)
+
             except PermissionDeniedError:
                 my_log.log_groq(f'GROQ PermissionDeniedError: {key}')
                 continue
@@ -904,8 +918,8 @@ TEXT:
     translated = ai(query, temperature=0.1, model_=model, json_output = True)
 
     translated_dict = utils.string_to_dict(translated)
-    if translated_dict:
-        return translated_dict['translation']
+    if translated_dict and isinstance(translated_dict, dict):
+        return translated_dict.get('translation', '')
     return ''
 
 

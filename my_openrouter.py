@@ -407,9 +407,9 @@ def _execute_chat_completion(
                         # If wait time is invalid (e.g., in the past or too far in the future), use fallback
                         raise ValueError(f"[{user_id}] Unreasonable wait duration calculated: {wait_duration:.2f}s")
 
-                except (json.JSONDecodeError, KeyError, AttributeError, ValueError, TypeError):
+                except (json.JSONDecodeError, KeyError, AttributeError, ValueError, TypeError) as e:
                     # Fallback if parsing fails or header is missing
-                    my_log.log_openrouter(f'[{user_id}] Rate limit hit. Could not parse reset time. Retrying after 10s fallback.')
+                    my_log.log_openrouter(f'[{user_id}] Rate limit hit. Could not parse reset time. Retrying after 10s fallback. Error: {e}')
                     time.sleep(10)
                     continue
 

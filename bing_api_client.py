@@ -67,7 +67,7 @@ def send_image_generation_request(prompt: str, model: str = 'dalle') -> List[str
         # Send the POST request
         timeout = 60
         if model != 'dalle':
-            timeout = 120
+            timeout = 240
         response: requests.Response = requests.post(url, headers=headers, json=data, timeout=timeout)
 
         # Raise an exception for bad status codes

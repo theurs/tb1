@@ -2139,6 +2139,10 @@ def string_to_dict(input_string: str) -> Optional[Dict[str, Any]]:
         return None
 
     try:
+        input_string = input_string.replace('\n{},', '')
+        if input_string.startswith('[') and input_string.endswith(']'):
+            input_string = input_string[1:-1]
+
         # Use json_repair to fix and load the string.
         decoded_object = json_repair.loads(input_string)
 

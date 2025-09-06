@@ -315,7 +315,8 @@ def _execute_chat_completion(
     This helper function handles the low-level details of making the API call.
     It formats parameters like 'reasoning_effort' based on the target provider's
     requirements and silently retries if a model doesn't support a specific feature
-    like system prompts or developer instructions.
+    like system prompts or developer instructions. It also handles rate limits
+    by respecting the 'X-RateLimit-Reset' header.
 
     Args:
         sdk_params: Parameters for the API call, including an abstract 'reasoning_effort_value'.
@@ -331,51 +332,60 @@ def _execute_chat_completion(
         ValueError: If the model signals it doesn't support a feature like tools.
         ConnectionError: For actual network or severe, unrecoverable API errors.
     """
-    # Add app identification headers
     app_headers = {
         "HTTP-Referer": APP_SITE_URL,
         "X-Title": APP_NAME,
     }
-
     current_params = sdk_params.copy()
-
-    # Extract the abstract reasoning effort value. It will be formatted below.
     reasoning_effort_value = current_params.pop('reasoning_effort_value', None)
 
-    for attempt in range(2): # Allow one retry for recoverable errors
+    for attempt in range(2):
         try:
-            # --- Provider-specific formatting logic ---
-            # This block adds the correct reasoning parameter only on the first attempt.
+            # --- Provider-specific formatting ---
             if reasoning_effort_value and attempt == 0:
                 is_openai_compatible = not ('openrouter' in url or 'cerebras' in url)
                 if 'cerebras' in url:
                     current_params['reasoning_effort'] = reasoning_effort_value
                 elif not is_openai_compatible:
                     current_params['reasoning'] = {"effort": reasoning_effort_value}
-                # For standard OpenAI compatible APIs, no parameter is added as it's not supported.
 
             # --- API Call ---
             is_openai_compatible = not ('openrouter' in url or 'cerebras' in url)
             if is_openai_compatible:
-                # Add headers to the OpenAI client
-                client = OpenAI(
-                    api_key=key,
-                    base_url=url,
-                    default_headers=app_headers
-                )
+                client = OpenAI(api_key=key, base_url=url, default_headers=app_headers)
                 response = client.chat.completions.create(**current_params, timeout=timeout)
                 if response.usage:
                     in_t, out_t = PRICE.get(user_id, (0, 0))
                     PRICE[user_id] = (in_t + response.usage.prompt_tokens, out_t + response.usage.completion_tokens)
                 return response.choices[0].message.model_dump()
             else:
+                # --- Requests-based path for non-OpenAI-compatible APIs ---
                 post_url = url if url.endswith('/chat/completions') else url + '/chat/completions'
                 post_url = re.sub(r'(?<!:)//', '/', post_url)
-                # Combine auth header with app headers
                 request_headers = {"Authorization": f"Bearer {key}", **app_headers}
                 http_response = requests.post(
                     url=post_url, headers=request_headers, json=current_params, timeout=timeout
                 )
+
+                # --- Handle rate limits directly from response headers ---
+                if http_response.status_code == 429 and attempt == 0:
+                    reset_header = http_response.headers.get('X-RateLimit-Reset')
+                    if reset_header:
+                        try:
+                            # Header is in milliseconds, convert to seconds
+                            reset_timestamp_ms = int(reset_header)
+                            wait_duration = (reset_timestamp_ms / 1000) - time.time() + 0.1 # Add a 100ms buffer
+                            if 0 < wait_duration < 61:
+                                my_log.log_openrouter(f'[{user_id}] Rate limit hit. Waiting for {wait_duration:.2f}s.')
+                                time.sleep(wait_duration)
+                                continue # Retry the request
+                        except (ValueError, TypeError) as error:
+                             my_log.log_openrouter(f'[{user_id}] Rate limit hit. Could not parse reset time header: {reset_header}. Fallback to 10s wait. Error: {error}')
+                             time.sleep(10)
+                             continue
+                    # Fallback if header is missing
+                    time.sleep(10)
+                    continue
 
                 if http_response.status_code == 200:
                     response_data = http_response.json()
@@ -386,73 +396,26 @@ def _execute_chat_completion(
                         PRICE[user_id] = (in_t + prompt_tokens, out_t + completion_tokens)
                     return response_data['choices'][0]['message']
                 else:
+                    # Raise for other non-200 codes to be caught below
                     raise ConnectionError(http_response.text)
 
-        except (ConnectionError, APIStatusError) as e:
-            error_text = str(e).lower()
-
-            # --- Specific error handling for retry ---
-            # Case 1: Model doesn't support reasoning/developer instruction.
-            if attempt == 0 and 'developer instruction is not enabled' in error_text:
-                # Silently remove the unsupported parameters and retry.
-                current_params.pop('reasoning_effort', None)
-                current_params.pop('reasoning', None)
-                reasoning_effort_value = None # Prevent re-adding it on the next loop
-                continue # Go to the next attempt
-
-            # Handle rate limit error by respecting the X-RateLimit-Reset header
-            elif attempt == 0 and ('"code":429' in error_text or 'rate limit exceeded' in error_text):
-                try:
-                    # Extract the JSON part of the error string
-                    json_str = re.search(r'{.*}', str(e))
-                    if not json_str:
-                        raise ValueError("No JSON found in error string")
-
-                    error_data = json.loads(json_str.group(0))
-                    # Navigate to the reset timestamp (it's in milliseconds)
-                    reset_timestamp_ms = int(error_data['error']['metadata']['headers']['X-RateLimit-Reset'])
-
-                    # Calculate how long to wait in seconds
-                    wait_duration = (reset_timestamp_ms / 1000) - time.time() + 0.1 # Add a 100ms buffer
-
-                    # Don't wait forever, cap at ~1 minute. Also handles negative wait time.
-                    if 0 < wait_duration < 61:
-                        my_log.log_openrouter(f'[{user_id}] Rate limit hit. Waiting for {wait_duration:.2f}s.')
-                        time.sleep(wait_duration)
-                        continue # Retry the request
-                    else:
-                        # If wait time is invalid (e.g., in the past or too far in the future), use fallback
-                        raise ValueError(f"[{user_id}] Unreasonable wait duration calculated: {wait_duration:.2f}s")
-
-                except (json.JSONDecodeError, KeyError, AttributeError, ValueError, TypeError) as e:
-                    # Fallback if parsing fails or header is missing
-                    my_log.log_openrouter(f'[{user_id}] Rate limit hit. Could not parse reset time. Retrying after 10s fallback. Error: {e}')
-                    time.sleep(10)
-                    continue
-
-            # Case 2 (NEW): Model does not support system prompts.
-            elif attempt == 0 and ('system' in error_text and 'role' in error_text):
-                # This error indicates the model rejected the 'system' role.
-                # We log it and strip system messages for a retry.
-                my_log.log_openrouter(f'_execute_chat_completion: Model {sdk_params["model"]} may not support system prompts. Retrying without them.')
-                current_params['messages'] = [
-                    msg for msg in current_params['messages'] if msg.get('role') != 'system'
-                ]
-                continue # Go to the next attempt
-
-            # Case 3: Model doesn't support tools. Signal the caller to stop trying.
-            if 'tool' in error_text and ('support' in error_text or 'endpoints' in error_text):
-                raise ValueError(f"Model does not support tools." ) from e
-
-            # If it's a different error or the retry failed, log it and raise.
-            my_log.log_openrouter(f'_execute_chat_completion: Unrecoverable API Error on attempt {attempt+1}: {e}')
-            raise ConnectionError(f"API Error: {e}") from e
-
-        except Exception as e:
-            my_log.log_openrouter(f'_execute_chat_completion: Unhandled Exception: {e}\n{traceback.format_exc()}')
-            return None # Return None for completely unexpected errors
-
-    return None # Fallback if the retry loop finishes without returning
+        except APIStatusError as e:
+            # --- Specific error handling for OpenAI-compatible clients ---
+            if e.status_code == 429 and attempt == 0:
+                reset_header = e.response.headers.get('X-RateLimit-Reset')
+                if reset_header:
+                    try:
+                        # Header is in milliseconds
+                        reset_timestamp_ms = int(reset_header)
+                        wait_duration = (reset_timestamp_ms / 1000) - time.time() + 0.1
+                        if 0 < wait_duration < 61:
+                            my_log.log_openrouter(f'[{user_id}] Rate limit hit (SDK). Waiting for {wait_duration:.2f}s.')
+                            time.sleep(wait_duration)
+                            continue
+                    except (ValueError, TypeError) as error:
+                        my_log.log_openrouter(f'[{user_id}] Rate limit hit (SDK). Could not parse reset time header. Fallback to 10s wait. Error: {error}')
+                        time.sleep(10)
+                        continue
 
 
 def _get_api_key(user_id: str, model: str = '') -> Optional[str]:

@@ -3551,7 +3551,7 @@ def handle_document(message: telebot.types.Message):
                     caption = caption.strip()
 
                     # если подпись начинается на load то это запрос на загрузку сохраненной памяти
-                    if caption == 'load':
+                    if caption == 'load' or message.document.file_name.startswith('resp.md'):
                         # bytes to string
                         mem_dict = utils_llm.text_to_mem_dict(downloaded_file)
                         reset_(message, say = False)

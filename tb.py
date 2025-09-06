@@ -4751,79 +4751,164 @@ def drop_subscription(message: telebot.types.Message):
     bot_reply_tr(message, 'Usage: /drop_subscription id_as_int')
 
 
-def send_all_files_from_storage(message, chat_id_full):
-    '''
-    Отправляет файлы из хранилища для файлов в my_skills_storage.STORAGE если они там есть
-    '''
-    try: # если в ответе есть файлы, то отправляем его
-        # Получаем данные из STORAGE.
-        # Предполагается, что хранимый элемент - это плоский список
-        #  [{type,filename,data},{}]
+# def send_all_files_from_storage(message, chat_id_full):
+#     '''
+#     Отправляет файлы из хранилища для файлов в my_skills_storage.STORAGE если они там есть
+#     '''
+#     try: # если в ответе есть файлы, то отправляем его
+#         # Получаем данные из STORAGE.
+#         # Предполагается, что хранимый элемент - это плоский список
+#         #  [{type,filename,data},{}]
+#         items = my_skills_storage.STORAGE.get(chat_id_full)
+#         if items:
+#             for item in items:
+#                 try:
+#                     _type, filename, data = item['type'], item['filename'], item['data']
+#                     if _type in ('excel file', 'docx file', 'text file'):
+#                         m = send_document(
+#                             message=message,
+#                             chat_id=message.chat.id,
+#                             document=data,
+#                             reply_to_message_id = message.message_id,
+#                             reply_markup=get_keyboard('hide', message),
+#                             caption=filename,
+#                             visible_file_name=filename,
+#                         )
+#                         log_message(m)
+#                         continue
+#                     elif _type in ('image/png file',):
+#                         m = send_photo(
+#                             message=message,
+#                             chat_id=message.chat.id,
+#                             photo=data,
+#                             reply_to_message_id = message.message_id,
+#                             reply_markup=get_keyboard('hide', message),
+#                             caption=filename,
+#                         )
+#                         log_message(m)
+#                         continue
+#                     elif _type in ('video/mp4 file',):
+#                         m = send_video(
+#                             message=message,
+#                             chat_id=message.chat.id,
+#                             video=data,
+#                             caption=filename,
+#                             reply_to_message_id=message.message_id,
+#                             reply_markup=get_keyboard('hide', message),
+#                         )
+#                         log_message(m)
+#                         continue
+#                     elif _type in ('pdf file',):
+#                         m = send_document(
+#                             message=message,
+#                             chat_id=message.chat.id,
+#                             document=data,
+#                             reply_to_message_id = message.message_id,
+#                             reply_markup=get_keyboard('hide', message),
+#                             caption=filename,
+#                             visible_file_name=filename,
+#                         )
+#                         log_message(m)
+#                         continue
+#                 except Exception as individual_error:
+#                     traceback_error = traceback.format_exc()
+#                     # Логируем ошибку для этого конкретного элемента, но продолжаем цикл
+#                     my_log.log2(f'tb:send_all_files_from_storage:1: for chat {chat_id_full}, item {i}: {individual_error}\n\n{traceback_error}')
+#                     continue
+
+#             # После попытки отправки всех потенциальных файлов, удаляем запись из STORAGE
+#             my_skills_storage.STORAGE.pop(chat_id_full)
+
+#     except Exception as general_error:
+#         # Этот блок ловит ошибки, не связанные с отправкой конкретного элемента (например, проблемы с получением данных из STORAGE или неверный формат)
+#         my_skills_storage.STORAGE.pop(chat_id_full) # Удаляем запись в случае общей ошибки
+#         traceback_error = traceback.format_exc()
+#         my_log.log2(f'tb:send_all_files_from_storage:2: for chat {chat_id_full}: {general_error}\n\n{traceback_error}')
+
+
+def send_all_files_from_storage(message: telebot.types.Message, chat_id_full: str) -> None:
+    """
+    Sends files from the temporary storage for the given user.
+    Images are grouped into media groups, while other file types are sent individually.
+    """
+    try:
         items = my_skills_storage.STORAGE.get(chat_id_full)
-        if items:
-            for item in items:
-                try:
-                    _type, filename, data = item['type'], item['filename'], item['data']
-                    if _type in ('excel file', 'docx file', 'text file'):
-                        m = send_document(
+        if not items:
+            return
+
+        image_group = []
+        other_files = []
+
+        # Separate images from other file types
+        for item in items:
+            if item.get('type') and 'image' in item['type']:
+                image_group.append(item)
+            else:
+                other_files.append(item)
+
+        # Send images as a media group if there are any
+        if image_group:
+            media_to_send = []
+            for item in image_group:
+                filename, data = item.get('filename', 'image.png'), item.get('data')
+                if data:
+                    # Truncate caption to Telegram's limit
+                    media_to_send.append(telebot.types.InputMediaPhoto(data, caption=filename[:900]))
+
+            # Split into chunks of 10, as per Telegram's limit
+            if media_to_send:
+                chunk_size = 10
+                chunks = [media_to_send[i:i + chunk_size] for i in range(0, len(media_to_send), chunk_size)]
+                for chunk in chunks:
+                    try:
+                        sent_messages = send_media_group(
                             message=message,
                             chat_id=message.chat.id,
-                            document=data,
-                            reply_to_message_id = message.message_id,
-                            reply_markup=get_keyboard('hide', message),
-                            caption=filename,
-                            visible_file_name=filename,
+                            media=chunk,
+                            reply_to_message_id=message.message_id
                         )
-                        log_message(m)
-                        continue
-                    elif _type in ('image/png file',):
-                        m = send_photo(
-                            message=message,
-                            chat_id=message.chat.id,
-                            photo=data,
-                            reply_to_message_id = message.message_id,
-                            reply_markup=get_keyboard('hide', message),
-                            caption=filename,
-                        )
-                        log_message(m)
-                        continue
-                    elif _type in ('video/mp4 file',):
-                        m = send_video(
-                            message=message,
-                            chat_id=message.chat.id,
-                            video=data,
-                            caption=filename,
-                            reply_to_message_id=message.message_id,
-                            reply_markup=get_keyboard('hide', message),
-                        )
-                        log_message(m)
-                        continue
-                    elif _type in ('pdf file',):
-                        m = send_document(
-                            message=message,
-                            chat_id=message.chat.id,
-                            document=data,
-                            reply_to_message_id = message.message_id,
-                            reply_markup=get_keyboard('hide', message),
-                            caption=filename,
-                            visible_file_name=filename,
-                        )
-                        log_message(m)
-                        continue
-                except Exception as individual_error:
-                    traceback_error = traceback.format_exc()
-                    # Логируем ошибку для этого конкретного элемента, но продолжаем цикл
-                    my_log.log2(f'tb:send_all_files_from_storage:1: for chat {chat_id_full}, item {i}: {individual_error}\n\n{traceback_error}')
+                        if sent_messages:
+                            log_message(sent_messages)
+                    except Exception as e:
+                        my_log.log2(f'tb:send_all_files_from_storage:media_group_error: {e}')
+
+        # Send other files individually
+        for item in other_files:
+            try:
+                _type, filename, data = item.get('type'), item.get('filename'), item.get('data')
+                if not all([_type, filename, data]):
                     continue
 
-            # После попытки отправки всех потенциальных файлов, удаляем запись из STORAGE
-            my_skills_storage.STORAGE.pop(chat_id_full)
+                m = None
+                # Truncate caption to Telegram's limit
+                safe_caption = filename[:900]
+
+                if _type in ('excel file', 'docx file', 'text file', 'pdf file'):
+                    m = send_document(
+                        message=message, chat_id=message.chat.id, document=data,
+                        reply_to_message_id=message.message_id, reply_markup=get_keyboard('hide', message),
+                        caption=safe_caption, visible_file_name=filename,
+                    )
+                elif 'video' in _type:
+                    m = send_video(
+                        message=message, chat_id=message.chat.id, video=data,
+                        caption=safe_caption, reply_to_message_id=message.message_id,
+                        reply_markup=get_keyboard('hide', message),
+                    )
+
+                if m:
+                    log_message(m)
+            except Exception as individual_error:
+                traceback_error = traceback.format_exc()
+                my_log.log2(f'tb:send_all_files_from_storage:individual_item_error: {individual_error}\n\n{traceback_error}')
+                continue
 
     except Exception as general_error:
-        # Этот блок ловит ошибки, не связанные с отправкой конкретного элемента (например, проблемы с получением данных из STORAGE или неверный формат)
-        my_skills_storage.STORAGE.pop(chat_id_full) # Удаляем запись в случае общей ошибки
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:send_all_files_from_storage:2: for chat {chat_id_full}: {general_error}\n\n{traceback_error}')
+        my_log.log2(f'tb:send_all_files_from_storage:general_error: for chat {chat_id_full}: {general_error}\n\n{traceback_error}')
+    finally:
+        # Clear storage for the user after attempting to send
+        my_skills_storage.STORAGE.pop(chat_id_full, None)
 
 
 @bot.message_handler(commands=['calc', 'math'], func=authorized_owner)

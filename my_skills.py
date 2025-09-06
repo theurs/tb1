@@ -917,7 +917,7 @@ def search_and_send_images(query: str, chat_id: str) -> str:
             my_skills_storage.STORAGE[restored_chat_id].extend(storage_items)
 
         # Return a success message for the assistant.
-        return f"OK. Found {len(storage_items)} images. They are ready to be sent to the user."
+        return f"OK. Found {len(storage_items)} images. They were sent to the user."
 
     except Exception as e:
         # Log any unexpected errors with a full traceback.

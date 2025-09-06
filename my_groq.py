@@ -287,7 +287,7 @@ def ai(prompt: str = '',
                     "max_tokens": max_tokens_,
                     "timeout": timeout,
                 }
-                
+
                 # Try with JSON mode first if requested
                 if json_output:
                     json_params = params.copy()

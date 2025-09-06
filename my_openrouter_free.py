@@ -18,6 +18,10 @@ import my_log
 import utils
 
 
+APP_SITE_URL: str = 'https://kun4sun.bot/123/'
+APP_NAME: str = 'kun4sun_bot'
+
+
 # сколько запросов хранить
 MAX_MEM_LINES = 20
 MAX_HIST_CHARS = 100000
@@ -239,9 +243,6 @@ def ai(prompt: str = '',
     if prompt:
         mem_ = mem_ + [{'role': 'user', 'content': prompt}]
 
-    YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
-    YOUR_APP_NAME = 'kun4sun_bot'
-
     result = ''
 
     start_time = time.time()
@@ -258,8 +259,8 @@ def ai(prompt: str = '',
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {key}",
-                "HTTP-Referer": f"{YOUR_SITE_URL}",
-                "X-Title": f"{YOUR_APP_NAME}",
+                "HTTP-Referer": f"{APP_SITE_URL}",
+                "X-Title": f"{APP_NAME}",
             },
             data=json.dumps({
                 "model": model,
@@ -523,9 +524,6 @@ def img2txt(
     if system:
         mem.insert(0, {'role': 'system', 'content': system})
 
-    YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
-    YOUR_APP_NAME = 'kun4sun_bot'
-
     result = ''
 
     for _ in range(3):
@@ -533,8 +531,8 @@ def img2txt(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {random.choice(cfg.OPEN_ROUTER_FREE_KEYS)}",
-                "HTTP-Referer": f"{YOUR_SITE_URL}",  # Optional, for including your app on openrouter.ai rankings.
-                "X-Title": f"{YOUR_APP_NAME}",  # Optional. Shows in rankings on openrouter.ai.
+                "HTTP-Referer": f"{APP_SITE_URL}",  # Optional, for including your app on openrouter.ai rankings.
+                "X-Title": f"{APP_NAME}",  # Optional. Shows in rankings on openrouter.ai.
             },
             data=json.dumps({
 
@@ -603,9 +601,6 @@ def img2txt(
 
 #     base64_voice = base64.b64encode(voice_data).decode()
 
-#     YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
-#     YOUR_APP_NAME = 'kun4sun_bot'
-
 #     result = ''
 
 #     for _ in range(3):
@@ -613,8 +608,8 @@ def img2txt(
 #             url="https://openrouter.ai/api/v1/chat/completions",
 #             headers={
 #                 "Authorization": f"Bearer {random.choice(cfg.OPEN_ROUTER_FREE_KEYS)}",
-#                 "HTTP-Referer": f"{YOUR_SITE_URL}",  # Optional, for including your app on openrouter.ai rankings.
-#                 "X-Title": f"{YOUR_APP_NAME}",  # Optional. Shows in rankings on openrouter.ai.
+#                 "HTTP-Referer": f"{APP_SITE_URL}",  # Optional, for including your app on openrouter.ai rankings.
+#                 "X-Title": f"{APP_NAME}",  # Optional. Shows in rankings on openrouter.ai.
 #             },
 #             data=json.dumps({
 
@@ -692,9 +687,6 @@ def _send_image_request(
     if not hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') or not cfg.OPEN_ROUTER_FREE_KEYS:
         return None
 
-    YOUR_SITE_URL = 'https://t.me/kun4sun_bot'
-    YOUR_APP_NAME = 'kun4sun_bot'
-
     payload = {
         "model": model,
         "messages": messages,
@@ -731,8 +723,8 @@ def _send_image_request(
                 url="https://openrouter.ai/api/v1/chat/completions",
                 headers={
                     "Authorization": f"Bearer {key}",
-                    "HTTP-Referer": YOUR_SITE_URL,
-                    "X-Title": YOUR_APP_NAME,
+                    "HTTP-Referer": APP_SITE_URL,
+                    "X-Title": APP_NAME,
                 },
                 data=json.dumps(payload),
                 timeout=remaining_time,  # Use the remaining time for this attempt's timeout

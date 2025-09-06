@@ -20,6 +20,10 @@ import my_skills_storage
 import utils
 
 
+APP_SITE_URL: str = 'https://kun4sun.bot/123/'
+APP_NAME: str = 'kun4sun_bot'
+
+
 # keys {user_id(str):key(str)}
 KEYS = SqliteDict('db/open_router_keys.db', autocommit=True)
 # {user_id(str):list(model, temperature, max_tokens, maxhistlines, maxhistchars)}
@@ -327,6 +331,12 @@ def _execute_chat_completion(
         ValueError: If the model signals it doesn't support a feature like tools.
         ConnectionError: For actual network or severe, unrecoverable API errors.
     """
+    # Add app identification headers
+    app_headers = {
+        "HTTP-Referer": APP_SITE_URL,
+        "X-Title": APP_NAME,
+    }
+
     current_params = sdk_params.copy()
 
     # Extract the abstract reasoning effort value. It will be formatted below.
@@ -347,7 +357,12 @@ def _execute_chat_completion(
             # --- API Call ---
             is_openai_compatible = not ('openrouter' in url or 'cerebras' in url)
             if is_openai_compatible:
-                client = OpenAI(api_key=key, base_url=url)
+                # Add headers to the OpenAI client
+                client = OpenAI(
+                    api_key=key,
+                    base_url=url,
+                    default_headers=app_headers
+                )
                 response = client.chat.completions.create(**current_params, timeout=timeout)
                 if response.usage:
                     in_t, out_t = PRICE.get(user_id, (0, 0))
@@ -356,8 +371,10 @@ def _execute_chat_completion(
             else:
                 post_url = url if url.endswith('/chat/completions') else url + '/chat/completions'
                 post_url = re.sub(r'(?<!:)//', '/', post_url)
+                # Combine auth header with app headers
+                request_headers = {"Authorization": f"Bearer {key}", **app_headers}
                 http_response = requests.post(
-                    url=post_url, headers={"Authorization": f"Bearer {key}"}, json=current_params, timeout=timeout
+                    url=post_url, headers=request_headers, json=current_params, timeout=timeout
                 )
 
                 if http_response.status_code == 200:

@@ -1,5 +1,6 @@
 import cachetools.func
 import datetime
+import json
 import io
 import pytz
 import re
@@ -13,6 +14,7 @@ import cfg
 import my_barcode_generate
 import my_qrcode_generate
 import my_log
+import my_md_tables_to_png
 import my_mermaid
 import my_pandoc
 import my_plantweb
@@ -471,27 +473,189 @@ def save_to_pdf(filename: str, text: str, chat_id: str) -> str:
         return f"FAIL: An unexpected error occurred: {error}"
 
 
-@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
-def get_weather(location: str) -> str:
+def _get_weather_interpretation(wmo_code: int) -> tuple[str, str]:
+    """Converts WMO weather code to description and emoji icon."""
+    # Based on WMO Weather interpretation codes
+    codes = {
+        0: ("Clear sky", "☀️"),
+        1: ("Mainly clear", "🌤️"),
+        2: ("Partly cloudy", "⛅️"),
+        3: ("Overcast", "☁️"),
+        45: ("Fog", "🌫️"),
+        48: ("Depositing rime fog", "🌫️"),
+        51: ("Light drizzle", "💧"),
+        53: ("Moderate drizzle", "💧"),
+        55: ("Dense drizzle", "💧"),
+        56: ("Light freezing drizzle", "🥶"),
+        57: ("Dense freezing drizzle", "🥶"),
+        61: ("Slight rain", "🌧️"),
+        63: ("Moderate rain", "🌧️"),
+        65: ("Heavy rain", "🌧️"),
+        66: ("Light freezing rain", "🥶🌧️"),
+        67: ("Heavy freezing rain", "🥶🌧️"),
+        71: ("Slight snow fall", "❄️"),
+        73: ("Moderate snow fall", "❄️"),
+        75: ("Heavy snow fall", "❄️"),
+        77: ("Snow grains", "❄️"),
+        80: ("Slight rain showers", "🌦️"),
+        81: ("Moderate rain showers", "🌦️"),
+        82: ("Violent rain showers", "🌦️"),
+        85: ("Slight snow showers", "🌨️"),
+        86: ("Heavy snow showers", "🌨️"),
+        95: ("Thunderstorm", "⛈️"),
+        96: ("Thunderstorm with slight hail", "⛈️"),
+        99: ("Thunderstorm with heavy hail", "⛈️"),
+    }
+    return codes.get(wmo_code, ("Unknown", "🤷"))
+
+
+def _create_weather_html(data: dict, location_name: str) -> str:
+    """Creates an HTML string for a weather card."""
+    current = data.get("current", {})
+    temp = current.get("temperature_2m", "N/A")
+    feels_like = current.get("apparent_temperature", "N/A")
+    humidity = current.get("relative_humidity_2m", "N/A")
+    wind_speed = current.get("wind_speed_10m", "N/A")
+    weather_code = current.get("weather_code", -1)
+
+    description, icon = _get_weather_interpretation(weather_code)
+
+    html = f"""
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                background-color: #f0f2f5;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 300px;
+                width: 500px;
+                margin: 0;
+            }}
+            .card {{
+                background: linear-gradient(135deg, #6e8efb, #a777e3);
+                color: white;
+                border-radius: 20px;
+                padding: 25px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                width: 450px;
+                height: 250px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }}
+            .header {{
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+            }}
+            .location {{
+                font-size: 24px;
+                font-weight: bold;
+            }}
+            .icon {{
+                font-size: 60px;
+                margin-top: -15px;
+            }}
+            .main-temp {{
+                font-size: 72px;
+                font-weight: bold;
+                text-align: center;
+                margin-top: -20px;
+            }}
+            .footer {{
+                display: flex;
+                justify-content: space-around;
+                font-size: 16px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="header">
+                <div class="location">{location_name}</div>
+                <div class="icon">{icon}</div>
+            </div>
+            <div class="main-temp">{temp}°C</div>
+            <div class="footer">
+                <div>{description}</div>
+                <div>Feels like: {feels_like}°C</div>
+                <div>💧 {humidity}%</div>
+                <div>💨 {wind_speed} km/h</div>
+            </div>
+        </div>
+    </body>
+    </html>
     """
-    Retrieve weather data from the OpenMeteo API for the past 7 days and the upcoming 7 days.
+    return html
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
+def get_weather(location: str, chat_id: str) -> str:
+    """
+    Retrieve weather data, generate a weather card image, and return raw data with a status message.
 
     Args:
-        location (str): The name of the city for which to retrieve the weather data (e.g., "Vladivostok").
+        location (str): The name of the city for which to retrieve the weather data.
+        chat_id (str): The Telegram user chat ID for sending the generated image.
     """
     try:
         location = decode_string(location)
-        my_log.log_gemini_skills(f'Weather: {location}')
+        restored_chat_id = restore_id(chat_id)
+        if restored_chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        my_log.log_gemini_skills(f'Weather: {location} for chat {restored_chat_id}')
         lat, lon = get_coords(location)
         if not any([lat, lon]):
-            return 'error getting data'
-        my_log.log_gemini_skills(f'Weather: {lat} {lon}')
-        # Make sure all required weather variables are listed here
-        # The order of variables in hourly or daily is important to assign them correctly below
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&past_days=7"
-        responses = requests.get(url, timeout = 20)
-        my_log.log_gemini_skills(f'Weather: {responses.text[:100]}')
-        return responses.text
+            return 'error getting coordinates'
+
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,precipitation_sum&past_days=7"
+        response = requests.get(url, timeout=20)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        weather_text = response.text
+        my_log.log_gemini_skills(f'Weather data received for {location}')
+
+        image_status = "Failed to generate a weather card image."
+        try:
+            weather_data = json.loads(weather_text)
+            html_content = _create_weather_html(weather_data, location)
+            filename = utils.safe_fname(f"weather_{location}.png")
+
+            # Render HTML to PNG bytes
+            png_bytes = my_md_tables_to_png.html_to_image_bytes_playwright(
+                html_content, width=500, height=300
+            )
+
+            if png_bytes and isinstance(png_bytes, bytes):
+                item = {
+                    'type': 'image/png file',
+                    'filename': filename,
+                    'data': png_bytes,
+                }
+                # Use the standard storage mechanism
+                with my_skills_storage.STORAGE_LOCK:
+                    if restored_chat_id in my_skills_storage.STORAGE:
+                        if item not in my_skills_storage.STORAGE[restored_chat_id]:
+                            my_skills_storage.STORAGE[restored_chat_id].append(item)
+                    else:
+                        my_skills_storage.STORAGE[restored_chat_id] = [item]
+                image_status = "A weather card image has been successfully generated and sent to the user."
+
+        except Exception as img_error:
+            my_log.log_gemini_skills(f'get_weather:Error generating image for {location}: {img_error}\n\n{traceback.format_exc()}')
+            # If image fails, we still return the text data.
+
+        # Return both the status and the raw data for the assistant
+        return f"{image_status}\n\nHere is the full weather data:\n{weather_text}"
+
+    except requests.exceptions.RequestException as req_error:
+        traceback_error = traceback.format_exc()
+        my_log.log_gemini_skills(f'get_weather:RequestError: {req_error}\n\n{traceback_error}')
+        return f'ERROR performing network request: {req_error}'
     except Exception as error:
         traceback_error = traceback.format_exc()
         my_log.log_gemini_skills(f'get_weather:Error: {error}\n\n{traceback_error}')

@@ -17,6 +17,7 @@ import random
 import requests
 import subprocess
 import time
+import threading
 import traceback
 import tempfile
 
@@ -53,6 +54,10 @@ import my_sum
 import my_tarot
 import my_tavily
 import utils
+
+
+ANIMATION_LOCK = threading.Lock()
+RENDERING_LOCK = threading.Lock()
 
 
 MAX_REQUEST = 25000
@@ -752,51 +757,51 @@ def save_html_to_animation(
     Returns:
         str: 'OK' or 'FAILED'
     """
-
-    my_log.log_gemini_skills_html(
-        f'"{chat_id} {filename} {viewport_width}x{viewport_height}"\n\n"{html}"'
-    )
-
-    chat_id = my_skills_general.restore_id(chat_id)
-    if chat_id == '[unknown]':
-        return "FAIL, unknown chat id"
-
-    if not filename.lower().endswith('.mp4'):
-        filename += '.mp4'
-    filename = utils.safe_fname(filename)
-
-    mp4_bytes = render_html_to_mp4_bytes(
-        html=html,
-        viewport_width=viewport_width,
-        viewport_height=viewport_height,
-        fps=15,
-        quality=65,
-        duration_seconds=60.0,
-        cut_external_assets=False,
-    )
-
-    if not mp4_bytes:
-        return "FAILED"
-
-    item = {
-        'type': 'video/mp4 file',
-        'filename': filename,
-        'data': mp4_bytes,
-    }
-    try:
-        with my_skills_storage.STORAGE_LOCK:
-            if chat_id in my_skills_storage.STORAGE:
-                if item not in my_skills_storage.STORAGE[chat_id]:
-                    my_skills_storage.STORAGE[chat_id].append(item)
-            else:
-                my_skills_storage.STORAGE[chat_id] = [item]
-        return "OK"
-    except Exception as e:
-        tb = traceback.format_exc()
+    with ANIMATION_LOCK:
         my_log.log_gemini_skills_html(
-            f'save_html_to_animation: storage error: {e}\n\n{tb}'
+            f'"{chat_id} {filename} {viewport_width}x{viewport_height}"\n\n"{html}"'
         )
-        return "FAILED"
+
+        chat_id = my_skills_general.restore_id(chat_id)
+        if chat_id == '[unknown]':
+            return "FAIL, unknown chat id"
+
+        if not filename.lower().endswith('.mp4'):
+            filename += '.mp4'
+        filename = utils.safe_fname(filename)
+
+        mp4_bytes = render_html_to_mp4_bytes(
+            html=html,
+            viewport_width=viewport_width,
+            viewport_height=viewport_height,
+            fps=15,
+            quality=65,
+            duration_seconds=60.0,
+            cut_external_assets=False,
+        )
+
+        if not mp4_bytes:
+            return "FAILED"
+
+        item = {
+            'type': 'video/mp4 file',
+            'filename': filename,
+            'data': mp4_bytes,
+        }
+        try:
+            with my_skills_storage.STORAGE_LOCK:
+                if chat_id in my_skills_storage.STORAGE:
+                    if item not in my_skills_storage.STORAGE[chat_id]:
+                        my_skills_storage.STORAGE[chat_id].append(item)
+                else:
+                    my_skills_storage.STORAGE[chat_id] = [item]
+            return "OK"
+        except Exception as e:
+            tb = traceback.format_exc()
+            my_log.log_gemini_skills_html(
+                f'save_html_to_animation: storage error: {e}\n\n{tb}'
+            )
+            return "FAILED"
 
 
 def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_height: int, chat_id: str) -> str:
@@ -821,45 +826,46 @@ def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_h
     Returns:
         str: 'OK' or 'FAILED'
     """
-    try:
-        my_log.log_gemini_skills_html(f'"{filename} {viewport_width}x{viewport_height}"\n\n"{html}"')
-
-        chat_id = my_skills_general.restore_id(chat_id)
-        if chat_id == '[unknown]':
-            return "FAIL, unknown chat id"
-
-        # Ensure filename has .png extension and is safe
-        if not filename.lower().endswith('.png'):
-            filename += '.png'
-        filename = utils.safe_fname(filename)
-
-        # save html to png file
+    with RENDERING_LOCK:
         try:
-            png_bytes = my_md_tables_to_png.html_to_image_bytes_playwright(html, width=viewport_width, height=viewport_height)
+            my_log.log_gemini_skills_html(f'"{filename} {viewport_width}x{viewport_height}"\n\n"{html}"')
+
+            chat_id = my_skills_general.restore_id(chat_id)
+            if chat_id == '[unknown]':
+                return "FAIL, unknown chat id"
+
+            # Ensure filename has .png extension and is safe
+            if not filename.lower().endswith('.png'):
+                filename += '.png'
+            filename = utils.safe_fname(filename)
+
+            # save html to png file
+            try:
+                png_bytes = my_md_tables_to_png.html_to_image_bytes_playwright(html, width=viewport_width, height=viewport_height)
+            except Exception as e:
+                msg = f'FAILED: {str(e)}'
+                my_log.log_gemini_skills_html(msg)
+                return msg
+
+            if png_bytes and isinstance(png_bytes, bytes):
+                item = {
+                    'type': 'image/png file',
+                    'filename': filename,
+                    'data': png_bytes,
+                }
+                with my_skills_storage.STORAGE_LOCK:
+                    if chat_id in my_skills_storage.STORAGE:
+                        if item not in my_skills_storage.STORAGE[chat_id]:
+                            my_skills_storage.STORAGE[chat_id].append(item)
+                    else:
+                        my_skills_storage.STORAGE[chat_id] = [item,]
+                return "OK"
         except Exception as e:
-            msg = f'FAILED: {str(e)}'
-            my_log.log_gemini_skills_html(msg)
-            return msg
+            traceback_error = traceback.format_exc()
+            my_log.log_gemini_skills_html(f'save_html_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{html}\n\n{filename} {viewport_width}x{viewport_height}\n\n{chat_id}')
+            return f"FAIL: An unexpected error occurred: {e}"
 
-        if png_bytes and isinstance(png_bytes, bytes):
-            item = {
-                'type': 'image/png file',
-                'filename': filename,
-                'data': png_bytes,
-            }
-            with my_skills_storage.STORAGE_LOCK:
-                if chat_id in my_skills_storage.STORAGE:
-                    if item not in my_skills_storage.STORAGE[chat_id]:
-                        my_skills_storage.STORAGE[chat_id].append(item)
-                else:
-                    my_skills_storage.STORAGE[chat_id] = [item,]
-            return "OK"
-    except Exception as e:
-        traceback_error = traceback.format_exc()
-        my_log.log_gemini_skills_html(f'save_html_to_image: Unexpected error: {e}\n\n{traceback_error}\n\n{html}\n\n{filename} {viewport_width}x{viewport_height}\n\n{chat_id}')
-        return f"FAIL: An unexpected error occurred: {e}"
-
-    return 'FAILED'
+        return 'FAILED'
 
 
 def search_and_send_images(query: str, chat_id: str) -> str:

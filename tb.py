@@ -145,6 +145,7 @@ IMG_GEN_LOCKS_GEM_IMG = {}
 DOCUMENT_LOCKS = {}
 VOICE_LOCKS = {}
 IMG_LOCKS = {}
+TTS_LOCKS = {}
 
 # key:value storage
 # used for any other key:value needs
@@ -2355,21 +2356,30 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
                 if "Bad Request: message can't be deleted for everyone" not in str(error):
                     traceback_error = traceback.format_exc()
                     my_log.log2(f'tb:callback_inline_thread2: {str(error)}\n\n{traceback_error}')
-        elif call.data == 'tts':
-            text = message.text or message.caption
-            text = text.strip()
-            if text:
-                detected_lang = my_tts.detect_lang_carefully(text)
-                if not detected_lang:
-                    detected_lang = lang or "de"
 
-                rewrited_text = my_gemini3.rewrite_text_for_tts(text, chat_id_full)
-                if not rewrited_text:
-                    rewrited_text = my_cerebras.rewrite_text_for_tts(text, chat_id_full)
+        elif call.data == 'tts':
+
+            if chat_id_full not in TTS_LOCKS:
+                TTS_LOCKS[chat_id_full] = threading.Lock()
+
+            if TTS_LOCKS[chat_id_full].locked():
+                return # If a TTS process is already running for this user, ignore the new request
+
+            with TTS_LOCKS[chat_id_full]:
+                text = message.text or message.caption
+                text = text.strip()
+                if text:
+                    detected_lang = my_tts.detect_lang_carefully(text)
+                    if not detected_lang:
+                        detected_lang = lang or "de"
+
+                    rewrited_text = my_gemini3.rewrite_text_for_tts(text, chat_id_full)
                     if not rewrited_text:
-                        rewrited_text = text
-                message.text = f'/tts {detected_lang} {rewrited_text}'
-                tts(message)
+                        rewrited_text = my_cerebras.rewrite_text_for_tts(text, chat_id_full)
+                        if not rewrited_text:
+                            rewrited_text = text
+                    message.text = f'/tts {detected_lang} {rewrited_text}'
+                    tts(message)
         elif call.data.startswith('select_lang-'):
             l = call.data[12:]
             message.text = f'/lang {l}'

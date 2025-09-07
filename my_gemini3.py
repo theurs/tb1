@@ -17,6 +17,7 @@ from google.genai.types import (
     Content,
     File,
     FileData,
+    FunctionCall,
     GenerateContentConfig,
     GenerateContentResponse,
     HttpOptions,
@@ -25,9 +26,8 @@ from google.genai.types import (
     SafetySetting,
     ThinkingConfig,
     Tool,
-    UserContent
+    UserContent,
 )
-from google.ai.generativelanguage import FunctionCall
 
 import cfg
 import my_db

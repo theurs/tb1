@@ -2,7 +2,7 @@ import random
 import threading
 import traceback
 
-from google.ai.generativelanguage_v1beta import types as protos
+from google.genai.types import Content, Part
 from sqlitedict import SqliteDict
 
 import cfg
@@ -109,18 +109,29 @@ def load_users_keys():
                     ALL_KEYS.append(key)
 
 
-def transform_mem2(mem):
-    '''переделывает словари в объекты, для совместимости, потом надо будет удалить'''
+def transform_mem2(mem: list) -> list:
+    """
+    Converts dictionaries to objects for backward compatibility.
+    Should be removed later.
+
+    Args:
+        mem (list): The memory list to process.
+
+    Returns:
+        list: The processed memory list with objects.
+    """
+    # Converts dictionaries to objects for backward compatibility.
+    # Should be removed later.
     mem_ = []
     for x in mem:
         if isinstance(x, dict):
             text = x['parts'][0]['text']
             if not text.strip():
                 text = '...'
-            u = protos.Content(role=x['role'], parts=[protos.Part(text=text)])
+            # Use Content and Part from the new library
+            u = Content(role=x['role'], parts=[Part(text=text)])
             mem_.append(u)
         else:
-            # my_log.log_gemini(f'transform_mem2:debug: {type(x)} {str(x)}')
             if not x.parts[0].text.strip():
                 x.parts[0].text = '...'
             mem_.append(x)

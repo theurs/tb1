@@ -18,8 +18,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
 import speech_recognition as sr
-import google.generativeai as genai
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from google import genai
+
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
 
@@ -190,105 +190,142 @@ def stt_google_pydub(audio_bytes: bytes|str,
             return ''
 
 
-def genai_clear(_key: str = ''):
-    """Очистка файлов, загруженных через Gemini API.
-    TODO: Проверить возможность удаления чужих файлов.
-    TODO: Обработать потенциальный race condition при настройке API ключа.
+def genai_clear(key: str = '') -> None:
     """
+    Cleans up all files uploaded to the Gemini project associated with an API key.
 
+    This function instantiates a client with a given or fetched API key,
+    retrieves a list of all files, and attempts to delete each one.
+    It uses an object-oriented client to avoid race conditions.
+
+    Args:
+        key (str, optional): The specific API key for cleanup. If not provided,
+                             a key is fetched from the general pool.
+    """
     try:
-        if not _key:
-            key = my_gemini_general.get_next_key()
-        else:
-            key = _key
+        # Get the API key
+        api_key = key or my_gemini_general.get_next_key()
+        if not api_key:
+            my_log.log_gemini('my_transcribe:genai_clear: No API key available for cleanup.')
+            return
 
-        genai.configure(api_key=key) # здесь может быть рейс кондишн?
-        files = genai.list_files()
-        for f in files:
-            print(f.name)
+        # Instantiate the client to avoid race conditions
+        client = genai.Client(api_key=api_key)
+
+        # List and delete files. Converting to list() is safer.
+        files_to_delete = list(client.files.list())
+        for f in files_to_delete:
             try:
-                genai.delete_file(f.name)
-                pass # можно ли удалять чужие файлы?
+                # You can only delete your own files, scoped by the API key.
+                client.files.delete(name=f.name)
             except Exception as error:
-                my_log.log_gemini(f'stt:genai_clear: delete file {error}\n{key}\n{f.name}')
+                my_log.log_gemini(f'my_transcribe:genai_clear: Failed to delete file {f.name}. Error: {error}')
 
     except Exception as error:
+        # Catches broader errors like invalid API key on client creation
         traceback_error = traceback.format_exc()
-        my_log.log_gemini(f'Failed to convert audio data to text: {error}\n\n{traceback_error}')
+        my_log.log_gemini(f'my_transcribe:genai_clear: A critical error occurred during cleanup: {error}\n{traceback_error}')
 
 
-def transcribe_genai(audio_file: str, prompt: str = '', language: str = 'ru') -> str:
-    '''
-    This function takes an audio file path and an optional prompt as input and returns the transcribed text.
+def transcribe_genai(
+    audio_file: str,
+    prompt: str = '',
+    language: str = 'ru',
+    temperature: float = 0.2,
+    max_tokens: int = 8000,
+    timeout: int = 240
+    ) -> str:
+    """
+    Transcribes an audio file using the Gemini API, aligning with the official SDK documentation.
 
-    Parameters
-    audio_file: The path to the audio file. This can be a local file path or a YouTube URL.
-    prompt: An optional prompt to provide to the Gemini API. This can be used to guide the transcription process.
-    language: The language of the audio file. This is used to select the appropriate language model for transcription.
-    Returns
-    The transcribed text.
+    It handles local files and YouTube URLs. The function uses the Files API for uploads
+    and ensures cleanup even if transcription fails. It includes a retry loop to handle
+    API key failures and falls back to a different STT method if Gemini fails.
 
-    Raises
-    Exception: If an error occurs during transcription.
-    '''
+    Args:
+        audio_file: Path to the audio file or a YouTube URL.
+        prompt: Optional prompt to guide the transcription model.
+        language: The language of the audio, used for the fallback STT method.
+        temperature: Controls the randomness of the output.
+        max_tokens: The maximum number of tokens to generate.
+        timeout: The request timeout in seconds.
+
+    Returns:
+        The transcribed text, or an empty string on failure.
+    """
     if my_ytb.valid_youtube_url(audio_file):
         audio_file_ = my_ytb.download_ogg(audio_file)
-        result = transcribe_genai(audio_file_, prompt, language)
+        if not audio_file_:
+            my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to download YouTube audio from {audio_file}')
+            return ''
+        # Pass the parameters down to the recursive call
+        result = transcribe_genai(audio_file_, prompt, language, temperature, max_tokens, timeout)
         utils.remove_file(audio_file_)
         return result
 
-    try:
-        key = my_gemini_general.get_next_key()
+    # The main transcription logic
+    final_response_text = ''
+    uploaded_file = None
+    client = None
+    key = ''
 
-        your_file = None
-        if not prompt:
-            prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text with good looking paragraphs, without time stamps and diarization (speaker separation). This audio file is a cutted fragment with +5 extra seconds in both directions."
+    if not prompt:
+        prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text with good looking paragraphs, without time stamps and diarization (speaker separation)."
 
-        for _ in range(3):
-            try:
-                genai.configure(api_key=key) # здесь может быть рейс кондишн?
-                if your_file == None:
-                    your_file = genai.upload_file(audio_file)
-                    genai.configure(api_key=key) # здесь может быть рейс кондишн?
-                model = genai.GenerativeModel(cfg.gemini25_flash_model)
-                response = model.generate_content([prompt, your_file],
-                                                  safety_settings={
-                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                    }
-                )
-                if response.text.strip():
-                    break
-            except Exception as error:
-                my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to convert audio data to text: {error}')
-                response = ''
-                time.sleep(2)
+    # Create a single config object with all parameters as per the documentation
+    config = genai.types.GenerateContentConfig(
+        temperature=temperature,
+        max_output_tokens=max_tokens,
+        safety_settings=my_gemini3.SAFETY_SETTINGS,
+        http_options=genai.types.HttpOptions(timeout=timeout*1000),
+    )
 
+    for _ in range(3):  # Retry loop
         try:
-            if your_file:
-                for _ in range(3):
-                    try:
-                        genai.configure(api_key=key) # здесь может быть рейс кондишн?
-                        genai.delete_file(your_file.name)
-                        break
-                    except Exception as error:
-                        my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to delete audio file:1:{error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
-                        time.sleep(4)
-        except Exception as error:
-            my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to delete audio file:2: {error}\n{key}\n{your_file.name if your_file else ""}\n\n{str(your_file)}')
+            key = my_gemini_general.get_next_key()
+            client = genai.Client(api_key=key)
 
-        if response and response.text.strip():
-            if detect_repetitiveness(response.text.strip()):
-                return stt_google_pydub_v2(audio_file, lang = language)
-            return response.text.strip()
-        else:
-            return stt_google_pydub_v2(audio_file, lang = language)
-    except Exception as error:
-        traceback_error = traceback.format_exc()
-        my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to convert audio data to text: {error}\n\n{traceback_error}')
-        return stt_google_pydub_v2(audio_file, lang = language)
+            # Upload the file using the client
+            uploaded_file = client.files.upload(file=audio_file)
+
+            # Generate content passing the single 'config' object
+            response = client.models.generate_content(
+                model=cfg.gemini25_flash_model,
+                contents=[prompt, uploaded_file],
+                config=config # Use the 'config' keyword argument
+            )
+
+            if response and response.text.strip():
+                final_response_text = response.text.strip()
+                break  # Success, exit the loop
+
+        except Exception as error:
+            err_str = str(error)
+            # Handle key-related and timeout errors
+            if 'API key' in err_str or 'Quota exceeded' in err_str or 'timeout' in err_str.lower():
+                my_log.log_gemini(f'my_transcribe.py:transcribe_genai: API/timeout error. Retrying. Error: {err_str}')
+                if 'API key' in err_str or 'Quota exceeded' in err_str:
+                    my_gemini_general.remove_key(key)
+            else:
+                # For other errors, log and break the loop
+                traceback_error = traceback.format_exc()
+                my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to transcribe: {error}\n{traceback_error}')
+                break
+        finally:
+            # Crucial: ensure file is deleted if it was uploaded
+            if uploaded_file and client:
+                try:
+                    client.files.delete(name=uploaded_file.name)
+                    uploaded_file = None # Reset after deletion
+                except Exception as del_error:
+                    my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Non-critical: Failed to delete file {uploaded_file.name}. Error: {del_error}')
+
+    # After the loop, check the result and decide on the fallback
+    if final_response_text and not detect_repetitiveness(final_response_text):
+        return final_response_text
+    else:
+        my_log.log_gemini('my_transcribe.py:transcribe_genai: Gemini failed or produced repetitive text, falling back to stt_google_pydub_v2.')
+        return stt_google_pydub_v2(audio_file, lang=language)
 
 
 def transcribe_groq(audio_file: str, prompt: str = '', language: str = 'ru') -> str:
@@ -520,13 +557,6 @@ def download_youtube_clip_v2(video_url: str, language: str):
             utils.remove_file(f'{output_name}_{x}.txt')
 
     return result, info
-
-
-def gemini_tokens_count(text: str) -> int:
-    genai.configure(api_key=my_gemini_general.get_next_key())
-    # print([(x.name, x.input_token_limit, x.output_token_limit, x.supported_generation_methods) for x in genai.list_models()])
-    response = genai.count_message_tokens(prompt=text)
-    return response['token_count']
 
 
 def find_cut_positions(pauses, desired_chunk_size, audio_duration):

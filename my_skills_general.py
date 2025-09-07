@@ -2,6 +2,7 @@ import cachetools.func
 import datetime
 import json
 import io
+import os
 import pytz
 import re
 import requests
@@ -509,88 +510,158 @@ def _get_weather_interpretation(wmo_code: int) -> tuple[str, str]:
     return codes.get(wmo_code, ("Unknown", "🤷"))
 
 
+def _get_background_style(wmo_code: int, is_day: int = 1) -> str:
+    """Returns a CSS background style based on the WMO code."""
+    if is_day == 0: # Night
+        return 'background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);'
+
+    if wmo_code <= 2: # Sunny / Clear
+        return 'background: linear-gradient(to bottom, #4793ff, #2172e2);'
+    if wmo_code in [3] or wmo_code in [45, 48]: # Overcast / Fog
+        return 'background: linear-gradient(to bottom, #899db0, #6e849b);'
+    if (wmo_code >= 51 and wmo_code <= 86): # Rain / Snow
+        return 'background: linear-gradient(to bottom, #5d6d7e, #4a5766);'
+    if wmo_code >= 95: # Thunderstorm
+        return 'background: linear-gradient(to bottom, #2c3e50, #1a2533);'
+    return 'background: linear-gradient(to bottom, #6e8efb, #a777e3);' # Default
+
+
 def _create_weather_html(data: dict, location_name: str) -> str:
-    """Creates an HTML string for a weather card."""
+    """Creates an advanced HTML string for a weather card by embedding local SVG icons."""
     current = data.get("current", {})
+    daily = data.get("daily", {})
+
     temp = current.get("temperature_2m", "N/A")
     feels_like = current.get("apparent_temperature", "N/A")
     humidity = current.get("relative_humidity_2m", "N/A")
     wind_speed = current.get("wind_speed_10m", "N/A")
     weather_code = current.get("weather_code", -1)
+    is_day = current.get("is_day", 1)
 
-    description, icon = _get_weather_interpretation(weather_code)
+    description, _ = _get_weather_interpretation(weather_code)
+    main_icon_svg_content = _get_weather_icon_content_from_file(weather_code, is_day)
+    background_style = _get_background_style(weather_code, is_day)
+
+    forecast_html = ""
+    if all(k in daily for k in ['time', 'weather_code', 'temperature_2m_max', 'temperature_2m_min']) and len(daily['time']) > 1:
+        for i in range(1, min(6, len(daily['time']))):
+            day_ts = datetime.datetime.fromisoformat(daily['time'][i])
+            day_name = day_ts.strftime('%a')
+            day_icon_content = _get_weather_icon_content_from_file(daily['weather_code'][i])
+            temp_max = round(daily['temperature_2m_max'][i])
+            temp_min = round(daily['temperature_2m_min'][i])
+            forecast_html += f"""
+            <div class="day">
+                <div class="day-name">{day_name}</div>
+                <div class="day-icon">{day_icon_content}</div>
+                <div class="day-temp"><strong>{temp_max}°</strong> / {temp_min}°</div>
+            </div>
+            """
 
     html = f"""
     <html>
     <head>
         <meta charset="UTF-8">
         <style>
+            @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
             body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-                background-color: #f0f2f5;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 300px;
-                width: 500px;
+                font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
                 margin: 0;
+                width: 680px;
+                height: 480px;
             }}
             .card {{
-                background: linear-gradient(135deg, #6e8efb, #a777e3);
+                {background_style}
                 color: white;
-                border-radius: 20px;
-                padding: 25px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-                width: 450px;
-                height: 250px;
+                border-radius: 25px;
+                padding: 40px;
+                width: 600px;
+                height: 400px;
                 display: flex;
                 flex-direction: column;
-                justify-content: space-between;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+                text-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
             }}
-            .header {{
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-            }}
-            .location {{
-                font-size: 24px;
-                font-weight: bold;
-            }}
-            .icon {{
-                font-size: 60px;
-                margin-top: -15px;
-            }}
-            .main-temp {{
-                font-size: 72px;
-                font-weight: bold;
-                text-align: center;
+            .current-weather {{ display: flex; justify-content: space-between; flex: 1; }}
+            .info {{ display: flex; flex-direction: column; }}
+            .location {{ font-size: 34px; font-weight: 700; }}
+            .date {{ font-size: 18px; font-weight: 300; margin-top: 6px; }}
+            .description {{ font-size: 20px; font-weight: 400; margin-top: 16px; }}
+            .details {{ font-size: 18px; font-weight: 300; margin-top: auto; }}
+            .visual {{ display: flex; flex-direction: column; align-items: center; text-align: center; }}
+            .icon svg {{ 
+                width: 130px; 
+                height: 130px; 
                 margin-top: -20px;
+                filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+                fill: white; /* Make the icon white */
             }}
-            .footer {{
-                display: flex;
-                justify-content: space-around;
-                font-size: 16px;
-            }}
+            .temperature {{ font-size: 90px; font-weight: 700; }}
+            .temperature span {{ font-size: 45px; vertical-align: top; margin-left: 2px;}}
+            .forecast {{ display: flex; justify-content: space-between; border-top: 1px solid rgba(255, 255, 255, 0.25); padding-top: 25px; margin-top: 25px; }}
+            .day {{ display: flex; flex-direction: column; align-items: center; font-size: 16px; font-weight: 300; }}
+            .day-icon svg {{ width: 36px; height: 36px; fill: white; }}
+            .day-temp {{ margin-top: 8px; font-size: 17px;}}
+            .day-temp strong {{ font-weight: 700; }}
         </style>
     </head>
     <body>
         <div class="card">
-            <div class="header">
-                <div class="location">{location_name}</div>
-                <div class="icon">{icon}</div>
+            <div class="current-weather">
+                <div class="info">
+                    <div class="location">{location_name}</div>
+                    <div class="date">{datetime.datetime.now().strftime('%A, %B %d')}</div>
+                    <div class="description">{description}</div>
+                    <div class="details">
+                        Feels like: {feels_like}°C &nbsp;•&nbsp; 💧 {humidity}% &nbsp;•&nbsp; Wind: {wind_speed} km/h
+                    </div>
+                </div>
+                <div class="visual">
+                    <div class="icon">{main_icon_svg_content}</div>
+                    <div class="temperature">{round(temp)}<span>°C</span></div>
+                </div>
             </div>
-            <div class="main-temp">{temp}°C</div>
-            <div class="footer">
-                <div>{description}</div>
-                <div>Feels like: {feels_like}°C</div>
-                <div>💧 {humidity}%</div>
-                <div>💨 {wind_speed} km/h</div>
+            <div class="forecast">
+                {forecast_html}
             </div>
         </div>
     </body>
     </html>
     """
     return html
+
+
+@cachetools.func.lru_cache(maxsize=128)
+def _read_svg_icon_file(filename: str) -> str:
+    """Reads the content of an SVG file and returns it as a string, with caching."""
+    # Ensure the path is correct relative to the project root
+    filepath = os.path.join('pics', 'weather-icons', 'svg', filename)
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        my_log.log_gemini_skills(f"Weather icon not found: {filepath}")
+        # Return a default fallback "unknown" icon as SVG string
+        return '<svg viewBox="0 0 24 24"><g fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></g></svg>'
+
+
+def _get_weather_icon_content_from_file(wmo_code: int, is_day: int = 1) -> str:
+    """Gets the appropriate weather icon SVG content from a local file."""
+    # Mapping WMO codes to the Weather Icons filenames you have
+    filename = 'wi-na.svg' # Default/Not Available
+    if wmo_code == 0: filename = 'wi-day-sunny.svg' if is_day else 'wi-night-clear.svg'
+    elif wmo_code == 1: filename = 'wi-day-sunny-overcast.svg' if is_day else 'wi-night-alt-partly-cloudy.svg'
+    elif wmo_code == 2: filename = 'wi-day-cloudy.svg' if is_day else 'wi-night-alt-cloudy.svg'
+    elif wmo_code == 3: filename = 'wi-cloudy.svg'
+    elif wmo_code in [45, 48]: filename = 'wi-fog.svg'
+    elif wmo_code in [51, 53, 55, 56, 57]: filename = 'wi-sprinkle.svg'
+    elif wmo_code in [61, 63, 65, 80, 81, 82]: filename = 'wi-rain.svg'
+    elif wmo_code in [66, 67]: filename = 'wi-rain-mix.svg' # Freezing rain
+    elif wmo_code in [71, 73, 75, 77]: filename = 'wi-snow.svg'
+    elif wmo_code in [85, 86]: filename = 'wi-showers.svg' # Snow showers
+    elif wmo_code in [95, 96, 99]: filename = 'wi-thunderstorm.svg'
+
+    return _read_svg_icon_file(filename)
 
 
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
@@ -613,9 +684,10 @@ def get_weather(location: str, chat_id: str) -> str:
         if not any([lat, lon]):
             return 'error getting coordinates'
 
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,precipitation_sum&past_days=7"
+        # Expanded URL to fetch all necessary fields for the new template
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&past_days=0"
         response = requests.get(url, timeout=20)
-        response.raise_for_status()  # Raise an exception for bad status codes
+        response.raise_for_status()
         weather_text = response.text
         my_log.log_gemini_skills(f'Weather data received for {location}')
 
@@ -625,9 +697,9 @@ def get_weather(location: str, chat_id: str) -> str:
             html_content = _create_weather_html(weather_data, location)
             filename = utils.safe_fname(f"weather_{location}.png")
 
-            # Render HTML to PNG bytes
+            # Render HTML to PNG bytes with new dimensions
             png_bytes = my_md_tables_to_png.html_to_image_bytes_playwright(
-                html_content, width=500, height=300
+                html_content, width=680, height=480
             )
 
             if png_bytes and isinstance(png_bytes, bytes):
@@ -636,7 +708,6 @@ def get_weather(location: str, chat_id: str) -> str:
                     'filename': filename,
                     'data': png_bytes,
                 }
-                # Use the standard storage mechanism
                 with my_skills_storage.STORAGE_LOCK:
                     if restored_chat_id in my_skills_storage.STORAGE:
                         if item not in my_skills_storage.STORAGE[restored_chat_id]:
@@ -647,9 +718,7 @@ def get_weather(location: str, chat_id: str) -> str:
 
         except Exception as img_error:
             my_log.log_gemini_skills(f'get_weather:Error generating image for {location}: {img_error}\n\n{traceback.format_exc()}')
-            # If image fails, we still return the text data.
 
-        # Return both the status and the raw data for the assistant
         return f"{image_status}\n\nHere is the full weather data:\n{weather_text}"
 
     except requests.exceptions.RequestException as req_error:

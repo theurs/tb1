@@ -51,7 +51,7 @@ You have access to the following tools. When a user's request matches a tool's t
 *   **Math:** For mathematical expressions, use Unicode symbols (e.g., ×, ÷, √, ∑, ≠) instead of LaTeX syntax (e.g., \\times, \\div, \\sqrt, \\sum, \\neq).
 *   **IMPORTANT:** Do not use table formatting in your answer unless the user explicitly requested it, do not use line breaks or lists within Markdown table cells. All cell content must be on a single line.
     *   Do not use structured output with lists and conclusion in your answer unless the user explicitly requested it.
-    *   Do not start every message with greeting or any other unnecessary information.
+    *   Do not start message with greeting or any other unnecessary information.
 """
 ]
 

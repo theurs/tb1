@@ -10854,6 +10854,27 @@ def do_task(message, custom_prompt: str = ''):
                                     available_tools=AVAILABLE_TOOLS
                                 )
                                 WHO_ANSWERED[chat_id_full] = my_openrouter_free.CLOACKED_MODEL_FALLBACK
+                            if not answer:
+                                answer = my_openrouter_free.chat(
+                                    query=message.text,
+                                    chat_id=chat_id_full,
+                                    system=hidden_text,
+                                    model=my_openrouter_free.CLOACKED_MODEL_FALLBACK2,
+                                    tools=TOOLS,
+                                    available_tools=AVAILABLE_TOOLS
+                                )
+                                WHO_ANSWERED[chat_id_full] = my_openrouter_free.CLOACKED_MODEL_FALLBACK2
+                            if not answer:
+                                answer = my_openrouter_free.chat(
+                                    query=message.text,
+                                    chat_id=chat_id_full,
+                                    system=hidden_text,
+                                    model=my_openrouter_free.CLOACKED_MODEL_FALLBACK3,
+                                    tools=TOOLS,
+                                    available_tools=AVAILABLE_TOOLS
+                                )
+                                WHO_ANSWERED[chat_id_full] = my_openrouter_free.CLOACKED_MODEL_FALLBACK3
+
 
                             autor = WHO_ANSWERED[chat_id_full]
                             WHO_ANSWERED[chat_id_full] = f'👇{autor} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'

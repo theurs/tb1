@@ -27,8 +27,8 @@ SYSTEM_ = []
 
 
 # сколько запросов хранить
-MAX_MEM_LINES = 20
-MAX_HIST_CHARS = 100000
+MAX_MEM_LINES = 30
+MAX_HIST_CHARS = 50000
 
 # блокировка чатов что бы не испортить историю
 # {id:lock}
@@ -43,6 +43,8 @@ GEMINI25_FLASH_IMAGE = 'google/gemini-2.5-flash-image-preview:free'
 # временная модель, неизвестная и ее бекап
 CLOACKED_MODEL = 'openrouter/sonoma-sky-alpha'
 CLOACKED_MODEL_FALLBACK = 'openrouter/sonoma-dusk-alpha'
+CLOACKED_MODEL_FALLBACK2 = 'deepseek/deepseek-chat-v3.1:free'
+CLOACKED_MODEL_FALLBACK3 = 'qwen/qwen3-235b-a22b:free'
 
 # хранилище временно замороженных ключей {key: unfreeze_timestamp}
 FROZEN_KEYS = SqliteDict('db/openrouter_frozen_keys.db', autocommit=True)

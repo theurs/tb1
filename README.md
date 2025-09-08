@@ -210,8 +210,9 @@ default_bot_name = 'бот'
 # 'qwen3', 'qwen3coder'
 # 'llama4'
 # 'gpt-4o', 'gpt_41', 'gpt_41_mini', 'gpt_oss'
+# 'cloacked'
 
-chat_mode_default = 'gemini'
+chat_mode_default = 'gemini25_flash'
 
 img2_txt_model = 'gemini-2.5-flash-preview-05-20'
 img2_txt_model_solve = 'gemini-2.5-flash-preview-05-20'

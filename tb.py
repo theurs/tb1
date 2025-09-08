@@ -509,10 +509,14 @@ def add_to_bots_mem(query: str, resp: str, chat_id_full: str):
             my_gemini3.update_mem(query, resp, chat_id_full, model=mode)
         elif 'openrouter' in mode:
             my_openrouter.update_mem(query, resp, chat_id_full)
+
+        elif 'cloacked' in mode:
+            my_openrouter_free.update_mem(query, resp, chat_id_full)
+
         elif 'qwen3' in mode:
-            my_openrouter_free.update_mem(query, resp, chat_id_full)
+            my_cerebras.update_mem(query, resp, chat_id_full)
         elif 'qwen3coder' in mode:
-            my_openrouter_free.update_mem(query, resp, chat_id_full)
+            my_cerebras.update_mem(query, resp, chat_id_full)
         elif 'llama4' in mode:
             my_cerebras.update_mem(query, resp, chat_id_full)
         elif 'gpt_oss' in mode:
@@ -1814,12 +1818,13 @@ def _build_config_models_menu(chat_id_full: str, lang: str) -> telebot.types.Inl
 
     # Model names are proper nouns, not translated
     models = [
-        ("Gemini 2.5 Flash", "gemini25_flash"), ("Mistral", "mistral"),
-        ("GPT OSS 120b", "gpt_oss"), ("Qwen 3", "qwen3"),
-        ("Gemini 2.5 Pro", "gemini15"), ("Command A", "cohere"),
-        ("GPT-4o", "gpt-4o"), ("GPT 4.1", "gpt_41"),
-        ("Qwen 3 Coder 480b", "qwen3coder"), ("Gemini 2.0 flash", "gemini"),
-        ("DeepSeek V3", "deepseek_v3"), ("OpenRouter", "openrouter"),
+        ('Gemini 2.5 Flash', 'gemini25_flash'), ('Mistral', 'mistral'),
+        ('GPT OSS 120b', 'gpt_oss'), ('Qwen 3', 'qwen3'),
+        ('Gemini 2.5 Pro', 'gemini15'), ('Command A', 'cohere'),
+        ('GPT-4o', 'gpt-4o'), ('GPT 4.1', 'gpt_41'),
+        ('Qwen 3 Coder 480b', 'qwen3coder'), ('Gemini 2.0 flash', 'gemini'),
+        ('DeepSeek V3', 'deepseek_v3'), ('OpenRouter', 'openrouter'),
+        ('Cloacked', 'cloacked'),
     ]
 
     buttons = [_create_selection_button(name, val, chat_mode, 'select_') for name, val in models]
@@ -5484,10 +5489,14 @@ def change_last_bot_answer(chat_id_full: str, text: str, message: telebot.types.
             my_gemini3.force(chat_id_full, text, model = mode)
         elif mode == 'openrouter':
             my_openrouter.force(chat_id_full, text)
+
+        elif mode == 'cloacked':
+            my_openrouter_free.force(chat_id_full, text)
+
         elif mode == 'qwen3':
-            my_openrouter_free.force(chat_id_full, text)
+            my_cerebras.force(chat_id_full, text)
         elif mode == 'qwen3coder':
-            my_openrouter_free.force(chat_id_full, text)
+            my_cerebras.force(chat_id_full, text)
         elif mode == 'gpt_oss':
             my_cerebras.force(chat_id_full, text)
         elif mode == 'llama4':
@@ -5543,10 +5552,14 @@ def undo_cmd(message: telebot.types.Message, show_message: bool = True):
             my_gemini3.undo(chat_id_full, model = mode)
         elif mode == 'openrouter':
             my_openrouter.undo(chat_id_full)
+
+        elif mode == 'cloacked':
+            my_openrouter_free.undo(chat_id_full)
+
         elif mode == 'qwen3':
-            my_openrouter_free.undo(chat_id_full)
+            my_cerebras.undo(chat_id_full)
         elif mode == 'qwen3coder':
-            my_openrouter_free.undo(chat_id_full)
+            my_cerebras.undo(chat_id_full)
         elif mode == 'gpt_oss':
             my_cerebras.undo(chat_id_full)
         elif mode == 'llama4':
@@ -5592,10 +5605,14 @@ def reset_(message: telebot.types.Message, say: bool = True, chat_id_full: str =
                 my_gemini3.reset(chat_id_full, mode)
             elif mode == 'openrouter':
                 my_openrouter.reset(chat_id_full)
+
+            elif mode == 'cloacked':
+                my_openrouter_free.reset(chat_id_full)
+
             elif mode == 'qwen3':
-                my_openrouter_free.reset(chat_id_full)
+                my_cerebras.reset(chat_id_full)
             elif mode == 'qwen3coder':
-                my_openrouter_free.reset(chat_id_full)
+                my_cerebras.reset(chat_id_full)
             elif mode == 'gpt_oss':
                 my_cerebras.reset(chat_id_full)
             elif mode == 'llama4':
@@ -5701,10 +5718,14 @@ def save_history(message: telebot.types.Message):
             prompt = my_gemini3.get_mem_as_string(chat_id_full, md = True, model = mode) or ''
         if mode == 'openrouter':
             prompt = my_openrouter.get_mem_as_string(chat_id_full, md = True) or ''
+
+        if mode == 'cloacked':
+            prompt = my_openrouter_free.get_mem_as_string(chat_id_full, md = True) or ''
+
         if mode == 'qwen3':
-            prompt = my_openrouter_free.get_mem_as_string(chat_id_full, md = True) or ''
+            prompt = my_cerebras.get_mem_as_string(chat_id_full, md = True) or ''
         if mode == 'qwen3coder':
-            prompt = my_openrouter_free.get_mem_as_string(chat_id_full, md = True) or ''
+            prompt = my_cerebras.get_mem_as_string(chat_id_full, md = True) or ''
         if mode == 'gpt_oss':
             prompt = my_cerebras.get_mem_as_string(chat_id_full, md = True) or ''
         if mode == 'llama4':
@@ -5775,12 +5796,17 @@ def send_debug_history(message: telebot.types.Message):
         elif chat_mode == 'openrouter':
             prompt = 'Openrouter\n\n'
             prompt += my_openrouter.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+
+        elif chat_mode == 'cloacked':
+            prompt = 'Cloacked\n\n'
+            prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+
         elif chat_mode == 'qwen3':
             prompt = 'Qwen 3 235b a22b\n\n'
-            prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+            prompt += my_cerebras.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif chat_mode == 'qwen3coder':
             prompt = 'Qwen 3 Coder 480b\n\n'
-            prompt += my_openrouter_free.get_mem_as_string(chat_id_full) or tr('Empty', lang)
+            prompt += my_cerebras.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif chat_mode == 'gpt_oss':
             prompt = 'GPT OSS 120b\n\n'
             prompt += my_cerebras.get_mem_as_string(chat_id_full) or tr('Empty', lang)
@@ -5878,10 +5904,14 @@ def load_memory_handler(message: telebot.types.Message):
             target_mem_string = my_gemini3.get_mem_as_string(target_user_id_str, model=target_chat_mode)
         elif target_chat_mode == 'openrouter':
             target_mem_string = my_openrouter.get_mem_as_string(target_user_id_str)
+
+        elif target_chat_mode == 'cloacked':
+            target_mem_string = my_openrouter_free.get_mem_as_string(target_user_id_str)
+
         elif target_chat_mode == 'qwen3':
-            target_mem_string = my_openrouter_free.get_mem_as_string(target_user_id_str)
+            target_mem_string = my_cerebras.get_mem_as_string(target_user_id_str)
         elif target_chat_mode == 'qwen3coder':
-            target_mem_string = my_openrouter_free.get_mem_as_string(target_user_id_str)
+            target_mem_string = my_cerebras.get_mem_as_string(target_user_id_str)
         elif target_chat_mode == 'gpt_oss':
             target_mem_string = my_cerebras.get_mem_as_string(target_user_id_str)
         elif target_chat_mode == 'llama4':
@@ -6456,251 +6486,6 @@ def downgrade_handler(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:downgrade: {unknown}\n{traceback_error}')
-
-
-# @bot.message_handler(commands=['gem', 'Gem', 'GEM', 'GEN', 'Gen', 'gen'], func=authorized)
-# @async_run
-# def image_gemini_gen(message: telebot.types.Message):
-#     """
-#     Generates images using Gemini 2.0 and 2.5, creating a media group with individual captions
-#     by replicating the exact logic of the /image command.
-#     /gem <[1-4]> <prompt> - generates N images with Gemini 2.0 + 1 with Gemini 2.5.
-#     """
-#     try:
-#         chat_id_full = get_topic_id(message)
-#         lang = get_lang(chat_id_full, message)
-
-#         COMMAND_MODE[chat_id_full] = ''
-
-#         if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
-#             return
-
-#         lock = IMG_GEN_LOCKS_GEM_IMG.setdefault(chat_id_full, threading.Lock())
-
-#         if lock.locked():
-#             if not (hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(chat_id_full) in cfg.ALLOW_PASS_NSFW_FILTER):
-#                 return
-
-#         help_text = f"""/gem <[1|2|3|4]> <prompt>
-
-# {tr('Generates N images with Gemini 2.0 Flash and 1 with OpenRouter Flash 2.5', lang)}
-# """
-
-#         with lock:
-#             parts = message.text.split(maxsplit=2)
-#             if len(parts) < 2:
-#                 bot_reply(message, help_text)
-#                 COMMAND_MODE[chat_id_full] = 'gem'
-#                 return
-
-#             try:
-#                 if len(parts) == 2:
-#                     num = 1
-#                     prompt = parts[1].strip()
-#                 else:
-#                     num_str = parts[1].strip()
-#                     prompt = parts[2].strip()
-#                     if num_str in ('1', '2', '3', '4'):
-#                         num = int(num_str)
-#                     else:
-#                         prompt = f"{num_str} {prompt}"
-#                         num = 1
-#             except IndexError:
-#                 bot_reply(message, help_text)
-#                 return
-
-#             if not prompt:
-#                 bot_reply(message, help_text)
-#                 return
-
-#             with ShowAction(message, 'upload_photo'):
-#                 try:
-#                     reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
-#                     if reprompt == 'MODERATION':
-#                         bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
-#                         return
-#                     if not reprompt:
-#                         bot_reply_tr(message, 'Could not translate your prompt. Try again.')
-#                         return
-
-#                     pool = ThreadPool(processes=2)
-#                     async_gemini = pool.apply_async(my_genimg.gemini_flash, (reprompt,), {'num': num, 'user_id': chat_id_full})
-#                     async_openrouter = pool.apply_async(my_openrouter_free.txt2img, (reprompt,), {'user_id': chat_id_full})
-
-#                     gemini_images = async_gemini.get() or []
-#                     openrouter_image_bytes = async_openrouter.get()
-#                     openrouter_images = [openrouter_image_bytes] if openrouter_image_bytes else []
-
-#                     all_images = gemini_images + openrouter_images
-
-#                     if not all_images:
-#                         bot_reply_tr(message, "Generation failed.")
-#                         return
-
-#                     # --- Replicate the exact media preparation logic from /image ---
-#                     medias = []
-#                     models_used = []
-#                     bot_addr = f'https://t.me/{_bot_name}'
-
-#                     if gemini_images:
-#                         model_name = my_gemini_genimg.MODEL
-#                         models_used.append(model_name)
-#                         for img in gemini_images:
-#                             caption = f'{bot_addr} {model_name}\n\n{prompt}'
-#                             caption = re.sub(r"(\s)\1+", r"\1\1", caption)[:1024]
-#                             medias.append(telebot.types.InputMediaPhoto(img, caption=caption))
-
-#                     if openrouter_images:
-#                         model_name = my_openrouter_free.GEMINI25_FLASH_IMAGE
-#                         models_used.append(model_name)
-#                         for img in openrouter_images:
-#                             caption = f'{bot_addr} {model_name}\n\n{prompt}'
-#                             caption = re.sub(r"(\s)\1+", r"\1\1", caption)[:1024]
-#                             medias.append(telebot.types.InputMediaPhoto(img, caption=caption))
-
-#                     if medias:
-#                         chunk_size = 10
-#                         chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
-
-#                         # Call the same helper function that /image uses
-#                         send_images_to_user(chunks, message, chat_id_full, medias, all_images)
-
-#                         if pics_group:
-#                             send_images_to_pic_group(chunks, message, chat_id_full, reprompt)
-
-#                         service_names = " & ".join(sorted(list(set(models_used))))
-#                         add_to_bots_mem(message.text, f'The bot successfully generated images on external services <service>{service_names}</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
-
-#                 except Exception as e:
-#                     error_traceback = traceback.format_exc()
-#                     my_log.log2(f"tb:image_gemini_gen: {e}\n{error_traceback}")
-#                     bot_reply_tr(message, tr("An error occurred during image generation.", lang))
-#     except Exception as unknown:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'tb:image_gemini_gen: {unknown}\n{traceback_error}')
-
-
-# @bot.message_handler(commands=['gem', 'Gem', 'GEM', 'GEN', 'Gen', 'gen'], func=authorized)
-# @async_run
-# def image_gemini_gen(message: telebot.types.Message):
-#     """
-#     Generates 1-4 images using Gemini 2.5, with a fallback to Gemini 2.0.
-#     /gem <[1-4]> <prompt> - generates N images.
-#     """
-#     try:
-#         chat_id_full = get_topic_id(message)
-#         lang = get_lang(chat_id_full, message)
-
-#         COMMAND_MODE[chat_id_full] = ''
-
-#         if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
-#             return
-
-#         lock = IMG_GEN_LOCKS_GEM_IMG.setdefault(chat_id_full, threading.Lock())
-
-#         if lock.locked():
-#             if not (hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(chat_id_full) in cfg.ALLOW_PASS_NSFW_FILTER):
-#                 return
-
-#         help_text = f"""/gem <[1|2|3|4]> <prompt>
-
-# {tr('Generates N images with Gemini 2.5, fallback to 2.0 if needed', lang)}
-# """
-
-#         with lock:
-#             parts = message.text.split(maxsplit=2)
-#             if len(parts) < 2:
-#                 bot_reply(message, help_text)
-#                 COMMAND_MODE[chat_id_full] = 'gem'
-#                 return
-
-#             try:
-#                 if len(parts) == 2:
-#                     num = 1
-#                     prompt = parts[1].strip()
-#                 else:
-#                     num_str = parts[1].strip()
-#                     prompt = parts[2].strip()
-#                     if num_str in ('1', '2', '3', '4'):
-#                         num = int(num_str)
-#                     else:
-#                         prompt = f"{num_str} {prompt}"
-#                         num = 1
-#             except IndexError:
-#                 bot_reply(message, help_text)
-#                 return
-
-#             if not prompt:
-#                 bot_reply(message, help_text)
-#                 return
-
-#             with ShowAction(message, 'upload_photo'):
-#                 try:
-#                     reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
-#                     if reprompt == 'MODERATION':
-#                         bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
-#                         return
-#                     if not reprompt:
-#                         bot_reply_tr(message, 'Could not translate your prompt. Try again.')
-#                         return
-
-#                     images = []
-#                     model_name = ''
-
-#                     # Attempt to generate with the primary model (2.5)
-#                     try:
-#                         # Call the generator 'num' times as it returns one image at a time.
-#                         generated_results = [my_openrouter_free.txt2img(reprompt, user_id=chat_id_full) for _ in range(num)]
-#                         images = [img for img in generated_results if img]  # Filter out None results on failure
-
-#                         if images:
-#                             model_name = my_openrouter_free.GEMINI25_FLASH_IMAGE
-#                     except Exception as e:
-#                         my_log.log2(f"tb:image_gemini_gen: primary model 2.5 failed: {e}")
-#                         images = [] # Ensure images is empty on failure
-
-#                     # Fallback to the secondary model (2.0) if the primary failed
-#                     if not images:
-#                         try:
-#                             images = my_genimg.gemini_flash(reprompt, num=num, user_id=chat_id_full)
-#                             if images:
-#                                 model_name = my_gemini_genimg.MODEL
-#                         except Exception as e:
-#                             my_log.log2(f"tb:image_gemini_gen: fallback model 2.0 failed: {e}")
-#                             images = []
-
-#                     if not images:
-#                         bot_reply_tr(message, "Generation failed on both models.")
-#                         return
-
-#                     # --- Simplified media preparation ---
-#                     medias = []
-#                     bot_addr = f'https://t.me/{_bot_name}'
-
-#                     for img in images:
-#                         caption = f'{bot_addr} {model_name}\n\n{prompt}'
-#                         caption = re.sub(r"(\s)\1+", r"\1\1", caption)[:1024]
-#                         medias.append(telebot.types.InputMediaPhoto(img, caption=caption))
-
-#                     if medias:
-#                         chunk_size = 10
-#                         chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
-
-#                         send_images_to_user(chunks, message, chat_id_full, medias, images)
-
-#                         if pics_group:
-#                             send_images_to_pic_group(chunks, message, chat_id_full, reprompt)
-
-#                         add_to_bots_mem(message.text, f'The bot successfully generated images on external services <service>{model_name}</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
-
-#                 except Exception as e:
-#                     error_traceback = traceback.format_exc()
-#                     my_log.log2(f"tb:image_gemini_gen: {e}\n{error_traceback}")
-#                     bot_reply_tr(message, tr("An error occurred during image generation.", lang))
-
-#     except Exception as unknown:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'tb:image_gemini_gen: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['gem', 'Gem', 'GEM', 'GEN', 'Gen', 'gen'], func=authorized)
@@ -8289,6 +8074,7 @@ def id_cmd_handler(message: telebot.types.Message):
             'deepseek_v3': my_nebius.DEFAULT_V3_MODEL,
             'cohere': my_cohere.DEFAULT_MODEL,
             'openrouter': 'openrouter.ai',
+            'cloacked': my_openrouter_free.CLOACKED_MODEL,
             'qwen3': my_cerebras.MODEL_QWEN_3_235B_A22B_THINKING,
             'qwen3coder': my_cerebras.MODEL_QWEN_3_CODER_480B,
             'gpt_oss': my_cerebras.MODEL_GPT_OSS_120B,
@@ -11042,6 +10828,71 @@ def do_task(message, custom_prompt: str = ''):
                             my_log.log2(f'tb:do_task:magistral {error3}\n{error_traceback}')
 
 
+                # если активирован режим общения с Cloacked (free OpenRouter)
+                elif chat_mode_ == 'cloacked':
+                    with ShowAction(message, action):
+                        try:
+                            TOOLS, AVAILABLE_TOOLS = my_cerebras_tools.get_tools(*my_cerebras.funcs)
+
+                            # Вызов обновленной функции chat из my_openrouter_free
+                            answer = my_openrouter_free.chat(
+                                query=message.text,
+                                chat_id=chat_id_full,
+                                system=hidden_text,
+                                model=my_openrouter_free.CLOACKED_MODEL,
+                                tools=TOOLS,
+                                available_tools=AVAILABLE_TOOLS
+                            )
+                            WHO_ANSWERED[chat_id_full] = my_openrouter_free.CLOACKED_MODEL
+                            if not answer:
+                                answer = my_openrouter_free.chat(
+                                    query=message.text,
+                                    chat_id=chat_id_full,
+                                    system=hidden_text,
+                                    model=my_openrouter_free.CLOACKED_MODEL_FALLBACK,
+                                    tools=TOOLS,
+                                    available_tools=AVAILABLE_TOOLS
+                                )
+                                WHO_ANSWERED[chat_id_full] = my_openrouter_free.CLOACKED_MODEL_FALLBACK
+
+                            autor = WHO_ANSWERED[chat_id_full]
+                            WHO_ANSWERED[chat_id_full] = f'👇{autor} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+
+                            if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
+                                return
+
+                            # отправляем файлы если они были сгенерированы в скилах
+                            send_all_files_from_storage(message, chat_id_full)
+
+                            if detect_img_answer(message, answer):
+                                return
+
+                            if not my_db.get_user_property(chat_id_full, 'voice_only_mode'):
+                                answer_ = utils.bot_markdown_to_html(answer)
+                                DEBUG_MD_TO_HTML[answer_] = answer
+                                answer = answer_
+
+                            answer = answer.strip()
+                            if not answer:
+                                answer = f'{autor} ' + tr('did not answered, try to /reset and start again.', lang)
+
+                            my_log.log_echo(message, f'[{autor}] {answer}')
+
+                            try:
+                                if command_in_answer(answer, message):
+                                    return
+                                bot_reply(message, answer, parse_mode='HTML', disable_web_page_preview = True,
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
+                            except Exception as error:
+                                print(f'tb:do_task: {error}')
+                                my_log.log2(f'tb:do_task: {error}')
+                                bot_reply(message, answer, parse_mode='', disable_web_page_preview = True, 
+                                                        reply_markup=get_keyboard('chat', message), not_log=True, allow_voice = True)
+                        except Exception as error3:
+                            error_traceback = traceback.format_exc()
+                            my_log.log2(f'tb:do_task:cloacked {error3}\n{error_traceback}')
+
+
                 # если активирован режим общения с Qwen 3 235b a22b
                 elif chat_mode_ == 'qwen3':
                     if len(msg) > my_cerebras.MAX_REQUEST:
@@ -12052,6 +11903,7 @@ def main():
         my_github.load_users_keys()
         my_nebius.load_users_keys()
         my_skills.init()
+        my_openrouter_free.init()
 
         one_time_shot()
 

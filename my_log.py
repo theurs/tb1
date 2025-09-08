@@ -416,8 +416,8 @@ def restore_message_text(s1: str, l) -> str:
 
 def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bool = False) -> None:
     """записывает в журнал сообщение полученное обработчиком обычных сообщений либо ответ бота"""
-    if hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
-        return
+    # if hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
+    #     return
 
     if LOG_MODE == -1:
         return
@@ -476,8 +476,8 @@ def log_echo(message: telebot.types.Message, reply_from_bot: str = '', debug: bo
 
 def log_media(message: telebot.types.Message) -> None:
     """записывает в журнал сообщение полученное обработчиком медиа файлов"""
-    if hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
-        return
+    # if hasattr(cfg, 'DO_NOT_LOG') and message.chat.id in cfg.DO_NOT_LOG:
+    #     return
 
     if LOG_MODE == -1:
         return

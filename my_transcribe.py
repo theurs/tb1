@@ -295,7 +295,7 @@ def transcribe_genai(
                 config=config # Use the 'config' keyword argument
             )
 
-            if response and response.text.strip():
+            if response and response.text and response.text.strip():
                 final_response_text = response.text.strip()
                 break  # Success, exit the loop
 

@@ -1824,7 +1824,7 @@ def _build_config_models_menu(chat_id_full: str, lang: str) -> telebot.types.Inl
         ('GPT-4o', 'gpt-4o'), ('GPT 4.1', 'gpt_41'),
         ('Qwen 3 Coder 480b', 'qwen3coder'), ('Gemini 2.0 flash', 'gemini'),
         ('DeepSeek V3', 'deepseek_v3'), ('OpenRouter', 'openrouter'),
-        ('Cloacked', 'cloacked'),
+        ('Cloacked', 'cloacked'), ('Gemini 2.5 Flash Lite', 'gemini-lite'),
     ]
 
     buttons = [_create_selection_button(name, val, chat_mode, 'select_') for name, val in models]
@@ -10464,7 +10464,7 @@ def do_task(message, custom_prompt: str = ''):
                             if hasattr(cfg, 'BLOCK_SYSTEM_MSGS') and cfg.BLOCK_SYSTEM_MSGS:
                                 if message.from_user.id in cfg.BLOCK_SYSTEM_MSGS:
                                     if gmodel == cfg.gemini_pro_model:
-                                        gmodel = cfg.gemini_flash_model
+                                        gmodel = cfg.gemini_flash_light_model
 
                             # у флеш 2.5 лайт мысли отключены по умолчанию, их надо вручную включать
                             THINKING_BUDGET = -1

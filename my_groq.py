@@ -40,6 +40,8 @@ USER_KEYS_LOCK = threading.Lock()
 # FALLBACK_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
 DEFAULT_MODEL = 'moonshotai/kimi-k2-instruct-0905'
 FALLBACK_MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct'
+COMPOUND = 'groq/compound'
+COMPOUND_MINI = 'groq/compound-mini'
 
 
 # блокировка чатов что бы не испортить историю 
@@ -326,8 +328,7 @@ def ai(prompt: str = '',
                     if chat_completion.choices[0].message.reasoning:
                         resp += '\n\n' + chat_completion.choices[0].message.reasoning
 
-                # проверка есть ли в ответе картинки (их может создавать модель compound-beta)
-                # if 'compound-beta' in model:
+
                 try:
                     found_images_count = 0
                     executed_tools = chat_completion.choices[0].message.executed_tools
@@ -527,11 +528,11 @@ def search(
     language: str = 'ru',
     system: str = '',
     user_id: str = '',
-    model: str = 'compound-beta-mini',
+    model: str = COMPOUND_MINI,
     timeout = 20
     ) -> str:
     '''
-    Использует модель compound-beta-mini для поиска в интернете
+    Использует модель COMPOUND_MINI для поиска в интернете
     '''
     q = (
         f"**Задача:** Найти в интернете информацию по запросу пользователя и дать ответ.\n\n"
@@ -576,12 +577,12 @@ def calc(
     user_id: str = ''
     ) -> str:
     '''
-    Делает быстрый запрос в compound-beta
+    Делает быстрый запрос в COMPOUND
 
     query - запрос на вычисления с помощью tool use и python
     '''
     try:
-        model = 'compound-beta'
+        model = COMPOUND
         q = (
             "**Задача:** Используй инструмент для выполнения кода что бы дать ответ по запросу пользователя.\n\n"
             "**Инструкции:**\n"
@@ -1049,7 +1050,7 @@ def test_key(key: str) -> bool:
 
 def get_groq_response_with_image(prompt: str, user_id: str = '') -> tuple[str, list]:
     """
-    Отправляет запрос к Groq API с моделью compound-beta и возвращает текстовый ответ и изображения.
+    Отправляет запрос к Groq API с моделью COMPOUND и возвращает текстовый ответ и изображения.
 
     Args:
         prompt (str): Текстовый запрос для модели.
@@ -1063,7 +1064,7 @@ def get_groq_response_with_image(prompt: str, user_id: str = '') -> tuple[str, l
         url = "https://api.groq.com/openai/v1/chat/completions"
 
         api_key = get_next_key()
-        model = 'compound-beta-mini'
+        model = COMPOUND_MINI
 
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -1161,7 +1162,7 @@ if __name__ == '__main__':
     # print(calc('''from datetime import datetime, timedelta; (datetime(2025, 8, 25, 10, 3, 51) - timedelta(hours=20, minutes=11)).strftime('%Y-%m-%d %H:%M:%S')'''))
 
     reset('test')
-    chat_cli() #(model = 'compound-beta')
+    chat_cli() #(model = COMPOUND_MINI)
 
     # print(stt('d:\\downloads\\1.ogg', 'en'))
 

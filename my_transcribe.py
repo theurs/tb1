@@ -227,6 +227,24 @@ def genai_clear(key: str = '') -> None:
         my_log.log_gemini(f'my_transcribe:genai_clear: A critical error occurred during cleanup: {error}\n{traceback_error}')
 
 
+@utils.async_run
+def _robust_delete_file(client: genai.Client, file_name: str, attempts: int = 5, delay_sec: int = 30):
+    """
+    Tries to delete a file multiple times with delays in a separate thread.
+    The key used in the client must be the one that uploaded the file.
+    """
+    for attempt in range(attempts):
+        try:
+            client.files.delete(name=file_name)
+            # my_log.log_gemini(f'my_transcribe:_robust_delete_file: Successfully deleted file {file_name} on attempt {attempt + 1}.')
+            return
+        except Exception as e:
+            # my_log.log_gemini(f'my_transcribe:_robust_delete_file: Attempt {attempt + 1}/{attempts} failed to delete {file_name}: {e}')
+            if attempt < attempts - 1:
+                time.sleep(delay_sec)
+    my_log.log_gemini(f'my_transcribe:_robust_delete_file: Failed to delete file {file_name} after {attempts} attempts.')
+
+
 def transcribe_genai(
     audio_file: str,
     prompt: str = '',
@@ -236,11 +254,11 @@ def transcribe_genai(
     timeout: int = 240
     ) -> str:
     """
-    Transcribes an audio file using the Gemini API, aligning with the official SDK documentation.
+    Transcribes an audio file using the Gemini API with a robust two-level retry mechanism.
 
-    It handles local files and YouTube URLs. The function uses the Files API for uploads
-    and ensures cleanup even if transcription fails. It includes a retry loop to handle
-    API key failures and falls back to a different STT method if Gemini fails.
+    It handles key failures by retrying with a new key and re-uploading the file.
+    It handles temporary service errors (e.g., 503 Overload) by retrying the transcription
+    request without re-uploading. File deletion is handled robustly in the background.
 
     Args:
         audio_file: Path to the audio file or a YouTube URL.
@@ -248,7 +266,7 @@ def transcribe_genai(
         language: The language of the audio, used for the fallback STT method.
         temperature: Controls the randomness of the output.
         max_tokens: The maximum number of tokens to generate.
-        timeout: The request timeout in seconds.
+        timeout: The overall timeout in seconds for the entire operation.
 
     Returns:
         The transcribed text, or an empty string on failure.
@@ -258,69 +276,81 @@ def transcribe_genai(
         if not audio_file_:
             my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to download YouTube audio from {audio_file}')
             return ''
-        # Pass the parameters down to the recursive call
         result = transcribe_genai(audio_file_, prompt, language, temperature, max_tokens, timeout)
         utils.remove_file(audio_file_)
         return result
 
-    # The main transcription logic
     final_response_text = ''
-    uploaded_file = None
-    client = None
-    key = ''
+    deadline = time.monotonic() + timeout
 
     if not prompt:
         prompt = "Listen carefully to the following audio file. Provide a transcript. Fix errors, make a fine text with good looking paragraphs, without time stamps and diarization (speaker separation)."
 
-    # Create a single config object with all parameters as per the documentation
     config = genai.types.GenerateContentConfig(
         temperature=temperature,
         max_output_tokens=max_tokens,
         safety_settings=my_gemini3.SAFETY_SETTINGS,
-        http_options=genai.types.HttpOptions(timeout=timeout*1000),
     )
 
-    for _ in range(3):  # Retry loop
+    # Outer loop: Handles API key failures. A new key means a new upload.
+    for _ in range(3):
+        remaining_time = deadline - time.monotonic()
+        if remaining_time <= 0:
+            my_log.log_gemini('my_transcribe.py:transcribe_genai: Overall timeout exceeded before key attempt.')
+            break
+
+        key = ''
+        client = None
+        uploaded_file = None
+
         try:
             key = my_gemini_general.get_next_key()
-            client = genai.Client(api_key=key)
+            client = genai.Client(api_key=key, http_options={'timeout': int(remaining_time * 1000)})
 
-            # Upload the file using the client
             uploaded_file = client.files.upload(file=audio_file)
 
-            # Generate content passing the single 'config' object
-            response = client.models.generate_content(
-                model=cfg.gemini25_flash_model,
-                contents=[prompt, uploaded_file],
-                config=config # Use the 'config' keyword argument
-            )
+            # Inner loop: Handles temporary errors like 503 without changing the key or re-uploading.
+            for _ in range(3):
+                if time.monotonic() > deadline: break
+                try:
+                    response = client.models.generate_content(
+                        model=cfg.gemini25_flash_model,
+                        contents=[prompt, uploaded_file],
+                        config=config
+                    )
+                    if response and response.text and response.text.strip():
+                        final_response_text = response.text.strip()
+                        # Success, break both loops
+                        return final_response_text
+                except Exception as inner_error:
+                    err_str = str(inner_error)
+                    if '503 UNAVAILABLE' in err_str:
+                        my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Model overloaded (503). Retrying transcription... Error: {err_str}')
+                        time.sleep(2)
+                        continue # Retry inner loop
+                    else:
+                        # Re-raise other errors to be caught by the outer loop's handler
+                        raise inner_error
 
-            if response and response.text and response.text.strip():
-                final_response_text = response.text.strip()
-                break  # Success, exit the loop
+            if final_response_text: break
 
-        except Exception as error:
-            err_str = str(error)
-            # Handle key-related and timeout errors
+        except Exception as outer_error:
+            err_str = str(outer_error)
             if 'API key' in err_str or 'Quota exceeded' in err_str or 'timeout' in err_str.lower():
-                my_log.log_gemini(f'my_transcribe.py:transcribe_genai: API/timeout error. Retrying. Error: {err_str}')
+                my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Key/API error. Getting new key. Error: {err_str}')
                 if 'API key' in err_str or 'Quota exceeded' in err_str:
                     my_gemini_general.remove_key(key)
+                # Continue outer loop to get a new key
             else:
-                # For other errors, log and break the loop
                 traceback_error = traceback.format_exc()
-                my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Failed to transcribe: {error}\n{traceback_error}')
-                break
+                my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Unrecoverable error: {outer_error}\n{traceback_error}')
+                break # Break outer loop on unhandled errors
         finally:
-            # Crucial: ensure file is deleted if it was uploaded
+            # Cleanup is now non-blocking and robust
             if uploaded_file and client:
-                try:
-                    client.files.delete(name=uploaded_file.name)
-                    uploaded_file = None # Reset after deletion
-                except Exception as del_error:
-                    my_log.log_gemini(f'my_transcribe.py:transcribe_genai: Non-critical: Failed to delete file {uploaded_file.name}. Error: {del_error}')
+                _robust_delete_file(client, uploaded_file.name)
 
-    # After the loop, check the result and decide on the fallback
+    # Fallback after all attempts
     if final_response_text and not detect_repetitiveness(final_response_text):
         return final_response_text
     else:
@@ -745,14 +775,6 @@ def recognize_segment(recognizer, wav_bytes, lang, index):
     except sr.RequestError as e:
         print(f"Ошибка при распознавании речи: {e}")
         return (index, "")
-
-
-@async_run
-def shazam(url: str):
-    '''не работает, не может джемини шазамить'''
-    r = transcribe_genai('https://www.youtube.com/watch?v=O8u61dQut1E', 'Какая музыка играет, название?')
-    print(my_ytb.get_title(url), url)
-    print(r)
 
 
 def split_audio_file(audio_file_path: str, max_split_size: int = 18 * 1024 * 1024) -> List[str]:

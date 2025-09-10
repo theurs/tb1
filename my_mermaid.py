@@ -122,10 +122,11 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
                 mmdc_executable_path = shutil.which("mmdc")
 
             if mmdc_executable_path:
-                my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: mmdc найден в PATH: {mmdc_executable_path}")
+                # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: mmdc найден в PATH: {mmdc_executable_path}")
+                pass
             else:
                 # 2. Если в PATH не найден, пытаемся найти в стандартных nvm-путях
-                my_log.log2("my_mermaid:generate_mermaid_png_bytes: mmdc не найден в PATH. Поиск в nvm-путях...")
+                # my_log.log2("my_mermaid:generate_mermaid_png_bytes: mmdc не найден в PATH. Поиск в nvm-путях...")
                 nvm_dir = os.environ.get('NVM_DIR', os.path.expanduser('~/.nvm'))
                 node_versions_path = os.path.join(nvm_dir, 'versions', 'node')
 
@@ -144,7 +145,7 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
 
                 if potential_mmdc_paths:
                     mmdc_executable_path = potential_mmdc_paths[0] 
-                    my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: mmdc найден в nvm-пути: {mmdc_executable_path}")
+                    # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: mmdc найден в nvm-пути: {mmdc_executable_path}")
                 else:
                     my_log.log2("my_mermaid:generate_mermaid_png_bytes: mmdc не найден ни в PATH, ни в nvm-путях.")
                     return "mmdc не найден. Убедись, что mermaid-cli установлен и доступен в PATH или через nvm."
@@ -171,24 +172,24 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
 
                 if is_linux:
                     executable_pattern = os.path.join(home_dir, '.cache', 'puppeteer', 'chrome-headless-shell', '*', '*', 'chrome-headless-shell')
-                    my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH не задан (Linux). Ищем в: {executable_pattern}")
+                    # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH не задан (Linux). Ищем в: {executable_pattern}")
                     potential_executables = glob.glob(executable_pattern)
                     if potential_executables:
                         os.environ['PUPPETEER_EXECUTABLE_PATH'] = potential_executables[0]
-                        my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен: {potential_executables[0]}")
+                        # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен: {potential_executables[0]}")
                     else:
                         my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell не найден в стандартных путях Puppeteer для Linux.")
                 elif is_windows:
-                    my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH не задан (Windows). Пытаемся найти chrome-headless-shell.exe или chrome.exe.")
+                    # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH не задан (Windows). Пытаемся найти chrome-headless-shell.exe или chrome.exe.")
                     puppeteer_cache_pattern = os.path.join(home_dir, '.cache', 'puppeteer', 'chrome-headless-shell', '*', '*', 'chrome-headless-shell.exe')
-                    my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: Ищем chrome-headless-shell.exe в кеше Puppeteer: {puppeteer_cache_pattern}")
+                    # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: Ищем chrome-headless-shell.exe в кеше Puppeteer: {puppeteer_cache_pattern}")
                     potential_executables = glob.glob(puppeteer_cache_pattern)
 
                     if potential_executables:
                         os.environ['PUPPETEER_EXECUTABLE_PATH'] = potential_executables[0]
-                        my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен из кеша Puppeteer: {potential_executables[0]}")
+                        # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен из кеша Puppeteer: {potential_executables[0]}")
                     else: # Если chrome-headless-shell.exe не найден в кеше Puppeteer
-                        my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell.exe не найден в кеше Puppeteer. Ищем chrome.exe в стандартных путях Google Chrome.")
+                        # my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell.exe не найден в кеше Puppeteer. Ищем chrome.exe в стандартных путях Google Chrome.")
                         chrome_paths = [
                             os.path.join(os.environ.get('PROGRAMFILES', 'C:\Program Files'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
                             os.path.join(os.environ.get('PROGRAMFILES(X86)', 'C:\Program Files (x86)'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
@@ -198,7 +199,7 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
                         for path in chrome_paths:
                             if os.path.exists(path):
                                 os.environ['PUPPETEER_EXECUTABLE_PATH'] = path
-                                my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен из стандартного пути Chrome: {path}")
+                                # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен из стандартного пути Chrome: {path}")
                                 found_chrome = True
                                 break
                         if not found_chrome:

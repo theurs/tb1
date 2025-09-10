@@ -681,7 +681,16 @@ def chat(
                     if 'flash-lite' in model: # not support tools except search and code builtin
                         code_execution_tool = Tool(code_execution={})
                         google_search_tool = Tool(google_search={})
-                        SKILLS = [google_search_tool, code_execution_tool,]
+                        # SKILLS = [google_search_tool, code_execution_tool,]
+                        SKILLS = [
+                            my_skills.calc,
+                            my_skills.search_google_fast,
+                            my_skills.search_google_deep,
+                            my_skills.download_text_from_url,
+                            my_skills_general.save_to_txt,
+                            my_skills.query_user_file,
+                            my_skills.query_user_logs,
+                        ]
                         # SKILLS = None
                     elif 'gemma-3-27b-it' in model:
                         SKILLS = None

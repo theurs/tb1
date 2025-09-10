@@ -5141,8 +5141,10 @@ def memo_admin_handler(message: telebot.types.Message):
 
 # вариант с такой лямбдой вызывает проблемы в функции is_for_me, туда почему то приходит команда без имени бота
 # @bot.message_handler(func=lambda message: authorized_owner(message) and message.text.split()[0].lower() in ['/style', '/role'])
-@bot.message_handler(commands=['style', 'role'], func=authorized_owner)
-@async_run
+# что бы поймать слишком длинные сообщения придется положиться на обработчик текстовых сообщений
+# он поймает соберет в кучу и вызвет эту команду
+# @bot.message_handler(commands=['style', 'role'], func=authorized_owner)
+# @async_run
 def change_mode(message: telebot.types.Message):
     """
     Handles the 'style' command from the bot. Changes the prompt for the GPT model
@@ -5675,8 +5677,9 @@ def remove_keyboard(message: telebot.types.Message):
         my_log.log2(f'tb:remove_keyboard: {unknown}')
 
 
-@bot.message_handler(commands=['style2'], func=authorized_admin)
-@async_run
+# полагаемся на то что обработчик текстов перенаправит сюда
+# @bot.message_handler(commands=['style2'], func=authorized_admin)
+# @async_run
 def change_style2(message: telebot.types.Message):
     '''change style for specific chat'''
     try:
@@ -10126,6 +10129,14 @@ def do_task(message, custom_prompt: str = ''):
 
         if msg.startswith(('/t', '/tr', '/trans')):
             trans(message)
+            return
+
+        if msg.startswith(('/style2',)):
+            change_style2(message)
+            return
+
+        if msg.startswith(('/style',)):
+            change_mode(message)
             return
 
         chat_mode_ = my_db.get_user_property(chat_id_full, 'chat_mode')

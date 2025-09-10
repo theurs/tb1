@@ -191,8 +191,8 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
                     else: # Если chrome-headless-shell.exe не найден в кеше Puppeteer
                         # my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell.exe не найден в кеше Puppeteer. Ищем chrome.exe в стандартных путях Google Chrome.")
                         chrome_paths = [
-                            os.path.join(os.environ.get('PROGRAMFILES', 'C:\Program Files'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
-                            os.path.join(os.environ.get('PROGRAMFILES(X86)', 'C:\Program Files (x86)'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+                            os.path.join(os.environ.get('PROGRAMFILES', r'C:\Program Files'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+                            os.path.join(os.environ.get('PROGRAMFILES(X86)', r'C:\Program Files (x86)'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
                             os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Google', 'Chrome', 'Application', 'chrome.exe')
                         ]
                         found_chrome = False

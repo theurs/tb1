@@ -110,13 +110,57 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
     """
     try:
         with LOCK:
-            cmd = "mmdc"
-            is_linux = False
-            is_windows = False 
-
+            mmdc_executable_path = None
             platform_name = utils.platform().lower()
+
+            # 1. Сначала пытаемся найти mmdc в PATH, который видит Python-скрипт
+            # shutil.which() - это стандартный и кросс-платформенный способ
             if 'windows' in platform_name:
-                cmd = "mmdc.cmd"
+                # На Windows mmdc может быть mmdc.cmd или mmdc.exe
+                mmdc_executable_path = shutil.which("mmdc") or shutil.which("mmdc.cmd") or shutil.which("mmdc.exe")
+            else: # Linux, macOS
+                mmdc_executable_path = shutil.which("mmdc")
+
+            if mmdc_executable_path:
+                my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: mmdc найден в PATH: {mmdc_executable_path}")
+            else:
+                # 2. Если в PATH не найден, пытаемся найти в стандартных nvm-путях
+                my_log.log2("my_mermaid:generate_mermaid_png_bytes: mmdc не найден в PATH. Поиск в nvm-путях...")
+                nvm_dir = os.environ.get('NVM_DIR', os.path.expanduser('~/.nvm'))
+                node_versions_path = os.path.join(nvm_dir, 'versions', 'node')
+
+                potential_mmdc_paths = []
+                if os.path.isdir(node_versions_path):
+                    # Ищем все установленные версии Node.js через nvm и берем самую свежую
+                    # Сортируем версии, чтобы найти самую новую
+                    versions = sorted(os.listdir(node_versions_path), reverse=True) 
+                    for version_dir in versions:
+                        full_version_path = os.path.join(node_versions_path, version_dir)
+                        if os.path.isdir(full_version_path):
+                            candidate_mmdc_path = os.path.join(full_version_path, 'bin', 'mmdc')
+                            if os.path.exists(candidate_mmdc_path) and os.access(candidate_mmdc_path, os.X_OK):
+                                potential_mmdc_paths.append(candidate_mmdc_path)
+                                break # Берем первый найденный (самый свежий)
+
+                if potential_mmdc_paths:
+                    mmdc_executable_path = potential_mmdc_paths[0] 
+                    my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: mmdc найден в nvm-пути: {mmdc_executable_path}")
+                else:
+                    my_log.log2("my_mermaid:generate_mermaid_png_bytes: mmdc не найден ни в PATH, ни в nvm-путях.")
+                    return "mmdc не найден. Убедись, что mermaid-cli установлен и доступен в PATH или через nvm."
+
+            # Теперь mmdc_executable_path точно содержит путь к исполняемому файлу
+            # Используем его как первый элемент команды для subprocess.Popen
+            base_cmd_list = [mmdc_executable_path] 
+
+            # --- Остальной код остается практически без изменений, за исключением использования base_cmd_list ---
+
+            is_linux = False
+            is_windows = False
+
+            # Эти переменные определяются для логики PUPPETEER_EXECUTABLE_PATH,
+            # но больше не влияют на сам "mmdc"
+            if 'windows' in platform_name:
                 is_windows = True
             elif 'linux' in platform_name:
                 is_linux = True
@@ -143,12 +187,11 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
                     if potential_executables:
                         os.environ['PUPPETEER_EXECUTABLE_PATH'] = potential_executables[0]
                         my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: PUPPETEER_EXECUTABLE_PATH установлен из кеша Puppeteer: {potential_executables[0]}")
-
-                    if 'PUPPETEER_EXECUTABLE_PATH' not in os.environ:
+                    else: # Если chrome-headless-shell.exe не найден в кеше Puppeteer
                         my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell.exe не найден в кеше Puppeteer. Ищем chrome.exe в стандартных путях Google Chrome.")
                         chrome_paths = [
-                            os.path.join(os.environ.get('PROGRAMFILES', 'C:\\Program Files'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
-                            os.path.join(os.environ.get('PROGRAMFILES(X86)', 'C:\\Program Files (x86)'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+                            os.path.join(os.environ.get('PROGRAMFILES', 'C:\Program Files'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+                            os.path.join(os.environ.get('PROGRAMFILES(X86)', 'C:\Program Files (x86)'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
                             os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Google', 'Chrome', 'Application', 'chrome.exe')
                         ]
                         found_chrome = False
@@ -162,7 +205,7 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
                             my_log.log2("my_mermaid:generate_mermaid_png_bytes: chrome-headless-shell.exe или chrome.exe не найдены в стандартных путях Puppeteer или Chrome.")
 
             # --- Шаг 1: Генерируем SVG для определения размера ---
-            svg_command = [cmd, "-e", "svg", "-i", "-", "-o", "-", "-p", puppeteer_config_path]
+            svg_command = base_cmd_list + ["-e", "svg", "-i", "-", "-o", "-", "-p", puppeteer_config_path]
             try:
                 # my_log.log2("my_mermaid:generate_mermaid_png_bytes: Генерируем SVG для определения ширины...")
                 process_svg = subprocess.Popen(
@@ -198,7 +241,7 @@ def generate_mermaid_png_bytes(diagram_text: str, puppeteer_config_path: str = "
                 pass # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: Определена ширина из SVG: {auto_width}px.")
 
             # --- Шаг 3: Генерируем PNG с определенной шириной ---
-            png_command = [cmd, "-e", "png", "-i", "-", "-o", "-", "-w", str(auto_width), "-p", puppeteer_config_path]
+            png_command = base_cmd_list + ["-e", "png", "-i", "-", "-o", "-", "-w", str(auto_width), "-p", puppeteer_config_path]
 
             try:
                 # my_log.log2(f"my_mermaid:generate_mermaid_png_bytes: Генерируем PNG с шириной {auto_width}px...")

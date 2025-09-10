@@ -10560,7 +10560,9 @@ def do_task(message, custom_prompt: str = ''):
                                     mem = mem__,
                                     user_id=chat_id_full,
                                     system=hidden_text,
-                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1)
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    model = my_mistral.MEDIUM_MODEL, # большая модель постояно перегружена
+                                )
 
                                 cohere_used = False
                                 if not answer:

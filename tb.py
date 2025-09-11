@@ -10021,6 +10021,45 @@ def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
 def do_task(message, custom_prompt: str = ''):
     """default handler"""
     try:
+
+        # Admin commands in log group --
+        if hasattr(cfg, 'LOGS_GROUP') and message.chat.id == cfg.LOGS_GROUP and message.from_user.id in cfg.admins:
+            admin_cmd_text = message.text.lower().strip()
+            # Split to handle commands with potential arguments like 'block add'
+            admin_cmd_parts = admin_cmd_text.split()
+            admin_cmd = admin_cmd_parts[0]
+
+            allowed_cmds = {'id', 'reset', 'purge', 'mem', 'block', 'keys', 'openrouter', 'style', 'save'}
+            if admin_cmd in allowed_cmds:
+                target_chat_id_full = None
+                for key, value in LOGS_GROUPS_DB.items():
+                    if value == message.message_thread_id:
+                        target_chat_id_full = key
+                        break
+
+                if target_chat_id_full:
+                    # Reconstruct message text to include the target ID, which handlers expect from an admin
+                    message.text = f"/{admin_cmd_text} {target_chat_id_full}"
+
+                    # --- CRITICAL FIX: Fake the message context to be a private chat ---
+                    # This tricks handlers like /id into taking the correct logic path.
+                    message.chat.type = 'private'
+
+                    cmd_map = {
+                        'id': id_cmd_handler,
+                        'reset': reset,
+                        'purge': purge_cmd_handler,
+                        'mem': send_debug_history,
+                        'save': save_history,
+                    }
+
+                    if admin_cmd in cmd_map:
+                        cmd_map[admin_cmd](message)
+                    return
+            else:
+                return
+
+
         message.text = my_log.restore_message_text(message.text, message.entities)
         if message.forward_date:
             full_name_forwarded_from = message.forward_from.full_name if hasattr(message.forward_from, 'full_name') else 'Noname'

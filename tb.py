@@ -885,7 +885,9 @@ def img2txt(
 
         if chat_id_full in WHO_ANSWERED:
             if text:
-                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                complete_time = time.time() - time_to_answer_start
+                my_log.log3(chat_id_full, complete_time)
+                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
             else:
                 del WHO_ANSWERED[chat_id_full]
 
@@ -10513,7 +10515,9 @@ def do_task(message, custom_prompt: str = ''):
 
                             if chat_id_full not in WHO_ANSWERED:
                                 WHO_ANSWERED[chat_id_full] = gmodel
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
 
                             if edit_image_detect(answer, lang, chat_id_full, message, hidden_text, gemini_mem = True):
@@ -10559,7 +10563,9 @@ def do_task(message, custom_prompt: str = ''):
 
                             if flag_gpt_help:
                                 help_model = 'cohere' if cohere_used else 'mistral'
-                                WHO_ANSWERED[chat_id_full] = f'👇{gmodel} + {help_model} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                                complete_time = time.time() - time_to_answer_start
+                                my_log.log3(chat_id_full, complete_time)
+                                WHO_ANSWERED[chat_id_full] = f'👇{gmodel} + {help_model} {utils.seconds_to_str(complete_time)}👇'
                                 my_log.log_echo(message, f'[{gmodel} + {help_model}] {answer}')
                             else:
                                 my_log.log_echo(message, f'[{gmodel}] {answer}')
@@ -10644,8 +10650,9 @@ def do_task(message, custom_prompt: str = ''):
                                     del my_openrouter.PRICE[chat_id_full]
 
                             WHO_ANSWERED[chat_id_full] = 'openrouter ' + my_openrouter.PARAMS[chat_id_full][0]
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
-
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
@@ -10711,7 +10718,9 @@ def do_task(message, custom_prompt: str = ''):
 
                             WHO_ANSWERED[chat_id_full] = my_mistral.DEFAULT_MODEL
                             autor = WHO_ANSWERED[chat_id_full]
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
 
                             if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
@@ -10776,7 +10785,9 @@ def do_task(message, custom_prompt: str = ''):
                                 )
 
                             WHO_ANSWERED[chat_id_full] = 'Magistral Medium'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
@@ -10859,7 +10870,9 @@ def do_task(message, custom_prompt: str = ''):
 
 
                             autor = WHO_ANSWERED[chat_id_full]
-                            WHO_ANSWERED[chat_id_full] = f'👇{autor} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
                                 return
@@ -10972,7 +10985,9 @@ def do_task(message, custom_prompt: str = ''):
                                 WHO_ANSWERED[chat_id_full] = author
 
 
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
@@ -11075,7 +11090,9 @@ def do_task(message, custom_prompt: str = ''):
                                 WHO_ANSWERED[chat_id_full] = author
 
 
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
@@ -11178,7 +11195,9 @@ def do_task(message, custom_prompt: str = ''):
                                     author += ' -> Cohere'
                                     WHO_ANSWERED[chat_id_full] = author
 
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
@@ -11290,7 +11309,9 @@ def do_task(message, custom_prompt: str = ''):
                                 author += ' -> Cohere'
                                 WHO_ANSWERED[chat_id_full] = author
 
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)
@@ -11353,7 +11374,9 @@ def do_task(message, custom_prompt: str = ''):
                             else:
                                 WHO_ANSWERED[chat_id_full] = 'GPT-4o'
 
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             if detect_img_answer(message, answer):
                                 return
@@ -11411,7 +11434,9 @@ def do_task(message, custom_prompt: str = ''):
                             else:
                                 WHO_ANSWERED[chat_id_full] = 'GPT 4.1'
 
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             if detect_img_answer(message, answer):
                                 return
@@ -11469,7 +11494,9 @@ def do_task(message, custom_prompt: str = ''):
                             else:
                                 WHO_ANSWERED[chat_id_full] = 'GPT 4.1 mini'
 
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             if detect_img_answer(message, answer):
                                 return
@@ -11528,7 +11555,9 @@ def do_task(message, custom_prompt: str = ''):
                             else:
                                 WHO_ANSWERED[chat_id_full] = 'DeepSeek R1'
 
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             answer = answer.strip()
                             if not answer:
@@ -11584,7 +11613,9 @@ def do_task(message, custom_prompt: str = ''):
                             )
 
                             WHO_ANSWERED[chat_id_full] = 'DeepSeek V3'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
 
                             if edit_image_detect(answer, lang, chat_id_full, message, hidden_text):
@@ -11658,7 +11689,9 @@ def do_task(message, custom_prompt: str = ''):
                             )
 
                             WHO_ANSWERED[chat_id_full] = 'Command A'
-                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(time.time() - time_to_answer_start)}👇'
+                            complete_time = time.time() - time_to_answer_start
+                            my_log.log3(chat_id_full, complete_time)
+                            WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
 
                             thoughts, answer = utils_llm.split_thoughts(answer)
                             thoughts = utils.bot_markdown_to_html(thoughts)

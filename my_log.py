@@ -111,9 +111,18 @@ def log2(text: str, fname: str = '') -> None:
         trancate_log_file(log_file_path)
 
 
+def log3(chat_id_full: str, complete_time: float) -> None:
+    '''
+    Логируем слишком долгие вызовы что бы понять как часто это происходит
+    '''
+    if complete_time > 120:
+        log2(f'{chat_id_full} {complete_time}', 'long_calls')
+
+
 def log_zip(text: str) -> None:
     """для логов zip"""
     log2(text, 'zip')
+
 
 def log_bing_api(text: str) -> None:
     """для логов bingapi"""
@@ -138,10 +147,6 @@ def log_layout_switcher(orig: str, translated: str):
 def log_transcribe(text: str) -> None:
     """для логов транскрибации аудио в субтитры"""
     log2(text, 'transcribe')
-
-def log3(text: str) -> None:
-    """для логов донатов (отладка)"""
-    log2(text, 'donate_debug')
 
 def log_donate(text: str) -> None:
     """для логов донатов"""

@@ -6628,11 +6628,8 @@ def image_gemini_gen(message: telebot.types.Message):
 @bot.message_handler(commands=['flux'], func=authorized)
 @async_run
 def image_flux_gen(message: telebot.types.Message):
-    """Generates an image using the Flux Nebius model.
-    /flux [1|2|3] <prompt>
-    1 - модель "black-forest-labs/flux-dev" (указывается как третий параметр в функции flux_nebius_gen1)
-    2 - black-forest-labs/flux-schnell
-    3 - stability-ai/sdxl
+    """Generates an image using the Flux Nebius model ('black-forest-labs/flux-dev').
+    /flux <prompt>
     """
     try:
         chat_id_full = get_topic_id(message)
@@ -6658,49 +6655,24 @@ def image_flux_gen(message: telebot.types.Message):
             else:
                 return
 
-        help_text = f"""/flux [1|2|3] <prompt>
+        help_text = f"""/flux <prompt>
 
-1 - black-forest-labs/flux-dev
-/flux 1 {tr('cat in space', lang)}
-
-2 - black-forest-labs/flux-schnell
-/flux 2 {tr('cat in space', lang)}
-
-3 - stability-ai/sdxl
-/flux 3 {tr('cat in space', lang)}
-
-/flux {tr('cat in space', lang)} - {tr('same as /flux 1', lang)}
+{tr('Generate images using the Flux Nebius model ("black-forest-labs/flux-dev").', lang)}
+/flux {tr('cat in space', lang)}
 """
 
         with lock:
             # Get prompt
-            parts = message.text.split(maxsplit=2)  # Split into command, model number, and prompt
+            parts = message.text.split(maxsplit=1)  # Split into command and prompt
             if len(parts) < 2:
                 bot_reply(message, help_text)
                 return
 
-            try:
-                if len(parts) > 2:
-                    model_choice = parts[1].strip()
-                    prompt = parts[2].strip()
-                else:
-                    model_choice = '1'
-                    prompt = parts[1].strip()
-            except IndexError:
-                prompt = ''
-                bot_reply_tr(message, "/flux [1|2|3] <prompt>\n\n" + tr("Generate images using the Flux Nebius model.", lang))
-                return
+            prompt = parts[1].strip()
 
-            if not prompt or prompt in ('1', '2', '3'):
-                bot_reply_tr(message, "/flux [1|2|3] <prompt>\n\n" + tr("Generate images using the Flux Nebius model.", lang))
+            if not prompt:
+                bot_reply(message, help_text)
                 return
-
-            # Parse model choice, default to 1 if not specified or invalid
-            if model_choice in ('1', '2', '3'):
-                model_index = int(model_choice)
-            else:
-                model_index = 1  # Default to model 1
-                prompt = f'{model_choice} {prompt}'
 
             with ShowAction(message, 'upload_photo'):
                 try:
@@ -6713,26 +6685,12 @@ def image_flux_gen(message: telebot.types.Message):
                         bot_reply_tr(message, 'Could not translate your prompt. Try again.')
                         return
 
-                    # Select the appropriate model based on model_index
-                    if model_index == 1:
-                        images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-dev') # Explicitly pass the model name
-                        if images:
-                            my_db.add_msg(chat_id_full, 'img Flux-dev Nebius')
-                        caption_model = 'black-forest-labs/flux-dev'
-                    elif model_index == 2:
-                        images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-schnell')
-                        if images:
-                            my_db.add_msg(chat_id_full, 'img Flux-schnell Nebius')
-                        caption_model = 'black-forest-labs/flux-schnell'
-                    elif model_index == 3:
-                        images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'stability-ai/sdxl')
-                        if images:
-                            my_db.add_msg(chat_id_full, 'img SDXL Nebius')
-                        caption_model = 'stability-ai/sdxl'
-                    else:
-                        bot_reply_tr(message, "Invalid model number. Use 1, 2 or 3.")
-                        return
-
+                    # Directly use the desired model
+                    model_name = 'black-forest-labs/flux-dev'
+                    images = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model=model_name)
+                    if images:
+                        my_db.add_msg(chat_id_full, f'img {model_name} Nebius')
+                    caption_model = model_name
 
                     medias = []
                     for i in images:

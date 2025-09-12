@@ -553,6 +553,9 @@ def chat(
         None: The function catches and logs exceptions internally, returning an empty string on failure.
     """
     try:
+        # Set a deadline for the entire operation
+        deadline = time.time() + timeout
+
         # лайв модель по другому работает но с той же памятью
         if model in (my_gemini_live_text.DEFAULT_MODEL, my_gemini_live_text.FALLBACK_MODEL):
             if chat_id:
@@ -669,6 +672,12 @@ def chat(
 
 
         for _ in range(3):
+            # Calculate remaining time for this attempt
+            remaining_time = deadline - time.time()
+            if remaining_time <= 0:
+                my_log.log_gemini(f'my_gemini3:chat: Overall timeout of {timeout}s exceeded before new attempt.')
+                break
+
             response = None
 
             try:
@@ -676,7 +685,8 @@ def chat(
                     key = key__
                 else:
                     key = my_gemini_general.get_next_key()
-                client = genai.Client(api_key=key, http_options={'timeout': timeout * 1000})
+                # Use the remaining time for the client and config timeout
+                client = genai.Client(api_key=key, http_options={'timeout': int(remaining_time * 1000)})
                 if use_skills:
                     if 'flash-lite' in model: # not support tools except search and code builtin
                         code_execution_tool = Tool(code_execution={})
@@ -739,6 +749,7 @@ def chat(
                             tools=SKILLS,
                             THINKING_BUDGET=THINKING_BUDGET,
                             json_output=json_output,
+                            timeout=int(remaining_time) # Pass remaining time to config
                         ),
                         history=mem,
                     )
@@ -750,6 +761,7 @@ def chat(
                             system_instruction=system_,
                             THINKING_BUDGET=THINKING_BUDGET,
                             json_output=json_output,
+                            timeout=int(remaining_time) # Pass remaining time to config
                         ),
                         history=mem,
                     )
@@ -846,7 +858,6 @@ def chat(
             # плохие ответы
             ppp = [
                 '```python\nprint(default_api.',
-                '```tool_code\nprint(default_api.',
                 '```json\n{\n  "tool_code":',
                 '```python\nprint(telegram_bot_api.',
                 '```\nprint(default_api.',

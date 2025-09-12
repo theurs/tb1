@@ -577,12 +577,12 @@ def calc(
     user_id: str = ''
     ) -> str:
     '''
-    Делает быстрый запрос в COMPOUND
+    Делает быстрый запрос в COMPOUND_MINI
 
     query - запрос на вычисления с помощью tool use и python
     '''
     try:
-        model = COMPOUND
+        model = COMPOUND_MINI
         q = (
             "**Задача:** Используй инструмент для выполнения кода что бы дать ответ по запросу пользователя.\n\n"
             "**Инструкции:**\n"

@@ -6848,6 +6848,7 @@ def send_images_to_pic_group(
 @bot.message_handler(
     commands=[
         'image', 'image:', 'Image:', 'IMAGE:',
+        'imag', 'Imag', 'IMAG',
         'img', 'IMG', 'Image', 'Img', 'i', 'I',
         'imagine', 'imagine:', 'Imagine', 'Imagine:',
         'generate', 'gen', 'Generate', 'Gen',

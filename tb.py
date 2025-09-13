@@ -34,7 +34,13 @@ import my_init
 import my_genimg
 import my_cerebras
 import my_cerebras_tools
+import my_cmd_callback
+import my_cmd_document
+import my_cmd_img
+import my_cmd_img2txt
+import my_cmd_photo
 import my_cmd_text
+import my_cmd_voice
 import my_cohere
 import my_db
 import my_ddg
@@ -562,33 +568,16 @@ def img2img(
     Returns:
         Optional[bytes]: The new image as bytes, or None on failure.
     """
-    edited_image = None
-    # Attempt to edit the image using the new OpenRouter method
-    # print(model)
-    if not model or model == 'google/gemini-2.5-flash-image-preview:free':
-        edited_image: Optional[bytes] = my_openrouter_free.edit_image(
-            prompt=query,
-            source_image=text,
-            user_id=chat_id_full,
-            # model = model,
-            timeout=timeout,
-            system_prompt=system_message,
-            temperature=temperature
-        )
-
-    # If the new method succeeds, return the result
-    if edited_image:
-        return edited_image
-
-    # If the new method fails, fall back to the original method
-    if isinstance(text, bytes):
-        images: list[bytes] = [text,]
-    elif isinstance(text, list):
-        images: list[bytes] = text
-    else:
-        my_log.log2(f'tb:img2img:2: unknown type: {type(text)}')
-        return None
-    return my_gemini_genimg.regenerate_image(query, sources_images=images, user_id=chat_id_full)
+    return my_cmd_img2txt.img2img(
+        text=text,
+        lang=lang,
+        chat_id_full=chat_id_full,
+        query=query,
+        model=model,
+        temperature=temperature,
+        system_message=system_message,
+        timeout=timeout,
+    )
 
 
 def img2txt(
@@ -619,326 +608,21 @@ def img2txt(
     Returns:
         str: The text description of the image.
     """
-    try:
-        query = query.strip()
-        query__ = query
-        time_to_answer_start = time.time()
-
-        # если запрос начинается на ! то надо редактировать картинку а не отвечать на вопрос
-        if query.startswith('!'):
-            imgs = images if images else text
-            r = img2img(
-                imgs,
-                lang,
-                chat_id_full,
-                query[1:],
-                model,
-                temperature,
-                system_message,
-                timeout,
-            )
-            if r:
-                add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-            else:
-                add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-            return r
-
-        if temperature is None:
-            temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1
-        if system_message is None:
-            system_message = my_db.get_user_property(chat_id_full, 'role') or ''
-
-        if isinstance(text, bytes):
-            data = text
-        else:
-            data = utils.download_image_as_bytes(text)
-
-        original_query = query or tr('Describe in detail what you see in the picture. If there is text, write it out in a separate block. If there is very little text, then write a prompt to generate this image.', lang)
-
-        if not query:
-            query = tr('Describe the image, what do you see here? Extract all text and show it preserving text formatting. Write a prompt to generate the same image - use markdown code with syntax highlighting ```prompt\n/img your prompt in english```', lang)
-        if 'markdown' not in query.lower() and 'latex' not in query.lower():
-            query = query + '\n\n' + my_init.get_img2txt_prompt(tr, lang)
-
-        text = ''
-        qr_code = my_qrcode.get_text(data)
-        if qr_code:
-            query = f"{query}\n\n{tr('QR Code was automatically detected on the image, it`s text:', lang)} {qr_code}"
-
-        try:
-            chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
-
-            system_message_gemini = system_message
-            if 'gemini' in chat_mode:
-                system_message_gemini = system_message + '\n\n' + tr("Если ты не можешь ответить на запрос пользователя то ответь словом 'STOP', никаких других слов не должно быть, не отвечай что ты не можешь что то сделать.", lang)
-
-
-            # запрос на OCR?
-            if query__ == 'OCR':
-                if not text:
-                    text = my_mistral.ocr_image(data, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_mistral_ocr'
-            # если запрос - gpt то сначала пробуем через gpt
-            if query__ == 'gpt':
-                if not text:
-                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_41_MODEL, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_41_MODEL
-                    else:
-                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_41_MINI_MODEL, system=system_message, timeout=timeout)
-                        if text:
-                            WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_41_MINI_MODEL
-
-                if not text:
-                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_MODEL, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_MODEL
-                    else:
-                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL, system=system_message, timeout=timeout)
-                        if text:
-                            WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
-
-
-            # попробовать с помощью openrouter
-            # если модель не указана явно то определяем по режиму чата
-            if not model and not text:
-                if not text and chat_mode == 'openrouter':
-                    text = my_openrouter.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'openrouter'
-
-                # if not text and chat_mode == 'qwen3':
-                #     text = my_openrouter_free.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                #     if text:
-                #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'qwen3'
-
-                elif not text and chat_mode == 'gpt-4o':
-                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_MODEL, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_MODEL
-                    else:
-                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL, system=system_message, timeout=timeout)
-                        if text:
-                            WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
-
-                elif not text and chat_mode == 'gpt_41':
-                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_41_MODEL, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_41_MODEL
-                    else:
-                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_41_MINI_MODEL, system=system_message, timeout=timeout)
-                        if text:
-                            WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_41_MINI_MODEL
-
-                elif not text and chat_mode == 'gpt_41_mini':
-                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_41_MINI_MODEL, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_41_MINI_MODEL
-                    else:
-                        text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL, system=system_message, timeout=timeout)
-                        if text:
-                            WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
-
-                elif not text and chat_mode == 'gemini15':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model
-                elif not text and chat_mode == 'gemini25_flash':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini25_flash_model
-                elif not text and chat_mode == 'gemini-exp':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_exp_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_exp_model
-                elif not text and chat_mode == 'gemini-learn':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_learn_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_learn_model
-                elif not text and chat_mode == 'gemma3_27b':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemma3_27b_model, temp=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemma3_27b_model
-                elif not text and chat_mode == 'gemini-lite':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
-                elif not text and chat_mode == 'gemini':
-                    text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model
-                elif not text and chat_mode == 'cohere':
-                    text = my_cohere.img2txt(
-                        image_data=data,
-                        prompt=query,
-                        temperature=temperature,
-                        chat_id=chat_id_full,
-                        system=system_message,
-                        timeout=timeout
-                    )
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_cohere'
-
-            # если модель не указана явно и не был получен ответ в предыдущем блоке то используем
-            # стандартную модель (возможно что еще раз)
-            if not model and not text:
-                model = cfg.img2_txt_model
-
-            # сначала попробовать с помощью дефолтной модели
-            if not text:
-                if 'gpt' in model:
-                    text = my_github.img2txt(data, query, chat_id=chat_id_full, model=model, temperature=temperature, system=system_message, timeout=timeout)
-                    if not text:
-                        text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                else:
-                    text = my_gemini3.img2txt(data, query, model=model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + model
-
-
-            # если это была джемини про то пробуем ее фолбек
-            if not text and model == cfg.gemini_pro_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini_pro_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_pro_model_fallback
-
-            # если это была не джемини лайт то пробуем ее
-            if not text and model != cfg.gemini_flash_light_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_light_model, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_light_model
-
-
-            # флеш25 фолбек
-            if not text and model == cfg.gemini25_flash_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini25_flash_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini25_flash_model_fallback
-
-            # флеш фолбек
-            if not text and model == cfg.gemini_flash_model:
-                text = my_gemini3.img2txt(data, query, model=cfg.gemini_flash_model_fallback, temp=temperature, chat_id=chat_id_full, system=system_message_gemini, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + cfg.gemini_flash_model_fallback
-
-            # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ
-            # передаем эстафету следующему претенденту
-            if len(text) > 2000 and my_transcribe.detect_repetitiveness_with_tail(text):
-                text = ''
-
-
-
-            # джемини отказалась отвечать?
-            if 'stop' in text.lower() and len(text) < 10:
-                text = ''
-
-
-
-            # далее пробуем gpt4.1 из гитхаба
-            if not text:
-                text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_41_MODEL, system=system_message, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_41_MODEL
-                else:
-                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_41_MINI_MODEL, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_41_MINI_MODEL
-
-
-            # gpt 4o
-            if not text:
-                text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_MODEL, system=system_message, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.BIG_GPT_MODEL
-                else:
-                    text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.DEFAULT_MODEL, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
-
-            # llama-4-maverick at groq
-            if not text:
-                text = my_groq.img2txt(data, query, model = 'meta-llama/llama-4-maverick-17b-128e-instruct', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'meta-llama/llama-4-maverick-17b-128e-instruct'
-
-            # далее пробуем Cohere command-a-vision
-            if not text:
-                text = my_cohere.img2txt(
-                    image_data=data,
-                    prompt=query,
-                    temperature=temperature,
-                    chat_id=chat_id_full,
-                    system=system_message,
-                    timeout=timeout
-                )
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_cohere'
-
-        except Exception as img_from_link_error:
-            traceback_error = traceback.format_exc()
-            my_log.log2(f'tb:img2txt1: {img_from_link_error}\n\n{traceback_error}')
-
-        if text:
-            # если режим не джемини или ответил не джемини значит надо добавить в память ответ вручную
-            if 'gemini' not in chat_mode or 'gemini' not in WHO_ANSWERED.get(chat_id_full, ''):
-                add_to_bots_mem(tr('User asked about a picture:', lang) + ' ' + original_query, text, chat_id_full)
-
-        if chat_id_full in WHO_ANSWERED:
-            if text:
-                complete_time = time.time() - time_to_answer_start
-                my_log.log3(chat_id_full, complete_time)
-                WHO_ANSWERED[chat_id_full] = f'👇{WHO_ANSWERED[chat_id_full]} {utils.seconds_to_str(complete_time)}👇'
-            else:
-                del WHO_ANSWERED[chat_id_full]
-
-
-        # добавляем в UNCAPTIONED_IMAGES[chat_id_full] эту картинку что бы она стала последней
-        if images:
-            UNCAPTIONED_IMAGES[chat_id_full] = (time.time(), data, images)
-        else:
-            UNCAPTIONED_IMAGES[chat_id_full] = (time.time(), data, [data])
-
-        # если запрос на редактирование
-        if utils.edit_image_detect(text, lang, tr):
-            if 'gemini' in chat_mode:
-                my_gemini3.undo(chat_id_full)
-
-            # Используем свежие картинки, если они пришли в функцию.
-            # Если нет — достаем из хранилища.
-            if images:
-                source_images = images
-            else:
-                # Достаем список оригиналов из хранилища.
-                # Индекс [2] — это список оригиналов.
-                source_images = UNCAPTIONED_IMAGES[chat_id_full][2] if chat_id_full in UNCAPTIONED_IMAGES else None
-
-            # Если картинок все равно нет, выходим.
-            if not source_images:
-                my_log.log2(f'tb:img2txt2: no source images')
-                return
-
-            r = img2img(
-                text=source_images,
-                lang=lang,
-                chat_id_full=chat_id_full,
-                query=query__,
-                model=model,
-                temperature=temperature,
-                system_message=system_message,
-                timeout=timeout
-            )
-            if r:
-                add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
-            else:
-                add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-            return r
-
-        return text
-    except Exception as unexpected_error:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:img2txt2:{unexpected_error}\n\n{traceback_error}')
-        return ''
+    return my_cmd_img2txt.img2txt(
+        text=text,
+        lang=lang,
+        chat_id_full=chat_id_full,
+        query=query,
+        model=model,
+        temperature=temperature,
+        system_message=system_message,
+        timeout=timeout,
+        images=images,
+        WHO_ANSWERED=WHO_ANSWERED,
+        UNCAPTIONED_IMAGES=UNCAPTIONED_IMAGES,
+        add_to_bots_mem=add_to_bots_mem,
+        tr=tr,
+    )
 
 
 def get_lang(user_id: str, message: telebot.types.Message = None) -> str:
@@ -2199,491 +1883,38 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 @async_run
 def callback_inline_thread(call: telebot.types.CallbackQuery):
     """Обработчик клавиатуры"""
-    try:
-        message = call.message
-        chat_id = message.chat.id
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-
-        MSG_CONFIG = get_config_msg(chat_id_full, lang)
-
-
-        def _transfer_chat_memory(user_id: str, prev_mode: str, new_mode: str) -> None:
-            """
-            Transfers chat history between Gemini and OpenAI compatible models.
-            Args:
-                user_id: The full user identifier.
-                prev_mode: The previous chat mode.
-                new_mode: The new chat mode.
-            """
-            # from gemini to openai-like
-            if 'gemini' in prev_mode and 'gemini' not in new_mode:
-                new_mem = my_gemini3.gemini_to_openai_mem(user_id)
-                my_db.set_user_property(user_id, 'dialog_openrouter', my_db.obj_to_blob(new_mem))
-            # from openai-like to gemini
-            elif 'gemini' not in prev_mode and 'gemini' in new_mode:
-                new_mem = my_gemini3.openai_to_gemini_mem(user_id)
-                my_db.set_user_property(user_id, 'dialog_gemini3', my_db.obj_to_blob(new_mem))
-
-        def _set_chat_mode(new_mode: str) -> None:
-            """
-            Sets a new chat mode for the user and handles memory transfer.
-            Args:
-                new_mode: The target chat mode to set.
-            """
-            prev_mode = my_db.get_user_property(chat_id_full, 'chat_mode') or cfg.chat_mode_default
-            if prev_mode != new_mode:
-                _transfer_chat_memory(chat_id_full, prev_mode, new_mode)
-                my_db.set_user_property(chat_id_full, 'chat_mode', new_mode)
-
-
-        if call.data == 'clear_history':
-            # обработка нажатия кнопки "Стереть историю"
-            reset_(message)
-            bot.delete_message(message.chat.id, message.message_id)
-
-
-        elif call.data == 'config' or call.data.startswith('config_'):
-            bot.edit_message_text(
-                chat_id=message.chat.id,
-                message_id=message.message_id,
-                text=MSG_CONFIG,  # Use the pre-fetched config message text
-                parse_mode='HTML',
-                disable_web_page_preview=True,
-                reply_markup=get_keyboard(call.data, message) # Pass the callback data to get the right menu
-            )
-
-
-        elif call.data == 'image_prompt_describe':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(my_init.PROMPT_DESCRIBE, lang)
-            process_image_stage_2(image_prompt, chat_id_full, lang, message)
-
-        elif call.data == 'image_prompt_text':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(my_init.PROMPT_COPY_TEXT, lang)
-            process_image_stage_2(image_prompt, chat_id_full, lang, message)
-
-        elif call.data == 'image_prompt_ocr':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = 'OCR'
-            process_image_stage_2(image_prompt, chat_id_full, lang, message)
-
-        elif call.data == 'image_prompt_text_tts':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(my_init.PROMPT_COPY_TEXT_TTS, lang)
-            process_image_stage_2(image_prompt, chat_id_full, lang, message)
-
-        elif call.data == 'image_prompt_text_tr':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(my_init.PROMPT_COPY_TEXT_TR, lang)
-            process_image_stage_2(image_prompt, chat_id_full, lang, message)
-
-        elif call.data == 'image_prompt_generate':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(my_init.PROMPT_REPROMPT, lang) + \
-                        '\n\n```prompt\n/img image generation prompt in english```\n\n'
-            process_image_stage_2(image_prompt, chat_id_full, lang, message, temp = 1.5)
-
-        elif call.data == 'image_prompt_solve':
-            COMMAND_MODE[chat_id_full] = ''
-            image_prompt = tr(my_init.PROMPT_SOLVE, lang) + ' ' + f'Answer in [{lang}] language.'
-            process_image_stage_2(image_prompt, chat_id_full, lang, message, model = cfg.img2_txt_model_solve, temp = 0, timeout = 60)
-
-        elif call.data == 'image_prompt_qrcode':
-            COMMAND_MODE[chat_id_full] = ''
-            if chat_id_full in UNCAPTIONED_IMAGES:
-                img = UNCAPTIONED_IMAGES[chat_id_full][1]
-                text = my_qrcode.get_text(img)
-                if text:
-                    bot_reply(message, text)
-                    add_to_bots_mem(tr('user asked to get the text from an qrcode image', lang), text, chat_id_full)
-                    return
-            bot_reply_tr(message, 'No image found or text not found')
-
-        elif call.data == 'image_prompt_repeat_last':
-            COMMAND_MODE[chat_id_full] = ''
-            process_image_stage_2(UNCAPTIONED_PROMPTS[chat_id_full], chat_id_full, lang, message)
-
-        elif call.data.startswith('buy_stars_'):
-
-            amount = int(call.data.split('_')[-1])
-            if amount == 0:
-                bot_reply_tr(message, 'Please enter the desired amount of stars you would like to donate', reply_markup=get_keyboard('command_mode', message))
-                COMMAND_MODE[chat_id_full] = 'enter_start_amount'
-                return
-            prices = [telebot.types.LabeledPrice(label = "XTR", amount = amount)]
-            try:
-                bot.send_invoice(
-                    call.message.chat.id,
-                    title=tr('Donate stars amount:', lang) + ' ' + str(amount),
-                    description = tr('Donate stars amount:', lang) + ' ' + str(amount),
-                    invoice_payload="stars_donate_payload",
-                    provider_token = "",  # Для XTR этот токен может быть пустым
-                    currency = "XTR",
-                    prices = prices,
-                    reply_markup = get_keyboard(f'pay_stars_{amount}', message)
-                )
-            except Exception as error:
-                my_log.log_donate(f'tb:callback_inline_thread1: {error}\n\n{call.message.chat.id} {amount}')
-                bot_reply_tr(message, 'An unexpected error occurred during the payment process. Please try again later. If the problem persists, contact support.')
-
-        elif call.data == 'continue_gpt':
-            # обработка нажатия кнопки "Продолжай GPT"
-            message.dont_check_topic = True
-            message.next_button_pressed = True
-            echo_all(message, tr('Продолжай', lang))
-            return
-        elif call.data == 'cancel_command':
-            # обработка нажатия кнопки "Отменить ввод команды"
-            COMMAND_MODE[chat_id_full] = ''
-            bot.delete_message(message.chat.id, message.message_id)
-        elif call.data == 'cancel_command_not_hide':
-            # обработка нажатия кнопки "Отменить ввод команды, но не скрывать"
-            COMMAND_MODE[chat_id_full] = ''
-            # bot.delete_message(message.chat.id, message.message_id)
-            bot_reply_tr(message, 'Режим поиска в гугле отключен')
-        # режим автоответов в чате, бот отвечает на все реплики всех участников
-        # комната для разговоров с ботом Ж)
-        elif call.data == 'admin_chat' and is_admin_member(call):
-            supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
-            if supch == 1:
-                supch = 0
-                my_db.set_user_property(chat_id_full, 'superchat', 0)
-            else:
-                supch = 1
-                my_db.set_user_property(chat_id_full, 'superchat', 1)
-            bot.edit_message_text(chat_id=chat_id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message, 'admin'))
-        elif call.data == 'erase_answer':
-            # обработка нажатия кнопки "Стереть ответ"
-            COMMAND_MODE[chat_id_full] = ''
-            try:
-                bot.delete_message(message.chat.id, message.message_id)
-            except telebot.apihelper.ApiTelegramException as error:
-                if "Bad Request: message can't be deleted for everyone" not in str(error):
-                    traceback_error = traceback.format_exc()
-                    my_log.log2(f'tb:callback_inline_thread2: {str(error)}\n\n{traceback_error}')
-
-        elif call.data == 'tts':
-
-            if chat_id_full not in TTS_LOCKS:
-                TTS_LOCKS[chat_id_full] = threading.Lock()
-
-            if TTS_LOCKS[chat_id_full].locked():
-                return # If a TTS process is already running for this user, ignore the new request
-
-            with TTS_LOCKS[chat_id_full]:
-                text = message.text or message.caption
-                text = text.strip()
-                if text:
-                    detected_lang = my_tts.detect_lang_carefully(text)
-                    if not detected_lang:
-                        detected_lang = lang or "de"
-
-                    rewrited_text = my_gemini3.rewrite_text_for_tts(text, chat_id_full)
-                    if not rewrited_text:
-                        rewrited_text = my_cerebras.rewrite_text_for_tts(text, chat_id_full)
-                        if not rewrited_text:
-                            rewrited_text = text
-                    message.text = f'/tts {detected_lang} {rewrited_text}'
-                    tts(message)
-        elif call.data.startswith('select_lang-'):
-            l = call.data[12:]
-            message.text = f'/lang {l}'
-            language(message)
-        elif call.data in ('translate', 'translate_chat'):
-            # реакция на клавиатуру, кнопка перевести текст
-            with ShowAction(message, 'typing'):
-                text = message.text if message.text else message.caption
-                entities = message.entities if message.entities else message.caption_entities
-                kbd = 'translate' if call.data == 'translate' else 'chat'
-                text = my_log.restore_message_text(text, entities)
-                translated = tr(text, lang, help = 'Please, provide a high-quality artistic translation, format the output using Markdown.', save_cache = False)
-                html = utils.bot_markdown_to_html(translated)
-
-                if translated and translated != text:
-                    if message.text:
-                        func = bot.edit_message_text
-                    else:
-                        func = bot.edit_message_caption
-                    func(
-                        chat_id=message.chat.id,
-                        message_id=message.message_id,
-                        text=html,
-                        parse_mode='HTML',
-                        disable_web_page_preview = True,
-                        reply_markup=get_keyboard(kbd, message))
-
-        elif call.data.startswith('search_pics_'):
-            # Поиск картинок в дак дак гоу
-            if chat_id_full not in GOOGLE_LOCKS:
-                GOOGLE_LOCKS[chat_id_full] = threading.Lock()
-            with GOOGLE_LOCKS[chat_id_full]:
-                hash_ = call.data[12:]
-                if hash_ in SEARCH_PICS:
-                    with ShowAction(message, 'upload_photo'):
-                        query = SEARCH_PICS[hash_]
-                        images = []
-                        if hasattr(cfg, 'TAVILY_KEYS') and len(cfg.TAVILY_KEYS) > 0:
-                            images = my_tavily.search_images(query, user_id=chat_id_full)
-                        if not images:
-                            images = my_ddg.get_images(query)
-
-                        medias = []
-
-                        if images:
-                            medias = [telebot.types.InputMediaPhoto(x[0], caption = x[1][:900] if x[1] is not None else '') for x in images]
-
-                        if medias:
-                            msgs_ids = send_media_group(
-                                message,
-                                message.chat.id,
-                                medias,
-                                reply_to_message_id=message.message_id,
-                            )
-                            log_message(msgs_ids)
-                            return
-                        bot_reply_tr(message, 'Не смог найти картинки по этому запросу.')
-        elif call.data == 'download_saved_text':
-            # отдать юзеру его текст
-            if my_db.get_user_property(chat_id_full, 'saved_file_name'):
-                with ShowAction(message, 'typing'):
-                    buf = io.BytesIO()
-                    buf.write(my_db.get_user_property(chat_id_full, 'saved_file').encode())
-                    buf.seek(0)
-                    fname = utils.safe_fname(my_db.get_user_property(chat_id_full, 'saved_file_name')) + '.txt'
-                    if fname.endswith('.txt.txt'):
-                        fname = fname[:-4]
-                    try:
-                        m = send_document(
-                            message,
-                            message.chat.id,
-                            document=buf,
-                            message_thread_id=message.message_thread_id,
-                            caption=fname,
-                            visible_file_name = fname
-                        )
-                    except telebot.apihelper.ApiTelegramException as error:
-                        if 'message thread not found' not in str(error):
-                            raise error
-                        m = send_document(
-                            message,
-                            message.chat.id,
-                            document=buf,
-                            caption=fname,
-                            visible_file_name = fname
-                        )
-                    log_message(m)
-            else:
-                bot_reply_tr(message, 'No text was saved.')
-
-
-        elif call.data == 'delete_saved_text':
-            # удалить сохраненный текст
-            if my_db.get_user_property(chat_id_full, 'saved_file_name'):
-                my_db.delete_user_property(chat_id_full, 'saved_file_name')
-                my_db.delete_user_property(chat_id_full, 'saved_file')
-                bot_reply_tr(message, 'Saved text deleted.')
-            else:
-                bot_reply_tr(message, 'No text was saved.')
-            COMMAND_MODE[chat_id_full] = ''
-
-
-
-        # --- Model Selection (Stays on Models menu) ---
-        elif call.data.startswith('select_'):
-            model_id = call.data[7:] # Extract model id from 'select_...'
-
-            # Map callback IDs to internal mode names if they differ
-            mode_map = {
-                'gemini15': 'gemini15',
-                'gemini': 'gemini25_flash',
-            }
-            mode_to_set = mode_map.get(model_id, model_id)
-
-            # --- Handle models requiring keys ---
-            key_required = False
-            if mode_to_set in ('gpt-4o', 'gpt_41', 'gpt_41_mini'):
-                if not my_subscription.github_models(chat_id_full):
-                    bot.answer_callback_query(call.id, text=tr('Insert your github key first. /keys', lang), show_alert=True)
-                    key_required = True
-            elif mode_to_set == 'openrouter':
-                if chat_id_full not in my_openrouter.KEYS:
-                    bot.answer_callback_query(call.id, text=tr('Надо вставить свои ключи что бы использовать openrouter. Команда /openrouter', lang), show_alert=True)
-                    key_required = True
-
-            # If a key was required and missing, stop processing here.
-            if key_required:
-                return
-
-            # Set the new mode and transfer memory if needed
-            _set_chat_mode(mode_to_set)
-
-            # Redraw the model selection menu to show the updated checkmark
-            bot.edit_message_text(
-                chat_id=message.chat.id,
-                message_id=message.message_id,
-                text=MSG_CONFIG,
-                parse_mode='HTML',
-                disable_web_page_preview=True,
-                reply_markup=get_keyboard('config_models', message)
-            )
-
-
-
-        elif call.data == 'general_reset':
-            reset_(message, say = True, chat_id_full = chat_id_full)
-
-
-
-
-        # --- TTS Voice Provider Cycling (Stays on TTS menu) ---
-        elif call.data == 'tts_female' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'male')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
-
-        elif call.data == 'tts_male' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'google_female')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
-
-        elif call.data == 'tts_google_female' and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'gemini_Achernar')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
-
-        elif call.data.startswith('tts_gemini') and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'openai_alloy')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
-
-        elif call.data.startswith('tts_openai') and is_admin_member(call):
-            my_db.set_user_property(chat_id_full, 'tts_gender', 'female')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
-
-        # --- Specific Voice Selection (Stays on TTS menu) ---
-        elif call.data.startswith('switch_openai_') and is_admin_member(call):
-            voice = call.data.split('_')[-1]
-            my_db.set_user_property(chat_id_full, 'tts_gender', f'openai_{voice}')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
-
-        elif call.data.startswith('switch_gemini_') and is_admin_member(call):
-            voice = call.data.split('_')[-1]
-            my_db.set_user_property(chat_id_full, 'tts_gender', f'gemini_{voice}')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
-
-
-
-
-
-        elif call.data.startswith('switch_do_nothing') and is_admin_member(call):
-            pass
-
-        elif call.data == 'send_message_chat_switch' and is_admin_member(call):
-            send_message = my_db.get_user_property(chat_id_full, 'send_message') or False
-            if send_message:
-                my_db.set_user_property(chat_id_full, 'send_message', False)
-            else:
-                my_db.set_user_property(chat_id_full, 'send_message', True)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-        elif call.data == 'switch_action_style':
-            action_style = my_db.get_user_property(chat_id_full, 'action_style') or ''
-            if not action_style:
-                my_db.set_user_property(chat_id_full, 'action_style', 'message')
-            else:
-                my_db.set_user_property(chat_id_full, 'action_style', '')
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                    text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config', message))
-
-
-
-        # --- Behavior Toggles (Stays on Behavior menu) ---
-        elif call.data in ('voice_only_mode_disable', 'voice_only_mode_enable'):
-            new_state = (call.data == 'voice_only_mode_enable')
-            my_db.set_user_property(chat_id_full, 'voice_only_mode', new_state)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_tts', message))
-
-        elif call.data in ('transcribe_only_chat_disable', 'transcribe_only_chat_enable'):
-            new_state = (call.data == 'transcribe_only_chat_enable')
-            my_db.set_user_property(chat_id_full, 'transcribe_only', new_state)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id, 
-                                text = MSG_CONFIG, disable_web_page_preview = False, reply_markup=get_keyboard('config_behavior', message))
-
-
-
-        # --- STT Engine Selection (Stays on STT menu) ---
-        elif call.data.startswith('switch_speech_to_text_'):
-            # The prefix is 'switch_speech_to_text_', which is 22 characters long
-            speech_to_text_engine = call.data[22:]
-
-            my_db.set_user_property(chat_id_full, 'speech_to_text_engine', speech_to_text_engine)
-
-            bot.edit_message_text(
-                chat_id=message.chat.id, 
-                message_id=message.message_id,
-                text=MSG_CONFIG, 
-                parse_mode='HTML', 
-                disable_web_page_preview=False, 
-                reply_markup=get_keyboard('config_stt', message)
-            )
-
-
-
-        # --- Behavior Toggles (All stay on Behavior menu) ---
-        elif call.data.startswith('chat_kbd_'):
-            # Note the logic inversion: enabling the button means 'disabled_kbd' is False.
-            new_state = (call.data == 'chat_kbd_disable')
-            my_db.set_user_property(chat_id_full, 'disabled_kbd', new_state)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
-
-        elif call.data.startswith('action_style_'):
-            new_state = 'message' if call.data == 'action_style_enable' else ''
-            my_db.set_user_property(chat_id_full, 'action_style', new_state)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
-
-        elif call.data.startswith('voice_only_mode_'):
-            new_state = (call.data == 'voice_only_mode_enable')
-            my_db.set_user_property(chat_id_full, 'voice_only_mode', new_state)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
-
-        elif call.data.startswith('transcribe_only_chat_'):
-            new_state = (call.data == 'transcribe_only_chat_enable')
-            my_db.set_user_property(chat_id_full, 'transcribe_only', new_state)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
-
-        elif call.data.startswith('send_message_chat_switch_'):
-            new_state = (call.data == 'send_message_chat_switch_enable')
-            my_db.set_user_property(chat_id_full, 'send_message', new_state)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
-
-        elif call.data.startswith('admin_chat_'):
-            new_state = 1 if call.data == 'admin_chat_enable' else 0
-            my_db.set_user_property(chat_id_full, 'superchat', new_state)
-            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
-                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
-
-
-
-    except Exception as unexpected_error:
-        if 'Bad Request: message is not modified' in str(unexpected_error) or \
-           'Bad Request: message to be replied not found' in str(unexpected_error) or \
-           'Bad Request: message to edit not found' in str(unexpected_error):
-            return
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:callback_query_handler: {unexpected_error}\n\n{traceback_error}')
+    my_cmd_callback.callback_inline_thread(
+        call=call,
+        # Core objects
+        bot=bot,
+        # Global state dictionaries
+        COMMAND_MODE=COMMAND_MODE,
+        TTS_LOCKS=TTS_LOCKS,
+        GOOGLE_LOCKS=GOOGLE_LOCKS,
+        SEARCH_PICS=SEARCH_PICS,
+        UNCAPTIONED_PROMPTS=UNCAPTIONED_PROMPTS,
+        UNCAPTIONED_IMAGES=UNCAPTIONED_IMAGES,
+        # Helper functions and classes
+        get_topic_id=get_topic_id,
+        get_lang=get_lang,
+        tr=tr,
+        get_config_msg=get_config_msg,
+        bot_reply=bot_reply,
+        bot_reply_tr=bot_reply_tr,
+        get_keyboard=get_keyboard,
+        add_to_bots_mem=add_to_bots_mem,
+        log_message=log_message,
+        send_document=send_document,
+        send_media_group=send_media_group,
+        is_admin_member=is_admin_member,
+        ShowAction=ShowAction,
+        # Command handler functions
+        reset_=reset_,
+        process_image_stage_2=process_image_stage_2,
+        echo_all=echo_all,
+        tts=tts,
+        language=language,
+    )
 
 
 # Обработчик запросов перед оплатой
@@ -2827,254 +2058,33 @@ def handle_voice(message: telebot.types.Message):
     - В ином случае, собирает все приходящие файлы в группу, транскрибирует
       и отправляет в ЛЛМ в едином XML-подобном формате.
     """
-    chat_id_full = get_topic_id(message)
-    lang = get_lang(chat_id_full, message)
+    my_cmd_voice.handle_voice(
+        message=message,
 
-    # Проверка на подписку/донат
-    if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
-        return
+        # Core objects and constants
+        bot=bot,
+        BOT_ID=BOT_ID,
+        _bot_name=_bot_name,
+        BOT_NAME_DEFAULT=BOT_NAME_DEFAULT,
 
+        # Global state dictionaries
+        COMMAND_MODE=COMMAND_MODE,
+        CHECK_DONATE_LOCKS=CHECK_DONATE_LOCKS,
+        MESSAGE_QUEUE_AUDIO_GROUP=MESSAGE_QUEUE_AUDIO_GROUP,
 
-    is_private = message.chat.type == 'private'
-    supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
-    if supch == 1:
-        is_private = True
+        # Helper functions and classes
+        get_topic_id=get_topic_id,
+        get_lang=get_lang,
+        tr=tr,
+        bot_reply=bot_reply,
+        bot_reply_tr=bot_reply_tr,
+        get_keyboard=get_keyboard,
+        transcribe_file=transcribe_file,
+        ShowAction=ShowAction,
 
-
-    # определяем какое имя у бота в этом чате, на какое слово он отзывается
-    bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
-    if not is_private:
-        if not message.caption or not message.caption.startswith('?') or \
-            not message.caption.startswith(f'@{_bot_name}') or \
-                not message.caption.startswith(bot_name):
-            return
-
-
-    # --- ПРИОРИТЕТНАЯ ОБРАБОТКА ДЛЯ /transcribe ---
-    if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'transcribe':
-        try:
-            file_info, file_name = (None, 'unknown')
-            if message.voice:
-                file_info = bot.get_file(message.voice.file_id)
-                file_name = 'telegram voice message'
-            elif message.audio:
-                file_info = bot.get_file(message.audio.file_id)
-                file_name = message.audio.file_name
-            elif message.video:
-                file_info = bot.get_file(message.video.file_id)
-                file_name = message.video.file_name
-            elif message.video_note:
-                file_info = bot.get_file(message.video_note.file_id)
-            elif message.document:
-                file_info = bot.get_file(message.document.file_id)
-                file_name = message.document.file_name
-
-            if file_info:
-                downloaded_file = bot.download_file(file_info.file_path)
-                transcribe_file(downloaded_file, file_name, message)
-            else:
-                 bot_reply_tr(message, 'Could not get file info for transcription.')
-        except telebot.apihelper.ApiTelegramException as e:
-            if 'file is too big' in str(e):
-                bot_reply_tr(message, 'Too big file. Try /transcribe command. (Button - [Too big file])')
-        except Exception as e:
-            my_log.log2(f'tb:handle_voice:transcribe_mode_error: {e}')
-            bot_reply_tr(message, 'Error during transcription.')
-        finally:
-            COMMAND_MODE[chat_id_full] = ''
-        return
-
-
-    # --- Механизм сбора группы сообщений ---
-    if chat_id_full not in MESSAGE_QUEUE_AUDIO_GROUP:
-        MESSAGE_QUEUE_AUDIO_GROUP[chat_id_full] = [message]
-        last_state = MESSAGE_QUEUE_AUDIO_GROUP[chat_id_full]
-        n = 10
-        while n > 0:
-            n -= 1
-            time.sleep(0.1)
-            new_state = MESSAGE_QUEUE_AUDIO_GROUP.get(chat_id_full, [])
-            if len(last_state) != len(new_state):
-                last_state = new_state
-                n = 10
-    else:
-        MESSAGE_QUEUE_AUDIO_GROUP[chat_id_full].append(message)
-        return
-
-    messages_to_process = MESSAGE_QUEUE_AUDIO_GROUP.pop(chat_id_full, [])
-    if not messages_to_process:
-        return
-
-    try:
-        COMMAND_MODE[chat_id_full] = ''
-        # --- ЕДИНАЯ ЛОГИКА ОБРАБОТКИ ДЛЯ ВСЕХ СЛУЧАЕВ ---
-
-        # Если это одиночный файл без подписи в режиме "только транскрипция"
-        is_transcribe_only = (
-            my_db.get_user_property(chat_id_full, 'transcribe_only') and
-            len(messages_to_process) == 1 and
-            not messages_to_process[0].caption
-        )
-        is_voice_only_mode = my_db.get_user_property(chat_id_full, 'voice_only_mode') or 0
-
-        with ShowAction(messages_to_process[0], 'typing'):
-            # Вспомогательная функция для параллельной транскрипции
-            def transcribe_in_parallel(msg_to_transcribe):
-                try:
-                    file_info, file_name = (None, 'unknown.ogg')
-                    if msg_to_transcribe.voice:
-                        file_info = bot.get_file(msg_to_transcribe.voice.file_id)
-                        file_name = f'voice_message_{msg_to_transcribe.message_id}.ogg'
-                    elif msg_to_transcribe.audio:
-                        file_info = bot.get_file(msg_to_transcribe.audio.file_id)
-                        file_name = msg_to_transcribe.audio.file_name or f'audio_{msg_to_transcribe.message_id}.mp3'
-                    elif msg_to_transcribe.video:
-                        file_info = bot.get_file(msg_to_transcribe.video.file_id)
-                        file_name = msg_to_transcribe.video.file_name or f'video_{msg_to_transcribe.message_id}.mp4'
-                    elif msg_to_transcribe.video_note:
-                        file_info = bot.get_file(msg_to_transcribe.video_note.file_id)
-                        file_name = f'video_note_{msg_to_transcribe.message_id}.mp4'
-                    elif msg_to_transcribe.document:
-                        file_info = bot.get_file(msg_to_transcribe.document.file_id)
-                        file_name = msg_to_transcribe.document.file_name
-                    if file_info:
-                        downloaded_file = bot.download_file(file_info.file_path)
-                        transcription = my_stt.stt(downloaded_file, lang, chat_id_full)
-                        return {'filename': file_name, 'transcription': transcription or '[ERROR: Transcription failed]'}
-                except Exception as e:
-                    if 'file is too big' in str(e):
-                        bot_reply_tr(message, 'Too big file. Try /transcribe command. (Button - [Too big file])')
-                    else:
-                        my_log.log2(f'tb:handle_voice:transcribe_in_parallel_error: {e}')
-                return {'filename': 'error_file', 'transcription': '[ERROR: Processing failed]'}
-
-            # Запускаем транскрипцию в потоках, сохраняя порядок
-            transcribed_data = []
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                results_iterator = executor.map(transcribe_in_parallel, messages_to_process)
-                transcribed_data = list(results_iterator) # Преобразуем генератор в список
-
-            full_transcription_text = ""
-            for item in transcribed_data:
-                # Добавляем имя файла, если файлов больше одного
-                if len(transcribed_data) > 1:
-                    full_transcription_text += f"<b>{utils.html.escape(item['filename'])}:</b>\n"
-                full_transcription_text += f"{utils.html.escape(item.get('transcription', ''))}\n\n"
-
-            full_transcription_text = full_transcription_text.strip()
-
-            msg = messages_to_process[0] if messages_to_process else None
-            # если это видео и в нем нет текста то пробуем обработать как видео
-            is_video = msg and (msg.video or msg.video_note or msg.document)
-            many_text = len(full_transcription_text) > 100
-            if is_video and not many_text:
-                try:
-                    if msg.video: file_id = msg.video.file_id
-                    elif msg.video_note: file_id = msg.video_note.file_id
-                    elif msg.document: file_id = msg.document.file_id
-                    file_info = bot.get_file(file_id)
-                    if file_info:
-                        video_bytes = bot.download_file(file_info.file_path)
-                        query = msg.caption or tr('Describe this video, make text transcription on user language:', lang) + ' [' + lang + ']'
-                        system_prompt = my_db.get_user_property(chat_id_full, 'role') or ''
-                        temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1
-                        description = my_gemini3.video2txt(
-                            video_data=video_bytes,
-                            prompt=query,
-                            system=system_prompt,
-                            chat_id=chat_id_full,
-                            temperature=temperature,
-                            timeout=300
-                        )
-
-                    # Создаем "фейковое" сообщение для передачи в основной обработчик
-                    fake_message = msg # тут должно было быть копирование но похоже происходит только присвоение
-
-                    # Формируем XML-подобную запись для памяти
-                    xml_memory_entry = "User sent a video:\n\n<video_analysis_result>\n"
-                    xml_memory_entry += f"    <user_query>\n        {query}\n    </user_query>\n"
-                    xml_memory_entry += f"    <system_response>\n        {utils.html.escape(description)}\n    </system_response>\n"
-                    xml_memory_entry += "</video_analysis_result>"
-
-                    fake_message.text = xml_memory_entry
-                    fake_message.entities = []
-
-                    # Передаем "фейковое" сообщение с читаемым текстом в основной обработчик
-                    echo_all(fake_message)
-                    return
-
-                except Exception as video_as_img_error:
-                    if 'file is too big' in str(video_as_img_error):
-                        bot_reply_tr(message, 'Too big file')
-                        return
-                    traceback_error = traceback.format_exc()
-                    my_log.log2(f'tb:handle_voice:video_as_image_fallback: {video_as_img_error}\n\n{traceback_error}')
-
-
-            # Отправляем, если есть что отправлять, и если это не режим "только голос"
-            if full_transcription_text and not is_voice_only_mode:
-                bot_reply(
-                    messages_to_process[0],
-                    full_transcription_text,
-                    parse_mode='HTML',
-                    reply_markup=get_keyboard('translate', messages_to_process[0]),
-                    collapse_text = True
-                )
-
-            # Если это был режим transcribe_only, на этом все
-            if is_transcribe_only:
-                return
-
-
-            # Если это был режим transcribe_only, просто отправляем текст и выходим
-            if is_transcribe_only:
-                transcription = transcribed_data[0].get('transcription', '')
-                if transcription and not transcription.startswith('[ERROR'):
-                    bot_reply(messages_to_process[0], utils.bot_markdown_to_html(transcription),
-                              parse_mode='HTML',
-                              reply_markup=get_keyboard('translate', messages_to_process[0]))
-                else:
-                    bot_reply_tr(messages_to_process[0], 'Не удалось распознать текст')
-                return
-
-            # Собираем все подписи из группы
-            combined_caption = "\n".join(
-                [my_log.restore_message_text(msg.caption, msg.caption_entities) for msg in messages_to_process if msg.caption]
-            ).strip()
-
-            # Формируем XML-подобный промпт
-            xml_prompt = "<audio_batch_analysis_request>\n"
-            if combined_caption:
-                xml_prompt += f"    <user_instruction>\n        {utils.html.escape(combined_caption)}\n    </user_instruction>\n"
-            else:
-                # Если подписей не было, но файл всего один, считаем, что пользователь просто хочет транскрипцию и ответ от ЛЛМ
-                if len(messages_to_process) == 1:
-                     xml_prompt += f"    <user_instruction>\n        {tr('User sent an audio file.', lang)}\n    </user_instruction>\n"
-                else: # Если файлов много без подписи
-                     xml_prompt += f"    <user_instruction>\n        {tr('User sent a batch of audio files.', lang)}\n    </user_instruction>\n"
-
-            xml_prompt += "    <audio_files>\n"
-            for item in transcribed_data:
-                xml_prompt += "        <file>\n"
-                xml_prompt += f"            <filename>{utils.html.escape(item['filename'])}</filename>\n"
-                xml_prompt += f"            <transcription>\n                {utils.html.escape(item.get('transcription', ''))}\n            </transcription>\n"
-                xml_prompt += "        </file>\n"
-            xml_prompt += "    </audio_files>\n"
-            xml_prompt += "</audio_batch_analysis_request>"
-
-            # Создаем "фейковое" сообщение и передаем собранный запрос в основной обработчик
-            fake_message = messages_to_process[0]
-            fake_message.text = xml_prompt
-            fake_message.entities = []
-
-            echo_all(fake_message)
-
-    except Exception as e:
-        error_traceback = traceback.format_exc()
-        my_log.log2(f'tb:handle_voice_main_logic: {e}\n{error_traceback}')
-        # Гарантированно очищаем очередь, если что-то пошло не так
-        if chat_id_full in MESSAGE_QUEUE_AUDIO_GROUP:
-            del MESSAGE_QUEUE_AUDIO_GROUP[chat_id_full]
+        # Command handler functions
+        echo_all=echo_all,
+    )
 
 
 @bot.message_handler(content_types = ['location',], func=authorized)
@@ -3145,140 +2155,6 @@ def image_info(image_bytes: bytes, lang: str = "ru") -> str:
     except Exception as e:
         error_message = tr("Error", lang)
         return f"{error_message}: {e}"
-
-
-# def proccess_image(chat_id_full: str, image: bytes, message: telebot.types.Message, original_images: List[bytes] = []):
-#     '''The user sent an image without a caption.  Ask the user what to do with it,
-#     save the image, and display a keyboard with options.
-
-#     Args:
-#         chat_id_full: The full chat ID string.
-#         image: The image data as bytes.
-#         message: The Telegram message object.
-#     '''
-#     try:
-#         with UNCAPTIONED_IMAGES_LOCK:
-#             current_date = time.time()
-
-#             # Store the image and timestamp associated with the chat ID.
-#             UNCAPTIONED_IMAGES[chat_id_full] = (current_date, image)
-
-#             # Limit the storage to UNCAPTIONED_IMAGES_MAX uncaptioned images.
-#             if len(UNCAPTIONED_IMAGES) > UNCAPTIONED_IMAGES_MAX:
-#                 # Sort the images by timestamp (oldest first).
-#                 sorted_images = sorted(UNCAPTIONED_IMAGES.items(), key=lambda item: item[1][0])
-#                 # Get the IDs of the oldest images to delete.
-#                 user_ids_to_delete = [user_id for user_id, (date, image) in sorted_images[:len(UNCAPTIONED_IMAGES) - UNCAPTIONED_IMAGES_MAX]]
-#                 # Delete the oldest images.
-#                 for user_id in user_ids_to_delete:
-#                     try:
-#                         UNCAPTIONED_IMAGES.pop(user_id, None)
-#                     except KeyError:
-#                         pass
-
-#             # Set the command mode for the chat to 'image_prompt'.
-#             COMMAND_MODE[chat_id_full] = 'image_prompt'
-
-#             # Retrieve the last prompt used by the user for uncaptioned images, if any.
-#             user_prompt = ''
-#             if chat_id_full in UNCAPTIONED_PROMPTS:
-#                 user_prompt = UNCAPTIONED_PROMPTS[chat_id_full]
-
-#             # Get the user's language.
-#             lang = get_lang(chat_id_full, message)
-#             # Create the message to send to the user.
-#             msg = tr('What would you like to do with this image?\n\nStart query with symbol ! to edit picture, Example: !change the color of the clothes to red', lang)
-#             msg += '\n\n' + image_info(image, lang)
-#             # Append the last prompt to the message, if available.
-#             if user_prompt:
-#                 msg += '\n\n' + tr('Repeat my last request', lang) + ':\n\n' + utils.truncate_text(user_prompt)
-
-#             # Send the message to the user with the appropriate keyboard.
-#             bot_reply(message, msg, parse_mode = 'HTML', disable_web_page_preview=True, reply_markup = get_keyboard('image_prompt', message))
-#     except Exception as unknown:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'tb:proccess_image: {unknown}\n{traceback_error}')
-
-
-# def process_image_stage_2(
-#     image_prompt: str,
-#     chat_id_full: str,
-#     lang: str,
-#     message: telebot.types.Message,
-#     model: str = '',
-#     temp: float = 1,
-#     timeout: int = 120):
-#     '''Processes the user's chosen action for the uncaptioned image.
-
-#     Args:
-#         image_prompt: The user's chosen action or prompt.
-#         chat_id_full: The full chat ID string.
-#         lang: The user's language code.
-#         message: The Telegram message object.
-#         model: Model to use.
-#     '''
-#     try:
-#         with ShowAction(message, "typing"): # Display "typing" action while processing.
-#             # Define default prompts.
-#             default_prompts = (
-#                 tr(my_init.PROMPT_DESCRIBE, lang),
-#                 tr(my_init.PROMPT_COPY_TEXT, lang),
-#                 tr(my_init.PROMPT_COPY_TEXT_TTS, lang),
-#                 tr(my_init.PROMPT_COPY_TEXT_TR, lang),
-#                 tr(my_init.PROMPT_REPROMPT, lang),
-#                 tr(my_init.PROMPT_SOLVE, lang),
-#                 tr(my_init.PROMPT_QRCODE, lang),
-#             )
-
-#             # Save the user's prompt if it's not one of the default prompts.
-#             if not any(default_prompt in image_prompt for default_prompt in default_prompts):
-#                 UNCAPTIONED_PROMPTS[chat_id_full] = image_prompt
-
-#             # Retrieve the image data if available.
-#             if chat_id_full in UNCAPTIONED_IMAGES:
-#                 # Process the image based on the user's prompt.
-#                 text = img2txt(
-#                     text = UNCAPTIONED_IMAGES[chat_id_full][1],
-#                     lang = lang,
-#                     chat_id_full = chat_id_full,
-#                     query = image_prompt,
-#                     model = model,
-#                     temperature = temp,
-#                     timeout = timeout
-#                 )
-#                 # Send the processed text to the user.
-#                 if text:
-#                     if isinstance(text, str):
-#                         bot_reply(
-#                             message,
-#                             utils.bot_markdown_to_html(text),
-#                             disable_web_page_preview=True,
-#                             parse_mode='HTML',
-#                             reply_markup=get_keyboard('chat', message),
-#                         )
-#                         if image_prompt == tr(my_init.PROMPT_COPY_TEXT_TTS, lang):
-#                             message.text = f'/tts {my_gemini3.detect_lang(text, chat_id_full=chat_id_full)} {text}'
-#                             tts(message)
-#                     elif isinstance(text, bytes):
-#                         m = send_photo(
-#                             message,
-#                             message.chat.id,
-#                             text,
-#                             disable_notification=True,
-#                             reply_to_message_id=message.message_id,
-#                             reply_markup=get_keyboard('hide', message),
-#                         )
-#                         log_message(m)
-#                         return
-#                 else:
-#                     # Send an error message if the image processing fails.
-#                     bot_reply_tr(message, "I'm sorry, I wasn't able to process that image or understand your request.")
-#             else:
-#                 # Send a message if the image is no longer available.
-#                 bot_reply_tr(message, 'The image has already faded from my memory.')
-#     except Exception as unknown:
-#         traceback_error = traceback.format_exc()
-#         my_log.log2(f'tb:process_image_stage_2: {unknown}\n{traceback_error}')
 
 
 def proccess_image(
@@ -3501,245 +2377,42 @@ AllowedIPs = {AllowedIPs}
 @async_run
 def handle_document(message: telebot.types.Message):
     """Обработчик документов"""
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
+    my_cmd_document.handle_document(
+        message=message,
 
-        COMMAND_MODE[chat_id_full] = ''
-        # проверка на подписку
-        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
-            return
+        # Core objects and constants
+        bot=bot,
+        BOT_ID=BOT_ID,
+        _bot_name=_bot_name,
+        BOT_NAME_DEFAULT=BOT_NAME_DEFAULT,
 
-        if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] != 'transcribe':
-            COMMAND_MODE[chat_id_full] = ''
+        # Global state dictionaries
+        COMMAND_MODE=COMMAND_MODE,
+        DOCUMENT_LOCKS=DOCUMENT_LOCKS,
+        CHECK_DONATE_LOCKS=CHECK_DONATE_LOCKS,
+        FILE_GROUPS=FILE_GROUPS,
 
-        is_private = message.chat.type == 'private'
-        supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
-        if supch == 1:
-            is_private = True
+        # Helper functions and classes
+        get_topic_id=get_topic_id,
+        get_lang=get_lang,
+        tr=tr,
+        bot_reply=bot_reply,
+        bot_reply_tr=bot_reply_tr,
+        get_keyboard=get_keyboard,
+        add_to_bots_mem=add_to_bots_mem,
+        log_message=log_message,
+        send_document=send_document,
+        send_photo=send_photo,
+        proccess_image=proccess_image,
+        img2txt=img2txt,
+        ShowAction=ShowAction,
 
-        chat_id = message.chat.id
-
-        message.caption = my_log.restore_message_text(message.caption, message.caption_entities)
-
-        # if check_blocks(chat_id_full) and not is_private:
-        #     return
-        bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
-        if not is_private:
-            if not message.caption or not message.caption.startswith('?') or \
-                not message.caption.startswith(f'@{_bot_name}') or \
-                    not message.caption.startswith(bot_name):
-                return
-
-        if chat_id_full in DOCUMENT_LOCKS:
-            lock = DOCUMENT_LOCKS[chat_id_full]
-        else:
-            lock = threading.Lock()
-            DOCUMENT_LOCKS[chat_id_full] = lock
-
-        pandoc_support = my_init.PANDOC_SUPPORT_LIST
-
-        if not message.document.mime_type:
-            message.document.mime_type = 'application/xml'
-
-        with lock:
-            # if message.media_group_id
-            # если прислали текстовый файл или pdf
-            # то скачиваем и вытаскиваем из них текст и показываем краткое содержание
-            if is_private :
-
-                if message.document and message.document.mime_type.startswith('audio/') or \
-                    message.document and message.document.mime_type.startswith('video/') or \
-                    message.document.file_name.lower().endswith('.aac'):
-                    handle_voice(message)
-                    return
-
-                if message.document and message.document.mime_type.startswith(('image/','animation/gif')) and message.document.mime_type not in ('image/svg+xml', 'image/vnd.djvu+multipage',):
-                    handle_photo(message)
-                    return
-
-                with ShowAction(message, 'typing'):
-                    try:
-                        file_info = bot.get_file(message.document.file_id)
-                    except telebot.apihelper.ApiTelegramException as error:
-                        if 'file is too big' in str(error):
-                            bot_reply_tr(message, 'Too big file')
-                            return
-                        else:
-                            raise error
-                    downloaded_file = bot.download_file(file_info.file_path)
-
-                    caption = message.caption or ''
-                    caption = caption.strip()
-
-                    # если подпись начинается на load то это запрос на загрузку сохраненной памяти
-                    if caption == 'load' or message.document.file_name.startswith('resp.md'):
-                        # bytes to string
-                        mem_dict = utils_llm.text_to_mem_dict(downloaded_file)
-                        reset_(message, say = False)
-                        for k, v in mem_dict.items():
-                            add_to_bots_mem(k, v, chat_id_full)
-                        bot_reply_tr(message, 'Память загружена из файла.')
-                        return
-
-                    # если подпись к документу начинается на !tr то это запрос на перевод
-                    # и через пробел должен быть указан язык например !tr ru
-                    if caption.startswith('!tr '):
-                        target_lang = caption[4:].strip()
-                        if target_lang:
-                            bot_reply_tr(message, 'Translating it will take some time...')
-                            new_fname = message.document.file_name if hasattr(message, 'document') else 'noname.txt'
-                            new_data = my_doc_translate.translate_file_in_dialog(
-                                downloaded_file,
-                                lang,
-                                target_lang,
-                                fname = new_fname,
-                                chat_id_full = chat_id_full)
-                            if new_data:
-                                new_fname2 = f'(translated by @{_bot_name}) {new_fname}'
-                                m = send_document(
-                                    message,
-                                    message.chat.id,
-                                    new_data,
-                                    reply_to_message_id=message.message_id,
-                                    message_thread_id=message.message_thread_id,
-                                    caption=new_fname2,
-                                    visible_file_name=new_fname2,
-                                    disable_notification=True
-                                )
-                                log_message(m)
-                                return
-                            else:
-                                bot_reply_tr(message, 'Translation failed.')
-                                return
-
-
-                    file_bytes = io.BytesIO(downloaded_file)
-                    text = ''
-                    if message.document.mime_type == 'application/pdf':
-                        if message.caption and message.caption.startswith('!') and not message.caption.startswith('!tr '):
-                            message.caption = message.caption[1:].strip()
-                            caption = message.caption or ''
-                            caption = caption.strip()
-                            text = my_pdf.get_text(downloaded_file)
-                        else:
-                            LIMIT = cfg.LIMIT_PDF_OCR if hasattr(cfg, 'LIMIT_PDF_OCR') else 20
-                            amount_of_pages = my_pdf.count_pages_in_pdf(downloaded_file)
-                            if amount_of_pages > LIMIT:
-                                text = my_mistral.ocr_pdf(downloaded_file, timeout=300)
-                            else:
-                                text = my_pdf.get_text(downloaded_file)
-                            if not text and amount_of_pages > LIMIT:
-                                text = my_pdf.get_text(downloaded_file)
-                            elif not text and amount_of_pages < LIMIT:
-                                text = my_mistral.ocr_pdf(downloaded_file, timeout=300)
-                    elif message.document.mime_type == 'application/zip':
-                        text = my_zip.extract_and_concatenate(downloaded_file)
-                    elif message.document.mime_type in pandoc_support:
-                        ext = utils.get_file_ext(file_info.file_path)
-                        text = my_pandoc.fb2_to_text(file_bytes.read(), ext)
-                    elif message.document.mime_type == 'image/svg+xml' or message.document.file_name.lower().endswith('.psd'):
-                        try:
-                            if message.document.file_name.lower().endswith('.psd'):
-                                image = my_psd.convert_psd_to_jpg(file_bytes.read())
-                            elif message.document.mime_type == 'image/svg+xml':
-                                image = my_svg.convert_svg_to_png_bytes(file_bytes.read())
-                            else:
-                                bot_reply_tr(message, f'Unknown image type {message.document.mime_type}')
-                                return
-                            image = utils.resize_image_dimention(image)
-                            image = utils.resize_image(image)
-                            #send converted image back
-                            m = send_photo(
-                                message,
-                                message.chat.id,
-                                image,
-                                reply_to_message_id=message.message_id,
-                                message_thread_id=message.message_thread_id,
-                                caption=message.document.file_name + '.png',
-                            )
-                            log_message(m)
-                            if not message.caption:
-                                proccess_image(chat_id_full, image, message)
-                                return
-                            text = img2txt(image, lang, chat_id_full, message.caption)
-                            if text:
-                                text = utils.bot_markdown_to_html(text)
-                                # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                                bot_reply(message, text, parse_mode='HTML',
-                                                    reply_markup=get_keyboard('translate', message))
-                            else:
-                                bot_reply_tr(message, 'Sorry, I could not answer your question.')
-                            return
-                        except Exception as error:
-                            my_log.log2(f'tb:handle_document:svg: {error}')
-                            bot_reply_tr(message, 'Не удалось распознать изображение')
-                            return
-                    else:
-                        text = utils.extract_text_from_bytes(downloaded_file)
-                        if not text:
-                            bot_reply_tr(message, 'Unknown type of file.')
-                            my_log.log2(f'tb:handle_document: unknown file or empty text {message.document.mime_type} Name: {message.document.file_name} Size: {file_info.file_size}')
-                            return
-
-                    if text and text.strip():
-                        # если это группа файлов, то прибавляем этот файл к группе
-                        if message.media_group_id:
-
-                            if (chat_id_full in FILE_GROUPS and FILE_GROUPS[chat_id_full] != message.media_group_id) or chat_id_full not in FILE_GROUPS:
-                                # drop old text
-                                prev_text = ''
-                            else:
-                                prev_text = my_db.get_user_property(chat_id_full, 'saved_file')
-                            FILE_GROUPS[chat_id_full] = message.media_group_id
-
-                            my_db.set_user_property(chat_id_full, 'saved_file_name', 'group of files')
-
-                            text = f'{prev_text}\n\n<FILE>\n<NAME>\n{message.document.file_name if hasattr(message, "document") else "noname.txt"}\n</NAME>\n<TEXT>\n{text}\n</TEXT>\n</FILE>\n\n'
-                            max_size = cfg.MAX_SAVE_DOCUMENTS_SIZE if hasattr(cfg, 'MAX_SAVE_DOCUMENTS_SIZE') else 1000000
-                            if len(text) > max_size:
-                                text = text[:max_size]
-                            my_db.set_user_property(chat_id_full, 'saved_file', text.strip())
-                            bot_reply(message, tr('The file has been added to the group of files, use /ask to query it', lang) + ': ' + message.document.file_name if hasattr(message, 'document') else 'noname.txt')
-                        else:
-                            # если админ отправил .conf файл и внутри есть нужные поля для настройки ваиргарда то применить этот конфиг
-                            if message.from_user.id in cfg.admins and message.document.file_name.endswith('.conf'):
-                                if process_wg_config(text, message):
-                                    bot_reply_tr(message, 'OK')
-                                    return
-
-                            summary = my_sum.summ_text(text, 'text', lang, caption)
-                            my_db.set_user_property(chat_id_full, 'saved_file_name', message.document.file_name if hasattr(message, 'document') else 'noname.txt')
-                            my_db.set_user_property(chat_id_full, 'saved_file', text)
-                            summary_html = utils.bot_markdown_to_html(summary)
-                            if summary_html.strip():
-                                bot_reply(
-                                    message,
-                                    summary_html,
-                                    parse_mode='HTML',
-                                    disable_web_page_preview = True,
-                                    reply_markup=get_keyboard('translate', message)
-                                )
-                            bot_reply_tr(message, 'Use /ask command to query or delete this file. Example:\n/ask generate a short version of part 1.\n? How many persons was invited.')
-
-                            caption_ = tr("юзер попросил ответить по содержанию файла", lang)
-                            if caption:
-                                caption_ += ', ' + caption
-                            add_to_bots_mem(
-                                caption_,
-                                f'{tr("бот посмотрел файл и ответил:", lang)} {summary}',
-                                chat_id_full)
-                    else:
-                        bot_reply_tr(message, 'Не удалось получить никакого текста из документа.')
-                    return
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:handle_document: {unknown}\n{traceback_error}')
-        bot_reply_tr(message, 'Unknown error. It may be a password in the file.')
-        return
-
-    my_log.log2(f'tb:handle_document: Unknown type of file: {message.document.mime_type}')
-    bot_reply_tr(message, 'Unknown type of file.')
+        # Command handler functions
+        handle_voice=handle_voice,
+        handle_photo=handle_photo,
+        reset_=reset_,
+        process_wg_config=process_wg_config,
+    )
 
 
 def download_image_from_message(message: telebot.types.Message) -> bytes:
@@ -6860,256 +5533,37 @@ def send_images_to_pic_group(
 @async_run
 def image_gen(message: telebot.types.Message):
     """Generates a picture from a description"""
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
+    my_cmd_img.image_gen(
+        message=message,
 
+        # Core objects and constants
+        _bot_name = _bot_name,
+        BOT_ID = BOT_ID,
+        pics_group = pics_group,
 
-        if message.text.lower().startswith('/i'):
-            if chat_id_full in IMG_MODE_FLAG:
-                del IMG_MODE_FLAG[chat_id_full]
+        # Global state dictionaries
+        IMG_MODE_FLAG = IMG_MODE_FLAG,
+        COMMAND_MODE = COMMAND_MODE,
+        IMG_GEN_LOCKS = IMG_GEN_LOCKS,
+        BING_FAILS = BING_FAILS,
+        CHECK_DONATE_LOCKS = CHECK_DONATE_LOCKS,
 
+        # Helper functions and classes
+        get_topic_id=get_topic_id,
+        get_lang=get_lang,
+        tr=tr,
+        bot_reply=bot_reply,
+        bot_reply_tr=bot_reply_tr,
+        get_keyboard=get_keyboard,
+        add_to_bots_mem=add_to_bots_mem,
+        send_images_to_user=send_images_to_user,
+        send_images_to_pic_group=send_images_to_pic_group,
+        ShowAction=ShowAction,
+        NoLock=NoLock,
 
-        # # в группе рисовать можно только тем у кого есть все ключи или подписка или админы
-        # if message.chat.id < 0:
-        #     chat_id_full_from = f'[{message.from_user.id}] [0]'
-        #     user_id = message.from_user.id
-        #     have_keys = (chat_id_full_from in my_gemini_general.USER_KEYS and chat_id_full_from in my_groq.USER_KEYS) or \
-        #             user_id in cfg.admins or \
-        #             (my_db.get_user_property(chat_id_full_from, 'telegram_stars') or 0) >= 50
-        #     if not have_keys:
-        #         return
-
-
-        # не использовать бинг для рисования запрещенки, он за это банит
-        NSFW_FLAG = False
-        if message.text.endswith('NSFW'):
-            NSFW_FLAG = True
-            message.text = message.text[:-4]
-
-        # забаненный в бинге юзер
-        if my_db.get_user_property(chat_id_full, 'blocked_bing'):
-            NSFW_FLAG = True
-
-        # if NSFW_FLAG:
-        #     bot_reply(message, tr('Images was blocked.', lang) + ' ' + 'https://www.google.com/search?q=nsfw', disable_web_page_preview=True)
-        #     return
-
-        show_timeout = 5 # как долго показывать активность
-
-        # рисовать только бингом, команда /bing
-        BING_FLAG = 0
-        if message.text.endswith('[{(BING)}]'):
-            message.text = message.text[:-10]
-            BING_FLAG = 1
-
-        # рисовать только gpt, команда /bing_gpt
-        GPT_FLAG = 0
-        if message.text.endswith('[{(GPT)}]'):
-            message.text = message.text[:-9]
-            GPT_FLAG = 1
-
-        # 10х и 20х отключены пока
-        # BING_FLAG = 0
-
-        if chat_id_full in IMG_GEN_LOCKS:
-            lock = IMG_GEN_LOCKS[chat_id_full]
-        else:
-            # lock = threading.Lock()
-            lock = NoLock() # временно отключаем блокировку, юзеры смогут делать несколько запросов одновременно
-            IMG_GEN_LOCKS[chat_id_full] = lock
-
-        COMMAND_MODE[chat_id_full] = ''
-        # проверка на подписку
-        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
-            return
-
-
-
-        # не ставить в очередь рисование, кроме белого списка
-        # if lock.locked():
-        #     if hasattr(cfg, 'ALLOW_PASS_NSFW_FILTER') and utils.extract_user_id(chat_id_full) in cfg.ALLOW_PASS_NSFW_FILTER:
-        #         pass
-        #     else:
-        #         return
-
-
-
-        # # не ставить в очередь рисование x10 x20 bing
-        # if lock.locked() and BING_FLAG > 1:
-        #     return
-
-        with lock:
-
-            # замедление для юзеров из черного списка
-            # случайное время от 1 до 4 минут
-            # пауза до включения отображения активности что бы не дрочить сервер телеграма зря
-            if hasattr(cfg, 'SLOW_MODE_BING') and utils.extract_user_id(chat_id_full) in cfg.SLOW_MODE_BING:
-                if my_db.count_imaged_per24h(chat_id_full) > 500:
-                    time.sleep(random.randint(60, 240))
-
-            draw_text = tr('draw', lang)
-            if lang == 'ru':
-                draw_text = 'нарисуй'
-            if lang == 'en':
-                draw_text = 'draw'
-            help = f"""/image {tr('Text description of the picture, what to draw.', lang)}
-
-/image {tr('космический корабль в полете', lang)}
-/img {tr('средневековый замок с рвом и мостом', lang)}
-/i {tr('подводный мир с рыбами и кораллами', lang)}
-<b>{draw_text}</b> {tr('красивый сад с цветами и фонтаном', lang)}
-
-{tr('Use /bing command for Bing only.', lang)}
-{tr('Use /gpt command for GPT4o only.', lang)}
-{tr('Use /flux command for black-forest-labs/flux-dev only.', lang)}
-{tr('Use /gem command for Gemini only.', lang)}
-
-{tr('Write what to draw, what it looks like.', lang)}
-"""
-            message.text = my_log.restore_message_text(message.text, message.entities)
-            prompt = message.text.split(maxsplit = 1)
-
-            if len(prompt) > 1:
-                prompt = prompt[1].strip()
-                COMMAND_MODE[chat_id_full] = ''
-
-                if prompt == tr('Продолжай', lang):
-                    return
-
-                if prompt:
-                    if chat_id_full in IMG_MODE_FLAG:
-                        if IMG_MODE_FLAG[chat_id_full] == 'bing':
-                            BING_FLAG = 1
-                        elif IMG_MODE_FLAG[chat_id_full] == 'gpt':
-                            GPT_FLAG = 1
-
-                # get chat history for content
-                conversation_history = my_gemini3.get_mem_as_string(chat_id_full) or ''
-
-                conversation_history = conversation_history[-8000:]
-                # как то он совсем плохо стал работать с историей, отключил пока что
-                conversation_history = ''
-
-                with ShowAction(message, 'upload_photo', max_timeout = show_timeout):
-                    moderation_flag = False
-
-                    if NSFW_FLAG:
-                        images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = False)
-                    else:
-                        if BING_FLAG:
-                            bf = BING_FAILS[chat_id_full] if chat_id_full in BING_FAILS else [0, 0]
-                            if bf[0] >= 5:
-                                if time.time() - bf[1] > 5 * 60:
-                                    bf = [0, 0]
-                            if bf[0] < 5:
-                                images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG)
-                                if not images:
-                                    bf[0] += 1
-                                    bf[1] = time.time()
-                            else:
-                                images = []
-                                time.sleep(random.randint(5,10))
-                            if not images:
-                                bot_reply_tr(message, 'Bing не смог ничего нарисовать.')
-                            BING_FAILS[chat_id_full] = bf
-                        elif GPT_FLAG:
-                            bf = BING_FAILS[chat_id_full] if chat_id_full in BING_FAILS else [0, 0]
-                            if bf[0] >= 5:
-                                if time.time() - bf[1] > 5 * 60:
-                                    bf = [0, 0]
-                            if bf[0] < 5:
-                                images = my_genimg.gen_images_bing_only(prompt, chat_id_full, conversation_history, BING_FLAG, model='gpt')
-                                if not images:
-                                    bot_reply_tr(message, 'Bing не смог ничего нарисовать.')
-                            else:
-                                images = []
-                                time.sleep(random.randint(20,30))
-                        else:
-                            images = my_genimg.gen_images(prompt, moderation_flag, chat_id_full, conversation_history, use_bing = True)
-
-                    # try flux if no results
-                    if not images and hasattr(cfg, 'USE_FLUX_IF_EMPTY_IMAGES') and cfg.USE_FLUX_IF_EMPTY_IMAGES:
-                        prompt = prompt.strip()
-                        # remove trailing !
-                        prompt = re.sub(r'^!+', '', prompt).strip()
-                        message.text = f'/flux {prompt}'
-                        image_flux_gen(message)
-                        return
-
-                    medias = []
-                    has_good_images = False
-                    for x in images:
-                        if isinstance(x, bytes):
-                            has_good_images = True
-                            break
-                    for i in images:
-                        if isinstance(i, str):
-                            if i.startswith('moderation') and not has_good_images:
-                                bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
-                                return
-                            elif 'error1_Bad images' in i and not has_good_images:
-                                bot_reply_tr(message, 'Ваш запрос содержит неприемлемый контент.')
-                                return
-                            if not has_good_images and not i.startswith('https://'):
-                                bot_reply_tr(message, i)
-                                return
-                        d = None
-                        bot_addr = f'https://t.me/{_bot_name}'
-                        caption_ = re.sub(r"(\s)\1+", r"\1\1", prompt)[:900]
-                        # caption_ = prompt[:900]
-                        if isinstance(i, str):
-                            d = utils.download_image_as_bytes(i)
-                            if len(d) < 2000: # placeholder?
-                                continue
-                            if GPT_FLAG:
-                                caption_ = f'{bot_addr} bing.com - gpt4o\n\n' + caption_
-                                my_db.add_msg(chat_id_full, 'img ' + 'bing.com_gtp4o')
-                            else:
-                                caption_ = f'{bot_addr} bing.com - dalle\n\n' + caption_
-                                my_db.add_msg(chat_id_full, 'img ' + 'bing.com')
-                        elif isinstance(i, bytes):
-                            if utils.fast_hash(i) in my_genimg.WHO_AUTOR:
-                                nn_ = '\n\n'
-                                author = my_genimg.WHO_AUTOR[utils.fast_hash(i)]
-                                caption_ = f"{bot_addr} {author}{nn_}{caption_}"
-                                my_db.add_msg(chat_id_full, 'img ' + author)
-                                del my_genimg.WHO_AUTOR[utils.fast_hash(i)]
-                            else:
-                                caption_ = f'{bot_addr} error'
-                            d = i
-                        if d:
-                            try:
-                                medias.append(telebot.types.InputMediaPhoto(d, caption = caption_[:900]))
-                            except Exception as add_media_error:
-                                error_traceback = traceback.format_exc()
-                                my_log.log2(f'tb:image:add_media_bytes: {add_media_error}\n\n{error_traceback}')
-
-                    if len(medias) > 0:
-                        # делим картинки на группы до 10шт в группе, телеграм не пропускает больше за 1 раз
-                        chunk_size = 10
-                        chunks = [medias[i:i + chunk_size] for i in range(0, len(medias), chunk_size)]
-
-                        send_images_to_user(chunks, message, chat_id_full, medias, images)
-
-                        if pics_group and not NSFW_FLAG:
-                            send_images_to_pic_group(chunks, message, chat_id_full, prompt)
-
-                        add_to_bots_mem(message.text, f'The bot successfully generated images on the external services <service>bing, fusion, flux, nebius, gemini</service> based on the request <prompt>{prompt}</prompt>', chat_id_full)
-
-                    else:
-                        bot_reply_tr(message, 'Could not draw anything.')
-
-                        my_log.log_echo(message, '[image gen error] ')
-
-                        add_to_bots_mem(message.text, 'FAIL', chat_id_full)
-
-            else:
-                COMMAND_MODE[chat_id_full] = 'image'
-                bot_reply(message, help, parse_mode = 'HTML', reply_markup=get_keyboard('command_mode', message))
-    except Exception as error_unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:image:send: {error_unknown}\n{traceback_error}')
+        # Command handler functions
+        image_flux_gen=image_flux_gen,
+    )
 
 
 @bot.message_handler(commands=['stats', 'stat'], func=authorized_admin)
@@ -9719,314 +8173,43 @@ def edit_image_detect(text: str, lang: str, chat_id_full: str, message: telebot.
 def handle_photo(message: telebot.types.Message):
     """Обработчик фотографий. Сюда же попадают новости которые создаются как фотография
     + много текста в подписи, и пересланные сообщения в том числе"""
-    try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
+    my_cmd_photo.handle_photo(
+        message=message,
 
-        COMMAND_MODE[chat_id_full] = ''
-        # проверка на подписку
-        if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
-            return
+        # Core objects and constants
+        bot=bot,
+        BOT_ID=BOT_ID,
+        _bot_name=_bot_name,
+        BOT_NAME_DEFAULT=BOT_NAME_DEFAULT,
 
-        # catch groups of images
-        if chat_id_full not in MESSAGE_QUEUE_IMG:
-            MESSAGE_QUEUE_IMG[chat_id_full] = [message,]
-            last_state = MESSAGE_QUEUE_IMG[chat_id_full]
-            n = 10
-            while n > 0:
-                n -= 1
-                time.sleep(0.1)
-                new_state = MESSAGE_QUEUE_IMG[chat_id_full]
-                if last_state != new_state:
-                    last_state = new_state
-                    n = 10
-        else:
-            MESSAGE_QUEUE_IMG[chat_id_full].append(message)
-            return
+        # Global state dictionaries
+        COMMAND_MODE=COMMAND_MODE,
+        IMG_LOCKS=IMG_LOCKS,
+        CHECK_DONATE_LOCKS=CHECK_DONATE_LOCKS,
+        MESSAGE_QUEUE_IMG=MESSAGE_QUEUE_IMG,
 
+        # Helper functions and classes
+        get_topic_id=get_topic_id,
+        get_lang=get_lang,
+        tr=tr,
+        bot_reply=bot_reply,
+        bot_reply_tr=bot_reply_tr,
+        get_keyboard=get_keyboard,
+        add_to_bots_mem=add_to_bots_mem,
+        log_message=log_message,
+        send_document=send_document,
+        send_photo=send_photo,
+        proccess_image=proccess_image,
+        img2txt=img2txt,
+        send_all_files_from_storage=send_all_files_from_storage,
+        ShowAction=ShowAction,
+        download_image_from_message=download_image_from_message,
+        img2img=img2img,
 
-        if len(MESSAGE_QUEUE_IMG[chat_id_full]) > 1:
-            MESSAGES = MESSAGE_QUEUE_IMG[chat_id_full]
-        else:
-            MESSAGES = [message,]
-        del MESSAGE_QUEUE_IMG[chat_id_full]
-
-        message.caption = my_log.restore_message_text(message.caption, message.caption_entities)
-
-        if message.caption and message.caption.startswith(('/img ', '/image ', '/gem ', '/flux ', '/bing ')):
-            # заменить первое слово на !
-            message.caption = message.caption.replace('/img ', '!', 1).replace('/image ', '!', 1).replace('/gem ', '!', 1).replace('/flux ', '!', 1).replace('/bing ', '!', 1)
-
-        try:
-            is_private = message.chat.type == 'private'
-            supch = my_db.get_user_property(chat_id_full, 'superchat') or 0
-            is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
-            if supch == 1:
-                is_private = True
-
-            msglower = message.caption.lower() if message.caption else ''
-
-            bot_name = my_db.get_user_property(chat_id_full, 'bot_name') or BOT_NAME_DEFAULT
-            bot_name_was_used = False
-            # убираем из запроса кодовое слово
-            if msglower.startswith((f'{bot_name} ', f'{bot_name},', f'{bot_name}\n')):
-                bot_name_was_used = True
-                message.caption = message.caption[len(f'{bot_name} '):].strip()
-
-            state = ''
-            bot_name2 = f'@{_bot_name}'
-            # убираем из запроса имя бота в телеграме
-            if msglower.startswith((f'{bot_name2} ', f'{bot_name2},', f'{bot_name2}\n')):
-                bot_name_was_used = True
-                message.caption = message.caption[len(f'{bot_name2} '):].strip()
-            elif is_private or is_reply or bot_name_was_used:
-                state = 'describe'
-            elif msglower.startswith('?'):
-                state = 'describe'
-                message.caption = message.caption[1:]
-
-
-            if not is_private and not state == 'describe':
-                if not message.caption or not message.caption.startswith('?') or \
-                    not bot_name_was_used:
-                    return
-
-            if is_private:
-                # Если прислали медиагруппу то делаем из нее коллаж, и обрабатываем как одну картинку
-                # Если картинок больше 4 то вытаскиваем из каждой текст отдельно и пытаемся собрать в 1 большой текст
-                if len(MESSAGES) > 1:
-                    # найти сообщение у которого есть caption
-                    caption = ''
-                    for msg in MESSAGES:
-                        if msg.caption:
-                            caption = msg.caption
-                            break
-                    caption = caption.strip()
-                    with ShowAction(message, 'typing'):
-                        images = [download_image_from_message(msg) for msg in MESSAGES]
-
-                        # Если прислали группу картинок и запрос начинается на ! то перенаправляем запрос в редактирование картинок
-                        if caption.startswith('!'):
-                            caption = caption[1:]
-
-                            temperature = my_db.get_user_property(chat_id_full, 'temperature') or 1
-                            role = my_db.get_user_property(chat_id_full, 'role') or ''
-                            image = img2img(
-                                text = images,
-                                lang=lang,
-                                chat_id_full=chat_id_full,
-                                query=caption,
-                                temperature=temperature,
-                                system_message=role,
-                            )
-
-                            if image:
-                                m = send_photo(
-                                    message,
-                                    message.chat.id,
-                                    disable_notification=True,
-                                    photo=image,
-                                    reply_to_message_id=message.message_id,
-                                    reply_markup=get_keyboard('hide', message)
-                                )
-                                log_message(m)
-                                add_to_bots_mem(tr('User asked to edit images', lang) + f' <prompt>{caption}</prompt>', tr('Changed images successfully.', lang), chat_id_full)
-                                return
-                            else:
-                                bot_reply_tr(message, 'Failed to edit images.')
-                                add_to_bots_mem(tr('User asked to edit images', lang) + f' <prompt>{caption}</prompt>', tr('Failed to edit images.', lang), chat_id_full)
-                                return
-
-                        if len(images) > 4:
-                            big_text = ''
-                            # соединить группы картинок по 4
-                            images_ = utils.create_image_collages(images)
-                            if images_:
-                                source_images = images[:]
-                                images = images_
-
-                            for image in images:
-                                if image:
-                                    try:
-                                        text = img2txt(
-                                            text = image,
-                                            lang = lang,
-                                            chat_id_full = chat_id_full,
-                                            query=tr('text', lang),
-                                            model = cfg.gemini_flash_light_model,
-                                            temperature=0.1,
-                                            system_message=tr('Give me all text from image, no any other words but text from this image', lang),
-                                            timeout=60,
-                                            images=source_images,
-                                            )
-                                        if text:
-                                            big_text += text + '\n\n'
-                                    except Exception as bunch_of_images_error1:
-                                        my_log.log2(f'tb:handle_photo1: {bunch_of_images_error1}')
-                            if big_text:
-                                try:
-                                    bot_reply(
-                                        message,
-                                        big_text,
-                                        disable_web_page_preview=True,
-                                        )
-                                    if caption:
-                                        message.text = f'{tr("User sent a bunch of images with text and caption:", lang)} {caption}\n\n{big_text}'
-                                        do_task(message)
-                                    else:
-                                        add_to_bots_mem(
-                                            query=tr('User sent images.', lang),
-                                            resp = f"{tr('Got text from images:', lang)}\n\n{big_text}",
-                                            chat_id_full=chat_id_full,
-                                        )
-                                except Exception as bunch_of_images_error2:
-                                    my_log.log2(f'tb:handle_photo2: {bunch_of_images_error2}')
-                            else:
-                                bot_reply_tr(message, 'No any text in images.')
-                            return
-                        else:
-                            if sys.getsizeof(images) > 10 * 1024 *1024:
-                                bot_reply_tr(message, 'Too big files.')
-                                return
-                            try:
-                                result_image_as_bytes = utils.make_collage(images)
-                            except Exception as make_collage_error:
-                                # my_log.log2(f'tb:handle_photo1: {make_collage_error}')
-                                bot_reply_tr(message, 'Too big files.')
-                                return
-                            if len(result_image_as_bytes) > 10 * 1024 *1024:
-                                result_image_as_bytes = utils.resize_image(result_image_as_bytes, 10 * 1024 *1024)
-                            try:
-                                m = send_photo(
-                                    message,
-                                    message.chat.id,
-                                    result_image_as_bytes,
-                                    reply_to_message_id=message.message_id,
-                                    reply_markup=get_keyboard('hide', message)
-                                )
-                                log_message(m)
-                            except Exception as send_img_error:
-                                my_log.log2(f'tb:handle_photo2: {send_img_error}')
-                            # width, height = utils.get_image_size(result_image_as_bytes)
-                            # if width >= 1280 or height >= 1280:
-                            #     try:
-                            #         m = send_document(
-                            #             message,
-                            #             message.chat.id,
-                            #             result_image_as_bytes,
-                            #             # caption='images.jpg',
-                            #             visible_file_name='images.jpg',
-                            #             disable_notification=True,
-                            #             reply_to_message_id=message.message_id,
-                            #             reply_markup=get_keyboard('hide', message)
-                            #         )
-                            #         log_message(m)
-                            #     except Exception as send_doc_error:
-                            #         my_log.log2(f'tb:handle_photo3: {send_doc_error}')
-                            my_log.log_echo(message, f'Made collage of {len(images)} images.')
-                            if not caption:
-                                proccess_image(chat_id_full, result_image_as_bytes, message, original_images=images)
-                                return
-                            text = img2txt(result_image_as_bytes, lang, chat_id_full, caption, images=images)
-                            if text:
-                                if isinstance(text, str):
-                                    text = utils.bot_markdown_to_html(text)
-                                    # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                                    bot_reply(message, text, parse_mode='HTML',
-                                                        reply_markup=get_keyboard('translate', message),
-                                                        disable_web_page_preview=True)
-                                elif isinstance(text, bytes):
-                                    m = send_photo(
-                                        message,
-                                        message.chat.id,
-                                        text,
-                                        reply_to_message_id=message.message_id,
-                                        reply_markup=get_keyboard('hide', message),
-                                    )
-                                    log_message(m)
-                                    return
-
-                                # Check for and send any files generated by skills
-                                send_all_files_from_storage(message, chat_id_full)
-
-                            else:
-                                bot_reply_tr(message, 'Sorry, I could not answer your question.')
-                            return
-
-
-            if chat_id_full in IMG_LOCKS:
-                lock = IMG_LOCKS[chat_id_full]
-            else:
-                lock = threading.Lock()
-                IMG_LOCKS[chat_id_full] = lock
-
-            # если юзер хочет найти что то по картинке
-            if chat_id_full in COMMAND_MODE and COMMAND_MODE[chat_id_full] == 'google':
-                with ShowAction(message, 'typing'):
-                    image = download_image_from_message(message)
-                    query = tr('The user wants to find something on Google, but he sent a picture as a query. Try to understand what he wanted to find and write one sentence that should be used in Google to search to fillfull his intention. Write just one sentence and I will submit it to Google, no extra words please.', lang)
-                    google_query = img2txt(image, lang, chat_id_full, query)
-                if google_query:
-                    message.text = f'/google {google_query}'
-                    bot_reply(message, tr('Googling:', lang) + f' {google_query}')
-                    google(message)
-                else:
-                    bot_reply_tr(message, 'No results.', lang)
-                return
-
-            with lock:
-                # распознаем что на картинке с помощью гугл джемини
-                if state == 'describe':
-                    with ShowAction(message, 'typing'):
-                        image = download_image_from_message(message)
-
-                        if not image:
-                            # my_log.log2(f'tb:handle_photo4: не удалось распознать документ или фото {str(message)}')
-                            return
-
-                        if len(image) > 10 * 1024 *1024:
-                            image = utils.resize_image(image, 10 * 1024 *1024)
-
-                        image = utils.heic2jpg(image)
-                        if not message.caption:
-                            proccess_image(chat_id_full, image, message)
-                            return
-                        # грязный хак, для решения задач надо использовать мощную модель
-                        if 'реши' in message.caption.lower() or 'solve' in message.caption.lower() \
-                            or 'задач' in message.caption.lower() or 'задан' in message.caption.lower():
-                            text = img2txt(image, lang, chat_id_full, message.caption, model = cfg.img2_txt_model_solve, temperature=0)
-                        else:
-                            text = img2txt(image, lang, chat_id_full, message.caption)
-                        if text:
-                            if isinstance(text, str):
-                                text = utils.bot_markdown_to_html(text)
-                                # text += tr("<b>Every time you ask a new question about the picture, you have to send the picture again.</b>", lang)
-                                bot_reply(message, text, parse_mode='HTML',
-                                                    reply_markup=get_keyboard('translate', message),
-                                                    disable_web_page_preview=True)
-                            elif isinstance(text, bytes):
-                                m = send_photo(
-                                    message,
-                                    message.chat.id,
-                                    text,
-                                    reply_to_message_id=message.message_id,
-                                    reply_markup=get_keyboard('hide', message)
-                                )
-                                log_message(m)
-                                return
-
-                            # Check for and send any files generated by skills
-                            send_all_files_from_storage(message, chat_id_full)
-
-                        else:
-                            bot_reply_tr(message, 'Sorry, I could not answer your question.')
-                    return
-        except Exception as error:
-            traceback_error = traceback.format_exc()
-            my_log.log2(f'tb:handle_photo6: {error}\n{traceback_error}')
-    except Exception as unknown:
-        traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:handle_photo7: {unknown}\n{traceback_error}')
+        # Command handler functions
+        google=google,
+        do_task=echo_all,
+    )
 
 
 @bot.message_handler(func=authorized)

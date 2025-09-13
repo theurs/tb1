@@ -111,6 +111,7 @@ def decode_string(s: str) -> str:
         return s
 
 
+@utils.log_if_slow(30)
 def save_diagram_to_image(filename: str, text: str, engine: str, chat_id: str) -> str:
     '''
     Send a diagram as an image file to the user, rendered from various text formats.
@@ -189,6 +190,7 @@ def save_diagram_to_image(filename: str, text: str, engine: str, chat_id: str) -
         return f"FAIL: An unexpected error occurred: {error}"
 
 
+@utils.log_if_slow(30)
 def save_to_txt(filename: str, text: str, chat_id: str) -> str:
     '''
     Send a plain text file to the user, you can use it to send markdown etc as a plaintext too.
@@ -238,6 +240,7 @@ def save_to_txt(filename: str, text: str, chat_id: str) -> str:
         return f"FAIL: An unexpected error occurred: {error}"
 
 
+@utils.log_if_slow(30)
 def save_to_docx(filename: str, text: str, chat_id: str) -> str:
     """Send a DOCX file to the user, converted from well-formed HTML.
 
@@ -296,6 +299,7 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
         return f"FAIL: An unexpected error occurred: {error}"
 
 
+@utils.log_if_slow(30)
 def save_to_excel(filename: str, data: str, chat_id: str) -> str:
     """Sends an Excel file to the user from a JSON string.
 
@@ -410,6 +414,7 @@ def save_to_excel(filename: str, data: str, chat_id: str) -> str:
         return f"FAIL: An unexpected error occurred: {error}"
 
 
+@utils.log_if_slow(30)
 def save_to_pdf(filename: str, text: str, chat_id: str) -> str:
     """Send a PDF file to the user, converted from well-formed HTML.
 
@@ -666,6 +671,7 @@ def _get_weather_icon_content_from_file(wmo_code: int, is_day: int = 1) -> str:
     return _read_svg_icon_file(filename)
 
 
+@utils.log_if_slow(30)
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
 def get_weather(location: str, chat_id: str) -> str:
     """
@@ -779,6 +785,7 @@ def get_location_name(latitude: str, longitude: str, language: str) -> str:
         return 'Not found'
 
 
+@utils.log_if_slow(30)
 def get_time_in_timezone(timezone_str: str) -> str:
     """
     Returns the current time in the specified timezone.
@@ -800,6 +807,7 @@ def get_time_in_timezone(timezone_str: str) -> str:
         return f"Error: Invalid timezone '{timezone_str}'"
 
 
+@utils.log_if_slow(30)
 def tts(user_id: str) -> str:
     '''
     Generate and send audio message from text to user.
@@ -816,6 +824,7 @@ def tts(user_id: str) -> str:
     return "When generating an audio message for the user, your output must be exclusively the /tts command in the format /tts [lang ru en etc] [speed +-100%] [text], with absolutely no preceding or additional explanatory text, because this exact message is directly processed by the external audio generation system for delivery to the user. For example: /tts en +50% Hello, how are you? Do NOT respond with text like 'Here is your audio: /tts en +50% Hello, how are you?' as this will fail. User can change voices with `/config` command."
 
 
+@utils.log_if_slow(30)
 def speech_to_text(user_id: str) -> str:
     '''
     Transcribe audio message from telegram user.
@@ -828,6 +837,7 @@ def speech_to_text(user_id: str) -> str:
     return "The function itself does not return an transcribed text. It returns a string containing instructions for the assistant. Any audio-video files send by user to telegram bot will be transcribed automatically and assistant can work with this text."
 
 
+@utils.log_if_slow(30)
 def translate_text(user_id: str) -> str:
     '''
     Translate text to another language.
@@ -851,6 +861,7 @@ def translate_text(user_id: str) -> str:
     )
 
 
+@utils.log_if_slow(30)
 def translate_documents(user_id: str) -> str:
     '''
     Translate documents to another language.
@@ -863,6 +874,7 @@ def translate_documents(user_id: str) -> str:
     return "The function itself does not return an translated text. It returns a string containing instructions for the assistant. If user send document to telegram bot with caption like `!tr lang` it will translated automatically. Any documents send by user to telegram bot will by converted to markdown text for assistant."
 
 
+@utils.log_if_slow(30)
 def edit_image(user_id: str) -> str:
     '''
     Edit images.
@@ -875,6 +887,7 @@ def edit_image(user_id: str) -> str:
     return "The function itself does not return an edited image. It returns a string containing instructions for the assistant. Answer to user codeword <<EDIT IMAGE>> to indicate you understood this query was a request to edit image, dont add any other text."
 
 
+@utils.log_if_slow(30)
 def text_to_image(user_id: str) -> str:
     '''
     Generate image from text.
@@ -888,6 +901,7 @@ def text_to_image(user_id: str) -> str:
     return "The function itself does not return an created images. It returns a string containing instructions for the assistant. Answer to user codeword <<CREATE IMAGE>> to indicate you understood this query was a request to create image, dont add any other text."
 
 
+@utils.log_if_slow(30)
 def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:
     '''
     Send qrcode message to telegram user.
@@ -939,6 +953,7 @@ def text_to_qrcode(text: str, logo_url: str, user_id: str) -> str:
     return "Failed to generate qrcode."
 
 
+@utils.log_if_slow(30)
 def text_to_barcode(text: str, barcode_type: str, user_id: str) -> str:
     '''
     Send barcode message to telegram user.
@@ -981,6 +996,7 @@ def text_to_barcode(text: str, barcode_type: str, user_id: str) -> str:
     return "Failed to generate barcode due to an unexpected issue."
 
 
+@utils.log_if_slow(30)
 def help(user_id: str) -> str:
     '''
     Return help info about you (assistant and telegram bot) skills and abilities.

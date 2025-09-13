@@ -54,6 +54,43 @@ register_heif_opener()
 LOCK_TRANSCODE = threading.Lock()
 
 
+def log_if_slow(limit_seconds: float) -> Callable:
+    """
+    A decorator factory that logs a warning if a function's execution time exceeds a specified limit.
+
+    Args:
+        limit_seconds (float): The time limit in seconds. If execution time exceeds this,
+                               a log message is generated.
+
+    Returns:
+        Callable: The decorator itself.
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            # Record start time
+            start_time: float = time.time()
+
+            # Execute the original function
+            result: Any = func(*args, **kwargs)
+
+            # Calculate duration
+            duration: float = time.time() - start_time
+
+            # Check if the execution time exceeds the limit
+            if duration > limit_seconds:
+                # Log the warning message with function details
+                # Assuming my_log.log_gemini_skills is the target logging function
+                my_log.log_gemini_skills(
+                    f"SKILL TIMEOUT: {func.__name__} took {duration:.2f}s (limit: {limit_seconds}s). "
+                    f"Args: {args}, Kwargs: {kwargs}"
+                )
+
+            return result
+        return wrapper
+    return decorator
+
+
 def memory_safe_ttl_cache(maxsize: int = 128, ttl: int = 600) -> Callable:
     """
     A memory-safe TTL cache decorator, a drop-in replacement for cachetools.func.ttl_cache.
@@ -1550,7 +1587,7 @@ def download_yandex_disk_audio(url: str) -> str:
 
 def postprocess_ytb_podcast(input_file: str) -> str | None:
     '''
-    Ускоряет аудиофайл в 1.5 раза, увеличивает громкость в 2 раза с помощью ffmpeg.
+    Ускоряет аудиофайл в 1.5 раза, увеличивает громкость в 4 раза с помощью ffmpeg.
     Перекодирует в Opus (.opus) с битрейтом 24 кбит/с.
     Возвращает путь к переделанному файлу.
     '''
@@ -1560,13 +1597,13 @@ def postprocess_ytb_podcast(input_file: str) -> str | None:
     # Формируем команду ffmpeg
     # -c:a libopus - используем кодек Opus
     # -b:a 128k   - устанавливаем целевой битрейт 24 кбит/с
-    # -af 'atempo=1.5,volume=2.0' - применяем аудиофильтры
+    # -af 'atempo=1.5,volume=4.0' - применяем аудиофильтры
     ffmpeg_command = [
         'ffmpeg',
         '-i', input_file,
         '-c:a', 'libopus',
         '-b:a', '24k', # Целевой битрейт 24 кбит/с
-        '-af', 'atempo=1.5,volume=2.0',
+        '-af', 'atempo=1.5,volume=4.0',
         output_file
     ]
 

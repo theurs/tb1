@@ -74,6 +74,7 @@ edit_image = my_skills_general.edit_image
 get_weather = my_skills_general.get_weather
 
 
+@utils.log_if_slow(30)
 def send_tarot_cards(chat_id: str, num_cards: int) -> str:
     """Sends random tarot cards to the user.
 
@@ -182,6 +183,7 @@ def send_tarot_cards(chat_id: str, num_cards: int) -> str:
         return f"FAIL: An unexpected error occurred while preparing tarot cards: {e}"
 
 
+@utils.log_if_slow(30)
 def save_natal_chart_to_image(name: str, date: str, time: str, place: str, nation: str, language: str, chat_id: str) -> str:
     """Generates a natal chart in PNG format based on the provided astrological data.
 
@@ -388,6 +390,7 @@ def save_natal_chart_to_image(name: str, date: str, time: str, place: str, natio
         return f"FAIL: An unexpected error occurred: {e}"
 
 
+@utils.log_if_slow(90)
 def query_user_file(query: str, user_id: str) -> str:
     '''
     Query saved user file (do not ask for full text, do not ask about images, it will only answer about saved text (NOT IMAGE!))
@@ -441,6 +444,7 @@ Saved text: {saved_file}
         return 'No result was given.'
 
 
+@utils.log_if_slow(90)
 def query_user_logs(query: str, user_id: str) -> str:
     '''
     Query saved user logs (do not ask for full text, just answer the question).
@@ -725,6 +729,7 @@ def render_html_to_mp4_bytes(
         return None
 
 
+@utils.log_if_slow(90)
 def save_html_to_animation(
     filename: str,
     chat_id: str,
@@ -804,6 +809,7 @@ def save_html_to_animation(
             return "FAILED"
 
 
+@utils.log_if_slow(30)
 def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_height: int, chat_id: str) -> str:
     """Save (render) HTML code to image file and send it to the user.
     This function renders the HTML content in a headless browser environment,
@@ -868,6 +874,7 @@ def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_h
         return 'FAILED'
 
 
+@utils.log_if_slow(30)
 def search_and_send_images(query: str, chat_id: str) -> str:
     """
     Searches for images based on a query and sends them to the user.
@@ -937,6 +944,8 @@ def search_and_send_images(query: str, chat_id: str) -> str:
 
 ##### charts ###############################################
 
+
+@utils.log_if_slow(30)
 def save_chart_and_graphs_to_image(user_id: str) -> str:
     '''
     Send a charts to telegram user. Any visual plots.
@@ -952,6 +961,7 @@ def save_chart_and_graphs_to_image(user_id: str) -> str:
 
 
 # не используется но возможно потребуются когда groq перестанет работать
+@utils.log_if_slow(30)
 def save_chart_and_graphs_to_image_(prompt: str, filename: str, user_id: str) -> str:
     '''
     Send a charts to telegram user. Any visual plots.
@@ -997,6 +1007,7 @@ def save_chart_and_graphs_to_image_(prompt: str, filename: str, user_id: str) ->
 
 
 # не используется но возможно потребуются когда groq перестанет работать
+@utils.log_if_slow(30)
 def save_pandas_chart_to_image_(filename: str, data: dict, chart_type: str, chat_id: str, plot_params: Optional[dict] = None) -> str:
     '''
     Send a chart generated from Pandas data as an image file to the user.
@@ -1140,6 +1151,7 @@ def init():
         my_skills_storage.STORAGE.clear()
 
 
+@utils.log_if_slow(30)
 @cachetools.func.ttl_cache(maxsize=10, ttl=60*60)
 def get_currency_rates(date: str = '') -> str:
     """
@@ -1171,6 +1183,7 @@ def get_currency_rates(date: str = '') -> str:
         return f'ERROR {error}'
 
 
+@utils.log_if_slow(30)
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
 def search_google_fast(query: str, lang: str, user_id: str) -> str:
     """
@@ -1207,6 +1220,7 @@ def search_google_fast(query: str, lang: str, user_id: str) -> str:
 
 
 LIMIT_ANSWER_LEN = 60000
+@utils.log_if_slow(30)
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
 def search_google_deep(query: str, lang: str, user_id: str) -> str:
     """
@@ -1241,6 +1255,7 @@ def search_google_deep(query: str, lang: str, user_id: str) -> str:
         return f'ERROR {error}'
 
 
+@utils.log_if_slow(30)
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
 def download_text_from_url(url: str) -> str:
     """Downloads text content from a URL, including YouTube subtitles.
@@ -1267,6 +1282,7 @@ def download_text_from_url(url: str) -> str:
         return f'ERROR {error}'
 
 
+@utils.log_if_slow(30)
 @cachetools.func.ttl_cache(maxsize=10, ttl = 60*60)
 def calc(expression: str, strict: bool, user_id: str) -> str:
     '''Calculate expression with python. The expression can be strict or a free-form task;
@@ -1433,6 +1449,7 @@ def test_calc(func: Callable = calc) -> None:
     print("Тесты завершены.")
 
 
+@utils.log_if_slow(120)
 def run_script(filename: str, body: str) -> str:
     """
     Saves and runs a script in the shell, returning its output. This script has full access to files and network, there are no sandboxes.

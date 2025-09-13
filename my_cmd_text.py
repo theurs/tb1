@@ -88,6 +88,8 @@ def do_task(
     summ_text: Callable,
     send_name: Callable,
     calc_gemini: Callable,
+
+    custom_prompt: str = '',
 ):
     """default handler"""
     try:
@@ -128,6 +130,9 @@ def do_task(
             return
 
         message.text = message.text.strip()
+
+        if custom_prompt:
+            message.text = custom_prompt
 
         # определяем откуда пришло сообщение  
         is_private = message.chat.type == 'private'

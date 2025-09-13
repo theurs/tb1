@@ -8213,10 +8213,10 @@ def handle_photo(message: telebot.types.Message):
 
 
 @bot.message_handler(func=authorized)
-def echo_all(message: telebot.types.Message) -> None:
-    thread = threading.Thread(target=do_task, args=(message, ))
+def echo_all(message: telebot.types.Message, custom_prompt: str = '') -> None:
+    thread = threading.Thread(target=do_task, args=(message, custom_prompt ))
     thread.start()
-def do_task(message):
+def do_task(message, custom_prompt = ''):
     """default handler"""
     my_cmd_text.do_task(
         message,
@@ -8274,6 +8274,8 @@ def do_task(message):
         summ_text=summ_text,
         send_name=send_name,
         calc_gemini=calc_gemini,
+
+        custom_prompt=custom_prompt,
     )
 
 

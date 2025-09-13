@@ -6658,10 +6658,12 @@ def reload_module(message: telebot.types.Message):
         final_modules_to_reload = list(initial_modules_to_process)
 
         # Проверяем зависимость от 'skills' только один раз для всего набора модулей
-        # и добавляем 'my_cerebras_tools' если 'skills' присутствует
+        # и добавляем 'my_cerebras_tools' и 'my_gemini3' если 'skills' присутствует
         if any('skills' in x for x in initial_modules_to_process):
             if 'my_cerebras_tools' not in final_modules_to_reload:
                 final_modules_to_reload.append('my_cerebras_tools')
+            if 'my_gemini3' not in final_modules_to_reload:
+                final_modules_to_reload.append('my_gemini3')
 
         results = []
         # Теперь итерируем по окончательному списку и перезагружаем каждый модуль

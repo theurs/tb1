@@ -202,6 +202,8 @@ def translate_file_in_dialog(data: bytes, src: str, dst: str, fname: str, chat_i
 
     # Split the HTML into chunks for translation
     chunks = split_text(text)
+    if len(chunks) > 100:
+        return b'Too big file'
 
     result = ''
     chat_id = 'translate_doc_' + str(uuid.uuid4())

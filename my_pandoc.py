@@ -438,7 +438,7 @@ def convert_file_to_html(data: bytes, filename: str) -> str:
 
         data = utils.extract_text_from_bytes(data)
         if not data:
-            my_log.log2(f'my_pandoc:convert_file_to_html: convert_file_to_html: no data or unknown codepage {filename}')
+            my_log.log2(f'my_pandoc:convert_file_to_html:1: convert_file_to_html: no data or unknown codepage {filename}')
             return ''
 
     # Mapping of file extensions to pandoc input formats
@@ -498,11 +498,13 @@ def convert_file_to_html(data: bytes, filename: str) -> str:
     pandoc_format: str | None = format_mapping.get(input_format)
 
     if not pandoc_format:
-        my_log.log2(f'my_pandoc:convert_file_to_html: Unsupported file extension - {input_format}, defaulting to commonmark.')
+        my_log.log2(f'my_pandoc:convert_file_to_html:2: Unsupported file extension - {input_format}, defaulting to commonmark.')
         pandoc_format = 'commonmark' # Вот здесь мы устанавливаем формат на 'commonmark'
 
     try:
         # Execute the pandoc command to convert the file
+        if isinstance(data, str):
+            data = data.encode('utf-8')
         process = subprocess.run(
             ['pandoc', '+RTS', '-M256M', '-RTS', '-f', pandoc_format, '-t', 'html', '-o', output_file, '-'],
             input=data,
@@ -512,17 +514,17 @@ def convert_file_to_html(data: bytes, filename: str) -> str:
         )
         # Check for errors in pandoc execution
         if process.stderr:
-            my_log.log2(f'my_pandoc:convert_file_to_html: Pandoc error - {process.stderr.decode()}')
+            my_log.log2(f'my_pandoc:convert_file_to_html:3: Pandoc error - {process.stderr.decode()}')
             return "" # Or handle the error as needed
 
         with open(output_file, 'r', encoding='utf-8') as f:
             result = f.read()
     except FileNotFoundError:
-        my_log.log2('my_pandoc:convert_file_to_html: Pandoc not found. Ensure it is installed and in your PATH.')
+        my_log.log2('my_pandoc:convert_file_to_html:3: Pandoc not found. Ensure it is installed and in your PATH.')
     except subprocess.CalledProcessError as error:
-        my_log.log2(f'my_pandoc:convert_file_to_html: Pandoc conversion failed - {error}')
+        my_log.log2(f'my_pandoc:convert_file_to_html:4: Pandoc conversion failed - {error}')
     except Exception as error:
-        my_log.log2(f'my_pandoc:convert_file_to_html: An unexpected error occurred - {error}')
+        my_log.log2(f'my_pandoc:convert_file_to_html:5: An unexpected error occurred - {error}')
     finally:
         utils.remove_file(output_file)  # Clean up the temporary file
     return result

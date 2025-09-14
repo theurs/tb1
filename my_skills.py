@@ -1257,7 +1257,7 @@ def search_google_deep(query: str, lang: str, user_id: str) -> str:
 
 @utils.log_if_slow(30)
 @cachetools.func.ttl_cache(maxsize=10, ttl=60 * 60)
-def download_text_from_url(url: str) -> str:
+def download_text_from_url(user_id: str, url: str) -> str:
     """Downloads text content from a URL, including YouTube subtitles.
 
     Fetches textual content from a web page or extracts subtitles from
@@ -1265,16 +1265,27 @@ def download_text_from_url(url: str) -> str:
     truncated to the MAX_REQUEST character limit.
 
     Args:
+        user_id: The chat ID to send the search results to.
         url: The URL of the web page or YouTube video to process.
 
     Returns:
         The extracted text content. On failure, returns a string
         with error information.
     """
+    user_id = my_skills_general.restore_id(user_id)
+    if user_id not in my_skills_storage.STORAGE_ALLOWED_IDS or my_skills_storage.STORAGE_ALLOWED_IDS[user_id] != user_id:
+        user_id = ''
+
+
     language = 'ru'
     my_log.log_gemini_skills(f'Download URL: {url} {language}')
     try:
         result = my_sum.summ_url(url, download_only = True, lang = language)
+
+        if result and user_id:
+            my_db.set_user_property(user_id, 'saved_file_name', url + '.txt')
+            my_db.set_user_property(user_id, 'saved_file', result)
+
         return result[:MAX_REQUEST]
     except Exception as error:
         traceback_error = traceback.format_exc()

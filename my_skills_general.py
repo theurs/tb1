@@ -57,6 +57,7 @@ You have access to the following tools. When a user's request matches a tool's t
 """
 ]
 
+
 if hasattr(cfg, 'SYSTEM_ADV_BLOCK') and cfg.SYSTEM_ADV_BLOCK:
     SYSTEM_.append(cfg.SYSTEM_ADV_BLOCK)
 

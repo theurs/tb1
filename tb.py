@@ -6301,6 +6301,11 @@ def send_welcome_start(message: telebot.types.Message):
             language(message)
 
         # reset_(message, say = False)
+
+        # set qwen3 model for arabic and farsi
+        if lang in ('ar', 'fa'):
+            my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen3')
+
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:start: {unknown}\n{traceback_error}')

@@ -552,18 +552,18 @@ def do_task(
 
 
                             # если обычное джемини не ответили (перегруз?) то попробовать лайв версию
-                            if not answer:
-                                gmodel = cfg.gemini_flash_live_model
-                                answer = my_gemini3.chat(
-                                    message.text,
-                                    chat_id_full,
-                                    temp,
-                                    model = gmodel,
-                                    system = hidden_text,
-                                    telegram_user_name=telegram_user_name,
-                                    use_skills=True
-                                )
-                                WHO_ANSWERED[chat_id_full] = gmodel
+                            # if not answer:
+                            #     gmodel = cfg.gemini_flash_live_model
+                            #     answer = my_gemini3.chat(
+                            #         message.text,
+                            #         chat_id_full,
+                            #         temp,
+                            #         model = gmodel,
+                            #         system = hidden_text,
+                            #         telegram_user_name=telegram_user_name,
+                            #         use_skills=True
+                            #     )
+                            #     WHO_ANSWERED[chat_id_full] = gmodel
 
 
                             # если ответ длинный и в нем очень много повторений то вероятно это зависший ответ

@@ -581,7 +581,8 @@ def chat(
                 model=model,
                 temperature=temperature,
                 n_try=3,
-                max_chat_lines=max_chat_lines
+                max_chat_lines=max_chat_lines,
+                timeout=timeout
             )
 
 

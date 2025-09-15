@@ -37,7 +37,7 @@ MAX_REQUEST = 20000
 # DEFAULT_MODEL = 'command-a-reasoning-08-2025' # 'command-a-03-2025'
 # FALLBACK_MODEL = 'command-a-03-2025' # 'command-r-plus'
 DEFAULT_MODEL = 'command-a-03-2025'
-FALLBACK_MODEL = 'command-r-plus'
+FALLBACK_MODEL = 'command-r'
 
 #FALLBACK_MODEL = 'command-r'
 VISION_MODEL = 'command-a-vision-07-2025'

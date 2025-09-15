@@ -7048,7 +7048,8 @@ def _send_message(
                 message_thread_id=message.message_thread_id,
                 parse_mode=parse_mode,
                 link_preview_options=preview,
-                reply_markup=reply_markup
+                reply_markup=reply_markup,
+                disable_notification=True,
             )
         else:
             m = bot.reply_to(
@@ -7056,7 +7057,8 @@ def _send_message(
                 chunk,
                 parse_mode=parse_mode,
                 link_preview_options=preview,
-                reply_markup=reply_markup
+                reply_markup=reply_markup,
+                disable_notification=True,
             )
         log_message(m)
     except Exception as error:

@@ -5793,21 +5793,66 @@ def list_blocked_users(message: telebot.types.Message, level: int):
 def message_to_user(message: telebot.types.Message):
     """отправка сообщения от админа юзеру"""
     try:
-        args = message.text.split(maxsplit=2)
-
-        try:
-            uid = int(args[1])
-            text = args[2]
-            bot.send_message(uid, text, message_thread_id = 0, disable_notification=True)
-            bot_reply_tr(message, 'Message sent.')
-            my_log.log_echo(message, f'Admin sent message to user {uid}: {text}')
+        # Extract everything after the command itself
+        command_parts = message.text.split(maxsplit=1)
+        if len(command_parts) < 2:
+            bot_reply_tr(message, 'Usage: /msg <target_id> <text>\nTarget can be a user_id or a full [chat_id] [thread_id].')
             return
-        except:
-            pass
-        bot_reply_tr(message, 'Usage: /msg userid_as_int text to send from admin to user')
+
+        args_str = command_parts[1].strip()
+
+        target_id_str: Optional[str] = None
+        text_to_send: Optional[str] = None
+        chat_id: Optional[int] = None
+        thread_id: int = 0
+
+        # Pattern 1: Match [chat_id] [thread_id] format at the beginning of the arguments
+        full_id_match = re.match(r'(\[-?\d+\]\s+\[\d+\])\s+(.*)', args_str, re.DOTALL)
+        # Pattern 2: Match a simple integer user_id at the beginning
+        simple_id_match = re.match(r'(-?\d+)\s+(.*)', args_str, re.DOTALL)
+
+        if full_id_match:
+            # Found the [chat_id] [thread_id] format
+            target_id_str = full_id_match.group(1)
+            text_to_send = full_id_match.group(2)
+            # Extract numbers from the captured string
+            ids = re.findall(r'-?\d+', target_id_str)
+            chat_id = int(ids[0])
+            thread_id = int(ids[1])
+        elif simple_id_match:
+            # Found the simple user_id format
+            target_id_str = simple_id_match.group(1)
+            text_to_send = simple_id_match.group(2)
+            chat_id = int(target_id_str)
+            thread_id = 0  # DMs don't have threads
+        else:
+            # No valid format found
+            bot_reply_tr(message, 'Invalid command format. Could not find a valid target ID and message text.')
+            return
+
+        if not text_to_send:
+            bot_reply_tr(message, "Message text cannot be empty.")
+            return
+
+        # Add a notification prefix for the user
+        final_text = f"[Admin Notification] {text_to_send}"
+
+        # Send the message to the parsed target
+        bot.send_message(
+            chat_id,
+            final_text,
+            message_thread_id=thread_id,
+            disable_notification=True,
+            parse_mode=''
+        )
+        bot_reply_tr(message, 'Message sent.')
+        # Log the original text without the prefix
+        my_log.log_echo(message, f'Admin sent message to {target_id_str}: {text_to_send}')
+
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:message_to_user: {unknown}\n{traceback_error}')
+        bot_reply_tr(message, f"An error occurred: {str(unknown)}")
 
 
 @bot.message_handler(commands=['alert'], func=authorized_admin)

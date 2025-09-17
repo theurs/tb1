@@ -809,7 +809,6 @@ def _is_bad_original(text: str) -> bool:
     pattern = rf'\[{{?({langs}){{2,5}}}}?\]'
     return bool(re.search(pattern, text))
 
-
 def get_unique_originals() -> List[Tuple[str, str]]:
     """Получает уникальные записи и отфильтровывает «плохие» оригиналы."""
     with LOCK:

@@ -3168,13 +3168,6 @@ def create_translations_for_all_languages():
     try:
         unique_originals: List[Tuple[str, str]] = my_db.get_unique_originals()
 
-        with open('1.txt', 'w', encoding='utf-8') as f:
-            for original, help_text in unique_originals:
-                # Если в тексте могут быть табуляции/переводы строки – заменяем их
-                original = original.replace('\t', ' ').replace('\n', ' ')
-                help_text = help_text.replace('\t', ' ').replace('\n', ' ')
-                f.write(f'{original}\t{help_text}\n')
-
         for original, help_text in unique_originals:
             # Переводим на все поддерживаемые языки
             for target_lang in my_init.top_20_used_languages:

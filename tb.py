@@ -1648,7 +1648,7 @@ def _build_config_behavior_menu(message: telebot.types.Message, chat_id_full: st
     btn_memory = _create_toggle_button(texts['memory'], is_memory_enabled, 'histsize_toggle')
     markup.row(btn_memory)
 
-    if message.chat.type != 'private' and is_admin_member(message):
+    if message.chat.type != 'private':
         is_superchat = bool(my_db.get_user_property(chat_id_full, 'superchat'))
         btn_superchat = _create_toggle_button(texts['auto_reply'], is_superchat, 'admin_chat')
         markup.add(btn_superchat)

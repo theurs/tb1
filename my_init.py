@@ -282,7 +282,8 @@ Usage: /block <add|add2|add3|del|del2|del3|list|list2|list3> <user_id>
 
 
 def get_img2txt_prompt(tr, lang):
-    return tr(f"Answer in '{lang}' language, if not asked other. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer.", lang)
+    return tr(f"Answer in that language, if not asked other:", lang) + ' ' + lang + ', ' + tr("rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer.", lang)
+    # return tr(f"Answer in '{lang}' language, if not asked other. Rewrite LaTeX expressions with Unicode symbols (no markdown), if any. Don't mention the rewrite in the answer.", lang)
     # return tr(f"Answer in '{lang}' language, if not asked other.", lang)
 
 

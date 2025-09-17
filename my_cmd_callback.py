@@ -102,6 +102,20 @@ def callback_inline_thread(
             bot.delete_message(message.chat.id, message.message_id)
 
 
+        elif call.data.startswith('histsize_toggle_'):
+            # handle memory toggle button
+            action = call.data.split('_')[-1]
+            default_size = 1000
+
+            if action == 'enable':
+                my_db.set_user_property(chat_id_full, 'max_history_size', default_size)
+            else:  # disable
+                my_db.set_user_property(chat_id_full, 'max_history_size', 0)
+
+            bot.edit_message_text(chat_id=message.chat.id, parse_mode='HTML', message_id=message.message_id,
+                                text=MSG_CONFIG, disable_web_page_preview=False, reply_markup=get_keyboard('config_behavior', message))
+
+
         elif call.data == 'config' or call.data.startswith('config_'):
             bot.edit_message_text(
                 chat_id=message.chat.id,

@@ -32,6 +32,16 @@ import utils
 import utils_llm
 
 
+def trim_mem(chat_id_full: str):
+    max_hist_size = my_db.get_user_property(chat_id_full, 'max_history_size')
+    if max_hist_size is not None:
+        chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode')
+        if chat_mode.startswith(('gemini', 'gemma')):
+            my_gemini3.trim_user_history(chat_id_full, max_hist_size)
+        else:
+            my_openrouter.trim_user_history(chat_id_full, max_hist_size)
+
+
 def do_task(
     message: telebot.types.Message,
 
@@ -93,6 +103,12 @@ def do_task(
 ):
     """default handler"""
     try:
+        chat_id_full = get_topic_id(message)
+    except Exception as error:
+        my_log.log2(f'my_cmd_text:do_task: {error}')
+        return
+
+    try:
         message.text = my_log.restore_message_text(message.text, message.entities)
         if message.forward_date:
             full_name_forwarded_from = message.forward_from.full_name if hasattr(message.forward_from, 'full_name') else 'Noname'
@@ -104,7 +120,7 @@ def do_task(
         if my_db.get_user_property(from_user_id, 'blocked'):
             return
 
-        chat_id_full = get_topic_id(message)
+        # chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
         # catch too long messages
@@ -478,6 +494,11 @@ def do_task(
 
                 if not my_db.get_user_property(chat_id_full, 'temperature'):
                     my_db.set_user_property(chat_id_full, 'temperature', GEMIMI_TEMP_DEFAULT)
+
+
+                # обрезать историю
+                trim_mem(chat_id_full)
+
 
                 answer = ''
 
@@ -1795,3 +1816,6 @@ def do_task(
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'my_cmd_text:do_task: {unknown}\n{traceback_error}')
+    finally:
+        # обрезать историю
+        trim_mem(chat_id_full)

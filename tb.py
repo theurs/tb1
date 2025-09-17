@@ -1618,6 +1618,7 @@ def _build_config_behavior_menu(message: telebot.types.Message, chat_id_full: st
         'voice_to_text': tr('📝 Voice to text mode', lang, help="UI button toggle. For 'Voice to text mode'. E.g., 'Transcription mode'"),
         'do_not_reply': tr('↩️ Do not reply', lang, help="UI button toggle. For a mode where the bot doesn't reply. E.g., 'Do not reply'"),
         'auto_reply': tr('🤖 Автоответы в чате', lang, help="UI button toggle. For 'Auto-replies in chat'. E.g., 'Auto-replies'"),
+        'memory': tr('Память', lang, help="UI button toggle. For 'Memory'/'History' functionality. E.g., 'Memory', 'Gedächtnis'"),
         'back': tr('Назад', lang, help="UI button text for 'Back'. Short. E.g., 'Back', 'Zurück'"),
     }
 
@@ -1637,6 +1638,15 @@ def _build_config_behavior_menu(message: telebot.types.Message, chat_id_full: st
     is_no_reply = my_db.get_user_property(chat_id_full, 'send_message')
     btn_reply = _create_toggle_button(texts['do_not_reply'], is_no_reply, 'send_message_chat_switch')
     markup.row(btn_transcribe, btn_reply)
+
+    default_size = 1000
+    # Check if memory is enabled. It's enabled if the size is not explicitly 0.
+    # The default size (e.g., 1000) means it's enabled.
+    mem_state = my_db.get_user_property(chat_id_full, 'max_history_size')
+    if mem_state is None: mem_state = default_size
+    is_memory_enabled = mem_state != 0
+    btn_memory = _create_toggle_button(texts['memory'], is_memory_enabled, 'histsize_toggle')
+    markup.row(btn_memory)
 
     if message.chat.type != 'private' and is_admin_member(message):
         is_superchat = bool(my_db.get_user_property(chat_id_full, 'superchat'))
@@ -6448,7 +6458,8 @@ def purge_cmd_handler(message: telebot.types.Message):
             my_db.delete_user_property(chat_id_full, 'voice_only_mode')
             my_db.delete_user_property(chat_id_full, 'transcribe_only')
             my_db.delete_user_property(chat_id_full, 'disabled_kbd')
-            my_db.delete_user_property(chat_id_full, 'openrouter_timeout') # added to delete
+            my_db.delete_user_property(chat_id_full, 'openrouter_timeout')
+            my_db.delete_user_property(chat_id_full, 'max_history_size')
 
             # Reset openrouter config
             if chat_id_full in my_openrouter.PARAMS:
@@ -6809,6 +6820,69 @@ def disable_chat(message: telebot.types.Message):
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:disable_chat: {unknown}\n{traceback_error}')
+
+
+@bot.message_handler(commands=['histsize', 'memsize'], func=authorized_owner)
+@async_run
+def set_history_size(message: telebot.types.Message) -> None:
+    """
+    Sets the number of last request/response pairs to keep in history for the user.
+    """
+    try:
+        chat_id_full: str = get_topic_id(message)
+        lang: str = get_lang(chat_id_full, message)
+        COMMAND_MODE[chat_id_full] = ''
+
+        # --- Pre-cache all translations for this command ---
+        # A dictionary to hold all localized strings for the command's responses.
+        texts: Dict[str, str] = {
+            'size_set_to': tr('History size set to:', lang, help="A confirmation message shown after a user successfully sets a value. E.g., 'History size set to: 10'."),
+            'not_set': tr('Not set', lang, help="Indicates that a user setting has no value yet. E.g., 'Current size: Not set'."),
+            'help_main': tr('Sets the number of request/response pairs to keep in memory.', lang, help="A short, one-line explanation of the /histsize command's purpose."),
+            'example': tr('Example:', lang, help="A label for a section showing command examples. E.g., 'Example:'."),
+            'example_10': tr('Keep the last 10 interactions.', lang, help="A comment explaining what '/histsize 10' does."),
+            'example_0': tr('No history (stateless mode).', lang, help="A comment explaining what '/histsize 0' does."),
+            'current_size_label': tr('Current size:', lang, help="A label for displaying the current value of the setting. E.g., 'Current size: 50'.")
+        }
+        # --- End of translations ---
+
+        parts: List[str] = message.text.split()
+        default_size: int = getattr(cfg, 'DEFAULT_HISTORY_SIZE', 1000)
+
+        if len(parts) == 2:
+            try:
+                new_size = int(parts[1])
+
+                if 0 <= new_size <= 1000:
+                    my_db.set_user_property(chat_id_full, 'max_history_size', new_size)
+                    msg = f"{texts['size_set_to']} {new_size}"
+                    bot_reply(message, msg)
+                    return
+            except ValueError:
+                # Input is not a valid integer, fall through to show help.
+                pass
+
+        # Show help if no valid argument was provided.
+        current_size_val = my_db.get_user_property(chat_id_full, 'max_history_size')
+        if current_size_val is None: current_size_val = texts['not_set']
+        elif current_size_val == 1000: current_size_display = texts['not_set']
+        else: current_size_display = current_size_val
+
+        help_text = f"""/histsize <0-1000>
+
+{texts['help_main']}
+
+{texts['example']}
+`/histsize 10`  # {texts['example_10']}
+`/histsize 0`   # {texts['example_0']}
+
+{texts['current_size_label']} {current_size_display}
+"""
+        bot_reply(message, help_text)
+
+    except Exception as unknown:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:set_history_size: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['init'], func=authorized_admin)

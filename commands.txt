@@ -13,6 +13,7 @@
 /ytb - Скачать аудио с ютуба
 /temperature - Уровень креатива от 0 до 2
 /mem - Содержимое своей памяти
+/histsize - Размер истории
 /save - Сохранить в формате msoffice/libreoffice
 /purge - Удалить мои логи
 /openrouter - Выбрать модель от openrouter.ai

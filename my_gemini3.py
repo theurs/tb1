@@ -2341,6 +2341,38 @@ def retranscribe(text: str, prompt: str = '', chat_id: str = '') -> str:
     return result
 
 
+def trim_user_history(chat_id: str, max_history_size: int) -> None:
+    """
+    Reads, trims, and saves memory for a user based on the number of logical turns.
+    This function is standalone and does not affect the regular update flow.
+    """
+    #
+    # Reads, trims, and saves memory for a user based on the number of logical turns.
+    # A logical turn starts with a user message that is not a function response.
+    #
+    if max_history_size == 1000:
+        return
+    mem = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_gemini3')) or []
+    if not mem:
+        return
+
+    if max_history_size <= 0:
+        mem.clear()
+    else:
+        # Identify the start of each logical turn
+        turn_start_indices = [
+            i for i, entry in enumerate(mem)
+            if entry.role == 'user' and not _has_function_response(entry)
+        ]
+
+        # If the number of turns exceeds the user's limit, trim the oldest ones
+        if len(turn_start_indices) > max_history_size:
+            keep_from_index = turn_start_indices[-max_history_size]
+            mem = mem[keep_from_index:]  # Create the trimmed slice
+
+    my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(mem))
+
+
 if __name__ == "__main__":
     my_db.init(backup=False, vacuum=False)
     my_gemini_general.load_users_keys()

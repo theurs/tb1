@@ -982,6 +982,45 @@ def _get_system_prompt() -> str:
     return SYSTEM_
 
 
+def trim_user_history(chat_id: str, max_history_size: int) -> None:
+    """
+    Reads, trims, and saves a user's conversation history based on a specific number of logical turns.
+    This function correctly handles multi-step tool call sequences.
+    """
+    #
+    # This function is standalone and directly modifies the database entry
+    # for 'dialog_openrouter', which is used by several modules.
+    #
+    if max_history_size == 1000:
+        return
+
+    mem: List[Dict[str, Any]] = my_db.blob_to_obj(my_db.get_user_property(chat_id, 'dialog_openrouter')) or []
+    if not mem:
+        return
+
+    if max_history_size <= 0:
+        # If size is 0 or less, clear the history completely.
+        mem.clear()
+    else:
+        # A "logical turn" always starts with a message from the user.
+        # All subsequent assistant and tool messages belong to that turn
+        # until the next user message.
+        user_message_indices = [
+            i for i, entry in enumerate(mem) if entry.get('role') == 'user'
+        ]
+
+        num_turns = len(user_message_indices)
+
+        # If the current number of turns exceeds the desired size, trim the oldest ones.
+        if num_turns > max_history_size:
+            # Find the index of the first message of the first turn we want to keep.
+            # This ensures we don't slice in the middle of a tool-call chain.
+            keep_from_index = user_message_indices[-max_history_size]
+            mem = mem[keep_from_index:]
+
+    my_db.set_user_property(chat_id, 'dialog_openrouter', my_db.obj_to_blob(mem))
+
+
 if __name__ == '__main__':
     pass
     my_db.init(backup=False)

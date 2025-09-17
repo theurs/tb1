@@ -285,6 +285,7 @@ def init(backup: bool = True, vacuum: bool = False):
             tool_use_level TEXT,
             action_style TEXT,
             send_message INTEGER,
+            max_history_size INTEGER,
 
             persistant_memory TEXT,
 

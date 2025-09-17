@@ -1618,7 +1618,7 @@ def _build_config_behavior_menu(message: telebot.types.Message, chat_id_full: st
         'voice_to_text': tr('📝 Voice to text mode', lang, help="UI button toggle. For 'Voice to text mode'. E.g., 'Transcription mode'"),
         'do_not_reply': tr('↩️ Do not reply', lang, help="UI button toggle. For a mode where the bot doesn't reply. E.g., 'Do not reply'"),
         'auto_reply': tr('🤖 Автоответы в чате', lang, help="UI button toggle. For 'Auto-replies in chat'. E.g., 'Auto-replies'"),
-        'memory': tr('Память', lang, help="UI button toggle. For 'Memory'/'History' functionality. E.g., 'Memory', 'Gedächtnis'"),
+        'memory': tr('Память (контекст)', lang, help="UI button toggle. For 'Memory'/'History' functionality. E.g., 'Memory (context)', 'Gedächtnis (Kontext)'"),
         'back': tr('Назад', lang, help="UI button text for 'Back'. Short. E.g., 'Back', 'Zurück'"),
     }
 

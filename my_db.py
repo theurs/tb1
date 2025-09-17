@@ -6,6 +6,7 @@ import hashlib
 import lzma
 import os
 import pickle
+import re
 import time
 import threading
 import traceback
@@ -19,6 +20,7 @@ from collections import OrderedDict
 from cachetools import LRUCache
 
 import cfg
+import my_init
 import my_log
 from utils import async_run, remove_file
 
@@ -800,26 +802,30 @@ def drop_all_translations():
             my_log.log2(f'my_db:drop_all_translations {error}')
 
 
-def get_unique_originals() -> List[Tuple[str, str]]:
-    """
-    Retrieves a list of unique original texts and their corresponding help texts
-    from the translations table.
+def _is_bad_original(text: str) -> bool:
+    """Проверяет, содержит ли оригинал запрещённый шаблон."""
+    langs = '|'.join(my_init.supported_langs_trans)          # af|am|...
+    # 2‑5 символов из списка, с/без фигурных скобок
+    pattern = rf'\[{{?({langs}){{2,5}}}}?\]'
+    return bool(re.search(pattern, text))
 
-    Returns:
-        A list of tuples, where each tuple contains the unique original text
-        and its associated help text.
-    """
+
+def get_unique_originals() -> List[Tuple[str, str]]:
+    """Получает уникальные записи и отфильтровывает «плохие» оригиналы."""
     with LOCK:
         try:
             CUR.execute('''
                 SELECT DISTINCT original, help
                 FROM translations
             ''')
-            results: List[Tuple[str, str]] = CUR.fetchall()
-            return results
-        except Exception as error:
-            my_log.log2(f'my_db:get_unique_originals {error}')
+            rows: List[Tuple[str, str]] = CUR.fetchall()
+        except Exception as err:
+            my_log.log2(f'my_db:get_unique_originals {err}')
             return []
+
+    # Оставляем только те, где шаблон НЕ найден
+    filtered = [row for row in rows if not _is_bad_original(row[0])]
+    return filtered
 
 
 def vacuum(lock_db: bool = True):

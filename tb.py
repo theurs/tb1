@@ -18,7 +18,7 @@ import time
 from flask import Flask, request, jsonify
 from decimal import Decimal, getcontext
 from multiprocessing.pool import ThreadPool
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple
 
 import langcodes
 import pendulum
@@ -3166,7 +3166,14 @@ def create_translations_for_all_languages():
     """
     # Получаем уникальные оригиналы и их подсказки из базы данных
     try:
-        unique_originals = my_db.get_unique_originals()
+        unique_originals: List[Tuple[str, str]] = my_db.get_unique_originals()
+
+        with open('1.txt', 'w', encoding='utf-8') as f:
+            for original, help_text in unique_originals:
+                # Если в тексте могут быть табуляции/переводы строки – заменяем их
+                original = original.replace('\t', ' ').replace('\n', ' ')
+                help_text = help_text.replace('\t', ' ').replace('\n', ' ')
+                f.write(f'{original}\t{help_text}\n')
 
         for original, help_text in unique_originals:
             # Переводим на все поддерживаемые языки

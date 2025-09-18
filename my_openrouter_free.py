@@ -828,6 +828,7 @@ def _send_image_request(
     timeout: int,
     log_context: str,
     temperature: float,
+    key: str = '',
 ) -> Optional[bytes]:
     """
     Sends a request to the OpenRouter API for image generation or editing with a total timeout.
@@ -844,12 +845,14 @@ def _send_image_request(
         timeout (int): The total request timeout in seconds for all retries.
         log_context (str): A string identifier for the calling function (e.g., 'txt2img').
         temperature (float): The temperature for the generation.
+        key (str): The API key to use for the request.
 
     Returns:
         Optional[bytes]: The image data as bytes if the request is successful, otherwise None.
     """
     if not hasattr(cfg, 'OPEN_ROUTER_FREE_KEYS') or not cfg.OPEN_ROUTER_FREE_KEYS:
-        return None
+        if not key:
+            return None
 
     payload = {
         "model": model,
@@ -877,7 +880,9 @@ def _send_image_request(
             my_log.log_openrouter_free(f'{log_context}: Total timeout of {timeout}s exceeded. Aborting.')
             return None
 
-        key = get_available_key()
+        if not key:
+            key = get_available_key()
+
         if not key:
             # The get_available_key function has already logged the details.
             return None
@@ -962,6 +967,7 @@ def txt2img(
     timeout: int = 60,
     system_prompt: str = '',
     temperature: float = 1.0,
+    key: str = '',
 ) -> Optional[bytes]:
     """
     Generates an image from a text prompt using a specified model on OpenRouter.
@@ -973,14 +979,16 @@ def txt2img(
         timeout (int): Request timeout in seconds. Defaults to 60.
         system_prompt (str): An optional system prompt to guide the model. Defaults to ''.
         temperature (float): The generation temperature. Defaults to 1.0.
+        key (str): The API key to use for authentication. Defaults to ''.
 
     Returns:
         Optional[bytes]: The generated image data as bytes if successful, otherwise None.
     """
-    return None # нет больше такой модели
+
     if not model.endswith(':free'):
-        my_log.log_openrouter_free(f"txt2img: Model '{model}' is not a free model.")
-        return None
+        if not key:
+            my_log.log_openrouter_free(f"txt2img: Model '{model}' is not a free model.")
+            return None
 
     messages: List[Dict[str, Any]] = []
     if system_prompt:
@@ -993,7 +1001,8 @@ def txt2img(
         user_id=user_id,
         timeout=timeout,
         log_context='txt2img',
-        temperature=temperature
+        temperature=temperature,
+        key=key
     )
 
 
@@ -1005,6 +1014,7 @@ def edit_image(
     timeout: int = 60,
     system_prompt: str = '',
     temperature: float = 1.0,
+    key: str = '',
 ) -> Optional[bytes]:
     """
     Edits an image based on a text prompt using a specified model on OpenRouter.
@@ -1019,14 +1029,15 @@ def edit_image(
         timeout (int): Request timeout in seconds. Defaults to 60.
         system_prompt (str): An optional system prompt to guide the model. Defaults to ''.
         temperature (float): The generation temperature. Defaults to 1.0.
+        key (str): The API key to use for authentication. Defaults to ''.
 
     Returns:
         Optional[bytes]: The edited image data as bytes if successful, otherwise None.
     """
-    return None # нет больше такой модели
     if not model.endswith(':free'):
-        my_log.log_openrouter_free(f"edit_image: Model '{model}' is not a free model.")
-        return None
+        if not key:
+            my_log.log_openrouter_free(f"edit_image: Model '{model}' is not a free model.")
+            return None
 
     # Normalize input to always be a list of images
     if isinstance(source_image, (bytes, str)):
@@ -1060,7 +1071,8 @@ def edit_image(
         user_id=user_id,
         timeout=timeout,
         log_context='edit_image',
-        temperature=temperature
+        temperature=temperature,
+        key=key
     )
 
 
@@ -1092,13 +1104,13 @@ if __name__ == '__main__':
     # print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-4-maverick:free'))
     # print(voice2txt('C:/Users/user/Downloads/1.ogg'))
 
-    # img = txt2img('сигарета в руке крупным планом')
+    # img = txt2img('сигарета в руке крупным планом', model='google/gemini-2.5-flash-image-preview', key=cfg.OPEN_ROUTER_KEY)
     # if img:
     #     with open(r'C:/Users/user/Downloads/1.png', 'wb') as f:
     #         f.write(img)
 
     # img1 = r'C:\Users\user\Downloads\samples for ai\картинки\студийное фото человека.png'
-    # img2 = edit_image('помести его внутрь тардис, и пусть он курит папиросу', img1)
+    # img2 = edit_image('помести его внутрь тардис, и пусть он курит папиросу', img1, model='google/gemini-2.5-flash-image-preview', key=cfg.OPEN_ROUTER_KEY)
     # if img2:
     #     with open(r'C:/Users/user/Downloads/2.png', 'wb') as f:
     #         f.write(img2)

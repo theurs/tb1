@@ -54,18 +54,18 @@ def img2img(
         Optional[bytes]: The new image as bytes, or None on failure.
     """
     edited_image = None
+
     # Attempt to edit the image using the new OpenRouter method
-    # print(model)
-    if not model or model == 'google/gemini-2.5-flash-image-preview:free':
-        edited_image: Optional[bytes] = my_openrouter_free.edit_image(
-            prompt=query,
-            source_image=text,
-            user_id=chat_id_full,
-            # model = model,
-            timeout=timeout,
-            system_prompt=system_message,
-            temperature=temperature
-        )
+    # if not model or model == 'google/gemini-2.5-flash-image-preview:free':
+    #     edited_image: Optional[bytes] = my_openrouter_free.edit_image(
+    #         prompt=query,
+    #         source_image=text,
+    #         user_id=chat_id_full,
+    #         # model = model,
+    #         timeout=timeout,
+    #         system_prompt=system_message,
+    #         temperature=temperature
+    #     )
 
     # If the new method succeeds, return the result
     if edited_image:

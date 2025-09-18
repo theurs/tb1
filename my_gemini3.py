@@ -585,10 +585,9 @@ def chat(
                 timeout=timeout
             )
 
-
-        # if 'flash-lite' in model:
-        #     THINKING_BUDGET = -1
-        #     use_skills = False
+        if 'flash-lite' in model:
+            THINKING_BUDGET = -1
+            use_skills = False
 
         if 'gemma-3' in model:
             if temperature:
@@ -661,8 +660,8 @@ def chat(
 
         if saved_file_name:
             system_.insert(1, f'Telegram user have saved file/files and assistant can query it: {saved_file_name} ({saved_file_size} chars)')
-        if 'flash-lite' in model:
-            system_.insert(1, 'You can draw graphs and charts using the code_execution_tool')
+        # if 'flash-lite' in model:
+        #     system_.insert(1, 'You can draw graphs and charts using the code_execution_tool')
 
         if 'gemma-3-27b-it' in model:
             system_ = None

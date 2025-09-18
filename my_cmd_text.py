@@ -525,8 +525,7 @@ def do_task(
                             # чувакам из этого списка флудеров не давать доступа к редкой модели
                             if hasattr(cfg, 'BLOCK_SYSTEM_MSGS') and cfg.BLOCK_SYSTEM_MSGS:
                                 if message.from_user.id in cfg.BLOCK_SYSTEM_MSGS:
-                                    if gmodel == cfg.gemini_pro_model:
-                                        gmodel = cfg.gemini_flash_light_model
+                                    gmodel = cfg.gemini_flash_light_model
 
                             # у флеш 2.5 лайт мысли отключены по умолчанию, их надо вручную включать
                             THINKING_BUDGET = -1

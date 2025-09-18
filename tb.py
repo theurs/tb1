@@ -1242,7 +1242,7 @@ def authorized(message: telebot.types.Message) -> bool:
 
 
         # обновить клавиатуру старым юзерам
-        if is_private:
+        if message.chat.type == 'private':
             if chat_id_full not in NEW_KEYBOARD:
                 bot_reply_tr(message, 'New keyboard installed.',
                             parse_mode='HTML',

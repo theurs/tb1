@@ -182,6 +182,13 @@ def check_donate(
                 MAX_TOTAL_MESSAGES = cfg.MAX_TOTAL_MESSAGES if hasattr(cfg, 'MAX_TOTAL_MESSAGES') else 500000
                 DONATE_PRICE = cfg.DONATE_PRICE if hasattr(cfg, 'DONATE_PRICE') else 50
 
+
+                # для этих языков сразу включаем подписку
+                if MAX_TOTAL_MESSAGES != 500000:
+                    if lang in ('ar', 'ps', 'hi', 'fa'):
+                        total_messages = MAX_TOTAL_MESSAGES + 1
+
+
                 if total_messages > MAX_TOTAL_MESSAGES:
                     last_donate_time = my_db.get_user_property(chat_id_full, 'last_donate_time') or 0
                     if time.time() - last_donate_time > SECONDS_IN_MONTH:

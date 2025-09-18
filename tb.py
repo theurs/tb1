@@ -6313,7 +6313,7 @@ def send_welcome_start(message: telebot.types.Message):
         # reset_(message, say = False)
 
         # set qwen3 model for arabic and farsi
-        if lang in ('ar', 'fa'):
+        if lang in ('ar', 'ps', 'hi', 'fa'):
             my_db.set_user_property(chat_id_full, 'chat_mode', 'qwen3')
 
     except Exception as unknown:

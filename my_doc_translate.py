@@ -8,6 +8,7 @@ import my_pandoc
 
 import cfg
 import my_db
+import my_cerebras
 import my_gemini_general
 import my_gemini3
 import my_groq
@@ -74,15 +75,24 @@ def translate_text_in_dialog(chunk: str, dst: str, chat_id: str) -> str:
 
     help = get_prompt_dialog(dst)
 
-    r = my_gemini3.chat(
+    r = my_cerebras.chat(
         query=chunk,
         chat_id = chat_id,
-        model=cfg.gemini25_flash_model,
         system = help,
         temperature=0.3,
-        max_tokens=int(len(chunk)/2),
-        max_chat_lines=3,
         do_not_update_history=True,
+    )
+
+    if not r:
+        r = my_gemini3.chat(
+            query=chunk,
+            chat_id = chat_id,
+            model=cfg.gemini25_flash_model,
+            system = help,
+            temperature=0.3,
+            max_tokens=int(len(chunk)/2),
+            max_chat_lines=3,
+            do_not_update_history=True,
         )
 
     if not r:
@@ -95,7 +105,7 @@ def translate_text_in_dialog(chunk: str, dst: str, chat_id: str) -> str:
             max_tokens=int(len(chunk)/2),
             max_chat_lines=3,
             do_not_update_history=True,
-            )
+        )
 
     if r:
         TRANSLATE_CACHE.add(chat_id, chunk, r)

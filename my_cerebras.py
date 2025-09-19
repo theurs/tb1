@@ -482,7 +482,8 @@ def chat(
     model: str = '',
     timeout: int = DEFAULT_TIMEOUT,
     tools: Optional[List[Dict]] = None,
-    available_tools: Optional[Dict] = None
+    available_tools: Optional[Dict] = None,
+    do_not_update_history: bool = False
 ) -> str:
 
     global LOCKS
@@ -509,7 +510,7 @@ def chat(
             available_tools=available_tools
         )
 
-        if text:
+        if text and not do_not_update_history:
             my_db.add_msg(chat_id, model)
             mem += [{'role': 'user', 'content': query}]
             mem += [{'role': 'assistant', 'content': text}]

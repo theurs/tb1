@@ -221,7 +221,7 @@ LOG_GROUP_MESSAGES_LOCK = threading.Lock()
 LOG_GROUP_DAEMON_ENABLED = True
 
 # {id:True} кто из юзеров не в этом словаре тому обновить клавиатуру
-NEW_KEYBOARD = SqliteDict('db/new_keyboard_installed.db', autocommit=True)
+# NEW_KEYBOARD = SqliteDict('db/new_keyboard_installed.db', autocommit=True)
 
 
 # запоминаем группы файлов (для правильного приема групп текстовых файлов)
@@ -1241,14 +1241,14 @@ def authorized(message: telebot.types.Message) -> bool:
             is_private = True
 
 
-        # обновить клавиатуру старым юзерам
-        if message.chat.type == 'private':
-            if chat_id_full not in NEW_KEYBOARD:
-                bot_reply_tr(message, 'New keyboard installed.',
-                            parse_mode='HTML',
-                            disable_web_page_preview=True,
-                            reply_markup=get_keyboard('start', message))
-                NEW_KEYBOARD[chat_id_full] = True
+        # # обновить клавиатуру старым юзерам
+        # if message.chat.type == 'private':
+        #     if chat_id_full not in NEW_KEYBOARD:
+        #         bot_reply_tr(message, 'New keyboard installed.',
+        #                     parse_mode='HTML',
+        #                     disable_web_page_preview=True,
+        #                     reply_markup=get_keyboard('start', message))
+        #         NEW_KEYBOARD[chat_id_full] = True
 
 
         is_reply = message.reply_to_message and message.reply_to_message.from_user.id == BOT_ID
@@ -6303,8 +6303,8 @@ def send_welcome_start(message: telebot.types.Message):
             disable_web_page_preview=True,
             reply_markup=get_keyboard('start', message),
             send_message=True)
-        if chat_id_full not in NEW_KEYBOARD:
-            NEW_KEYBOARD[chat_id_full] = True
+        # if chat_id_full not in NEW_KEYBOARD:
+        #     NEW_KEYBOARD[chat_id_full] = True
 
         # no language in user info, show language selector
         if not user_have_lang:

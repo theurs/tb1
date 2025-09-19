@@ -985,6 +985,10 @@ def txt2img(
         Optional[bytes]: The generated image data as bytes if successful, otherwise None.
     """
 
+    # нет больше такой модели
+    if model == 'google/gemini-2.5-flash-image-preview:free':
+        return None
+
     if not model.endswith(':free'):
         if not key:
             my_log.log_openrouter_free(f"txt2img: Model '{model}' is not a free model.")
@@ -1034,6 +1038,11 @@ def edit_image(
     Returns:
         Optional[bytes]: The edited image data as bytes if successful, otherwise None.
     """
+
+    # нет больше такой модели
+    if model == 'google/gemini-2.5-flash-image-preview:free':
+        return None
+
     if not model.endswith(':free'):
         if not key:
             my_log.log_openrouter_free(f"edit_image: Model '{model}' is not a free model.")

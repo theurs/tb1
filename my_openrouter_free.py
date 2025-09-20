@@ -257,6 +257,10 @@ def ai(
     if model in (CLOACKED_MODEL, CLOACKED_MODEL_FALLBACK):
         temperature /= 2
 
+    reasoning = None
+    if 'grok-4-fast' in model:
+        reasoning = {'effort': 'medium'} # high, medium, low
+
     # Initialize messages from memory
     messages: List[Dict[str, Any]] = list(mem) if mem is not None else []
 
@@ -303,6 +307,10 @@ def ai(
                     "temperature": temperature,
                     "max_tokens": max_tokens,
                 }
+                if reasoning:
+                    payload['reasoning'] = reasoning
+
+
                 if response_format:
                     payload['response_format'] = response_format
                 if tools and available_tools:

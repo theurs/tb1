@@ -69,8 +69,11 @@ MAX_REQUEST = 40000
 MAX_SUM_REQUEST = 100000
 
 
-DEFAULT_MODEL = 'mistral-large-latest'
-FALLBACK_MODEL = 'mistral-medium-latest'
+# DEFAULT_MODEL = 'mistral-large-latest'
+# FALLBACK_MODEL = 'mistral-medium-latest'
+DEFAULT_MODEL = 'mistral-medium-latest'
+FALLBACK_MODEL = 'mistral-large-latest'
+
 CODE_MODEL = 'codestral-latest'
 CODE_MODEL_FALLBACK = 'codestral-2405'
 VISION_MODEL = 'pixtral-large-latest'

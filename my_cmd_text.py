@@ -776,10 +776,10 @@ def do_task(
                             my_log.log2(f'my_cmd_text:do_task:openrouter {error3}\n{error_traceback}')
 
 
-                # если активирован режим общения с Mistral Large
+                # если активирован режим общения с Mistral medium
                 elif chat_mode_ == 'mistral':
                     if len(msg) > my_mistral.MAX_REQUEST:
-                        bot_reply(message, f'{tr("Слишком длинное сообщение для Mistral Large, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_mistral.MAX_REQUEST}')
+                        bot_reply(message, f'{tr("Слишком длинное сообщение для Mistral Medium, можно отправить как файл:", lang)} {len(msg)} {tr("из", lang)} {my_mistral.MAX_REQUEST}')
                         return
 
                     with ShowAction(message, action):
@@ -794,8 +794,20 @@ def do_task(
                                 tools=TOOLS,
                                 available_tools=AVAILABLE_TOOLS                                
                             )
-
                             WHO_ANSWERED[chat_id_full] = my_mistral.DEFAULT_MODEL
+
+                            if not answer:
+                                answer = my_mistral.chat(
+                                    message.text,
+                                    chat_id_full,
+                                    temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
+                                    system=hidden_text,
+                                    model = my_mistral.FALLBACK_MODEL,
+                                    # tools=TOOLS,
+                                    # available_tools=AVAILABLE_TOOLS                                
+                                )
+                                WHO_ANSWERED[chat_id_full] = my_mistral.DEFAULT_MODEL
+
                             autor = WHO_ANSWERED[chat_id_full]
                             complete_time = time.time() - time_to_answer_start
                             my_log.log3(chat_id_full, complete_time)

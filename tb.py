@@ -4507,7 +4507,7 @@ def send_debug_history(message: telebot.types.Message):
             prompt = 'Llama 4\n\n'
             prompt += my_cerebras.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif chat_mode == 'mistral':
-            prompt = 'Mistral Large\n\n'
+            prompt = 'Mistral Medium\n\n'
             prompt += my_mistral.get_mem_as_string(chat_id_full) or tr('Empty', lang)
         elif chat_mode == 'magistral':
             prompt = 'Magistral Medium\n\n'

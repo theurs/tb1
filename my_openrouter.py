@@ -95,7 +95,7 @@ def ai(
     system: str = '',
     model: str = '',
     temperature: float = 1.0,
-    max_tokens: int = 8000,
+    max_tokens: int = 64000,
     timeout: int = DEFAULT_TIMEOUT,
     response_format: str = 'text',
     json_schema: Optional[Dict] = None,

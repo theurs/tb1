@@ -2715,7 +2715,7 @@ def maxtokens(message: telebot.types.Message):
 
         try:
             maxtokens = int(message.text.split(maxsplit=1)[1].strip())
-            if maxtokens < 10 or maxtokens > 8000:
+            if maxtokens < 10 or maxtokens > 128000:
                 raise Exception('Invalid parameters')
             if chat_id_full not in my_openrouter.PARAMS:
                 my_openrouter.PARAMS[chat_id_full] = my_openrouter.PARAMS_DEFAULT
@@ -2728,7 +2728,7 @@ def maxtokens(message: telebot.types.Message):
         except Exception as error:
             error_tr = traceback.format_exc()
             my_log.log2(f'tb:model:{error}\n\n{error_tr}')
-        bot_reply_tr(message, 'Usage: /maxtokens maxtokens 10-8000', disable_web_page_preview=True)
+        bot_reply_tr(message, 'Usage: /maxtokens maxtokens 10-128000', disable_web_page_preview=True)
     except Exception as unknown:
         traceback_error = traceback.format_exc()
         my_log.log2(f'tb:maxtokens: {unknown}\n{traceback_error}')

@@ -14,7 +14,7 @@ import my_log
 import my_qrcode
 import my_transcribe
 import utils
-# import utils_llm
+import utils_llm
 
 # AI/LLM specific imports
 import my_cohere
@@ -355,6 +355,14 @@ def img2txt(
                     if text:
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
+
+            # mistral-medium-latest
+            if not text:
+                text = my_mistral.img2txt(data, query, model = 'mistral-medium-latest', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + 'mistral-medium-latest'
+
+
             # llama-4-maverick at groq
             if not text:
                 text = my_groq.img2txt(data, query, model = 'meta-llama/llama-4-maverick-17b-128e-instruct', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
@@ -431,9 +439,9 @@ def img2txt(
                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
             else:
                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-            return r
+            return utils_llm.split_thoughts(r)[1]
 
-        return text
+        return utils_llm.split_thoughts(text)[1]
     except Exception as unexpected_error:
         traceback_error = traceback.format_exc()
         my_log.log2(f'my_cmd_img2txt:img2txt2:{unexpected_error}\n\n{traceback_error}')

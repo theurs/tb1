@@ -266,6 +266,8 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
     try:
         my_log.log_gemini_skills_save_docs(f'save_to_docx {chat_id}\n\n{filename}\n{text}')
 
+        text = utils.html.unescape(text)
+
         chat_id = restore_id(chat_id)
         if chat_id == '[unknown]':
             return "FAIL, unknown chat id"
@@ -441,6 +443,8 @@ def save_to_pdf(filename: str, text: str, chat_id: str) -> str:
     try:
         # Log the function call for debugging/monitoring purposes
         my_log.log_gemini_skills_save_docs(f'save_to_pdf {chat_id}\n\n{filename}\n{text}')
+
+        text = utils.html.unescape(text)
 
         # Restore the actual chat ID
         chat_id = restore_id(chat_id)

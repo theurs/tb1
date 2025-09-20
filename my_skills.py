@@ -763,6 +763,7 @@ def save_html_to_animation(
     Returns:
         str: 'OK' or 'FAILED'
     """
+    html = utils.html.unescape(html)
     with ANIMATION_LOCK:
         my_log.log_gemini_skills_html(
             f'"{chat_id} {filename} {viewport_width}x{viewport_height}"\n\n"{html}"'
@@ -833,6 +834,7 @@ def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_h
     Returns:
         str: 'OK' or 'FAILED'
     """
+    html = utils.html.unescape(html)
     with RENDERING_LOCK:
         try:
             my_log.log_gemini_skills_html(f'"{filename} {viewport_width}x{viewport_height}"\n\n"{html}"')

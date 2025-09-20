@@ -318,6 +318,9 @@ def _execute_chat_completion(
     like system prompts or developer instructions. It also handles rate limits
     by respecting the 'X-RateLimit-Reset' header.
 
+    It also normalizes non-standard response formats (e.g., list-based thinking/text)
+    into a single string with <think> tags.
+
     Args:
         sdk_params: Parameters for the API call, including an abstract 'reasoning_effort_value'.
         key: The API key.
@@ -349,6 +352,8 @@ def _execute_chat_completion(
                 elif not is_openai_compatible:
                     current_params['reasoning'] = {"effort": reasoning_effort_value}
 
+            result_message: Optional[Dict[str, Any]] = None
+
             # --- API Call ---
             is_openai_compatible = not ('openrouter' in url or 'cerebras' in url)
             if is_openai_compatible:
@@ -357,7 +362,7 @@ def _execute_chat_completion(
                 if response.usage:
                     in_t, out_t = PRICE.get(user_id, (0, 0))
                     PRICE[user_id] = (in_t + response.usage.prompt_tokens, out_t + response.usage.completion_tokens)
-                return response.choices[0].message.model_dump()
+                result_message = response.choices[0].message.model_dump()
             else:
                 # --- Requests-based path for non-OpenAI-compatible APIs ---
                 post_url = url if url.endswith('/chat/completions') else url + '/chat/completions'
@@ -394,10 +399,30 @@ def _execute_chat_completion(
                         prompt_tokens = response_data['usage'].get('prompt_tokens', 0)
                         completion_tokens = response_data['usage'].get('completion_tokens', 0)
                         PRICE[user_id] = (in_t + prompt_tokens, out_t + completion_tokens)
-                    return response_data['choices'][0]['message']
+                    result_message = response_data['choices'][0]['message']
                 else:
                     # Raise for other non-200 codes to be caught below
                     raise ConnectionError(http_response.text)
+
+            # --- Normalize response from ANY source ---
+            if result_message and isinstance(result_message.get('content'), list):
+                thoughts = []
+                answer_parts = []
+                for part in result_message['content']:
+                    if part.get('type') == 'thinking' and isinstance(part.get('thinking'), list):
+                        for thought_item in part['thinking']:
+                            if thought_item.get('type') == 'text':
+                                thoughts.append(thought_item.get('text', ''))
+                    elif part.get('type') == 'text':
+                        answer_parts.append(part.get('text', ''))
+                
+                reconstructed_content = ''
+                if thoughts:
+                    reconstructed_content += f"<think>{' '.join(thoughts)}</think> "
+                reconstructed_content += ''.join(answer_parts)
+                result_message['content'] = reconstructed_content.strip()
+
+            return result_message
 
         except APIStatusError as e:
             # --- Specific error handling for OpenAI-compatible clients ---
@@ -416,6 +441,30 @@ def _execute_chat_completion(
                         my_log.log_openrouter(f'[{user_id}] Rate limit hit (SDK). Could not parse reset time header. Fallback to 10s wait. Error: {error}')
                         time.sleep(10)
                         continue
+        
+        except Exception as e:
+            error_str = str(e).lower()
+            # Signal that the model likely doesn't support tools/system prompts
+            if 'system_prompt' in error_str or 'tool_choice' in error_str:
+                if attempt == 0:
+                    my_log.log_openrouter(f'[{user_id}] Model may not support tools/system. Retrying without. Error: {e}')
+                    current_params.pop('tools', None)
+                    current_params.pop('tool_choice', None)
+                    current_params['messages'] = [m for m in current_params['messages'] if m.get('role') != 'system']
+                    continue
+                else:
+                    # If it fails a second time, it's a real error
+                     raise ValueError("Model does not support tools or system prompts.")
+
+            if 'filtered' in error_str:
+                raise ConnectionError("Content filtered")
+            
+            my_log.log_openrouter(f'Unhandled error in _execute_chat_completion for {user_id}: {e}\n{traceback.format_exc()}')
+            return None # Unrecoverable error, return None
+
+    # If all attempts fail
+    my_log.log_openrouter(f'_execute_chat_completion: All attempts failed for user {user_id}.')
+    return None
 
 
 def _get_api_key(user_id: str, model: str = '') -> Optional[str]:

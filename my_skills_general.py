@@ -251,6 +251,7 @@ def save_to_docx(filename: str, text: str, chat_id: str) -> str:
         filename: str - The desired file name for the DOCX file (e.g., 'document').
         text: str - The HTML string to convert to DOCX. It must be well-formed and include:
                     - A proper <html>, <head>, and <body> structure.
+                    - Do not escape any HTML symbols like <, >, &, etc.
                     - Valid tags with correct nesting and closed tags.
                     - A <title> tag inside <head> for document metadata.
                     - A <meta charset="utf-8"> tag inside <head> to ensure correct text encoding.
@@ -425,6 +426,7 @@ def save_to_pdf(filename: str, text: str, chat_id: str) -> str:
         filename: str - The desired file name for the PDF file (e.g., 'document').
         text: str - The HTML string to convert to PDF. It must be well-formed and include:
                     - A proper <html>, <head>, and <body> structure.
+                    - Do not escape any HTML symbols like <, >, &, etc.
                     - Valid tags with correct nesting and closed tags.
                     - A <title> tag inside <head> for document metadata.
                     - A <meta charset="utf-8"> tag inside <head> to ensure correct text encoding.

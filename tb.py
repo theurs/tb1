@@ -35,6 +35,7 @@ import my_genimg
 import my_cerebras
 import my_cerebras_tools
 import my_cmd_callback
+import my_cmd_config
 import my_cmd_document
 import my_cmd_img
 import my_cmd_img2txt
@@ -1504,15 +1505,7 @@ def _build_config_models_menu(chat_id_full: str, lang: str) -> telebot.types.Inl
     chat_mode = my_db.get_user_property(chat_id_full, 'chat_mode') or cfg.chat_mode_default
 
     # Model names are proper nouns, not translated
-    models = [
-        ('Gemini 2.5 Flash', 'gemini25_flash'), ('Mistral', 'mistral'),
-        ('GPT OSS 120b', 'gpt_oss'), ('Qwen 3', 'qwen3'),
-        ('Gemini 2.5 Pro', 'gemini15'), ('Command A', 'cohere'),
-        ('GPT-4o', 'gpt-4o'), ('GPT 4.1', 'gpt_41'),
-        ('Qwen 3 Coder 480b', 'qwen3coder'), ('Gemini 2.0 flash', 'gemini'),
-        ('DeepSeek V3', 'deepseek_v3'), ('OpenRouter', 'openrouter'),
-        ('Cloacked', 'cloacked'), ('Gemini 2.5 Flash Lite', 'gemini-lite'),
-    ]
+    models = my_cmd_config.models
 
     buttons = [_create_selection_button(name, val, chat_mode, 'select_') for name, val in models]
     for i in range(0, len(buttons), 2):

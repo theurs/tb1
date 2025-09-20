@@ -751,6 +751,7 @@ def save_html_to_animation(
         animation-iteration-count: 3;  /* not infinite */
     - For JS-driven motion, stop explicitly (setTimeout/Promise) before 60s.
     - Minimize heavy external assets; inline when possible.
+    - Do not escape any HTML symbols like <, >, &, etc.
 
     Args:
         filename (str): Desired video filename ('.mp4' will be appended if missing).
@@ -820,10 +821,10 @@ def save_html_to_image(filename: str, html: str, viewport_width: int, viewport_h
     Args:
         filename: str - The desired file name for the image file (e.g., 'sales_chart').
         html: str - The HTML code to be saved as an image file. The page must be fully
-                    formed according to the HTML standard with CSS and JavaScript included.
-                    You can embed JavaScript directly within <script> tags to create complex
-                    visualizations, animations, or interactive elements that will be rendered
-                    into the final image.
+                    formed according to the HTML standard with CSS and JavaScript included. 
+                    Do not escape any HTML symbols like <, >, &, etc. You can embed 
+                    JavaScript directly within <script> tags to create complex visualizations, 
+                    animations, or interactive elements that will be rendered into the final image.
         viewport_width: int - The width of the viewport in pixels.
         viewport_height: int - The height of the viewport in pixels.
 

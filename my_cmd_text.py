@@ -803,8 +803,8 @@ def do_task(
                                     temperature=my_db.get_user_property(chat_id_full, 'temperature') or 1,
                                     system=hidden_text,
                                     model = my_mistral.FALLBACK_MODEL,
-                                    # tools=TOOLS,
-                                    # available_tools=AVAILABLE_TOOLS                                
+                                    tools=TOOLS,
+                                    available_tools=AVAILABLE_TOOLS                                
                                 )
                                 WHO_ANSWERED[chat_id_full] = my_mistral.DEFAULT_MODEL
 

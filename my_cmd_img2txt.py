@@ -439,7 +439,7 @@ def img2txt(
                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Changed image successfully.', lang), chat_id_full)
             else:
                 add_to_bots_mem(tr('User asked to edit image', lang) + f' <prompt>{query[1:]}</prompt>', tr('Failed to edit image.', lang), chat_id_full)
-            return utils_llm.split_thoughts(r)[1]
+            return r
 
         return utils_llm.split_thoughts(text)[1]
     except Exception as unexpected_error:

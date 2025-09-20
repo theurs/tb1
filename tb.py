@@ -6857,9 +6857,12 @@ def set_history_size(message: telebot.types.Message) -> None:
 
         # Show help if no valid argument was provided.
         current_size_val = my_db.get_user_property(chat_id_full, 'max_history_size')
-        if current_size_val is None: current_size_val = texts['not_set']
-        elif current_size_val == 1000: current_size_display = texts['not_set']
-        else: current_size_display = current_size_val
+        if current_size_val is None:
+            current_size_display = texts['not_set']
+        elif current_size_val == 1000:
+            current_size_display = texts['not_set']
+        else:
+            current_size_display = current_size_val
 
         help_text = f"""/histsize <0-1000>
 

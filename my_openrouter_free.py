@@ -260,6 +260,7 @@ def ai(
     reasoning = None
     if 'grok-4-fast' in model:
         reasoning = {'effort': 'medium'} # high, medium, low
+        temperature /= 2
 
     # Initialize messages from memory
     messages: List[Dict[str, Any]] = list(mem) if mem is not None else []

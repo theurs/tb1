@@ -415,7 +415,7 @@ def _execute_chat_completion(
                                 thoughts.append(thought_item.get('text', ''))
                     elif part.get('type') == 'text':
                         answer_parts.append(part.get('text', ''))
-                
+
                 reconstructed_content = ''
                 if thoughts:
                     reconstructed_content += f"<think>{' '.join(thoughts)}</think> "
@@ -441,7 +441,7 @@ def _execute_chat_completion(
                         my_log.log_openrouter(f'[{user_id}] Rate limit hit (SDK). Could not parse reset time header. Fallback to 10s wait. Error: {error}')
                         time.sleep(10)
                         continue
-        
+
         except Exception as e:
             error_str = str(e).lower()
             # Signal that the model likely doesn't support tools/system prompts
@@ -458,7 +458,7 @@ def _execute_chat_completion(
 
             if 'filtered' in error_str:
                 raise ConnectionError("Content filtered")
-            
+
             my_log.log_openrouter(f'Unhandled error in _execute_chat_completion for {user_id}: {e}\n{traceback.format_exc()}')
             return None # Unrecoverable error, return None
 

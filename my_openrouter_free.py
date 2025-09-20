@@ -41,8 +41,8 @@ DEFAULT_MODEL = 'qwen/qwen3-235b-a22b-07-25:free'
 DEFAULT_MODEL_FALLBACK = 'qwen/qwen3-235b-a22b:free'
 GEMINI25_FLASH_IMAGE = 'google/gemini-2.5-flash-image-preview:free'
 # временная модель, неизвестная и ее бекап
-CLOACKED_MODEL = 'openrouter/sonoma-sky-alpha'
-CLOACKED_MODEL_FALLBACK = 'openrouter/sonoma-dusk-alpha'
+CLOACKED_MODEL = 'x-ai/grok-4-fast:free'
+CLOACKED_MODEL_FALLBACK = 'qwen/qwen3-235b-a22b:free'
 CLOACKED_MODEL_FALLBACK2 = 'deepseek/deepseek-chat-v3.1:free'
 CLOACKED_MODEL_FALLBACK3 = 'qwen/qwen3-235b-a22b:free'
 

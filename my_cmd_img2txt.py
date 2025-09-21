@@ -221,10 +221,10 @@ def img2txt(
                         if text:
                             WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
-                elif not text and chat_mode == 'cloacked':
-                    text = my_openrouter_free.img2txt(data, query, model=my_openrouter_free.CLOACKED_MODEL, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                    if text:
-                        WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_openrouter_free.CLOACKED_MODEL
+                # elif not text and chat_mode == 'cloacked':
+                #     text = my_openrouter_free.img2txt(data, query, model=my_openrouter_free.CLOACKED_MODEL, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                #     if text:
+                #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_openrouter_free.CLOACKED_MODEL
 
                 elif not text and chat_mode == 'gpt_41':
                     text = my_github.img2txt(data, query, temperature=temperature, chat_id=chat_id_full, model=my_github.BIG_GPT_41_MODEL, system=system_message, timeout=timeout)
@@ -361,11 +361,11 @@ def img2txt(
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
 
-            # cloacked
-            if not text:
-                text = my_openrouter_free.img2txt(data, query, model=my_openrouter_free.CLOACKED_MODEL, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
-                if text:
-                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_openrouter_free.CLOACKED_MODEL
+            # # cloacked
+            # if not text:
+            #     text = my_openrouter_free.img2txt(data, query, model=my_openrouter_free.CLOACKED_MODEL, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+            #     if text:
+            #         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_openrouter_free.CLOACKED_MODEL
 
 
             # mistral-medium-latest

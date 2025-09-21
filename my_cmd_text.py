@@ -728,6 +728,9 @@ def do_task(
                                         answer += s
                                     del my_openrouter.PRICE[chat_id_full]
 
+                                if answer.startswith('{"error":{"message":"'):
+                                    undo_cmd(message, show_message=False)
+
                             WHO_ANSWERED[chat_id_full] = 'openrouter ' + my_openrouter.PARAMS[chat_id_full][0]
                             complete_time = time.time() - time_to_answer_start
                             my_log.log3(chat_id_full, complete_time)

@@ -632,13 +632,13 @@ def get_mem_as_string(chat_id: str, md: bool = False) -> str:
 def img2txt(
     image_data: bytes,
     prompt: str = 'Describe picture',
-    model = DEFAULT_MODEL,
+    model: str = DEFAULT_MODEL,
     temperature: float = 1,
-    max_tokens: int = 2000,
+    max_tokens: int = 8000,
     timeout: int = 120,
     chat_id: str = '',
     system: str = '',
-    ) -> str:
+) -> str:
     """
     Describes an image using the specified model and parameters.
 
@@ -674,6 +674,11 @@ def img2txt(
     if 'llama' in model and temperature > 0:
         temperature = temperature / 2
 
+    reasoning = None
+    if 'grok-4-fast' in model:
+        reasoning = {'effort': 'high', 'exclude': False, 'enabled': True} # high, medium, low
+        temperature /= 2
+
     base64_image = base64.b64encode(image_data).decode()
 
     mem = [
@@ -699,21 +704,23 @@ def img2txt(
     result = ''
 
     for _ in range(3):
+        payload = {
+            "model": model,
+            "temperature": temperature,
+            "messages": mem,
+            "max_tokens": max_tokens
+        }
+        if reasoning:
+            payload['reasoning'] = reasoning
+
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {random.choice(cfg.OPEN_ROUTER_FREE_KEYS)}",
-                "HTTP-Referer": f"{APP_SITE_URL}",  # Optional, for including your app on openrouter.ai rankings.
-                "X-Title": f"{APP_NAME}",  # Optional. Shows in rankings on openrouter.ai.
+                "HTTP-Referer": f"{APP_SITE_URL}",
+                "X-Title": f"{APP_NAME}",
             },
-            data=json.dumps({
-
-                "model": model,
-                "temperature": temperature,
-                "messages": mem,
-                "max_tokens": max_tokens
-
-            }),
+            data=json.dumps(payload),
             timeout=timeout,
         )
 
@@ -1118,7 +1125,7 @@ if __name__ == '__main__':
 
 
     # print(img2txt('C:/Users/user/Downloads/1.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-3.2-11b-vision-instruct:free'))
-    # print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи.jpg', 'что тут происходит, ответь по-русски', model='meta-llama/llama-4-maverick:free'))
+    # print(img2txt(r'C:\Users\user\Downloads\samples for ai\картинки\мат задачи.jpg', 'что тут происходит, ответь по-русски', model=CLOACKED_MODEL))
     # print(voice2txt('C:/Users/user/Downloads/1.ogg'))
 
     # img = txt2img('сигарета в руке крупным планом', model='google/gemini-2.5-flash-image-preview', key=cfg.OPEN_ROUTER_KEY)

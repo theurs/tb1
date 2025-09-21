@@ -259,7 +259,7 @@ def ai(
 
     reasoning = None
     if 'grok-4-fast' in model:
-        reasoning = {'effort': 'medium'} # high, medium, low
+        reasoning = {'effort': 'high'} # high, medium, low
         temperature /= 2
 
     # Initialize messages from memory
@@ -310,6 +310,7 @@ def ai(
                 }
                 if reasoning:
                     payload['reasoning'] = reasoning
+                    payload['exclude'] = False
 
 
                 if response_format:
@@ -1107,7 +1108,7 @@ if __name__ == '__main__':
     my_db.init(backup=False)
     init()
 
-    # reset('test')
+    reset('test')
     chat_cli(model = CLOACKED_MODEL)
 
 

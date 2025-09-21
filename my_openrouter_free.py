@@ -15,6 +15,7 @@ from sqlitedict import SqliteDict
 import cfg
 import my_db
 import my_log
+import my_skills_storage
 import utils
 
 
@@ -280,6 +281,7 @@ def ai(
     if prompt:
         messages.append({'role': 'user', 'content': prompt})
 
+
     result = ''
     start_time = time.monotonic()
 
@@ -295,6 +297,10 @@ def ai(
             return ''
 
         try:
+
+            # сохраняем маркер для проверки валидности user_id в модуле my_skills*
+            my_skills_storage.STORAGE_ALLOWED_IDS[user_id] = user_id
+
             # Inner loop for multi-step tool calls
             for _ in range(max_tools_use):
                 remaining_time = timeout - (time.monotonic() - start_time)
@@ -391,6 +397,10 @@ def ai(
             my_log.log_openrouter_free(f'ai: Request failed on attempt {attempt + 1}: {e}')
             if attempt < 2:
                 time.sleep(2)
+
+        finally:
+            if user_id in my_skills_storage.STORAGE_ALLOWED_IDS:
+                del my_skills_storage.STORAGE_ALLOWED_IDS[user_id]
 
     if not result and model == DEFAULT_MODEL:
         return ai(prompt, mem, user_id, system, DEFAULT_MODEL_FALLBACK, temperature, max_tokens, timeout, response_format, tools, available_tools, tool_choice, max_tools_use)

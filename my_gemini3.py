@@ -710,7 +710,6 @@ def chat(
                             my_skills.calc,
                             my_skills.search_google_fast,
                             my_skills.search_google_deep,
-                            my_skills.search_and_send_images,
                             my_skills.download_text_from_url,
                             my_skills_general.get_time_in_timezone,
                             my_skills.get_weather,
@@ -736,6 +735,7 @@ def chat(
                             my_skills.query_user_file,
                             my_skills.query_user_logs,
                             my_skills_general.get_location_name,
+                            my_skills.search_and_send_images,
                             my_skills.help,
                         ]
                         # прошка и сама может стихи написать

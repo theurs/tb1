@@ -427,9 +427,9 @@ Saved text: {saved_file}
     temperature = my_db.get_user_property(user_id, 'temperature') or 1
     role = my_db.get_user_property(user_id, 'role') or ''
 
-    result = my_gemini3.chat(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, model = cfg.gemini25_flash_model, system=role, do_not_update_history=True, empty_memory=True, chat_id=user_id)
+    result = my_gemini3.chat(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, model = cfg.gemini_flash_light_model, system=role, do_not_update_history=True, empty_memory=True, chat_id=user_id)
     if not result:
-        result = my_gemini3.chat(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, model = cfg.gemini_flash_model, system=role, do_not_update_history=True, empty_memory=True, chat_id=user_id)
+        result = my_gemini3.chat(q[:my_gemini_general.MAX_SUM_REQUEST], temperature=temperature, model = cfg.gemini_flash_light_model_fallback, system=role, do_not_update_history=True, empty_memory=True, chat_id=user_id)
     if not result:
         result = my_cohere.ai(q[:my_cohere.MAX_SUM_REQUEST], system=role)
     if not result:

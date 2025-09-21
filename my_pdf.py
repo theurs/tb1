@@ -45,7 +45,7 @@ def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
             my_log.log2(f"my_pdf:extract_text_from_pdf_bytes:type_error: Error processing PDF: {error_type}")
     except Exception as error:
         my_log.log2(f"my_pdf:extract_text_from_pdf_bytes: Error processing PDF: {error}")
-    return text_content
+    return text_content.strip()
 
 
 def _split_pdf(pdf_bytes: bytes, chunk_size: int = 5) -> List[bytes]:

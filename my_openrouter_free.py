@@ -259,7 +259,7 @@ def ai(
 
     reasoning = None
     if 'grok-4-fast' in model:
-        reasoning = {'effort': 'high'} # high, medium, low
+        reasoning = {'effort': 'high', 'exclude': False, 'enabled': True} # high, medium, low
         temperature /= 2
 
     # Initialize messages from memory
@@ -310,8 +310,6 @@ def ai(
                 }
                 if reasoning:
                     payload['reasoning'] = reasoning
-                    payload['exclude'] = False
-
 
                 if response_format:
                     payload['response_format'] = response_format

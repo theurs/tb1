@@ -361,6 +361,13 @@ def img2txt(
                         WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_github.DEFAULT_MODEL
 
 
+            # cloacked
+            if not text:
+                text = my_openrouter_free.img2txt(data, query, model=my_openrouter_free.CLOACKED_MODEL, temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)
+                if text:
+                    WHO_ANSWERED[chat_id_full] = 'img2txt_' + my_openrouter_free.CLOACKED_MODEL
+
+
             # mistral-medium-latest
             if not text:
                 text = my_mistral.img2txt(data, query, model = 'mistral-medium-latest', temperature=temperature, chat_id=chat_id_full, system=system_message, timeout=timeout)

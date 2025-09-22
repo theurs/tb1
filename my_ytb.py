@@ -2,13 +2,14 @@
 
 
 import cachetools.func
+import json
 import natsort
 import os
 import random
 import subprocess
 import shutil
 import tempfile
-from typing import List
+from typing import List, Tuple
 
 import my_log
 import utils
@@ -168,6 +169,166 @@ def remove_folder_or_parent(path: str) -> None:
             my_log.log2(f'my_ytb:remove_folder_or_parent: Path is not a file or directory: {path}')
     except Exception as error:
         my_log.log2(f'my_ytb:remove_folder_or_parent: Error removing path: {error}\n\n{path}')
+
+
+@cachetools.func.ttl_cache(maxsize=10, ttl=10 * 60)
+def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
+    """
+    Gets the title, thumbnail URL, description, and duration of a video using yt-dlp.
+    Retries with different proxies if available.
+    """
+    try:
+        command = ['yt-dlp', '--dump-json', url]
+        process = utils.run_ytbdlp_with_retries(command)
+
+        video_info = json.loads(process.stdout)
+        title = video_info.get('title', '')
+        thumbnail_url = video_info.get('thumbnail', '')
+        description = video_info.get('description', '')
+        duration = video_info.get('duration', 0)
+        return title, thumbnail_url, description, duration
+    except (subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError) as error:
+        my_log.log2(f'my_ytb:get_title_and_poster: Failed for {url}. Error: {error}')
+        return '', '', '', 0
+
+
+def process_audio_filters(input_file: str, speed: str, volume: str) -> str:
+    """
+    Applies speed and volume filters to an audio file using ffmpeg.
+
+    Args:
+        input_file: Path to the input audio file.
+        speed: Speed multiplier ('1.0', '1.5', '2.0').
+        volume: Volume multiplier ('1.0', '2.0', '4.0').
+
+    Returns:
+        Path to the processed audio file, or the original path if no changes were needed.
+    """
+    speed_f = float(speed)
+    volume_f = float(volume)
+
+    # Skip processing if no changes are needed
+    if speed_f == 1.0 and volume_f == 1.0:
+        return input_file
+
+    with LOCK_TRANSCODE:
+        output_file = utils.get_tmp_fname(ext='.opus')
+
+        # Build the audio filter chain for ffmpeg
+        afilters = []
+        if speed_f != 1.0:
+            # FFmpeg's atempo filter is limited to the range [0.5, 100.0].
+            # To achieve speeds > 2.0, we chain multiple atempo filters.
+            temp_speed = speed_f
+            while temp_speed > 2.0:
+                afilters.append("atempo=2.0")
+                temp_speed /= 2.0
+            if temp_speed > 0.5:  # Add the remaining speed factor
+                afilters.append(f"atempo={temp_speed}")
+
+        if volume_f != 1.0:
+            afilters.append(f"volume={volume_f}")
+
+        if not afilters:
+            return input_file
+
+        af_chain = ",".join(afilters)
+
+        try:
+            subprocess.run([
+                'ffmpeg',
+                '-i', input_file,
+                '-af', af_chain,
+                '-c:a', 'libopus',
+                '-b:a', '32k',
+                '-loglevel', 'quiet',
+                output_file
+            ], check=True)
+
+            # Clean up the original file if it's a temporary one
+            if input_file.startswith(tempfile.gettempdir()):
+                utils.remove_file(input_file)
+
+            return output_file
+        except subprocess.CalledProcessError as e:
+            my_log.log2(f'my_ytb:process_audio_filters: ffmpeg error: {e}')
+            return input_file  # Return original on failure
+
+
+def download_audio(url: str, quality: str = 'voice', lang: str = 'en', limit_duration: int = 4 * 60 * 60) -> str | None:
+    """
+    Downloads the best audio track matching the user's language using yt-dlp.
+    Falls back to the best overall audio if the specified language is not found.
+    """
+    if '.yandex.ru' in url or 'drive.google.com' in url:
+        return utils.download_yandex_disk_audio(url)
+
+    try:
+        # Step 1: Get video metadata as JSON
+        info_command = ['yt-dlp', '--dump-json', url]
+        info_process = utils.run_ytbdlp_with_retries(info_command)
+        video_info = json.loads(info_process.stdout)
+
+        duration = video_info.get('duration', 0)
+        if not duration or duration > limit_duration:
+            my_log.log2(f"my_ytb:download_audio: Video duration ({duration}s) out of limits for {url}.")
+            return None
+
+        # Step 2: Select the best audio format
+        formats = video_info.get('formats', [])
+        audio_formats = [f for f in formats if f.get('vcodec') == 'none' and f.get('acodec') != 'none']
+
+        # Find formats matching the user's language
+        lang_formats = [f for f in audio_formats if f.get('language') == lang]
+
+        best_format = None
+        # A robust key function to get bitrate, falling back from 'abr' to 'tbr' and then to 0.
+        get_bitrate = lambda f: (f.get('abr') or f.get('tbr') or 0)
+
+        if lang_formats:
+            # If language-specific tracks exist, find the one with the highest bitrate
+            best_format = max(lang_formats, key=get_bitrate)
+            # my_log.log2(f"my_ytb:download_audio: Found best audio for lang '{lang}': format_id {best_format.get('format_id')}")
+        elif audio_formats:
+            # Fallback: no tracks in user's language, get the overall best audio
+            best_format = max(audio_formats, key=get_bitrate)
+            my_log.log2(f"my_ytb:download_audio: No audio for lang '{lang}'. Falling back to best overall: format_id {best_format.get('format_id')}")
+
+        if best_format:
+            format_id = best_format.get('format_id')
+        else:
+            # Last resort fallback to the old method if no audio-only streams are found
+            format_id = 'bestaudio[abr<=64]/bestaudio' if quality == 'voice' else 'bestaudio/best'
+            my_log.log2(f"my_ytb:download_audio: No specific audio streams found. Using default selector: '{format_id}'")
+
+        # Step 3: Download using the selected format_id
+        output_template = f"{utils.get_tmp_fname()}.%(ext)s"
+        download_command = [
+            'yt-dlp',
+            '-f', format_id,
+            '-o', output_template,
+            '--extract-audio',
+            url
+        ]
+
+        utils.run_ytbdlp_with_retries(download_command)
+
+        # Find the actual downloaded file since extension is dynamic
+        base_name = os.path.splitext(output_template)[0]
+        temp_dir = os.path.dirname(base_name)
+        for f in os.listdir(temp_dir):
+            if f.startswith(os.path.basename(base_name)):
+                return os.path.join(temp_dir, f)
+
+        my_log.log2(f"my_ytb:download_audio: File not found after successful download for {url}.")
+        return None
+
+    except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError) as e:
+        my_log.log2(f"my_ytb:download_audio: All download attempts failed for URL '{url}'. Error: {e}")
+        return None
+    except Exception as e:
+        my_log.log2(f"my_ytb:download_audio: An unexpected error occurred for URL '{url}': {e}")
+        return None
 
 
 if __name__ == '__main__':

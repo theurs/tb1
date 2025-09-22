@@ -2,6 +2,7 @@
 
 # Standard library imports
 import io
+import os
 import threading
 import traceback
 from typing import Any, Callable, Dict, Type
@@ -22,6 +23,7 @@ import my_qrcode
 import my_subscription
 import my_tavily
 import my_tts
+import my_ytb
 import utils
 
 
@@ -29,6 +31,7 @@ def callback_inline_thread(
     call: telebot.types.CallbackQuery,
     # Core objects
     bot: telebot.TeleBot,
+    _bot_name: str,
     # Global state dictionaries
     COMMAND_MODE: Dict[str, str],
     TTS_LOCKS: Dict[str, threading.Lock],
@@ -56,6 +59,7 @@ def callback_inline_thread(
     echo_all: Callable,
     tts: Callable,
     language: Callable,
+    send_audio: Callable,
 ) -> None:
     """Handles inline keyboard callbacks"""
     try:
@@ -100,6 +104,109 @@ def callback_inline_thread(
             # обработка нажатия кнопки "Стереть историю"
             reset_(message)
             bot.delete_message(message.chat.id, message.message_id)
+
+
+        elif call.data.startswith('ytb_set_'):
+            # Handles YouTube options toggling
+            try:
+                # Use maxsplit to robustly separate the prefix from the value
+                # e.g., 'ytb_set_speed_1.5' -> ['ytb', 'set', 'speed', '1.5']
+                _, _, option_type, value = call.data.split('_', 3)
+
+                # Update the specific property in the database
+                my_db.set_user_property(chat_id_full, f'ytb_{option_type}', value)
+
+                # Redraw the keyboard with the updated checkmark
+                bot.edit_message_reply_markup(
+                    chat_id=message.chat.id,
+                    message_id=message.message_id,
+                    reply_markup=get_keyboard('ytb_options', message)
+                )
+            except ValueError:
+                my_log.log2(f'my_cmd_callback:ytb_set: failed to parse callback data: {call.data}')
+
+
+        elif call.data == 'ytb_process':
+            # This block is executed when the user clicks the "Process" button.
+            # It cleans up the options message first for a better user experience.
+            try:
+                bot.delete_message(message.chat.id, message.message_id)
+            except Exception:
+                pass # Ignore if message is already deleted
+
+            # Use a ShowAction context manager to show an "uploading audio" status
+            with ShowAction(message, "upload_audio", max_timeout=15):
+                # Retrieve all the necessary data from the database
+                url = my_db.get_user_property(chat_id_full, 'ytb_pending_url')
+                if not url:
+                    bot_reply_tr(
+                        message, "Не удалось найти URL для обработки. Попробуйте снова.",
+                        help="Error message when the bot cannot find the URL to process. Asks the user to try again."
+                    )
+                    return
+
+                quality = my_db.get_user_property(chat_id_full, 'ytb_quality') or 'voice'
+                speed = my_db.get_user_property(chat_id_full, 'ytb_speed') or '1.0'
+                volume = my_db.get_user_property(chat_id_full, 'ytb_volume') or '1.0'
+
+                bot_reply_tr(message, 'Загрузка началась...', help="Short status message: 'Download has started...'")
+                # Download the audio, passing the user's language to select the correct audio track
+                source_file = my_ytb.download_audio(url, quality=quality, lang=lang)
+                if not source_file:
+                    bot_reply_tr(message, 'Ошибка при загрузке аудио.', help="Error message: 'Audio download error.'")
+                    my_db.delete_user_property(chat_id_full, 'ytb_pending_url') # Clean up state
+                    return
+
+                bot_reply_tr(message, 'Обработка фильтров...', help="Short status message: 'Processing filters...'")
+                processed_file = my_ytb.process_audio_filters(source_file, speed, volume)
+
+                bot_reply_tr(message, 'Разбивка на части...', help="Short status message: 'Splitting into parts...'")
+                files_to_send = my_ytb.split_audio(processed_file, 45)
+                if not files_to_send:
+                    bot_reply_tr(message, 'Ошибка при разбивке файла на части.', help="Error message: 'Error splitting file into parts.'")
+                    my_ytb.remove_folder_or_parent(processed_file) # Clean up intermediate file
+                    my_db.delete_user_property(chat_id_full, 'ytb_pending_url')
+                    return
+
+                bot_reply_tr(message, 'Отправка файлов...', help="Short status message: 'Sending files...'")
+                title, pic, _, _ = my_ytb.get_title_and_poster(url)
+                tmb = None
+                try:
+                    # Download and prepare the thumbnail for the audio files
+                    thumb_bytes = utils.download_image_for_thumb(pic)
+                    if thumb_bytes:
+                        tmb = telebot.types.InputFile(io.BytesIO(thumb_bytes))
+                except Exception as thumb_error:
+                    my_log.log2(f'my_cmd_callback:ytb_process: failed to get thumb: {thumb_error}')
+
+                for fn in files_to_send:
+                    with open(fn, 'rb') as f:
+                        data = f.read()
+
+                    part_name = os.path.splitext(os.path.basename(fn))[0]
+                    caption = f'{title} - {part_name}'
+                    caption = f'{caption[:900]}\n\n@{_bot_name}' # Ensure caption is within limits
+
+                    try:
+                        # Assumes send_audio has been correctly passed into this function's scope
+                        m = send_audio(
+                            message, message.chat.id, data,
+                            title=f'{part_name}.opus', caption=caption, thumbnail=tmb,
+                        )
+                        log_message(m)
+                    except Exception as upload_error:
+                        my_log.log2(f'my_cmd_callback:ytb_process: upload failed: {upload_error}')
+                        bot_reply_tr(message, 'Ошибка при отправке файла.', help="Error message: 'File sending error.'")
+                        break # Stop sending if one part fails
+
+                # --- Final Cleanup ---
+                # Remove the intermediate processed file
+                my_ytb.remove_folder_or_parent(processed_file)
+                # If splitting created a new folder, remove it too
+                if files_to_send and files_to_send[0] != processed_file:
+                    my_ytb.remove_folder_or_parent(files_to_send[0])
+                # Remove the pending URL from the user's state
+                my_db.delete_user_property(chat_id_full, 'ytb_pending_url')
 
 
         elif call.data.startswith('histsize_toggle_'):

@@ -1425,6 +1425,7 @@ def is_image_link(url: str) -> bool:
 
 ## ytb #####################################################################################
 
+
 def convert_to_mp3(input_file: str) -> str | None:
     """
     Converts an audio file to MP3 format using ffmpeg with the highest quality settings.
@@ -1737,6 +1738,67 @@ def valid_youtube_url(url: str) -> str:
         error_traceback = traceback.format_exc()
         my_log.log2(f'my_ytb:valid_youtube_url2: {url} {error}\n\n{error_traceback}')
         return ''
+
+
+def run_ytbdlp_with_retries(command: List[str]) -> subprocess.CompletedProcess:
+    """
+    Executes a yt-dlp command, retrying with different proxies from cfg.YTB_PROXY.
+    If all proxies fail, it attempts a final connection without any proxy.
+
+    Args:
+        command: A list of strings representing the yt-dlp command and its arguments,
+                 excluding proxy settings.
+
+    Returns:
+        A subprocess.CompletedProcess object upon success.
+
+    Raises:
+        subprocess.CalledProcessError: If all attempts (all proxies and direct) fail.
+    """
+    proxies = list(getattr(cfg, 'YTB_PROXY', []))
+    # Shuffle for better load distribution and add a None for the final direct attempt
+    random.shuffle(proxies)
+    attempts = proxies + [None]
+
+    last_exception = None
+
+    for proxy in attempts:
+        attempt_command = command.copy()
+        if proxy:
+            attempt_command.extend(['--proxy', proxy])
+
+        try:
+            # Execute the command. Capture output to avoid polluting logs unless there's an error.
+            # check=True will raise CalledProcessError on non-zero exit codes.
+            result = subprocess.run(
+                attempt_command,
+                capture_output=True,
+                text=True,
+                check=True,
+                encoding='utf-8'
+            )
+            # If successful, log which proxy (or none) worked and return
+            proxy_msg = f"with proxy {proxy}" if proxy else "with direct connection"
+            # my_log.log2(f"utils:run_ytbdlp_with_retries: Command successful {proxy_msg}.")
+            return result
+        except subprocess.CalledProcessError as e:
+            # Log the failure and prepare for the next attempt
+            proxy_msg = f"with proxy {proxy}" if proxy else "with direct connection"
+            error_output = e.stderr.strip() if e.stderr else e.stdout.strip()
+            my_log.log2(
+                f"utils:run_ytbdlp_with_retries: Command failed {proxy_msg}. "
+                f"Error: {error_output}"
+            )
+            last_exception = e
+        except FileNotFoundError:
+            # This error is critical and won't be solved by retrying
+            my_log.log2("utils:run_ytbdlp_with_retries: yt-dlp command not found.")
+            raise
+
+    # If the loop completes without a successful run, raise the last exception
+    if last_exception:
+        raise last_exception
+
 
 ## ytb #####################################################################################
 

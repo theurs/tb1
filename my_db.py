@@ -289,6 +289,11 @@ def init(backup: bool = True, vacuum: bool = False):
             send_message INTEGER,
             max_history_size INTEGER,
 
+            ytb_quality TEXT,
+            ytb_speed REAL,
+            ytb_volume REAL,
+            ytb_pending_url TEXT,
+
             persistant_memory TEXT,
 
             base_api_url TEXT,

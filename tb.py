@@ -1668,6 +1668,78 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
             button2 = telebot.types.InlineKeyboardButton(tr("Скрыть", lang), callback_data='erase_answer')
             markup.add(button1, button2)
             return markup
+
+
+        elif kbd == 'ytb_options':
+            # Keyboard for YouTube download options
+            markup = telebot.types.InlineKeyboardMarkup(row_width=3)
+
+            # --- Get current user settings from DB, with defaults ---
+            quality = my_db.get_user_property(chat_id_full, 'ytb_quality') or 'voice'  # voice | music
+            speed = my_db.get_user_property(chat_id_full, 'ytb_speed') or '1.0'        # 1.0 | 1.5 | 2.0
+            volume = my_db.get_user_property(chat_id_full, 'ytb_volume') or '1.0'      # 1.0 | 2.0 | 4.0
+
+            # --- Row 1: Quality ---
+            btn_q_voice = telebot.types.InlineKeyboardButton(
+                text=('✅ ' if quality == 'voice' else '') + '🎤 ' + tr(
+                    'Голос', lang,
+                    help="Audio quality preset optimized for voice/speech. Button text."
+                ),
+                callback_data='ytb_set_quality_voice'
+            )
+            btn_q_music = telebot.types.InlineKeyboardButton(
+                text=('✅ ' if quality == 'music' else '') + '🎵 ' + tr(
+                    'Музыка', lang,
+                    help="Audio quality preset optimized for music. Button text."
+                ),
+                callback_data='ytb_set_quality_music'
+            )
+            markup.row(btn_q_voice, btn_q_music)
+
+            # --- Row 2: Speed ---
+            btn_s_10 = telebot.types.InlineKeyboardButton(
+                text=('✅ ' if speed == '1.0' else '') + '🏃 1.0x',
+                callback_data='ytb_set_speed_1.0'
+            )
+            btn_s_15 = telebot.types.InlineKeyboardButton(
+                text=('✅ ' if speed == '1.5' else '') + '🏃 1.5x',
+                callback_data='ytb_set_speed_1.5'
+            )
+            btn_s_20 = telebot.types.InlineKeyboardButton(
+                text=('✅ ' if speed == '2.0' else '') + '🏃 2.0x',
+                callback_data='ytb_set_speed_2.0'
+            )
+            markup.row(btn_s_10, btn_s_15, btn_s_20)
+
+            # --- Row 3: Volume ---
+            btn_v_10 = telebot.types.InlineKeyboardButton(
+                text=('✅ ' if volume == '1.0' else '') + '📢 1.0x',
+                callback_data='ytb_set_volume_1.0'
+            )
+            btn_v_20 = telebot.types.InlineKeyboardButton(
+                text=('✅ ' if volume == '2.0' else '') + '📢 2.0x',
+                callback_data='ytb_set_volume_2.0'
+            )
+            btn_v_40 = telebot.types.InlineKeyboardButton(
+                text=('✅ ' if volume == '4.0' else '') + '📢 4.0x',
+                callback_data='ytb_set_volume_4.0'
+            )
+            markup.row(btn_v_10, btn_v_20, btn_v_40)
+
+            # --- Row 4: Actions ---
+            btn_process = telebot.types.InlineKeyboardButton(
+                text='⬇️ ' + tr('Обработать', lang, help="Action button to start a process, e.g., 'Download', 'Process'"),
+                callback_data='ytb_process'
+            )
+            btn_cancel = telebot.types.InlineKeyboardButton(
+                text='❌ ' + tr('Отмена', lang, help="Generic 'Cancel' button text."),
+                callback_data='erase_answer'
+            )
+            markup.row(btn_process, btn_cancel)
+
+            return markup
+
+
         elif kbd == 'voicechat':
             keyboard = telebot.types.ReplyKeyboardMarkup(
                 row_width=1,
@@ -1890,6 +1962,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         call=call,
         # Core objects
         bot=bot,
+        _bot_name=_bot_name,
         # Global state dictionaries
         COMMAND_MODE=COMMAND_MODE,
         TTS_LOCKS=TTS_LOCKS,
@@ -1917,6 +1990,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         echo_all=echo_all,
         tts=tts,
         language=language,
+        send_audio=send_audio,
     )
 
 
@@ -3584,76 +3658,52 @@ def calc_gemini(message: telebot.types.Message):
 @async_run
 def download_ytb_audio(message: telebot.types.Message):
     """
-    Download, split and send chunks to user.
+    Shows info about a YouTube video and presents download options.
+    The actual download is handled by a callback handler.
     """
     try:
-
         chat_id_full = get_topic_id(message)
         lang = get_lang(chat_id_full, message)
 
         COMMAND_MODE[chat_id_full] = ''
-        # проверка на подписку
+        # check subscription
         if not my_subscription.check_donate(message, chat_id_full, lang, COMMAND_MODE, CHECK_DONATE_LOCKS, BOT_ID, tr, bot_reply, get_keyboard):
             return
 
-        url = message.text.split(maxsplit=1)
-        if len(url) == 2:
-            url = url[1]
+        args = message.text.split(maxsplit=1)
+        if len(args) == 2 and my_ytb.valid_youtube_url(args[1]):
+            url = args[1]
+            with ShowAction(message, "typing"):
+                title, pic, desc, duration_sec = my_ytb.get_title_and_poster(url)
 
-            with ShowAction(message, "upload_audio"):            
-                if my_ytb.valid_youtube_url(url):
-                    title, pic, desc, size = my_ytb.get_title_and_poster(url)
-                    if size == 0 or size > 6*60*60:
-                        bot_reply_tr(message, 'Too big video for me.')
-                        return
-                    source_file = my_ytb.download_audio(url)
-                    files = []
-                    if source_file:
-                        bot_reply_tr(message, 'Downloaded successfully, sending file.')
-                        files = my_ytb.split_audio(source_file, 45)
-                        bot_reply(message, desc[:4090], send_message=True, disable_web_page_preview=True)
-                        if files:
-                            image_stream = io.BytesIO(utils.download_image_for_thumb(pic))
-                            try:
-                                tmb = telebot.types.InputFile(image_stream)
-                            except:
-                                tmb = None
-
-                            for fn in files:
-                                with open(fn, 'rb') as f:
-                                    data = f.read()
-                                caption = f'{title} - {os.path.splitext(os.path.basename(fn))[0]}'
-                                caption = f'{caption[:900]}\n\n{url}'
-
-                                try:
-                                    m = send_audio(
-                                        message,
-                                        message.chat.id,
-                                        data,
-                                        title = f'{os.path.splitext(os.path.basename(fn))[0]}.opus',
-                                        caption = f'@{_bot_name} {caption}',
-                                        thumbnail=tmb,
-                                    )
-                                    log_message(m)
-                                except Exception as faild_upload_audio:
-                                    my_log.log2(f'tb:download_ytb_audio1: {faild_upload_audio}')
-                                    bot_reply_tr(message, 'Upload failed.')
-                                    my_ytb.remove_folder_or_parent(source_file)
-                                    if files and files[0] and source_file and files[0] != source_file:
-                                        my_ytb.remove_folder_or_parent(files[0])
-                                    return
-                    else:
-                        bot_reply_tr(message, 'Download failed.')
-
-                    my_ytb.remove_folder_or_parent(source_file)
-                    if files and files[0] and source_file and files[0] != source_file:
-                        my_ytb.remove_folder_or_parent(files[0])
+                if duration_sec == 0 or duration_sec > 6 * 60 * 60:
+                    bot_reply_tr(message, 'Too big video for me.')
                     return
 
-        bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube (and other video sites).')
+                # Store the URL for the callback handler to use
+                my_db.set_user_property(chat_id_full, 'ytb_pending_url', url)
+
+                duration_str = time.strftime('%H:%M:%S', time.gmtime(duration_sec))
+                caption = f"<b>{utils.html.escape(title)}</b>\n\n"
+                caption += f"<i>{utils.html.escape(utils.truncate_text(desc, 5, 200))}</i>\n\n"
+                caption += f"({duration_str})"
+
+                # Send photo with caption and the new keyboard
+                send_photo(
+                    message,
+                    message.chat.id,
+                    photo=utils.download_image_for_thumb(pic),
+                    caption=caption,
+                    parse_mode='HTML',
+                    reply_markup=get_keyboard('ytb_options', message)
+                )
+
+        else:
+            bot_reply_tr(message, 'Usage: /ytb URL\n\nDownload and send audio from youtube (and other video sites).')
+
     except Exception as error:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:download_ytb_audio2: {error}\n\n{traceback_error}')
+        my_log.log2(f'tb:download_ytb_audio: {error}\n\n{traceback_error}')
 
 
 @bot.message_handler(commands=['memo', 'memos'], func=authorized_owner)

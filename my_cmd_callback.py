@@ -107,16 +107,27 @@ def callback_inline_thread(
 
 
         elif call.data.startswith('ytb_set_'):
-            # Handles YouTube options toggling
+            # Handles YouTube options toggling with special logic for 'music' quality
             try:
-                # Use maxsplit to robustly separate the prefix from the value
-                # e.g., 'ytb_set_speed_1.5' -> ['ytb', 'set', 'speed', '1.5']
+                # Universal parsing for all 'ytb_set_' callbacks
                 _, _, option_type, value = call.data.split('_', 3)
 
-                # Update the specific property in the database
-                my_db.set_user_property(chat_id_full, f'ytb_{option_type}', value)
+                if option_type == 'quality':
+                    # Set the selected quality
+                    my_db.set_user_property(chat_id_full, 'ytb_quality', value)
+                    # If 'music' is selected, reset speed and volume for pristine audio
+                    if value == 'music':
+                        my_db.set_user_property(chat_id_full, 'ytb_speed', '1.0')
+                        my_db.set_user_property(chat_id_full, 'ytb_volume', '1.0')
+                else:
+                    # For 'speed' or 'volume', just set the single value.
+                    # Also, if a user changes speed/volume, it implies they no longer want the pristine 'music' preset.
+                    # We can switch them back to 'voice' quality mode to reflect that processing will be applied.
+                    my_db.set_user_property(chat_id_full, f'ytb_{option_type}', value)
+                    my_db.set_user_property(chat_id_full, 'ytb_quality', 'voice')
 
-                # Redraw the keyboard with the updated checkmark
+
+                # Redraw the keyboard in all cases to reflect the new state
                 bot.edit_message_reply_markup(
                     chat_id=message.chat.id,
                     message_id=message.message_id,
@@ -129,10 +140,10 @@ def callback_inline_thread(
         elif call.data == 'ytb_process':
             # This block is executed when the user clicks the "Process" button.
             # It cleans up the options message first for a better user experience.
-            try:
-                bot.delete_message(message.chat.id, message.message_id)
-            except Exception:
-                pass # Ignore if message is already deleted
+            # try:
+            #     bot.delete_message(message.chat.id, message.message_id)
+            # except Exception:
+            #     pass # Ignore if message is already deleted
 
             # Use a ShowAction context manager to show an "uploading audio" status
             with ShowAction(message, "upload_audio", max_timeout=15):

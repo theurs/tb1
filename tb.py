@@ -3674,6 +3674,15 @@ def download_ytb_audio(message: telebot.types.Message):
         if len(args) == 2 and my_ytb.valid_youtube_url(args[1]):
             url = args[1]
             with ShowAction(message, "typing"):
+                # --- Set default YTB options in DB if they don't exist ---
+                if my_db.get_user_property(chat_id_full, 'ytb_quality') is None:
+                    my_db.set_user_property(chat_id_full, 'ytb_quality', 'voice')
+                if my_db.get_user_property(chat_id_full, 'ytb_speed') is None:
+                    my_db.set_user_property(chat_id_full, 'ytb_speed', '1.0')
+                if my_db.get_user_property(chat_id_full, 'ytb_volume') is None:
+                    my_db.set_user_property(chat_id_full, 'ytb_volume', '1.0')
+                # -----------------------------------------------------------
+
                 title, pic, desc, duration_sec = my_ytb.get_title_and_poster(url)
 
                 if duration_sec == 0 or duration_sec > 6 * 60 * 60:

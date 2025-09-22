@@ -1990,7 +1990,7 @@ def callback_inline_thread(call: telebot.types.CallbackQuery):
         echo_all=echo_all,
         tts=tts,
         language=language,
-        send_voice=send_voice,
+        send_audio=send_audio,
     )
 
 

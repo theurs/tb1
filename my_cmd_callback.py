@@ -59,7 +59,7 @@ def callback_inline_thread(
     echo_all: Callable,
     tts: Callable,
     language: Callable,
-    send_voice: Callable,
+    send_audio: Callable,
 ) -> None:
     """Handles inline keyboard callbacks"""
     try:
@@ -199,14 +199,14 @@ def callback_inline_thread(
                     caption = f'{caption[:900]}\n\n@{_bot_name}' # Ensure caption is within limits
 
                     try:
-                        # Assumes send_voice has been correctly passed into this function's scope
-                        m = send_voice(
+                        # Assumes send_audio has been correctly passed into this function's scope
+                        m = send_audio(
                             message,
                             message.chat.id,
                             data,
-                            # title=f'{part_name}.opus',
+                            title=f'{part_name}.opus',
                             caption=caption,
-                            # thumbnail=tmb,
+                            thumbnail=tmb,
                         )
                         log_message(m)
                     except Exception as upload_error:

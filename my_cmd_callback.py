@@ -117,13 +117,13 @@ def callback_inline_thread(
                     my_db.set_user_property(chat_id_full, 'ytb_quality', value)
                     # If 'music' is selected, reset speed and volume for pristine audio
                     if value == 'music':
-                        my_db.set_user_property(chat_id_full, 'ytb_speed', '1.0')
-                        my_db.set_user_property(chat_id_full, 'ytb_volume', '1.0')
+                        my_db.set_user_property(chat_id_full, 'ytb_speed', 1.0)
+                        my_db.set_user_property(chat_id_full, 'ytb_volume', 1.0)
                 else:
                     # For 'speed' or 'volume', just set the single value.
                     # Also, if a user changes speed/volume, it implies they no longer want the pristine 'music' preset.
                     # We can switch them back to 'voice' quality mode to reflect that processing will be applied.
-                    my_db.set_user_property(chat_id_full, f'ytb_{option_type}', value)
+                    my_db.set_user_property(chat_id_full, f'ytb_{option_type}', float(value))
                     my_db.set_user_property(chat_id_full, 'ytb_quality', 'voice')
 
 

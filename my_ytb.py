@@ -192,23 +192,21 @@ def get_title_and_poster(url: str) -> Tuple[str, str, str, int]:
         return '', '', '', 0
 
 
-def process_audio_filters(input_file: str, speed: str, volume: str) -> str:
+def process_audio_filters(input_file: str, speed: float, volume: float) -> str:
     """
     Applies speed and volume filters to an audio file using ffmpeg.
 
     Args:
         input_file: Path to the input audio file.
-        speed: Speed multiplier ('1.0', '1.5', '2.0').
-        volume: Volume multiplier ('1.0', '2.0', '4.0').
+        speed: Speed multiplier (1.0, 1.5, 2.0).
+        volume: Volume multiplier (1.0, 2.0, 4.0).
 
     Returns:
         Path to the processed audio file, or the original path if no changes were needed.
     """
-    speed_f = float(speed)
-    volume_f = float(volume)
 
     # Skip processing if no changes are needed
-    if speed_f == 1.0 and volume_f == 1.0:
+    if speed == 1.0 and volume == 1.0:
         return input_file
 
     with LOCK_TRANSCODE:
@@ -216,18 +214,18 @@ def process_audio_filters(input_file: str, speed: str, volume: str) -> str:
 
         # Build the audio filter chain for ffmpeg
         afilters = []
-        if speed_f != 1.0:
+        if speed != 1.0:
             # FFmpeg's atempo filter is limited to the range [0.5, 100.0].
             # To achieve speeds > 2.0, we chain multiple atempo filters.
-            temp_speed = speed_f
+            temp_speed = speed
             while temp_speed > 2.0:
                 afilters.append("atempo=2.0")
                 temp_speed /= 2.0
             if temp_speed > 0.5:  # Add the remaining speed factor
                 afilters.append(f"atempo={temp_speed}")
 
-        if volume_f != 1.0:
-            afilters.append(f"volume={volume_f}")
+        if volume != 1.0:
+            afilters.append(f"volume={volume}")
 
         if not afilters:
             return input_file
@@ -240,7 +238,7 @@ def process_audio_filters(input_file: str, speed: str, volume: str) -> str:
                 '-i', input_file,
                 '-af', af_chain,
                 '-c:a', 'libopus',
-                '-b:a', '32k',
+                '-b:a', '64k',
                 '-loglevel', 'quiet',
                 output_file
             ], check=True)
@@ -285,21 +283,29 @@ def download_audio(url: str, quality: str = 'voice', lang: str = 'en', limit_dur
         # A robust key function to get bitrate, falling back from 'abr' to 'tbr' and then to 0.
         get_bitrate = lambda f: (f.get('abr') or f.get('tbr') or 0)
 
+        # Try to find the best format, but only accept it if it has a non-zero bitrate
         if lang_formats:
-            # If language-specific tracks exist, find the one with the highest bitrate
-            best_format = max(lang_formats, key=get_bitrate)
-            # my_log.log2(f"my_ytb:download_audio: Found best audio for lang '{lang}': format_id {best_format.get('format_id')}")
-        elif audio_formats:
-            # Fallback: no tracks in user's language, get the overall best audio
-            best_format = max(audio_formats, key=get_bitrate)
-            my_log.log2(f"my_ytb:download_audio: No audio for lang '{lang}'. Falling back to best overall: format_id {best_format.get('format_id')}")
+            candidate = max(lang_formats, key=get_bitrate)
+            if get_bitrate(candidate) > 0:
+                best_format = candidate
+
+        if not best_format and audio_formats:
+            candidate = max(audio_formats, key=get_bitrate)
+            if get_bitrate(candidate) > 0:
+                best_format = candidate
+                my_log.log2(f"my_ytb:download_audio: No audio for lang '{lang}'. Falling back to best overall: format_id {best_format.get('format_id')}")
 
         if best_format:
             format_id = best_format.get('format_id')
         else:
-            # Last resort fallback to the old method if no audio-only streams are found
-            format_id = 'bestaudio[abr<=64]/bestaudio' if quality == 'voice' else 'bestaudio/best'
-            my_log.log2(f"my_ytb:download_audio: No specific audio streams found. Using default selector: '{format_id}'")
+            # If our manual selection fails (e.g., no formats with bitrate info),
+            # use a robust yt-dlp format selector string. This is much more reliable.
+            lang_filter = f"[language={lang}]"
+            if quality == 'voice':
+                format_id = f"bestaudio{lang_filter}[abr<=128]/bestaudio{lang_filter}/bestaudio[abr<=128]/bestaudio"
+            else:  # music
+                format_id = f"bestaudio{lang_filter}/bestaudio"
+            my_log.log2(f"my_ytb:download_audio: No specific audio stream found or reliable bitrate. Using selector: '{format_id}'")
 
         # Step 3: Download using the selected format_id
         output_template = f"{utils.get_tmp_fname()}.%(ext)s"

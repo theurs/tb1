@@ -1676,8 +1676,8 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             # --- Get current user settings from DB, with defaults ---
             quality = my_db.get_user_property(chat_id_full, 'ytb_quality') or 'voice'  # voice | music
-            speed = my_db.get_user_property(chat_id_full, 'ytb_speed') or '1.0'        # 1.0 | 1.5 | 2.0
-            volume = my_db.get_user_property(chat_id_full, 'ytb_volume') or '1.0'      # 1.0 | 2.0 | 4.0
+            speed = my_db.get_user_property(chat_id_full, 'ytb_speed') or 1.0        # 1.0 | 1.5 | 2.0
+            volume = my_db.get_user_property(chat_id_full, 'ytb_volume') or 1.0      # 1.0 | 2.0 | 4.0
 
             # --- Row 1: Quality ---
             btn_q_voice = telebot.types.InlineKeyboardButton(
@@ -1698,30 +1698,30 @@ def get_keyboard(kbd: str, message: telebot.types.Message, flag: str = '') -> te
 
             # --- Row 2: Speed ---
             btn_s_10 = telebot.types.InlineKeyboardButton(
-                text=('✅ ' if speed == '1.0' else '') + '🏃 1.0x',
+                text=('✅ ' if speed == 1.0 else '') + '⏩ 1.0x',
                 callback_data='ytb_set_speed_1.0'
             )
             btn_s_15 = telebot.types.InlineKeyboardButton(
-                text=('✅ ' if speed == '1.5' else '') + '🏃 1.5x',
+                text=('✅ ' if speed == 1.5 else '') + '⏩ 1.5x',
                 callback_data='ytb_set_speed_1.5'
             )
             btn_s_20 = telebot.types.InlineKeyboardButton(
-                text=('✅ ' if speed == '2.0' else '') + '🏃 2.0x',
+                text=('✅ ' if speed == 2.0 else '') + '⏩ 2.0x',
                 callback_data='ytb_set_speed_2.0'
             )
             markup.row(btn_s_10, btn_s_15, btn_s_20)
 
             # --- Row 3: Volume ---
             btn_v_10 = telebot.types.InlineKeyboardButton(
-                text=('✅ ' if volume == '1.0' else '') + '📢 1.0x',
+                text=('✅ ' if volume == 1.0 else '') + '📢 1.0x',
                 callback_data='ytb_set_volume_1.0'
             )
             btn_v_20 = telebot.types.InlineKeyboardButton(
-                text=('✅ ' if volume == '2.0' else '') + '📢 2.0x',
+                text=('✅ ' if volume == 2.0 else '') + '📢 2.0x',
                 callback_data='ytb_set_volume_2.0'
             )
             btn_v_40 = telebot.types.InlineKeyboardButton(
-                text=('✅ ' if volume == '4.0' else '') + '📢 4.0x',
+                text=('✅ ' if volume == 4.0 else '') + '📢 4.0x',
                 callback_data='ytb_set_volume_4.0'
             )
             markup.row(btn_v_10, btn_v_20, btn_v_40)
@@ -3678,9 +3678,15 @@ def download_ytb_audio(message: telebot.types.Message):
                 if my_db.get_user_property(chat_id_full, 'ytb_quality') is None:
                     my_db.set_user_property(chat_id_full, 'ytb_quality', 'voice')
                 if my_db.get_user_property(chat_id_full, 'ytb_speed') is None:
-                    my_db.set_user_property(chat_id_full, 'ytb_speed', '1.0')
+                    my_db.set_user_property(chat_id_full, 'ytb_speed', 1.0)
+                else:
+                    if isinstance(my_db.get_user_property(chat_id_full, 'ytb_speed'), str):
+                        my_db.set_user_property(chat_id_full, 'ytb_speed', float(my_db.get_user_property(chat_id_full, 'ytb_speed')))
                 if my_db.get_user_property(chat_id_full, 'ytb_volume') is None:
-                    my_db.set_user_property(chat_id_full, 'ytb_volume', '1.0')
+                    my_db.set_user_property(chat_id_full, 'ytb_volume', 1.0)
+                else:
+                    if isinstance(my_db.get_user_property(chat_id_full, 'ytb_volume'), str):
+                        my_db.set_user_property(chat_id_full, 'ytb_volume', float(my_db.get_user_property(chat_id_full, 'ytb_volume')))
                 # -----------------------------------------------------------
 
                 title, pic, desc, duration_sec = my_ytb.get_title_and_poster(url)
@@ -3702,7 +3708,7 @@ def download_ytb_audio(message: telebot.types.Message):
                     message,
                     message.chat.id,
                     photo=utils.download_image_for_thumb(pic),
-                    caption=caption,
+                    caption=caption.replace('&lt;blockquote expandable&gt;','').replace('&lt;/blockquote&gt;',''),
                     parse_mode='HTML',
                     reply_markup=get_keyboard('ytb_options', message)
                 )
@@ -7761,109 +7767,120 @@ def send_photo(
     реплаи то не испольует его
     '''
 
-    full_chat_id = get_topic_id(message)
-    reply = my_db.get_user_property(full_chat_id, 'send_message') or ''
+    try:
+        full_chat_id = get_topic_id(message)
+        reply = my_db.get_user_property(full_chat_id, 'send_message') or ''
 
-    n = 5
-    while n >= 0:
-        n -= 1
-
-        try:
-            x, y = utils.get_image_size(photo)
-            if max(x, y) > 1280 or min(x, y) > 1280:
-                # send as document too
-                m = send_document(
-                    message,
-                    chat_id=chat_id,
-                    document=photo,
-                    caption=caption,
-                    parse_mode=parse_mode,
-                    caption_entities=caption_entities,
-                    disable_notification=disable_notification,
-                    protect_content=protect_content,
-                    reply_to_message_id=reply_to_message_id,
-                    allow_sending_without_reply=allow_sending_without_reply,
-                    reply_markup=reply_markup,
-                    timeout=timeout,
-                    message_thread_id=message_thread_id,
-                    reply_parameters=reply_parameters,
-                    business_connection_id=business_connection_id,
-                    message_effect_id=message_effect_id,
-                    allow_paid_broadcast=allow_paid_broadcast,
-
-                    # Параметры, специфичные для send_document, которые полезны при отправке изображения:
-                    visible_file_name="image.png",
-                    # thumb=thumbnail_data_or_file_id,
-                )
-                log_message(m)
-                photo = utils.resize_image_to_dimensions(photo, 2000, 2000)
-
-            if not reply:
-                r = bot.send_photo(
-                    chat_id=chat_id,
-                    photo=photo,
-                    caption=caption,
-                    parse_mode=parse_mode,
-                    caption_entities=caption_entities,
-                    disable_notification=disable_notification,
-                    protect_content=protect_content,
-                    reply_to_message_id=reply_to_message_id,
-                    allow_sending_without_reply=allow_sending_without_reply,
-                    reply_markup=reply_markup,
-                    timeout=timeout,
-                    message_thread_id=message_thread_id,
-                    has_spoiler=has_spoiler,
-                    reply_parameters=reply_parameters,
-                    business_connection_id=business_connection_id,
-                    message_effect_id=message_effect_id,
-                    show_caption_above_media=show_caption_above_media,
-                    allow_paid_broadcast=allow_paid_broadcast
-                )
+        if caption:
+            if parse_mode == 'HTML':
+                caption = utils.split_html(caption, 900)[0]
             else:
-                r = bot.send_photo(
-                    chat_id=chat_id,
-                    photo=photo,
-                    caption=caption,
-                    parse_mode=parse_mode,
-                    caption_entities=caption_entities,
-                    disable_notification=disable_notification,
-                    protect_content=protect_content,
-                    allow_sending_without_reply=allow_sending_without_reply,
-                    reply_markup=reply_markup,
-                    timeout=timeout,
-                    message_thread_id=message_thread_id,
-                    has_spoiler=has_spoiler,
-                    reply_parameters=reply_parameters,
-                    business_connection_id=business_connection_id,
-                    message_effect_id=message_effect_id,
-                    show_caption_above_media=show_caption_above_media,
-                    allow_paid_broadcast=allow_paid_broadcast
-                )
-            return r
+                caption = utils.split_text(caption, 900)[0]
 
-        except Exception as error:
+        n = 5
+        while n >= 0:
+            n -= 1
 
-            if 'Error code: 500. Description: Internal Server Error' in str(error):
-                my_log.log2(f'tb:send_photo:1: {error}')
-                time.sleep(10)
-                continue
+            try:
+                x, y = utils.get_image_size(photo)
+                if max(x, y) > 1280 or min(x, y) > 1280:
+                    # send as document too
+                    m = send_document(
+                        message,
+                        chat_id=chat_id,
+                        document=photo,
+                        caption=caption,
+                        parse_mode=parse_mode,
+                        caption_entities=caption_entities,
+                        disable_notification=disable_notification,
+                        protect_content=protect_content,
+                        reply_to_message_id=reply_to_message_id,
+                        allow_sending_without_reply=allow_sending_without_reply,
+                        reply_markup=reply_markup,
+                        timeout=timeout,
+                        message_thread_id=message_thread_id,
+                        reply_parameters=reply_parameters,
+                        business_connection_id=business_connection_id,
+                        message_effect_id=message_effect_id,
+                        allow_paid_broadcast=allow_paid_broadcast,
 
-            # попробовать отправить не ответ на удаленное сообщение а просто сообщение
-            if 'Bad Request: message to be replied not found' not in str(error):
-                reply = not reply
-                continue
+                        # Параметры, специфичные для send_document, которые полезны при отправке изображения:
+                        visible_file_name="image.png",
+                        # thumb=thumbnail_data_or_file_id,
+                    )
+                    log_message(m)
+                    photo = utils.resize_image_to_dimensions(photo, 2000, 2000)
 
-            # если в ответе написано подождите столько то секунд то ждем столько то + 5
-            seconds = utils.extract_retry_seconds(str(error))
-            if seconds:
-                time.sleep(seconds + 5)
-                continue
+                if not reply:
+                    r = bot.send_photo(
+                        chat_id=chat_id,
+                        photo=photo,
+                        caption=caption,
+                        parse_mode=parse_mode,
+                        caption_entities=caption_entities,
+                        disable_notification=disable_notification,
+                        protect_content=protect_content,
+                        reply_to_message_id=reply_to_message_id,
+                        allow_sending_without_reply=allow_sending_without_reply,
+                        reply_markup=reply_markup,
+                        timeout=timeout,
+                        message_thread_id=message_thread_id,
+                        has_spoiler=has_spoiler,
+                        reply_parameters=reply_parameters,
+                        business_connection_id=business_connection_id,
+                        message_effect_id=message_effect_id,
+                        show_caption_above_media=show_caption_above_media,
+                        allow_paid_broadcast=allow_paid_broadcast
+                    )
+                else:
+                    r = bot.send_photo(
+                        chat_id=chat_id,
+                        photo=photo,
+                        caption=caption,
+                        parse_mode=parse_mode,
+                        caption_entities=caption_entities,
+                        disable_notification=disable_notification,
+                        protect_content=protect_content,
+                        allow_sending_without_reply=allow_sending_without_reply,
+                        reply_markup=reply_markup,
+                        timeout=timeout,
+                        message_thread_id=message_thread_id,
+                        has_spoiler=has_spoiler,
+                        reply_parameters=reply_parameters,
+                        business_connection_id=business_connection_id,
+                        message_effect_id=message_effect_id,
+                        show_caption_above_media=show_caption_above_media,
+                        allow_paid_broadcast=allow_paid_broadcast
+                    )
+                return r
 
-            # неизвестная ошибка
-            else:
-                traceback_error = traceback.format_exc()
-                my_log.log2(f'tb:send_photo:2: {error}\n\n{traceback_error}')
-                break
+            except Exception as error:
+
+                if 'Error code: 500. Description: Internal Server Error' in str(error):
+                    my_log.log2(f'tb:send_photo:1: {error}')
+                    time.sleep(10)
+                    continue
+
+                # попробовать отправить не ответ на удаленное сообщение а просто сообщение
+                if 'Bad Request: message to be replied not found' not in str(error):
+                    reply = not reply
+                    continue
+
+                # если в ответе написано подождите столько то секунд то ждем столько то + 5
+                seconds = utils.extract_retry_seconds(str(error))
+                if seconds:
+                    time.sleep(seconds + 5)
+                    continue
+
+                # неизвестная ошибка
+                else:
+                    traceback_error = traceback.format_exc()
+                    my_log.log2(f'tb:send_photo:2: {error}\n\n{traceback_error}')
+                    break
+
+    except Exception as error:
+        traceback_error = traceback.format_exc()
+        my_log.log2(f'tb:send_photo:3: {error}\n\n{traceback_error}')
 
     return None
 

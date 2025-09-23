@@ -1065,7 +1065,7 @@ def sum_big_text(text:str, query: str, temperature: float = 1, model = DEFAULT_M
     return r
 
 
-def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bool, bool] | None:
+def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, str, bool, bool] | None:
     """
     Generates a detailed prompt for image generation based on user query and conversation history.
 
@@ -1085,28 +1085,27 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
         user_id=chat_id,
         )
     result_dict = utils.string_to_dict(result)
-    if result_dict:
-        reprompt = ''
-        negative_prompt = ''
-        moderation_sexual = False
-        moderation_hate = False
-        if 'reprompt' in result_dict:
-            reprompt = result_dict['reprompt']
-        if 'negative_reprompt' in result_dict:
-            negative_prompt = result_dict['negative_reprompt']
-        if 'negative_prompt' in result_dict:
-            negative_prompt = result_dict['negative_prompt']
-        if 'moderation_sexual' in result_dict:
-            moderation_sexual = result_dict['moderation_sexual']
-            if moderation_sexual:
-                my_log.log_reprompt_moderation(f'MODERATION image reprompt failed: {prompt}')
-        if 'moderation_hate' in result_dict:
-            moderation_hate = result_dict['moderation_hate']
-            if moderation_hate:
-                my_log.log_reprompt_moderation(f'MODERATION image reprompt failed: {prompt}')
 
-        if reprompt and negative_prompt:
-            return reprompt, negative_prompt, moderation_sexual, moderation_hate
+    if not result_dict:
+        my_log.log_mistral(f'my_mistral:get_reprompt: Failed to parse JSON response for prompt: "{prompt[:150]}..."')
+        return None
+
+    # Extract values based on the keys defined in the external prompt's JSON schema
+    reprompt = result_dict.get('reprompt', '')
+    negative_prompt = result_dict.get('negative_reprompt', '')
+    moderation_sexual = result_dict.get('moderation_sexual', False)
+    moderation_hate = result_dict.get('moderation_hate', False)
+    preffered_aspect_ratio = result_dict.get('preffered_aspect_ratio', '1')
+
+    if moderation_sexual or moderation_hate:
+        my_log.log_reprompt_moderation(
+            f'MODERATION (my_mistral) triggered: Sexual={moderation_sexual}, Hate={moderation_hate}. '
+            f'Prompt: "{prompt}..."'
+        )
+
+    if reprompt and negative_prompt:
+        return reprompt, negative_prompt, preffered_aspect_ratio, moderation_sexual, moderation_hate
+
     return None
 
 

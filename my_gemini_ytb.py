@@ -6,16 +6,17 @@ import time
 from google import genai
 from google.genai import types
 
+import cfg
 import my_db
 import my_gemini_general
 import my_log
 
 
 PROMPT = """Перепиши текстом всё содержание видео целиком стараясь ничего не упустить, уложись до 1500 слов. Ответ напиши на языке """
-# MODEL = "gemini-2.5-flash-preview-05-20"
-# MODEL_FALLBACK = "gemini-2.5-flash-preview-04-17-thinking"
-MODEL = "gemini-2.0-flash"
-MODEL_FALLBACK = "gemini-2.0-flash-001"
+MODEL = cfg.gemini25_flash_model
+MODEL_FALLBACK = cfg.gemini25_flash_model_fallback
+# MODEL = "gemini-2.0-flash"
+# MODEL_FALLBACK = "gemini-2.0-flash-001"
 TIMEOUT = 180
 
 SAFETY_SETTINGS = [

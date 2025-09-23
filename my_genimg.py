@@ -125,7 +125,8 @@ def bing(
     prompt: str,
     moderation_flag: bool = False,
     user_id: str = '',
-    model: str = 'dalle'
+    model: str = 'dalle',
+    preffered_aspect_ratio: str = '1',
 ):
     """
     Рисует бингом, не больше 1 потока и 20 секунд пауза между запросами
@@ -155,7 +156,11 @@ def bing(
         with BING_LOCK:
             images = []
             if os.path.exists('cfg_bing.py'):
-                images = bing_api_client.gen_images(prompt, model=model)
+                images = bing_api_client.gen_images(
+                    prompt,
+                    model=model,
+                    preffered_aspect_ratio=preffered_aspect_ratio
+                )
 
                 if images:
                     my_log.log_bing_success('BING SUCCESS ' + prompt + '\n\n' + '\n'.join(images))
@@ -284,22 +289,23 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, 
         return []
 
 
-def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> tuple[str, str] | None:
+def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> tuple[str, str, str]:
     """
     Function to get a reprompt for image generation based on user's prompt and conversation history.
     Parameters:
     - prompt: a string containing the user's prompt
     - conversation_history: a string containing the conversation history
     Returns:
-    - a string representing the reprompt for image generation
+    - a tuple of three strings: (reprompt, negative_reprompt, preffered_aspect_ratio)
     """
 
 
     # # cerebras быстрый и хорошие модели, но склонен затупить и висеть до таймаута
-    # r1, r2 = my_cerebras.get_reprompt(prompt, conversation_history, chat_id)
+    # r1, r2, r3 = my_cerebras.get_reprompt(prompt, conversation_history, chat_id)
     # if r1 or r2:
-    #     return r1,r2
+    #     return r1,r2,r3
 
+    dont_translate = False
 
     try:
         conversation_history = conversation_history.replace('𝐔𝐒𝐄𝐑:', 'user:')
@@ -315,6 +321,7 @@ Repromt user's PROMPT for image generation.
 Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
 Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
 A negative prompt in image generation lets you specify what you DON'T want to see in the picture. It helps exclude unwanted objects, styles, colors, or other characteristics, giving you more control over the result and speeding up the generation process.
+preffered_aspect_ratio - digit from 1 to 3 where 1 is 1:1, 2 is is 16:9, 3 is 9:16.
 
 Example:
 
@@ -332,26 +339,28 @@ User's PROMPT: {prompt}
 Dialog history: {conversation_history}
 
 Using this JSON schema:
-  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str, "moderation_sexual": bool, "moderation_hate": bool}}
+  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str, "preffered_aspect_ratio": str, "moderation_sexual": bool, "moderation_hate": bool}}
 Return a `reprompt`
 '''
 
         negative = ''
         reprompt = ''
+        preffered_aspect_ratio = '1'
+
         r = ''
 
         if not r:
             r = my_gemini3.get_reprompt_for_image(query, chat_id)
         if r:
-            reprompt, negative, moderation_sex, moderation_hate = r
+            reprompt, negative, preffered_aspect_ratio, moderation_sex, moderation_hate = r
             if moderation_sex or moderation_hate:
-                return 'MODERATION', None
+                return 'MODERATION', '', ''
         if not reprompt:
             r = my_mistral.get_reprompt_for_image(query, chat_id)
             if r:
-                reprompt, negative, moderation_sex, moderation_hate = r
+                reprompt, negative, preffered_aspect_ratio, moderation_sex, moderation_hate = r
                 if moderation_sex or moderation_hate:
-                    return 'MODERATION', None
+                    return 'MODERATION', '', ''
 
     except Exception as error:
         error_traceback = traceback.format_exc()
@@ -361,10 +370,18 @@ Return a `reprompt`
     else:
         my_log.log_reprompt_moderations(f'get_reprompt:\n\n{prompt}\n\n{reprompt}\n\nNegative: {negative}')
 
-    if dont_translate:
-        return prompt, negative
+    if preffered_aspect_ratio:
+        if preffered_aspect_ratio == '1:1':
+            preffered_aspect_ratio = '1'
+        elif preffered_aspect_ratio == '16:9':
+            preffered_aspect_ratio = '2'
+        elif preffered_aspect_ratio == '9:16':
+            preffered_aspect_ratio = '3'
 
-    return reprompt, negative
+    if dont_translate:
+        return prompt, negative, preffered_aspect_ratio
+
+    return reprompt, negative, preffered_aspect_ratio
 
 
 def gen_images_bing_only(
@@ -381,7 +398,7 @@ def gen_images_bing_only(
         return []
 
     # переводим на английский и модерируем
-    reprompt, _ = get_reprompt(prompt, conversation_history)
+    reprompt, _, preffered_aspect_ratio = get_reprompt(prompt, conversation_history)
 
     if reprompt == 'MODERATION':
         # если сработала модерация но юзер в белом списке то ок
@@ -401,7 +418,7 @@ def gen_images_bing_only(
     if reprompt.strip():
         result = []
         for _ in range(iterations):
-            r = bing(reprompt, user_id=user_id, model=model)
+            r = bing(reprompt, user_id=user_id, model=model, preffered_aspect_ratio=preffered_aspect_ratio)
             if r:
                 result += r
             else:
@@ -452,7 +469,7 @@ def gen_images(
     negative = ''
     original_prompt = prompt
 
-    reprompt, negative = get_reprompt(prompt, conversation_history, user_id)
+    reprompt, negative, preffered_aspect_ratio = get_reprompt(prompt, conversation_history, user_id)
     if reprompt == 'MODERATION':
         return ['moderation',]
 
@@ -472,7 +489,7 @@ def gen_images(
     async_result_pollinations = pool.apply_async(pollinations_gen, (prompt,))
 
     if use_bing:
-        async_result1 = pool.apply_async(bing, (bing_prompt, moderation_flag, user_id))
+        async_result1 = pool.apply_async(bing, (bing_prompt, moderation_flag, user_id, 'dalle', preffered_aspect_ratio))
 
         result = (async_result1.get() or []) + \
                  (async_result2.get() or []) + \

@@ -2241,7 +2241,7 @@ Your final output is a single block of clean, corrected, and well-formatted Mark
     return ''
 
 
-def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bool, bool] | None:
+def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, str, bool, bool] | None:
     """
     Executes a pre-formatted prompt to get a detailed image generation prompt.
 
@@ -2279,6 +2279,7 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
     negative_prompt = result_dict.get('negative_reprompt', '')
     moderation_sexual = result_dict.get('moderation_sexual', False)
     moderation_hate = result_dict.get('moderation_hate', False)
+    preffered_aspect_ratio = result_dict.get('preffered_aspect_ratio', '1')
 
     if moderation_sexual or moderation_hate:
         my_log.log_reprompt_moderation(
@@ -2288,7 +2289,7 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, bo
 
     # Return the values if the essential parts are present
     if reprompt and negative_prompt:
-        return reprompt, negative_prompt, moderation_sexual, moderation_hate
+        return reprompt, negative_prompt, preffered_aspect_ratio, moderation_sexual, moderation_hate
 
     return None
 

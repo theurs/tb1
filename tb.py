@@ -5295,7 +5295,7 @@ def image_gemini_gen(message: telebot.types.Message):
 
             with ShowAction(message, 'upload_photo'):
                 try:
-                    reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
+                    reprompt, negative_prompt, preffered_aspect_ratio = my_genimg.get_reprompt(prompt, '', chat_id_full)
                     if reprompt == 'MODERATION':
                         bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
                         return
@@ -5425,7 +5425,7 @@ def image_flux_gen(message: telebot.types.Message):
             with ShowAction(message, 'upload_photo'):
                 try:
                     # Get English prompt and negative prompt using the function
-                    reprompt, negative_prompt = my_genimg.get_reprompt(prompt, '', chat_id_full)
+                    reprompt, negative_prompt, preffered_aspect_ratio = my_genimg.get_reprompt(prompt, '', chat_id_full)
                     if reprompt == 'MODERATION':
                         bot_reply_tr(message, 'Ваш запрос содержит потенциально неприемлемый контент.')
                         return
@@ -8625,7 +8625,7 @@ def images_api_post() -> Dict[str, Any]:
             # remove trailing !
             prompt = re.sub(r'^!+', '', prompt).strip()
             # Get English prompt and negative prompt using the function
-            reprompt, negative_prompt = my_genimg.get_reprompt(prompt)
+            reprompt, negative_prompt, preffered_aspect_ratio = my_genimg.get_reprompt(prompt)
             if reprompt != 'MODERATION':
                 image_results = my_genimg.flux_nebius_gen1(reprompt, negative_prompt, model = 'black-forest-labs/flux-dev')
 

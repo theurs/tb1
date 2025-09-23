@@ -927,7 +927,7 @@ def remove_key(key: str):
         my_log.log_cerebras(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
 
 
-def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> Tuple[str, str]:
+def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> Tuple[str, str, str]:
     """
     Generates an improved prompt and a negative prompt for image generation
     using the Cerebras AI with structured JSON output.
@@ -967,6 +967,10 @@ def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '')
                     "type": "string",
                     "description": "The detected language code of the original prompt (e.g., 'ru', 'en')."
                 },
+                "preffered_aspect_ratio": {
+                    "type": "string",
+                    "description": "The preferred aspect ratio for the generated image ('1' for 1:1, '2' for wide, '3' for vertical)."
+                },
                 "moderation_sexual": {
                     "type": "boolean",
                     "description": "True if the prompt contains sexually explicit content."
@@ -976,7 +980,7 @@ def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '')
                     "description": "True if the prompt contains hate speech or violence."
                 }
             },
-            "required": ["reprompt", "negative_reprompt", "was_translated", "lang_from", "moderation_sexual", "moderation_hate"],
+            "required": ["reprompt", "negative_reprompt", "was_translated", "lang_from", "preffered_aspect_ratio", "moderation_sexual", "moderation_hate"],
             "additionalProperties": False
         }
 
@@ -989,6 +993,7 @@ CRITICAL INSTRUCTIONS:
 2.  **Translate to English:** The final `reprompt` MUST be in English.
 3.  **Negative Prompt:** The `negative_reprompt` should include terms to prevent common image flaws (e.g., 'low quality, blurry, ugly, text, watermark, deformed, extra limbs').
 4.  **Moderation:** Accurately flag any sexually explicit or hateful content.
+5.  **Aspect Ratio:** The `preffered_aspect_ratio` should be '1' for 1:1, '2' for wide, and '3' for vertical.
 
 USER'S IDEA: "{clean_prompt}"
 
@@ -1009,37 +1014,38 @@ CONVERSATION CONTEXT:
 
         if not json_response:
             my_log.log_cerebras(f'get_reprompt: AI returned empty response for prompt: {prompt}')
-            return '', ''
+            return '', '', ''
 
         data: Optional[Dict] = utils.string_to_dict(json_response)
         if not data:
             my_log.log_cerebras(f'get_reprompt: Failed to parse AI JSON response: {json_response}')
-            return '', ''
+            return '', '', ''
 
         # Moderation check
         if data.get('moderation_sexual') or data.get('moderation_hate'):
             my_log.log_reprompt_moderation(f'get_reprompt: MODERATION triggered for prompt: {prompt} | Data: {data}')
-            return 'MODERATION', '' # Adhering to the example's return style
+            return 'MODERATION', '', '' # Adhering to the example's return style
 
         reprompt = data.get('reprompt', '')
         negative_reprompt = data.get('negative_reprompt', '')
+        preffered_aspect_ratio = data.get('preffered_aspect_ratio', '1')
 
         if not reprompt:
-            return '', ''
+            return '', '', ''
 
         # Log for analysis
         log_final_reprompt = clean_prompt if dont_enhance else reprompt
         my_log.log_reprompt_moderations(f'get_reprompt:\n\nOriginal: {prompt}\n\nFinal: {log_final_reprompt}\n\nNegative: {negative_reprompt}')
 
         if dont_enhance:
-            return clean_prompt, negative_reprompt
+            return clean_prompt, negative_reprompt, preffered_aspect_ratio
 
-        return reprompt, negative_reprompt
+        return reprompt, negative_reprompt, preffered_aspect_ratio
 
     except Exception as error:
         error_traceback = traceback.format_exc()
         my_log.log_cerebras(f'get_reprompt: Unhandled exception for prompt "{prompt}": {error}\n\n{error_traceback}')
-        return '', ''
+        return '', '', ''
 
 
 @cachetools.func.ttl_cache(maxsize=100, ttl=15 * 60)

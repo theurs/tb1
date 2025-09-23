@@ -46,11 +46,13 @@ def get_base_url(model: str = 'dalle') -> str:
         return ''
 
 
-def send_image_generation_request(prompt: str, model: str = 'dalle') -> List[str]:
+def send_image_generation_request(prompt: str, model: str = 'dalle', preffered_aspect_ratio: str = '1') -> List[str]:
     """
     Sends a POST request to the image generation API with the given prompt.
 
     :param prompt: The prompt for image generation.
+    :param model: The model to use for image generation.
+    :param preffered_aspect_ratio: The preferred aspect ratio for the generated images ('1', '2', '3').
     :return: A list of image URLs returned by the API.
     :raises requests.RequestException: If there's an error with the request.
     :raises json.JSONDecodeError: If the response is not a valid JSON.
@@ -61,7 +63,7 @@ def send_image_generation_request(prompt: str, model: str = 'dalle') -> List[str
         return []
 
     headers: Dict[str, str] = {"Content-Type": "application/json"}
-    data: Dict[str, str] = {"prompt": prompt[:900]}
+    data: Dict[str, str] = {"prompt": prompt[:900], "ar": preffered_aspect_ratio}
 
     try:
         # Send the POST request
@@ -92,8 +94,8 @@ def send_image_generation_request(prompt: str, model: str = 'dalle') -> List[str
     return []
 
 
-def gen_images(prompt: str, model: str = 'dalle') -> List[str]:
-    return send_image_generation_request(prompt, model)
+def gen_images(prompt: str, model: str = 'dalle', preffered_aspect_ratio: str = '1') -> List[str]:
+    return send_image_generation_request(prompt, model, preffered_aspect_ratio)
 
 
 if __name__ == "__main__":

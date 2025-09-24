@@ -462,13 +462,13 @@ def tr(text: str, lang: str, help: str = '', save_cache: bool = True) -> str:
         translated = ''
 
         if not translated:
-            translated = my_cerebras.translate(text, to_lang=lang, help=help)
-
-        if not translated:
             translated = my_gemini3.translate(text, to_lang=lang, help=help, censored=True)
 
         if not translated:
             translated = my_groq.translate(text, to_lang=lang, help=help)
+
+        if not translated:
+            translated = my_cerebras.translate(text, to_lang=lang, help=help)
 
         if not translated:
             translated = my_trans.translate(text, lang)

@@ -1013,12 +1013,12 @@ CONVERSATION CONTEXT:
         )
 
         if not json_response:
-            my_log.log_cerebras(f'get_reprompt_for_image: AI returned empty response for prompt: {prompt}')
+            # my_log.log_cerebras(f'get_reprompt_for_image: AI returned empty response for prompt: {prompt}')
             return '', '', '', False, False
 
         data: Optional[Dict] = utils.string_to_dict(json_response)
         if not data:
-            my_log.log_cerebras(f'get_reprompt_for_image: Failed to parse AI JSON response: {json_response}')
+            # my_log.log_cerebras(f'get_reprompt_for_image: Failed to parse AI JSON response: {json_response}')
             return '', '', '', False, False
 
         # Moderation check
@@ -1044,8 +1044,8 @@ CONVERSATION CONTEXT:
 
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_cerebras(f'get_reprompt_for_image: Unhandled exception for prompt "{prompt}": {error}\n\n{error_traceback}')
-        return '', '', ''
+        # my_log.log_cerebras(f'get_reprompt_for_image: Unhandled exception for prompt "{prompt}": {error}\n\n{error_traceback}')
+        return '', '', '', False, False
 
 
 @cachetools.func.ttl_cache(maxsize=100, ttl=15 * 60)

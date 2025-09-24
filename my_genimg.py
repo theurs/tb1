@@ -94,23 +94,28 @@ Return a `reprompt`
         moderation_hate = False
         r = None
 
+        reprompter_used_str = 'None'
+
         # Try Cerebras
         if not reprompt:
             r = my_cerebras.get_reprompt_for_image(query, chat_id)
             if r:
                 reprompt, negative, preffered_aspect_ratio, moderation_sex, moderation_hate = r
+                reprompter_used_str = 'Cerebras'
 
         # Try Gemini
         if not reprompt:
             r = my_gemini3.get_reprompt_for_image(query, chat_id)
             if r:
                 reprompt, negative, preffered_aspect_ratio, moderation_sex, moderation_hate = r
+                reprompter_used_str = 'Gemini'
 
         # Try Mistral if the first attempt failed
         if not reprompt:
             r = my_mistral.get_reprompt_for_image(query, chat_id)
             if r:
                 reprompt, negative, preffered_aspect_ratio, moderation_sex, moderation_hate = r
+                reprompter_used_str = 'Mistral'
 
     except Exception as error:
         error_traceback = traceback.format_exc()
@@ -133,7 +138,7 @@ Return a `reprompt`
     final_reprompt = clean_prompt if dont_translate else reprompt
 
     log_message = (
-        f'get_reprompt: {chat_id}\n\n'
+        f'get_reprompt [{reprompter_used_str}]: {chat_id}\n\n'
         f'Original: {original_prompt}\n\n'
         f'Final Reprompt: {final_reprompt}\n\n'
         f'Negative: {negative}\n\n'

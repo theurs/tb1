@@ -1104,7 +1104,7 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, st
     #     )
 
     if moderation_sexual or moderation_hate:
-        return 'MODERATION', negative_prompt, preffered_aspect_ratio, moderation_sexual, moderation_hate
+        return 'MODERATION ' + reprompt, negative_prompt, preffered_aspect_ratio, moderation_sexual, moderation_hate
 
     if reprompt and negative_prompt:
         return reprompt, negative_prompt, preffered_aspect_ratio, moderation_sexual, moderation_hate

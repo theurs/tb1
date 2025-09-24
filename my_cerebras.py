@@ -1028,7 +1028,7 @@ CONVERSATION CONTEXT:
         # Moderation check
         if data.get('moderation_sexual') or data.get('moderation_hate'):
             # my_log.log_reprompt_moderation(f'my_cerebras:get_reprompt_for_image: MODERATION triggered for prompt: {prompt} | Data: {data}')
-            return 'MODERATION', negative_reprompt, preffered_aspect_ratio, data.get('moderation_sexual', False), data.get('moderation_hate', False)
+            return 'MODERATION ' + reprompt, negative_reprompt, preffered_aspect_ratio, data.get('moderation_sexual', False), data.get('moderation_hate', False)
 
         if not reprompt:
             return '', '', '', False, False

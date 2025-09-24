@@ -1021,14 +1021,14 @@ CONVERSATION CONTEXT:
             # my_log.log_cerebras(f'get_reprompt_for_image: Failed to parse AI JSON response: {json_response}')
             return '', '', '', False, False
 
-        # Moderation check
-        if data.get('moderation_sexual') or data.get('moderation_hate'):
-            # my_log.log_reprompt_moderation(f'my_cerebras:get_reprompt_for_image: MODERATION triggered for prompt: {prompt} | Data: {data}')
-            return 'MODERATION', '', '', False, False # Adhering to the example's return style
-
         reprompt = data.get('reprompt', '')
         negative_reprompt = data.get('negative_reprompt', '')
         preffered_aspect_ratio = data.get('preffered_aspect_ratio', '1')
+
+        # Moderation check
+        if data.get('moderation_sexual') or data.get('moderation_hate'):
+            # my_log.log_reprompt_moderation(f'my_cerebras:get_reprompt_for_image: MODERATION triggered for prompt: {prompt} | Data: {data}')
+            return 'MODERATION', negative_reprompt, preffered_aspect_ratio, data.get('moderation_sexual', False), data.get('moderation_hate', False)
 
         if not reprompt:
             return '', '', '', False, False

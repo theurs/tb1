@@ -2281,11 +2281,11 @@ def get_reprompt_for_image(prompt: str, chat_id: str = '') -> tuple[str, str, st
     moderation_hate = result_dict.get('moderation_hate', False)
     preffered_aspect_ratio = result_dict.get('preffered_aspect_ratio', '1')
 
-    if moderation_sexual or moderation_hate:
-        my_log.log_reprompt_moderation(
-            f'MODERATION (my_gemini3) triggered: Sexual={moderation_sexual}, Hate={moderation_hate}. '
-            f'Prompt: "{prompt}..."'
-        )
+    # if moderation_sexual or moderation_hate:
+    #     my_log.log_reprompt_moderation(
+    #         f'MODERATION (my_gemini3) triggered: Sexual={moderation_sexual}, Hate={moderation_hate}. '
+    #         f'Prompt: "{prompt}..."'
+    #     )
 
     # Return the values if the essential parts are present
     if reprompt and negative_prompt:

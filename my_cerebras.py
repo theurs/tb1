@@ -927,7 +927,7 @@ def remove_key(key: str):
         my_log.log_cerebras(f'Failed to remove key {key}: {error}\n\n{error_traceback}')
 
 
-def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> Tuple[str, str, str]:
+def get_reprompt_for_image(prompt: str, conversation_history: str = '', chat_id: str = '') -> Tuple[str, str, str, bool, bool]:
     """
     Generates an improved prompt and a negative prompt for image generation
     using the Cerebras AI with structured JSON output.
@@ -1013,38 +1013,38 @@ CONVERSATION CONTEXT:
         )
 
         if not json_response:
-            my_log.log_cerebras(f'get_reprompt: AI returned empty response for prompt: {prompt}')
-            return '', '', ''
+            my_log.log_cerebras(f'get_reprompt_for_image: AI returned empty response for prompt: {prompt}')
+            return '', '', '', False, False
 
         data: Optional[Dict] = utils.string_to_dict(json_response)
         if not data:
-            my_log.log_cerebras(f'get_reprompt: Failed to parse AI JSON response: {json_response}')
-            return '', '', ''
+            my_log.log_cerebras(f'get_reprompt_for_image: Failed to parse AI JSON response: {json_response}')
+            return '', '', '', False, False
 
         # Moderation check
         if data.get('moderation_sexual') or data.get('moderation_hate'):
-            my_log.log_reprompt_moderation(f'get_reprompt: MODERATION triggered for prompt: {prompt} | Data: {data}')
-            return 'MODERATION', '', '' # Adhering to the example's return style
+            # my_log.log_reprompt_moderation(f'my_cerebras:get_reprompt_for_image: MODERATION triggered for prompt: {prompt} | Data: {data}')
+            return 'MODERATION', '', '', False, False # Adhering to the example's return style
 
         reprompt = data.get('reprompt', '')
         negative_reprompt = data.get('negative_reprompt', '')
         preffered_aspect_ratio = data.get('preffered_aspect_ratio', '1')
 
         if not reprompt:
-            return '', '', ''
+            return '', '', '', False, False
 
         # Log for analysis
-        log_final_reprompt = clean_prompt if dont_enhance else reprompt
-        my_log.log_reprompt_moderations(f'get_reprompt:\n\nOriginal: {prompt}\n\nFinal: {log_final_reprompt}\n\nNegative: {negative_reprompt}')
+        # log_final_reprompt = clean_prompt if dont_enhance else reprompt
+        # my_log.log_reprompt_moderations(f'my_cerebras:get_reprompt_for_image:\n\nOriginal: {prompt}\n\nFinal: {log_final_reprompt}\n\nNegative: {negative_reprompt}')
 
         if dont_enhance:
-            return clean_prompt, negative_reprompt, preffered_aspect_ratio
+            return clean_prompt, negative_reprompt, preffered_aspect_ratio, data.get('moderation_sexual', False), data.get('moderation_hate', False)
 
-        return reprompt, negative_reprompt, preffered_aspect_ratio
+        return reprompt, negative_reprompt, preffered_aspect_ratio, data.get('moderation_sexual', False), data.get('moderation_hate', False)
 
     except Exception as error:
         error_traceback = traceback.format_exc()
-        my_log.log_cerebras(f'get_reprompt: Unhandled exception for prompt "{prompt}": {error}\n\n{error_traceback}')
+        my_log.log_cerebras(f'get_reprompt_for_image: Unhandled exception for prompt "{prompt}": {error}\n\n{error_traceback}')
         return '', '', ''
 
 
@@ -1273,19 +1273,6 @@ if __name__ == '__main__':
     # print(translate('Je ne parle pas russe, mais je peux utiliser cet outil.', 'fr', 'ru', help='A user is talking about using a tool or software.'))
     # print(translate('Взломать пентагон через SQL-инъекцию? Это кринж.', 'ru', 'en', help='Informal cybersecurity context, using the modern slang word "cringe".'))
     # print(translate('Сколько стоит этот эксплойт нулевого дня?', 'ru', 'en', help='Specific cybersecurity term "zero-day exploit".'))
-
-    # # --- Safe Prompts ---
-    # print(get_reprompt('собака положила передние лапы на плечи девушки, их тень падает на старую полуразрушенную стену'))
-    # print(get_reprompt('a cyberpunk hacker in a neon-lit alley, with code reflecting in his chrome glasses, cinematic lighting'))
-    # print(get_reprompt('фантастический замок на летающем острове, водопады стекают в облака, стиль фэнтези'))
-    # print(get_reprompt('un chaton mignon jouant avec une pelote de laine dans une bibliothèque, lumière du soleil', conversation_history='user: I need something cute and cozy.'))
-    # print(get_reprompt('a hyper-realistic portrait of an old fisherman with a weathered face, looking at the stormy sea, 8k, detailed'))
-    # print(get_reprompt('astronaut discovering an ancient alien artifact on a desolate martian landscape'))
-    # print(get_reprompt('минимализм, японский дзен-сад с сакурой и прудом с карпами кои'))
-    # # --- Prompts designed to fail moderation ---
-    # print(get_reprompt('обнаженная пара занимается любовью в лесу, откровенная сцена'))
-    # print(get_reprompt('человек в форме СС на фоне флага со свастикой'))
-    # print(get_reprompt('кровавая сцена резни, много жертв, жестокость крупным планом'))
 
     # print(rewrite_text_for_tts('a hyper-realistic portrait of an old fisherman with a weathered face, looking at the stormy sea, 8k, detailed', 'test'))
     # print(rewrite_text_for_tts('The event is on 12/10/2025 at 4pm, and tickets cost ~$50-75.', 'test'))

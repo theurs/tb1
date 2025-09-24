@@ -40,6 +40,119 @@ BING_LOCK = threading.Lock()
 BING_SWITCH = 0
 
 
+def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> tuple[str, str, str]:
+    """
+    Function to get a reprompt for image generation based on user's prompt and conversation history.
+    Parameters:
+    - prompt: a string containing the user's prompt
+    - conversation_history: a string containing the conversation history
+    Returns:
+    - a tuple of three strings: (reprompt, negative_reprompt, preffered_aspect_ratio)
+    """
+    original_prompt = prompt  # Save original prompt for logging
+
+    try:
+        conversation_history = conversation_history.replace('𝐔𝐒𝐄Р:', 'user:')
+        conversation_history = conversation_history.replace('𝐁𝐎𝐓:', 'bot:')
+
+        clean_prompt = prompt.strip()
+        dont_translate = clean_prompt.startswith('!')
+        clean_prompt = re.sub(r'^!+', '', clean_prompt).strip()
+
+        query = f'''
+User want to create image with text to image generator.
+Repromt user's PROMPT for image generation.
+Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
+Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
+A negative prompt in image generation lets you specify what you DON'T want to see in the picture. It helps exclude unwanted objects, styles, colors, or other characteristics, giving you more control over the result and speeding up the generation process.
+preffered_aspect_ratio - digit from 1 to 3 where 1 is 1:1, 2 is is 16:9, 3 is 9:16.
+
+Example:
+
+Prompt: "Cat in a wizard hat"
+
+Negative prompt: "sad, angry, blurry, cartoon"
+
+Result: The AI will generate an image of a cat in a wizard hat that looks realistic, rather joyful or neutral, not sad or angry, and the image will be sharp, not blurry.
+
+Start your prompt with word Generate.
+
+
+User's PROMPT: {clean_prompt}
+
+Dialog history: {conversation_history}
+
+Using this JSON schema:
+  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str, "preffered_aspect_ratio": str, "moderation_sexual": bool, "moderation_hate": bool}}
+Return a `reprompt`
+'''
+        # Initialize all variables to be returned/logged
+        reprompt = ''
+        negative = ''
+        preffered_aspect_ratio = '1'
+        moderation_sex = False
+        moderation_hate = False
+        r = None
+
+        # Try Cerebras
+        if not reprompt:
+            r = my_cerebras.get_reprompt_for_image(query, chat_id)
+            if r:
+                reprompt, negative, preffered_aspect_ratio, moderation_sex, moderation_hate = r
+
+        # Try Gemini
+        if not reprompt:
+            r = my_gemini3.get_reprompt_for_image(query, chat_id)
+            if r:
+                reprompt, negative, preffered_aspect_ratio, moderation_sex, moderation_hate = r
+
+        # Try Mistral if the first attempt failed
+        if not reprompt:
+            r = my_mistral.get_reprompt_for_image(query, chat_id)
+            if r:
+                reprompt, negative, preffered_aspect_ratio, moderation_sex, moderation_hate = r
+
+    except Exception as error:
+        error_traceback = traceback.format_exc()
+        my_log.log_reprompt_moderation(f'my_genimg:get_reprompt: {error}\n\nPrompt: {original_prompt}\n\n{error_traceback}')
+        reprompt, negative, preffered_aspect_ratio = '', '', '1'
+        moderation_sex, moderation_hate = False, False
+
+    # Standardize aspect ratio format
+    preffered_aspect_ratio_str = 'None'
+    if preffered_aspect_ratio:
+        if preffered_aspect_ratio == '1:1':
+            preffered_aspect_ratio = '1'
+        elif preffered_aspect_ratio == '16:9':
+            preffered_aspect_ratio = '2'
+        elif preffered_aspect_ratio == '9:16':
+            preffered_aspect_ratio = '3'
+        preffered_aspect_ratio_str = ['square', 'landscape', 'portrait'][int(preffered_aspect_ratio)-1] if preffered_aspect_ratio in '123' else None
+
+    # Centralized and enhanced logging
+    final_reprompt = clean_prompt if dont_translate else reprompt
+
+    log_message = (
+        f'get_reprompt: {chat_id}\n\n'
+        f'Original: {original_prompt}\n\n'
+        f'Final Reprompt: {final_reprompt}\n\n'
+        f'Negative: {negative}\n\n'
+        f'Aspect Ratio: {preffered_aspect_ratio_str}\n'
+        f'Moderation Sex: {moderation_sex}\n'
+        f'Moderation Hate: {moderation_hate}'
+    )
+    my_log.log_reprompt_moderations(log_message)
+
+    # Centralized return logic based on the final state
+    if moderation_sex or moderation_hate:
+        return 'MODERATION', '', ''
+
+    if dont_translate:
+        return clean_prompt, negative, preffered_aspect_ratio
+
+    return reprompt, negative, preffered_aspect_ratio
+
+
 def openrouter_gen(prompt: str, user_id: str) -> list[bytes]:
     """
     Wrapper for my_openrouter_free.txt2img to align with ThreadPool usage.
@@ -287,101 +400,6 @@ def kandinski(prompt: str, width: int = 1024, height: int = 1024, num: int = 1, 
         error_traceback = traceback.format_exc()
         my_log.log_reprompt_moderation(f'my_genimg:kandinski:3: Unhandled exception: {error}\n\n{error_traceback}')
         return []
-
-
-def get_reprompt(prompt: str, conversation_history: str = '', chat_id: str = '') -> tuple[str, str, str]:
-    """
-    Function to get a reprompt for image generation based on user's prompt and conversation history.
-    Parameters:
-    - prompt: a string containing the user's prompt
-    - conversation_history: a string containing the conversation history
-    Returns:
-    - a tuple of three strings: (reprompt, negative_reprompt, preffered_aspect_ratio)
-    """
-
-
-    # # cerebras быстрый и хорошие модели, но склонен затупить и висеть до таймаута
-    # r1, r2, r3 = my_cerebras.get_reprompt(prompt, conversation_history, chat_id)
-    # if r1 or r2:
-    #     return r1,r2,r3
-
-    dont_translate = False
-
-    try:
-        conversation_history = conversation_history.replace('𝐔𝐒𝐄𝐑:', 'user:')
-        conversation_history = conversation_history.replace('𝐁𝐎𝐓:', 'bot:')
-
-        prompt = prompt.strip()
-        dont_translate = prompt.startswith('!')
-        prompt = re.sub(r'^!+', '', prompt).strip()
-
-        query = f'''
-User want to create image with text to image generator.
-Repromt user's PROMPT for image generation.
-Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
-Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
-A negative prompt in image generation lets you specify what you DON'T want to see in the picture. It helps exclude unwanted objects, styles, colors, or other characteristics, giving you more control over the result and speeding up the generation process.
-preffered_aspect_ratio - digit from 1 to 3 where 1 is 1:1, 2 is is 16:9, 3 is 9:16.
-
-Example:
-
-Prompt: "Cat in a wizard hat"
-
-Negative prompt: "sad, angry, blurry, cartoon"
-
-Result: The AI will generate an image of a cat in a wizard hat that looks realistic, rather joyful or neutral, not sad or angry, and the image will be sharp, not blurry.
-
-Start your prompt with word Generate.
-
-
-User's PROMPT: {prompt}
-
-Dialog history: {conversation_history}
-
-Using this JSON schema:
-  reprompt = {{"was_translated": str, "lang_from": str, "reprompt": str, "negative_reprompt": str, "preffered_aspect_ratio": str, "moderation_sexual": bool, "moderation_hate": bool}}
-Return a `reprompt`
-'''
-
-        negative = ''
-        reprompt = ''
-        preffered_aspect_ratio = '1'
-
-        r = ''
-
-        if not r:
-            r = my_gemini3.get_reprompt_for_image(query, chat_id)
-        if r:
-            reprompt, negative, preffered_aspect_ratio, moderation_sex, moderation_hate = r
-            if moderation_sex or moderation_hate:
-                return 'MODERATION', '', ''
-        if not reprompt:
-            r = my_mistral.get_reprompt_for_image(query, chat_id)
-            if r:
-                reprompt, negative, preffered_aspect_ratio, moderation_sex, moderation_hate = r
-                if moderation_sex or moderation_hate:
-                    return 'MODERATION', '', ''
-
-    except Exception as error:
-        error_traceback = traceback.format_exc()
-        my_log.log_reprompt_moderation(f'my_genimg:get_reprompt: {error}\n\nPrompt: {prompt}\n\n{error_traceback}')
-    if dont_translate:
-        my_log.log_reprompt_moderations(f'get_reprompt:\n\n{prompt}\n\n{prompt}\n\nNegative: {negative}')
-    else:
-        my_log.log_reprompt_moderations(f'get_reprompt:\n\n{prompt}\n\n{reprompt}\n\nNegative: {negative}')
-
-    if preffered_aspect_ratio:
-        if preffered_aspect_ratio == '1:1':
-            preffered_aspect_ratio = '1'
-        elif preffered_aspect_ratio == '16:9':
-            preffered_aspect_ratio = '2'
-        elif preffered_aspect_ratio == '9:16':
-            preffered_aspect_ratio = '3'
-
-    if dont_translate:
-        return prompt, negative, preffered_aspect_ratio
-
-    return reprompt, negative, preffered_aspect_ratio
 
 
 def gen_images_bing_only(

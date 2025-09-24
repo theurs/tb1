@@ -387,17 +387,19 @@ def ai(
             error_str = str(error)
             my_log.log_cerebras(f'ai: attempt {attempt + 1}/{RETRY_MAX} failed with error: {error_str} [user_id: {user_id}]')
 
-            # --- PATCH START: Reactive context trimming ---
             if 'Please reduce the length of the messages or completion' in error_str:
-                # The context is too long. Trim the history more aggressively and retry.
-                # This logic is simpler because clear_mem handles preserving system prompts.
-                mem_ = clear_mem(mem_[2:], user_id) # Remove oldest conversational pair and re-check
-                if attempt < RETRY_MAX - 1:
-                    time.sleep(1)
-                    continue # Continue to the next attempt with the shortened mem_
-                else:
-                    return "" # Failed even after trimming
-            # --- PATCH END ---
+                # The context is too long. Trim the history more aggressively by removing the oldest
+                # conversational pair and then retry. This preserves system prompts.
+                system_messages = [m for m in mem_ if m.get("role") == "system"]
+                conversation_messages = [m for m in mem_ if m.get("role") != "system"]
+
+                if len(conversation_messages) >= 2:
+                    # Remove the oldest user/assistant pair
+                    mem_ = system_messages + conversation_messages[2:]
+                    if attempt < RETRY_MAX - 1:
+                        time.sleep(1)
+                        continue  # Continue to the next attempt with the shortened mem_
+                # If we cannot trim or it's the last attempt, we will fall through and return empty
 
             if 'Please try again soon.' in error_str:
                 return ''
@@ -411,7 +413,6 @@ def ai(
                 time.sleep(1)
 
     return ''
-
 
 
 def clear_mem(mem: List[Dict[str, str]], user_id: str = '') -> List[Dict[str, str]]:

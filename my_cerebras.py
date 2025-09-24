@@ -745,7 +745,7 @@ TEXT:
     )
 
     if not json_response:
-        my_log.log_cerebras(f'translate: AI returned an empty response.')
+        # my_log.log_cerebras(f'translate: AI returned an empty response.')
         return ''
 
     # --- Start of Restored Robust Parsing Logic ---

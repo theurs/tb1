@@ -243,6 +243,10 @@ UNCAPTIONED_IMAGES_LOCK = threading.Lock()
 CHECK_DONATE_LOCKS = {}
 
 
+# Для перезапуска изменившихся модулей {module_name: mtime_float}
+MODULE_TIMESTAMPS = {}
+
+
 class NoLock: # грязный хак что бы отключить замок (временный костыль)
     def __enter__(self):
         pass  # Ничего не делаем при входе в блок with
@@ -6674,77 +6678,107 @@ def reload_module(message: telebot.types.Message):
     lang = get_lang(chat_id_full, message)
 
     try:
-        # Получаем строку с именами модулей
         module_name_raw_parts = message.text.split(' ', 1)
         if len(module_name_raw_parts) < 2:
-            bot_reply(message, tr("Укажите модуль(и) для перезагрузки.", lang))
+            bot_reply(message, tr("Укажите модуль(и) для перезагрузки или 'all' для всех измененных.", lang))
             return
 
-        # Разделяем имена модулей на список, используя set для уникальности
-        initial_modules_to_process = set(module_name_raw_parts[1].strip().split())
+        arg = module_name_raw_parts[1].strip()
+        modules_to_process = []
 
-        # Создаем окончательный список модулей для перезагрузки
-        final_modules_to_reload = list(initial_modules_to_process)
+        if arg == 'all':
+            changed_modules = []
+            # Use a copy of items to allow modification during iteration
+            for module_name, cached_mtime in list(MODULE_TIMESTAMPS.items()):
+                try:
+                    current_mtime = os.path.getmtime(f"{module_name}.py")
+                    if current_mtime > cached_mtime:
+                        changed_modules.append(module_name)
+                except FileNotFoundError:
+                    # Module was deleted, remove from tracking
+                    MODULE_TIMESTAMPS.pop(module_name, None)
 
-        # Проверяем зависимость от 'skills' только один раз для всего набора модулей
-        # и добавляем 'my_cerebras_tools' и 'my_gemini3' если 'skills' присутствует
-        if any('skills' in x for x in initial_modules_to_process):
+            if not changed_modules:
+                bot_reply(message, tr("Все модули в актуальном состоянии.", lang))
+                return
+
+            modules_to_process = changed_modules
+        else:
+            modules_to_process = list(set(arg.split()))
+
+        # Создаем окончательный список модулей для перезагрузки с учетом зависимостей
+        final_modules_to_reload = list(modules_to_process)
+        if any('skills' in x for x in modules_to_process):
             if 'my_cerebras_tools' not in final_modules_to_reload:
                 final_modules_to_reload.append('my_cerebras_tools')
             if 'my_gemini3' not in final_modules_to_reload:
                 final_modules_to_reload.append('my_gemini3')
 
         results = []
-        # Теперь итерируем по окончательному списку и перезагружаем каждый модуль
-        for module_to_reload in sorted(final_modules_to_reload): # Сортируем для предсказуемого порядка
+        for module_to_reload in sorted(final_modules_to_reload):
             with RELOAD_LOCK:
-                current_module_name = module_to_reload
+                try:
+                    current_module_name = module_to_reload
+                    file_path = f"{current_module_name}.py"
 
-                # Проверяем существование файла и корректируем имя
-                if not os.path.exists(f"{current_module_name}.py"):
-                    if current_module_name.startswith('my_') and os.path.exists(f"{current_module_name[3:]}.py"):
-                        current_module_name = current_module_name[3:]
-                    elif not current_module_name.startswith('my_') and os.path.exists(f"my_{current_module_name}.py"):
-                        current_module_name = f"my_{current_module_name}"
-                    else:
-                        raise Exception(f"Файл для модуля '{current_module_name}' не найден")
+                    # Smart check for module name variations ('my_' prefix)
+                    if not os.path.exists(file_path):
+                        if not current_module_name.startswith('my_') and os.path.exists(f"my_{current_module_name}.py"):
+                            current_module_name = f"my_{current_module_name}"
+                        elif current_module_name.startswith('my_') and os.path.exists(f"{current_module_name[3:]}.py"):
+                            current_module_name = current_module_name[3:]
+                        else:
+                            raise ModuleNotFoundError(f"Файл для модуля '{module_to_reload}' не найден.")
+                    file_path = f"{current_module_name}.py"
 
-                module = importlib.import_module(current_module_name)
-                importlib.reload(module)
+                    module = importlib.import_module(current_module_name)
+                    importlib.reload(module)
 
-                # Реинициализация модуля (остается без изменений)
-                if current_module_name == 'my_gemini3':
-                    my_gemini_general.load_users_keys()
-                    my_skills.init()
-                elif current_module_name == 'my_groq':
-                    my_groq.load_users_keys()
-                elif current_module_name == 'my_cerebras':
-                    my_cerebras.load_users_keys()
-                elif current_module_name == 'my_mistral':
-                    my_mistral.load_users_keys()
-                elif current_module_name == 'my_github':
-                    my_github.load_users_keys()
-                elif current_module_name == 'my_nebius':
-                    my_nebius.load_users_keys()
-                elif current_module_name == 'my_cohere':
-                    my_cohere.load_users_keys()
-                elif current_module_name == 'my_init':
-                    load_msgs()
-                elif current_module_name == 'my_skills':
-                    my_skills.init()
-                elif current_module_name == 'my_db':
-                    db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
-                    db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
-                    my_db.init(db_backup, db_vacuum)
+                    # Update timestamp after successful reload
+                    try:
+                        new_mtime = os.path.getmtime(file_path)
+                        MODULE_TIMESTAMPS[current_module_name] = new_mtime
+                    except OSError as e:
+                        my_log.log2(f"Could not update timestamp for {current_module_name}: {e}")
 
-                results.append(f'{tr("Модуль успешно перезагружен:", lang)} {current_module_name}')
+                    # Re-initialization logic for specific modules
+                    if current_module_name == 'my_gemini3':
+                        my_gemini_general.load_users_keys()
+                        my_skills.init()
+                    elif current_module_name == 'my_groq':
+                        my_groq.load_users_keys()
+                    elif current_module_name == 'my_cerebras':
+                        my_cerebras.load_users_keys()
+                    elif current_module_name == 'my_mistral':
+                        my_mistral.load_users_keys()
+                    elif current_module_name == 'my_github':
+                        my_github.load_users_keys()
+                    elif current_module_name == 'my_nebius':
+                        my_nebius.load_users_keys()
+                    elif current_module_name == 'my_cohere':
+                        my_cohere.load_users_keys()
+                    elif current_module_name == 'my_init':
+                        load_msgs()
+                    elif current_module_name == 'my_skills':
+                        my_skills.init()
+                    elif current_module_name == 'my_db':
+                        db_backup = cfg.DB_BACKUP if hasattr(cfg, 'DB_BACKUP') else True
+                        db_vacuum = cfg.DB_VACUUM if hasattr(cfg, 'DB_VACUUM') else False
+                        my_db.init(db_backup, db_vacuum)
 
-        # Отправляем общий ответ по всем перезагруженным модулям
+                    results.append(f'{tr("Модуль успешно перезагружен:", lang)} {current_module_name}')
+
+                except Exception as e:
+                    # Capture error for the specific module and continue
+                    results.append(f'{tr("Ошибка при перезагрузке модуля", lang)} {module_to_reload}: {e}')
+                    my_log.log2(f"Ошибка при перезагрузке модуля {module_to_reload}: {e}\n{traceback.format_exc()}")
+
+        # Отправляем общий ответ по всем обработанным модулям
         bot_reply(message, "\n".join(results))
 
     except Exception as e:
-        my_log.log2(f"Ошибка при перезагрузке модуля: {e}")
-        msg = f'{tr("Ошибка при перезагрузке модуля:", lang)}```ERROR\n{e}```'
+        my_log.log2(f"Критическая ошибка в /reload: {e}")
+        msg = f'{tr("Ошибка при перезагрузке:", lang)}```ERROR\n{e}```'
         bot_reply(message, msg, parse_mode = 'MarkdownV2')
 
 
@@ -8437,6 +8471,35 @@ def load_msgs():
         my_log.log2(f'tb:log_msgs: {unknown}\n{traceback_error}')
 
 
+def scan_and_cache_module_timestamps() -> None:
+    """
+    Scans the current directory for reloadable Python modules,
+    and caches their modification times for the /reload all command.
+    """
+    prefixes = ('cfg', 'my_', 'utils', 'bing')
+    current_dir_files = []
+    try:
+        current_dir_files = os.listdir('.')
+    except OSError as e:
+        my_log.log2(f"tb:scan_modules: Cannot list current directory: {e}")
+        return
+
+    for filename in current_dir_files:
+
+        if filename == 'tb.py':
+            continue
+
+        if filename.endswith('.py') and filename.startswith(prefixes):
+            module_name = filename[:-3]
+            try:
+                mtime = os.path.getmtime(filename)
+                MODULE_TIMESTAMPS[module_name] = mtime
+            except OSError as e:
+                my_log.log2(f"tb:scan_modules: Could not get mtime for {filename}: {e}")
+
+    my_log.log2(f"tb:scan_modules: Cached {len(MODULE_TIMESTAMPS)} modules for reloading.")
+
+
 def one_time_shot():
     try:
         if not os.path.exists('one_time_flag.txt'):
@@ -8581,6 +8644,7 @@ def main():
         my_db.init(db_backup, db_vacuum)
 
         load_msgs()
+        scan_and_cache_module_timestamps() # Scan for reloadable modules on startup
 
         my_cerebras.load_users_keys()
         my_gemini_general.load_users_keys()

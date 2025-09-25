@@ -217,20 +217,20 @@ default_bot_name = 'бот'
 
 chat_mode_default = 'gemini25_flash'
 
-img2_txt_model = 'gemini-2.5-flash-preview-05-20'
-img2_txt_model_solve = 'gemini-2.5-flash-preview-05-20'
-
-gemini_flash_live_model = 'gemini-2.5-flash-live-preview'
-gemini_flash_live_model_fallback = 'gemini-2.0-flash-live-001'
+img2_txt_model = 'gemini-flash-latest' # 'gemini-2.5-flash-preview-05-20' # 'gemini-2.0-flash'
+img2_txt_model_solve = 'gemini-flash-latest' # 'gemini-2.5-flash-preview-05-20'
 
 gemini_flash_model = 'gemini-2.0-flash'
 gemini_flash_model_fallback = 'gemini-2.0-flash-exp'
 
-gemini25_flash_model = 'gemini-2.5-flash-preview-05-20'
-gemini25_flash_model_fallback = 'gemini-2.5-flash'
+gemini_flash_live_model = 'gemini-2.5-flash-live-preview'
+gemini_flash_live_model_fallback = 'gemini-2.0-flash-live-001'
 
-gemini_flash_light_model = 'gemini-2.5-flash-lite'
-gemini_flash_light_model_fallback = 'gemini-2.5-flash-lite-preview-06-17'
+gemini25_flash_model = 'gemini-flash-latest' # 'gemini-2.5-flash-preview-05-20'
+gemini25_flash_model_fallback = 'gemini-2.5-flash' # 'gemini-2.5-flash-preview-04-17' # 'gemini-2.0-flash-exp'
+
+gemini_flash_light_model = 'gemini-2.5-flash-lite-preview-09-2025' # 'gemini-2.5-flash-lite'
+gemini_flash_light_model_fallback = 'gemini-2.5-flash-lite' # 'gemini-2.5-flash-lite-preview-06-17'
 
 gemini_pro_model = 'gemini-2.5-pro'
 gemini_pro_model_fallback = 'gemini-2.5-flash'

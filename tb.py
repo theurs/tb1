@@ -40,6 +40,7 @@ import my_cmd_document
 import my_cmd_img
 import my_cmd_img2txt
 import my_cmd_photo
+import my_cmd_style
 import my_cmd_text
 import my_cmd_voice
 import my_cohere
@@ -3890,116 +3891,25 @@ def memo_admin_handler(message: telebot.types.Message):
 # вариант с такой лямбдой вызывает проблемы в функции is_for_me, туда почему то приходит команда без имени бота
 # @bot.message_handler(func=lambda message: authorized_owner(message) and message.text.split()[0].lower() in ['/style', '/role'])
 # что бы поймать слишком длинные сообщения придется положиться на обработчик текстовых сообщений
-# он поймает соберет в кучу и вызвет эту команду
+# он поймает соберет в кучу и вызовет эту команду
 # @bot.message_handler(commands=['style', 'role'], func=authorized_owner)
 # @async_run
 def change_mode(message: telebot.types.Message):
     """
-    Handles the 'style' command from the bot. Changes the prompt for the GPT model
-    based on the user's input. If no argument is provided, it displays the current
-    prompt and the available options for changing it.
-
-    Parameters:
-        message (telebot.types.Message): The message object received from the user.
-
-    Returns:
-        None
+    Redirects the 'style' command to the dedicated module.
     """
     try:
-        chat_id_full = get_topic_id(message)
-        lang = get_lang(chat_id_full, message)
-
-        # если есть список запрещенных юзеров в конфиге то проверить
-        if hasattr(cfg, 'BLOCK_SYSTEM_MSGS') and cfg.BLOCK_SYSTEM_MSGS:
-            if any([x for x in cfg.BLOCK_SYSTEM_MSGS if x == message.from_user.id]):
-                bot_reply(message, "OK.")
-                return
-
-        COMMAND_MODE[chat_id_full] = ''
-
-        DEFAULT_ROLES = my_init.get_default_roles(tr, lang)
-
-        arg = message.text.split(maxsplit=1)[1:]
-
-        if arg:
-            arg = arg[0]
-            if arg in ('<0>', '<1>', '<2>', '<3>', '<4>', '<5>', '<6>', '<7>', '<8>', '<9>'):
-                arg = arg[1:2]
-            if arg == '1':
-                new_prompt = DEFAULT_ROLES[0]
-            elif arg == '2':
-                new_prompt = DEFAULT_ROLES[1]
-            elif arg == '3':
-                new_prompt = DEFAULT_ROLES[2]
-            elif arg == '4':
-                new_prompt = DEFAULT_ROLES[3]
-            elif arg == '5':
-                new_prompt = DEFAULT_ROLES[4]
-            elif arg == '6':
-                new_prompt = DEFAULT_ROLES[5]
-            elif arg == '7':
-                new_prompt = DEFAULT_ROLES[6]
-            elif arg == '8':
-                new_prompt = DEFAULT_ROLES[7]
-            elif arg == '9':
-                new_prompt = DEFAULT_ROLES[8]
-            elif arg == '0':
-                new_prompt = ''
-            else:
-                new_prompt = arg
-
-            if utils_llm.detect_forbidden_prompt(new_prompt):
-                my_log.log2(f'tb:change_mode: Forbidden prompt: {chat_id_full} {new_prompt}')
-                return
-
-            my_db.set_user_property(chat_id_full, 'role', new_prompt)
-
-            if new_prompt:
-                msg =  f'{tr("New role was set.", lang)}'
-            else:
-                msg =  f'{tr("Roles was reset.", lang)}'
-            bot_reply(message, msg, parse_mode='HTML', disable_web_page_preview=True)
-        else:
-            msg = f"""{tr('Меняет роль бота, строку с указаниями что и как говорить', lang)}
-
-`/style <0|1|2|3|4|5|6|7|8|9|{tr('свой текст', lang)}>`
-
-{tr('Сброс, нет никакой роли', lang)}
-`/style 0`
-
-`/style 1`
-`/style {DEFAULT_ROLES[0]}`
-
-`/style 2`
-`/style {DEFAULT_ROLES[1]}`
-
-`/style 3`
-`/style {DEFAULT_ROLES[2]}`
-
-{tr('Фокус на выполнение какой то задачи', lang)}
-`/style 4`
-`/style {DEFAULT_ROLES[3]}`
-
-{tr('Неформальное общение', lang)}
-`/style 5`
-`/style {DEFAULT_ROLES[4]}`
-    """
-
-            # _user_id = utils.extract_user_id(chat_id_full)
-            # if _user_id in cfg.admins:
-            #     msg += '\n\n\n`/style ты можешь сохранять и запускать скрипты на питоне и баше через функцию run_script, в скриптах можно импортировать любые библиотеки и обращаться к сети и диску`'
-
-            msg = utils.bot_markdown_to_html(msg)
-            msg += f'''
-
-{tr("Текущий стиль", lang)}
-<blockquote expandable><code>/style {utils.html.escape(my_db.get_user_property(chat_id_full, 'role') or tr('нет никакой роли', lang))}</code></blockquote>
-        '''
-
-            bot_reply(message, msg, parse_mode='HTML')
+        my_cmd_style.change_style(
+            message=message,
+            COMMAND_MODE=COMMAND_MODE,
+            get_topic_id=get_topic_id,
+            get_lang=get_lang,
+            tr=tr,
+            bot_reply=bot_reply,
+        )
     except Exception as unknown:
         traceback_error = traceback.format_exc()
-        my_log.log2(f'tb:set_style: {unknown}\n{traceback_error}')
+        my_log.log2(f'tb:set_style_redirect: {unknown}\n{traceback_error}')
 
 
 @bot.message_handler(commands=['set_stt_mode', 'stt'], func=authorized_admin)

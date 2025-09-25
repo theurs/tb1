@@ -6670,6 +6670,7 @@ def id_cmd_handler(message: telebot.types.Message):
         my_log.log2(f'tb:id: {error}\n\n{error_traceback}\n\n{message}')
 
 
+# эту команду вероятно не следует выносить в отдельный модуль, что бы она сама себя не могла перезагрузить
 @bot.message_handler(commands=['reload'], func=authorized_admin)
 @async_run
 def reload_module(message: telebot.types.Message):

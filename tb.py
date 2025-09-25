@@ -8498,7 +8498,7 @@ def scan_and_cache_module_timestamps() -> None:
             except OSError as e:
                 my_log.log2(f"tb:scan_modules: Could not get mtime for {filename}: {e}")
 
-    my_log.log2(f"tb:scan_modules: Cached {len(MODULE_TIMESTAMPS)} modules for reloading.")
+    # my_log.log2(f"tb:scan_modules: Cached {len(MODULE_TIMESTAMPS)} modules for reloading.")
 
 
 def one_time_shot():

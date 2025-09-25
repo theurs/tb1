@@ -625,7 +625,7 @@ def get_user_logs(user_id: str) -> str:
         log2(f"get_user_logs: Log directory '{logs_dir}' does not exist.")
         return ""
 
-    id_match = re.match(r'^\[(\d+)\] \[(\d+)\]$', user_id.strip())
+    id_match = re.match(r'^\[(-?\d+)\] \[(\d+)\]$', user_id.strip())
     if not id_match:
         log2(f"get_user_logs: Invalid user ID format: {user_id}. Expected format: '[12345] [0]'.")
         return ""

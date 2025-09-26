@@ -585,7 +585,7 @@ def chat(
                 timeout=timeout
             )
 
-        if 'flash-lite' in model:
+        if model == 'gemini-2.5-flash-lite':
             THINKING_BUDGET = -1
             use_skills = False
 
@@ -688,7 +688,7 @@ def chat(
                 # Use the remaining time for the client and config timeout
                 client = genai.Client(api_key=key, http_options={'timeout': int(remaining_time * 1000)})
                 if use_skills:
-                    if 'flash-lite' in model: # not support tools except search and code builtin
+                    if model == 'gemini-2.5-flash-lite': # not support tools except search and code builtin
                         code_execution_tool = Tool(code_execution={})
                         google_search_tool = Tool(google_search={})
                         SKILLS = [google_search_tool, code_execution_tool,]

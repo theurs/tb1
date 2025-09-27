@@ -292,8 +292,7 @@ def regenerate_image(
             if '429 RESOURCE_EXHAUSTED.' in str(e):
                 my_log.log_gemini(text=f"my_gemini_genimg: Error generating image:2: {e}\n{api_key}")
                 return None
-            traceback_error = traceback.format_exc()
-            my_log.log_gemini(text=f"my_gemini_genimg: Error generating image:3: {e}\n\n{traceback_error}")
+            my_log.log_gemini(text=f"my_gemini_genimg: Error generating image:3: {e}")
             return None
         finally:
             if client and files:

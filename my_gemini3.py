@@ -2383,7 +2383,6 @@ def find_bad_keys():
     '''
     
     keys = cfg.gemini_keys[:] + my_gemini_general.ALL_KEYS[:]
-    print('AIzaSyAnYKGD9vE2QsC66qTZ76RBYoGHVeMf--Y' in keys)
 
     # preload bad keys
     _ = my_gemini_general.get_next_key()

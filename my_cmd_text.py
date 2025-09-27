@@ -963,6 +963,10 @@ def do_task(
                                 WHO_ANSWERED[chat_id_full] = my_openrouter_free.CLOACKED_MODEL_FALLBACK3
 
 
+                            thoughts, answer = utils_llm.split_thoughts(answer)
+                            # thoughts = utils.bot_markdown_to_html(thoughts)
+
+
                             autor = WHO_ANSWERED[chat_id_full]
                             complete_time = time.time() - time_to_answer_start
                             my_log.log3(chat_id_full, complete_time)

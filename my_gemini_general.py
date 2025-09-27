@@ -88,19 +88,20 @@ def get_next_key():
     '''
     Дает один ключ из всех, последовательно перебирает доступные ключи
     '''
-    global ROUND_ROBIN_KEYS, BADKEYS, BADKEYS_MTIME
+    # global ROUND_ROBIN_KEYS, BADKEYS, BADKEYS_MTIME
+    global ROUND_ROBIN_KEYS
 
     if not ROUND_ROBIN_KEYS:
         keys = cfg.gemini_keys[:] + ALL_KEYS[:]
         random.shuffle(keys)
 
-        if os.path.exists(BADKEYS_PATH):
-            if os.path.getmtime(BADKEYS_PATH) > BADKEYS_MTIME:
-                with open(BADKEYS_PATH, 'r') as f:
-                    BADKEYS = f.read().splitlines()
-                    BADKEYS = [x.strip() for x in BADKEYS if x.strip()]
-                    BADKEYS = [x for x in BADKEYS if len(x) == 39]
-                    BADKEYS_MTIME = os.path.getmtime(BADKEYS_PATH)
+        # if os.path.exists(BADKEYS_PATH):
+        #     if os.path.getmtime(BADKEYS_PATH) > BADKEYS_MTIME:
+        #         with open(BADKEYS_PATH, 'r') as f:
+        #             BADKEYS = f.read().splitlines()
+        #             BADKEYS = [x.strip() for x in BADKEYS if x.strip()]
+        #             BADKEYS = [x for x in BADKEYS if len(x) == 39]
+        #             BADKEYS_MTIME = os.path.getmtime(BADKEYS_PATH)
 
         for key in keys[:]:
             if key in BADKEYS:

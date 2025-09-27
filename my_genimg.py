@@ -65,7 +65,7 @@ Repromt user's PROMPT for image generation.
 Generate a good detailed prompt in english language, image generator accept only english so translate if needed.
 Answer as a professional image prompt engineer, answer completely grammatically correct and future rich, add details if it was short.
 A negative prompt in image generation lets you specify what you DON'T want to see in the picture. It helps exclude unwanted objects, styles, colors, or other characteristics, giving you more control over the result and speeding up the generation process.
-preffered_aspect_ratio - digit from 1 to 3 where 1 is 1:1, 2 is is 16:9, 3 is 9:16.
+preffered_aspect_ratio - digit from 1 to 3 where 1 is 1:1, 2 is is 16:9, 3 is 9:16, use 1 if user doesn't care.
 
 Example:
 

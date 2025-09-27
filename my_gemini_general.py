@@ -1,4 +1,3 @@
-import os
 import random
 import threading
 import traceback
@@ -9,7 +8,6 @@ from sqlitedict import SqliteDict
 import cfg
 import my_db
 import my_log
-import utils
 
 
 # таймаут в запросе к джемини
@@ -31,8 +29,8 @@ REMOVED_KEYS = []
 
 # плохие ключи
 BADKEYS = []
-BADKEYS_PATH = 'db/gemini_badkeys.txt'
-BADKEYS_MTIME = 0
+# BADKEYS_PATH = 'db/gemini_badkeys.txt'
+# BADKEYS_MTIME = 0
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
 # каждый ключ дает всего 50 запросов в день так что чем больше тем лучше

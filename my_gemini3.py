@@ -2381,7 +2381,7 @@ def find_bad_keys():
     '''
     Проверяет все ключи, если ключ не сработал то репортит
     '''
-    
+
     keys = cfg.gemini_keys[:] + my_gemini_general.ALL_KEYS[:]
 
     # preload bad keys

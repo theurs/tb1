@@ -4,6 +4,7 @@
 import httpx
 import io
 import PIL
+import random
 import re
 import time
 import threading
@@ -1589,7 +1590,7 @@ def test_new_key(key: str, chat_id_full: str) -> bool:
         bool: True if the key is valid, False otherwise.
     """
     try:
-        if key in my_gemini_general.REMOVED_KEYS:
+        if key in my_gemini_general.REMOVED_KEYS or key in my_gemini_general.BADKEYS:
             return False
 
         result = chat(
@@ -2376,6 +2377,22 @@ def trim_user_history(chat_id: str, max_history_size: int) -> None:
     my_db.set_user_property(chat_id, 'dialog_gemini3', my_db.obj_to_blob(mem))
 
 
+def find_bad_keys():
+    '''
+    Проверяет все ключи, если ключ не сработал то репортит
+    '''
+    
+    keys = cfg.gemini_keys[:] + my_gemini_general.ALL_KEYS[:]
+
+    # preload bad keys
+    _ = my_gemini_general.get_next_key()
+
+    for key in keys:
+        if not test_new_key(key, ''):
+            print(key)
+        time.sleep(random.randint(1, 5))
+
+
 if __name__ == "__main__":
     my_db.init(backup=False, vacuum=False)
     my_gemini_general.load_users_keys()
@@ -2396,6 +2413,8 @@ if __name__ == "__main__":
     # один раз запустить надо
     # converts_all_mems()
     # print(list_models(include_context=True))
+
+    # find_bad_keys()
 
     reset('test')
     chat_cli(model = 'gemini-2.5-flash')

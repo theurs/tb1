@@ -1,3 +1,4 @@
+import os
 import random
 import threading
 import traceback
@@ -28,6 +29,10 @@ LOCKS = {}
 # удаленные ключи
 REMOVED_KEYS = []
 
+# плохие ключи
+BADKEYS = []
+BADKEYS_PATH = 'db/gemini_badkeys.txt'
+BADKEYS_MTIME = 0
 
 # каждый юзер дает свои ключи и они используются совместно со всеми
 # каждый ключ дает всего 50 запросов в день так что чем больше тем лучше
@@ -83,14 +88,22 @@ def get_next_key():
     '''
     Дает один ключ из всех, последовательно перебирает доступные ключи
     '''
-    global ROUND_ROBIN_KEYS
+    global ROUND_ROBIN_KEYS, BADKEYS, BADKEYS_MTIME
 
     if not ROUND_ROBIN_KEYS:
         keys = cfg.gemini_keys[:] + ALL_KEYS[:]
         random.shuffle(keys)
-        badkeys = ['b3470eb3b2055346b76f2ce3b11aadf2f6fdccf5703ad853b4a5b0cf46f1cf16',]
+
+        if os.path.exists(BADKEYS_PATH):
+            if os.path.getmtime(BADKEYS_PATH) > BADKEYS_MTIME:
+                with open(BADKEYS_PATH, 'r') as f:
+                    BADKEYS = f.read().splitlines()
+                    BADKEYS = [x.strip() for x in BADKEYS if x.strip()]
+                    BADKEYS = [x for x in BADKEYS if len(x) == 39]
+                    BADKEYS_MTIME = os.path.getmtime(BADKEYS_PATH)
+
         for key in keys[:]:
-            if utils.fast_hash(key) in badkeys:
+            if key in BADKEYS:
                 keys.remove(key)
                 remove_key(key)
         ROUND_ROBIN_KEYS = keys[:]
